@@ -3,7 +3,7 @@ import abc
 import dataclasses
 
 from .component import Component
-from .doc_meta import Doc
+from .document import Document
 
 
 @dataclasses.dataclass
@@ -13,9 +13,9 @@ class Source:
     text: str
 
 
-class DocDB(Component, abc.ABC):
+class SourceStorage(Component, abc.ABC):
     @abc.abstractmethod
-    def store(self, documents: list[Doc], app_config, chat_config) -> None:
+    def store(self, documents: list[Document], app_config, chat_config) -> None:
         ...
 
     @abc.abstractmethod

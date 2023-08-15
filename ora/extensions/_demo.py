@@ -1,7 +1,7 @@
-from ora.extensions import DocDB, hookimpl, LLM
+from ora.extensions import hookimpl, Llm, SourceStorage
 
 
-class OraDemoDocDB(DocDB):
+class OraDemoSourceStorage(SourceStorage):
     @classmethod
     def display_name(cls):
         return "ora/DemoDocDb"
@@ -13,12 +13,12 @@ class OraDemoDocDB(DocDB):
         return ["demo retrieval"]
 
 
-@hookimpl(specname="ora_doc_db")
-def ora_demo_doc_db():
-    return OraDemoDocDB
+@hookimpl(specname="ora_source_storage")
+def ora_demo_source_storage():
+    return OraDemoSourceStorage
 
 
-class OraDemoLLM(LLM):
+class OraDemoLlm(Llm):
     @classmethod
     def display_name(cls):
         return "ora/DemoLLM"
@@ -33,4 +33,4 @@ class OraDemoLLM(LLM):
 
 @hookimpl(specname="ora_llm")
 def ora_demo_llm():
-    return OraDemoLLM
+    return OraDemoLlm

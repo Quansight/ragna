@@ -1,20 +1,28 @@
 import functools
 import hashlib
 
-from ora.extensions import Doc, DocDB, hookimpl, PackageRequirement, Requirement, Source
+from ora.extensions import (
+    Document,
+    hookimpl,
+    PackageRequirement,
+    Requirement,
+    Source,
+    SourceStorage,
+)
 from ora.utils import chunk_pages, page_numbers_to_str
 
 
-# FIXME: call this SourceStorage
-# FIXME: use Long class names, and Llm
-class Chroma(DocDB):
+class ChromaSourceStorage(SourceStorage):
+    @classmethod
+    def display_name(cls) -> str:
+        return "Chroma"
+
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [PackageRequirement("chromadb >=0.4")]
 
     def __init__(self, app_config, embedding_function=None, tokenizer=None):
-        # FIXME: call all components with the app config?
-        # FIXME: expose all classes as well
+        super().__init__(app_config)
         import chromadb
         import chromadb.utils.embedding_functions
 
@@ -28,6 +36,7 @@ class Chroma(DocDB):
             embedding_function
             or chromadb.utils.embedding_functions.OpenAIEmbeddingFunction()
         )
+        self._tokenizer = tokenizer
 
     @functools.lru_cache(maxsize=1024)
     def _collection_name(self, user_name: str) -> str:
@@ -38,9 +47,9 @@ class Chroma(DocDB):
         chunk_overlap = chat_config.extra.get("chunk_overlap", 250)
         return chunk_size, chunk_overlap
 
-    def store(self, documents: list[Doc], app_config, chat_config) -> None:
+    def store(self, documents: list[Document], chat_config) -> None:
         collection = self._client.get_or_create_collection(
-            self._collection_name(app_config.user_name)
+            self._collection_name(self.app_config.user_name)
         )
 
         chunk_size, chunk_overlap = self._extract_chunk_params(chat_config)
@@ -61,7 +70,7 @@ class Chroma(DocDB):
                     pages,
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
-                    tokenizer=self.tokenizer,
+                    tokenizer=self._tokenizer,
                 )
             ):
                 ids_to_store.append(
@@ -86,11 +95,9 @@ class Chroma(DocDB):
             ids=ids_to_store, documents=documents_to_store, metadatas=metadatas_to_store
         )
 
-    def retrieve(
-        self, prompt: str, *, num_tokens: int, app_config, chat_config
-    ) -> list[Source]:
+    def retrieve(self, prompt: str, *, num_tokens: int, chat_config) -> list[Source]:
         collection = self._client.get_collection(
-            self._collection_name(app_config.user_name)
+            self._collection_name(self.app_config.user_name)
         )
 
         chunk_size, _ = self._extract_chunk_params(chat_config)
@@ -124,6 +131,6 @@ class Chroma(DocDB):
         ]
 
 
-@hookimpl(specname="ora_doc_db")
-def chroma():
-    return Chroma
+@hookimpl(specname="ora_source_storage")
+def chroma_source_storage():
+    return ChromaSourceStorage

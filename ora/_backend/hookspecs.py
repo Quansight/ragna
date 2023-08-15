@@ -2,24 +2,24 @@ from typing import Type
 
 import pluggy
 
-from .doc_db import DocDB
+from .document import DocumentMetadata
+from .llm import Llm
 
-from .doc_meta import DocMeta
-from .llm import LLM
+from .source_storage import SourceStorage
 
 hookspec = pluggy.HookspecMarker("ora")
 
 
 @hookspec
-def ora_doc_meta() -> Type[DocMeta]:
-    """doc_meta"""
+def ora_document_metadata() -> Type[DocumentMetadata]:
+    """DocumentMetadata"""
 
 
 @hookspec
-def ora_llm() -> Type[LLM]:
-    """llm"""
+def ora_llm() -> Type[Llm]:
+    """Llm"""
 
 
 @hookspec
-def ora_doc_db() -> Type[DocDB]:
-    """doc_db"""
+def ora_source_storage() -> Type[SourceStorage]:
+    """SourceStorage"""

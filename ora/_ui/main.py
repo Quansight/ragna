@@ -9,7 +9,7 @@ class Page:
     def __panel__(self):
         return pn.layout.Column(
             "Fake Modal",
-            pn.widgets.Select(options=self._doc_db_names, name="doc_db"),
+            pn.widgets.Select(options=self._doc_db_names, name="_source_storage"),
             pn.widgets.Select(options=self._llm_names, name="llm_name"),
         )
 

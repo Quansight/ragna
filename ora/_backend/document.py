@@ -16,8 +16,11 @@ class Page:
     number: int | None = None
 
 
-class DocMeta(Component, abc.ABC):
-    def __init__(self, name: str, id: str) -> None:
+# FIXME: Rethink this, since it is different from the other components
+# We actually need to or we need to construct Document with appconfig as well
+class DocumentMetadata(Component, abc.ABC):
+    def __init__(self, app_config, name: str, id: str) -> None:
+        super().__init__(app_config)
         self.name = name
         self.id = id
 
@@ -32,8 +35,8 @@ class DocMeta(Component, abc.ABC):
 
 
 @dataclasses.dataclass
-class Doc:
-    meta: DocMeta
+class Document:
+    metadata: DocumentMetadata
     content: bytes
 
     @classmethod
@@ -42,13 +45,13 @@ class Doc:
         name: str,
         content: bytes,
         *,
-        available_doc_meta_types: dict[str, Type[DocMeta]],
-    ) -> Doc:
+        available_document_metadata_types: dict[str, Type[DocumentMetadata]],
+    ) -> Document:
         # We don't need to guard against a missing key here, because we only allow
         # uploading documents of the available types in the first place.
-        doc_meta_type = available_doc_meta_types[Path(name).suffix]
+        document_metadata = available_document_metadata_types[Path(name).suffix]
         return cls(
-            meta=doc_meta_type(
+            metadata=document_metadata(
                 name=name,
                 # Since this is just for an internal ID and, although some where found,
                 # collisions are incredibly rare, we are ok using a weak-ish but fast
@@ -60,11 +63,11 @@ class Doc:
 
     @property
     def name(self) -> str:
-        return self.meta.name
+        return self.metadata.name
 
     @property
     def id(self) -> str:
-        return self.meta.id
+        return self.metadata.id
 
     def extract_pages(self) -> list[Page]:
-        return self.meta.extract_pages(self.content)
+        return self.metadata.extract_pages(self.content)

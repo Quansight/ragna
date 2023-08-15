@@ -3,16 +3,17 @@ import os
 
 from ora.extensions import (
     EnvironmentVariableRequirement,
-    LLM,
+    Llm,
     PackageRequirement,
     Requirement,
 )
 
 
-class LlmApi(LLM):
+class LlmApi(Llm):
     _API_KEY_ENV_VAR: str
 
-    def __init__(self):
+    def __init__(self, app_config):
+        super().__init__(app_config)
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
     @classmethod
