@@ -3,7 +3,7 @@ import abc
 from .component import Component
 
 
-class LLM(Component):
+class LLM(Component, abc.ABC):
     @property
     @abc.abstractmethod
     def context_size(self) -> int:

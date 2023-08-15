@@ -3,7 +3,7 @@ from ora.extensions import DocDB, hookimpl, LLM
 
 class OraDemoDocDB(DocDB):
     @classmethod
-    def name(cls):
+    def display_name(cls):
         return "ora/DemoDocDb"
 
     def store(self, documents: list) -> None:
@@ -20,7 +20,7 @@ def ora_demo_doc_db():
 
 class OraDemoLLM(LLM):
     @classmethod
-    def name(cls):
+    def display_name(cls):
         return "ora/DemoLLM"
 
     @property

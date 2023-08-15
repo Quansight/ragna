@@ -11,7 +11,7 @@ class OpenaiLlmApi(LlmApi):
     _CONTEXT_SIZE: int
 
     @classmethod
-    def name(cls):
+    def display_name(cls):
         return f"OpenAI/{cls._MODEL}"
 
     @property

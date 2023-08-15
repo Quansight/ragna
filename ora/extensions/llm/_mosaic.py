@@ -9,7 +9,7 @@ class MosaidLlmApi(LlmApi):
     _CONTEXT_SIZE: int
 
     @classmethod
-    def name(cls):
+    def display_name(cls):
         return f"Mosaic/{cls._MODEL}"
 
     @property

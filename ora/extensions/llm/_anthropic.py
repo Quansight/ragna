@@ -9,7 +9,7 @@ class AnthropicLlmApi(LlmApi):
     _CONTEXT_SIZE: int
 
     @classmethod
-    def name(cls):
+    def display_name(cls):
         return f"Anthropic/{cls._MODEL}"
 
     @property

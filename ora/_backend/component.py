@@ -1,13 +1,10 @@
-import abc
-
 from .requirement import Requirement
 
 
-class Component(abc.ABC):
+class Component:
     @classmethod
-    @abc.abstractmethod
-    def name(cls) -> str:
-        ...
+    def display_name(cls) -> str:
+        return cls.__name__
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
