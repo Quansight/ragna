@@ -13,11 +13,19 @@ authors = [
 dependencies = [
     "typer",
     "rich",
-    "shellingham >=1.4, <1.5",
     "pluggy",
     "panel >=1.2, <1.3",
+    "packaging",
 ]
 dynamic = ["version"]
+
+# to update this, run scripts/update_optional_dependencies.py
+[project.optional-dependencies]
+extensions = [
+    'chromadb>=0.4',
+    'requests',
+    'tiktoken',
+]
 
 [tool.setuptools_scm]
 write_to = "ora/_version.py"
