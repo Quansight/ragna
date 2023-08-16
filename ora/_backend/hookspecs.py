@@ -2,7 +2,7 @@ from typing import Type
 
 import pluggy
 
-from .document import DocumentMetadata
+from .document import PageExtractor
 from .llm import Llm
 
 from .source_storage import SourceStorage
@@ -11,8 +11,8 @@ hookspec = pluggy.HookspecMarker("ora")
 
 
 @hookspec
-def ora_document_metadata() -> Type[DocumentMetadata]:
-    """DocumentMetadata"""
+def ora_page_extractor() -> Type[PageExtractor]:
+    """PageExtractor"""
 
 
 @hookspec

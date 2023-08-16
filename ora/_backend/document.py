@@ -3,11 +3,11 @@ from __future__ import annotations
 import abc
 import dataclasses
 
-import hashlib
 from pathlib import Path
-from typing import Type
+from typing import Collection
 
 from .component import Component
+from .utils import compute_id
 
 
 @dataclasses.dataclass
@@ -16,18 +16,20 @@ class Page:
     number: int | None = None
 
 
-# FIXME: Rethink this, since it is different from the other components
-# We actually need to or we need to construct Document with appconfig as well
-class DocumentMetadata(Component, abc.ABC):
-    def __init__(self, app_config, name: str, id: str) -> None:
-        super().__init__(app_config)
-        self.name = name
-        self.id = id
+class PageExtractor(Component, abc.ABC):
+    SUFFIX: Collection[str] | str = ""
 
-    @property
-    @abc.abstractmethod
-    def suffix(self) -> str:
-        ...
+    def can_handle(self, name: str, content: bytes) -> bool:
+        if not self.SUFFIX:
+            # FIXME: use logging
+            print("ADDME")
+            raise SystemExit(1)
+
+        suffix = Path(name).suffix
+        if isinstance(self.SUFFIX, str):
+            return suffix == self.SUFFIX
+        else:
+            return suffix in self.SUFFIX
 
     @abc.abstractmethod
     def extract_pages(self, content: bytes) -> list[Page]:
@@ -35,9 +37,20 @@ class DocumentMetadata(Component, abc.ABC):
 
 
 @dataclasses.dataclass
+class DocumentMetadata(Component):
+    name: str
+    id: str
+
+    @classmethod
+    def from_name(cls, name: str) -> DocumentMetadata:
+        return cls(name, compute_id(name))
+
+
+@dataclasses.dataclass
 class Document:
-    metadata: DocumentMetadata
     content: bytes
+    metadata: DocumentMetadata
+    page_extractor: PageExtractor
 
     @classmethod
     def _from_name_and_content(
@@ -45,20 +58,24 @@ class Document:
         name: str,
         content: bytes,
         *,
-        available_document_metadata_types: dict[str, Type[DocumentMetadata]],
+        page_extractors: list[PageExtractor],
     ) -> Document:
-        # We don't need to guard against a missing key here, because we only allow
-        # uploading documents of the available types in the first place.
-        document_metadata = available_document_metadata_types[Path(name).suffix]
+        try:
+            page_extractor = next(
+                p for p in page_extractors if p.can_handle(name, content)
+            )
+        except StopIteration:
+            # FIXME: use logging
+            print(
+                f"No registered PageExtractor (ora_page_extractor) is able to handle "
+                f"{name}"
+            )
+            raise SystemExit(1)
+
         return cls(
-            metadata=document_metadata(
-                name=name,
-                # Since this is just for an internal ID and, although some where found,
-                # collisions are incredibly rare, we are ok using a weak-ish but fast
-                # algorithm here.
-                id=hashlib.md5(content).hexdigest(),
-            ),
             content=content,
+            metadata=DocumentMetadata.from_name(name),
+            page_extractor=page_extractor,
         )
 
     @property
@@ -70,4 +87,4 @@ class Document:
         return self.metadata.id
 
     def extract_pages(self) -> list[Page]:
-        return self.metadata.extract_pages(self.content)
+        return self.page_extractor.extract_pages(self.content)

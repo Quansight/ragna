@@ -1,5 +1,5 @@
+import ora
 import pytest
-from ora.utils import page_numbers_to_str
 
 
 @pytest.mark.parametrize(
@@ -13,4 +13,4 @@ from ora.utils import page_numbers_to_str
     ],
 )
 def test_page_numbers_to_str(page_numbers, expected):
-    assert page_numbers_to_str(page_numbers) == expected
+    assert ora.utils.page_numbers_to_str(page_numbers) == expected

@@ -1,8 +1,9 @@
 from .component import Component
-from .document import Document, DocumentMetadata, Page
+from .document import Document, DocumentMetadata, Page, PageExtractor
 from .llm import Llm
 from .requirement import EnvironmentVariableRequirement, PackageRequirement, Requirement
 from .source_storage import Source, SourceStorage
+from .utils import compute_id
 
 from . import hookspecs  # usort: skip
 

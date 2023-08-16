@@ -7,6 +7,7 @@ from ora._backend import (
     Llm,
     PackageRequirement,
     Page,
+    PageExtractor,
     Requirement,
     Source,
     SourceStorage,
@@ -17,8 +18,7 @@ del pluggy
 
 
 from ._demo import ora_demo_llm, ora_demo_source_storage
-from ._document_metadata import txt_document_metadata, TxtDocumentMetadata
-from ._llm import (
+from .llm import (
     anthropic_claude_1_instant_llm,
     anthropic_claude_2_llm,
     AnthropicClaude1InstantLlm,
@@ -32,4 +32,5 @@ from ._llm import (
     OpenaiGpt35Turbo16kLlm,
     OpenaiGpt4Llm,
 )
-from ._source_storage import chroma_source_storage, ChromaSourceStorage
+from .page_extractor import txt_page_extractor, TxtPageExtractor
+from .source_storage import chroma_source_storage, ChromaSourceStorage
