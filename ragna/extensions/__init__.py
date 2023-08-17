@@ -33,5 +33,10 @@ from .llm import (
     OpenaiGpt35Turbo16kLlm,
     OpenaiGpt4Llm,
 )
-from .page_extractor import txt_page_extractor, TxtPageExtractor
+from .page_extractor import (
+    pdf_page_extractor,
+    PdfPageExtractor,
+    txt_page_extractor,
+    TxtPageExtractor,
+)
 from .source_storage import chroma_source_storage, ChromaSourceStorage

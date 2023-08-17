@@ -32,7 +32,7 @@ class PageExtractor(Component, abc.ABC):
             return suffix in self.SUFFIX
 
     @abc.abstractmethod
-    def extract_pages(self, content: bytes) -> Iterator[Page]:
+    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
         ...
 
 
@@ -87,4 +87,4 @@ class Document:
         return self.metadata.id
 
     def extract_pages(self) -> Iterator[Page]:
-        yield from self.page_extractor.extract_pages(self.content)
+        yield from self.page_extractor.extract_pages(self.name, self.content)

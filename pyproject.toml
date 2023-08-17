@@ -23,6 +23,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 extensions = [
     'chromadb>=0.4',
+    'pymupdf',
     'requests',
     'tiktoken',
 ]

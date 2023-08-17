@@ -26,18 +26,24 @@ class PackageRequirement(Requirement):
     @cached_property
     def is_available(self) -> bool:
         try:
-            version = importlib.metadata.version(self._requirement.name)
+            distribution = importlib.metadata.distribution(self._requirement.name)
         except importlib.metadata.PackageNotFoundError:
             return False
 
-        if version not in self._requirement.specifier:
+        if distribution.version not in self._requirement.specifier:
             return False
 
-        try:
-            importlib.import_module(self._requirement.name)
-            return True
-        except Exception:
-            return False
+        for module_name in {
+            module_name
+            for module_name, distribution_names in importlib.metadata.packages_distributions().items()
+            if distribution.name in distribution_names
+        }:
+            try:
+                importlib.import_module(module_name)
+            except Exception:
+                return False
+
+        return True
 
     def __str__(self):
         return str(self._requirement)
