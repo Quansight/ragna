@@ -1,7 +1,7 @@
 import abc
 import os
 
-from ora.extensions import (
+from ragna.extensions import (
     EnvironmentVariableRequirement,
     Llm,
     PackageRequirement,

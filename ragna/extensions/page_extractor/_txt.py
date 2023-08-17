@@ -1,6 +1,6 @@
 from typing import Iterator
 
-from ora.extensions import hookimpl, Page, PageExtractor
+from ragna.extensions import hookimpl, Page, PageExtractor
 
 
 class TxtPageExtractor(PageExtractor):
@@ -10,6 +10,6 @@ class TxtPageExtractor(PageExtractor):
         yield Page(content.decode())
 
 
-@hookimpl(specname="ora_page_extractor")
+@hookimpl(specname="ragna_page_extractor")
 def txt_page_extractor():
     return TxtPageExtractor

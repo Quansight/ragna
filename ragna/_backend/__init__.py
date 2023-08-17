@@ -11,5 +11,5 @@ from . import hookspecs  # usort: skip
 AVAILABLE_SPECNAMES = frozenset(
     obj.__name__
     for name, obj in hookspecs.__dict__.items()
-    if callable(obj) and hasattr(obj, "ora_spec")
+    if callable(obj) and hasattr(obj, "ragna_spec")
 )

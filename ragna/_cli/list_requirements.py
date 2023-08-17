@@ -4,7 +4,7 @@ from typing import Iterator, Type
 from pluggy import PluginManager
 from rich.table import Table
 
-from ora._backend import (
+from ragna._backend import (
     AVAILABLE_SPECNAMES,
     EnvironmentVariableRequirement,
     PackageRequirement,

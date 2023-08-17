@@ -4,22 +4,22 @@ import typer
 
 from rich.console import Console
 
-import ora
-from ora._backend import AVAILABLE_SPECNAMES, Component
-from ora._ui import app as ui_app
+import ragna
+from ragna._backend import AVAILABLE_SPECNAMES, Component
+from ragna._ui import app as ui_app
 
 from .extensions import load_and_register_extensions
 from .list_requirements import make_requirements_tables
 
 __all__ = ["app"]
 
-app = typer.Typer(name="ora", no_args_is_help=True)
+app = typer.Typer(name="ragna", no_args_is_help=True)
 console = Console()
 
 
 def version_callback(value: bool):
     if value:
-        print(f"ora {ora.__version__}")
+        print(f"ragna {ragna.__version__}")
         raise typer.Exit()
 
 
@@ -43,7 +43,7 @@ def launch(
             "--extension",
             rich_help_panel="Extensions",
         ),
-    ] = ["ora.extensions"],
+    ] = ["ragna.extensions"],
     no_deselect: Annotated[
         bool,
         typer.Option(
@@ -54,21 +54,21 @@ def launch(
     url: Annotated[
         str,
         typer.Option(
-            envvar="ORA_URL",
+            envvar="RAGNA_URL",
             rich_help_panel="Deployment",
         ),
     ] = "localhost",
     port: Annotated[
         int,
         typer.Option(
-            envvar="ORA_PORT",
+            envvar="RAGNA_PORT",
             rich_help_panel="Deployment",
         ),
     ] = 31476,
     log_level: Annotated[
         str,
         typer.Option(
-            envvar="ORA_LOG_LEVEL",
+            envvar="RAGNA_LOG_LEVEL",
             rich_help_panel="Deployment",
         ),
     ] = "INFO",
@@ -94,8 +94,8 @@ def launch(
             components[specname][name] = component_cls()
 
     ui_app(
-        doc_dbs=components["ora_doc_db"],
-        llms=components["ora_llm"],
+        doc_dbs=components["ragna_doc_db"],
+        llms=components["ragna_llm"],
         url=url,
         port=port,
     )
@@ -110,7 +110,7 @@ def list_requirements(
             "-e",
             "--extension",
         ),
-    ] = ["ora.extensions"],
+    ] = ["ragna.extensions"],
 ):
     plugin_manager = load_and_register_extensions(extensions)
 

@@ -1,4 +1,4 @@
-name: ora-dev
+name: ragna-dev
 channels:
   - conda-forge
 dependencies:

@@ -5,13 +5,13 @@ from types import ModuleType
 
 from pluggy import PluginManager
 
-from ora._backend import hookspecs
+from ragna._backend import hookspecs
 
 __all__ = ["load_and_register_extensions"]
 
 
 def load_and_register_extensions(extensions: list[str]) -> PluginManager:
-    plugin_manager = PluginManager("ora")
+    plugin_manager = PluginManager("ragna")
     plugin_manager.add_hookspecs(hookspecs)
 
     for extension in extensions:

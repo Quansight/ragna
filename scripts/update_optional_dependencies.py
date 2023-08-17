@@ -2,12 +2,12 @@ from collections import defaultdict
 from functools import reduce
 from pathlib import Path
 
-import ora.extensions
+import ragna.extensions
 import tomlkit
 
-from ora._backend import Component
-
 from packaging.requirements import Requirement
+
+from ragna._backend import Component
 
 
 def main():
@@ -17,12 +17,12 @@ def main():
 
 def extract_optional_dependencies():
     optional_dependencies = defaultdict(list)
-    for obj in ora.extensions.__dict__.values():
+    for obj in ragna.extensions.__dict__.values():
         if not is_true_subclass(obj, Component):
             continue
 
         for requirement in obj.requirements():
-            if not isinstance(requirement, ora.extensions.PackageRequirement):
+            if not isinstance(requirement, ragna.extensions.PackageRequirement):
                 continue
 
             requirement = requirement._requirement
