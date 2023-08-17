@@ -4,7 +4,12 @@ from typing import Iterator, Type
 from pluggy import PluginManager
 from rich.table import Table
 
-from ora._backend import EnvironmentVariableRequirement, PackageRequirement, Requirement
+from ora._backend import (
+    AVAILABLE_SPECNAMES,
+    EnvironmentVariableRequirement,
+    PackageRequirement,
+    Requirement,
+)
 
 __all__ = ["make_requirements_tables"]
 
@@ -15,7 +20,7 @@ def make_requirements_tables(plugin_manager: PluginManager) -> Iterator[Table]:
         table = Table(
             "available",
             "hookimpl",
-            "name",
+            "display name",
             "environment variables",
             "packages",
             title=f"module {plugin.__name__} from {plugin.__file__}",
@@ -23,14 +28,14 @@ def make_requirements_tables(plugin_manager: PluginManager) -> Iterator[Table]:
         )
 
         remove_plugins = all_plugins - {plugin}
-        for hookimpl in ["ora_doc_db", "ora_llm"]:
+        for hookimpl in sorted(AVAILABLE_SPECNAMES):
             hook = plugin_manager.subset_hook_caller(hookimpl, remove_plugins)
             for component_cls in hook():
                 reqs = split_requirements(component_cls.requirements())
                 table.add_row(
                     yes_or_no(component_cls.is_available()),
                     hookimpl,
-                    component_cls.name(),
+                    component_cls.display_name(),
                     format_requirements(reqs[EnvironmentVariableRequirement]),
                     format_requirements(reqs[PackageRequirement]),
                 )

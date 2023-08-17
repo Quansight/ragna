@@ -5,7 +5,7 @@ import typer
 from rich.console import Console
 
 import ora
-from ora._backend import Component
+from ora._backend import AVAILABLE_SPECNAMES, Component
 from ora._ui import app as ui_app
 
 from .extensions import load_and_register_extensions
@@ -77,12 +77,12 @@ def launch(
 
     # FIXME: set log_level
 
-    components = {specname: {} for specname in ["ora_doc_db", "ora_llm"]}
+    components = {specname: {} for specname in AVAILABLE_SPECNAMES}
     for specname in components:
         for component_cls in cast(
             list[Type[Component]], getattr(plugin_manager.hook, specname)()
         ):
-            name = component_cls.name()
+            name = component_cls.display_name()
             if not component_cls.is_available():
                 if no_deselect:
                     # FIXME: this should be logged

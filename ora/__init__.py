@@ -8,4 +8,4 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import extensions
+from . import extensions, utils

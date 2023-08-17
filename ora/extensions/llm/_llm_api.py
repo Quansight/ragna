@@ -1,15 +1,27 @@
 import abc
 import os
 
-import ora
-from ora.extensions import LLM, Requirement
+from ora.extensions import (
+    EnvironmentVariableRequirement,
+    Llm,
+    PackageRequirement,
+    Requirement,
+)
 
 
-class LlmApi(LLM):
+class LlmApi(Llm):
     _API_KEY_ENV_VAR: str
 
-    def __init__(self):
+    def __init__(self, app_config):
+        super().__init__(app_config)
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [
+            PackageRequirement("requests"),
+            EnvironmentVariableRequirement(cls._API_KEY_ENV_VAR),
+        ]
 
     def complete(self, prompt: str, chat_config):
         # TODO: add retries
@@ -18,10 +30,3 @@ class LlmApi(LLM):
     @abc.abstractmethod
     def _call_api(self, prompt: str, chat_config):
         ...
-
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [
-            ora.extensions.PackageRequirement("requests"),
-            ora.extensions.EnvironmentVariableRequirement(cls._API_KEY_ENV_VAR),
-        ]
