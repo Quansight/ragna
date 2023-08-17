@@ -2,15 +2,26 @@ import abc
 
 import dataclasses
 
+from typing import Protocol, Sequence
+
 from .component import Component
 from .document import Document
 
 
+class Tokenizer(Protocol):
+    def encode(self, text: str) -> list[int]:
+        ...
+
+    def decode(self, tokens: Sequence[int]) -> str:
+        ...
+
+
 @dataclasses.dataclass
 class Source:
-    name: str
-    location: str
+    document_name: str
+    page_numbers: str
     text: str
+    num_tokens: int
 
 
 class SourceStorage(Component, abc.ABC):

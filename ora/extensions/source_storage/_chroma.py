@@ -9,13 +9,18 @@ from ora.extensions import (
     Requirement,
     Source,
     SourceStorage,
+    Tokenizer,
 )
-from ora.utils import chunk_pages, compute_id, page_numbers_to_str
+from ora.utils import (
+    chunk_pages,
+    compute_id,
+    page_numbers_to_str,
+    take_sources_up_to_max_tokens,
+)
 
 if TYPE_CHECKING:
     import chromadb
     import chromadb.utils.embedding_functions
-    import tiktoken
 
 
 class ChromaResultType(enum.Enum):
@@ -41,7 +46,7 @@ class ChromaSourceStorage(SourceStorage):
         self,
         app_config,
         embedding_function: "chromadb.utils.embedding_functions.EmbeddingFunction | None" = None,
-        tokenizer: "tiktoken.Encoding | None" = None,
+        tokenizer: Tokenizer | None = None,
     ):
         super().__init__(app_config)
         import chromadb
@@ -61,7 +66,7 @@ class ChromaSourceStorage(SourceStorage):
             embedding_function
             or chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
         )
-        self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
+        self._tokenizer: Tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def _collection_name(self, user_name: str) -> str:
         return compute_id(user_name)
@@ -99,9 +104,7 @@ class ChromaSourceStorage(SourceStorage):
 
         chunk_size, chunk_overlap = self._extract_chunk_params(chat_config)
 
-        ids_to_store: list[str] = []
-        documents_to_store: list[str] = []
-        metadatas_to_store: list[dict[str, str]] = []
+        sources_to_store: list[tuple[str, str, dict[str, str]]] = []
         for document in documents:
             result = collection.get(
                 where={
@@ -112,26 +115,15 @@ class ChromaSourceStorage(SourceStorage):
                     ]
                 },
                 limit=1,
-                include=["metadatas"],
+                include=[],
             )
             if self._parse_result(result, result_type=ChromaResultType.GET):
                 continue
 
-            pages = document.extract_pages()
-
-            for idx, chunk in enumerate(
-                chunk_pages(
-                    pages,
-                    chunk_size=chunk_size,
-                    chunk_overlap=chunk_overlap,
-                    tokenizer=self._tokenizer,
-                )
-            ):
-                ids_to_store.append(
-                    compute_id(document.id, chunk_size, chunk_overlap, idx)
-                )
-                documents_to_store.append(chunk.text)
-                metadatas_to_store.append(
+            sources_to_store.extend(
+                (
+                    compute_id(document.id, chunk_size, chunk_overlap, idx),
+                    chunk.text,
                     {
                         "document_name": document.name,
                         "document_id": document.id,
@@ -139,15 +131,23 @@ class ChromaSourceStorage(SourceStorage):
                         "chunk_overlap": chunk_overlap,
                         "num_tokens": chunk.num_tokens,
                         "page_numbers": page_numbers_to_str(chunk.page_numbers),
-                    }
+                    },
                 )
+                for idx, chunk in enumerate(
+                    chunk_pages(
+                        document.extract_pages(),
+                        chunk_size=chunk_size,
+                        chunk_overlap=chunk_overlap,
+                        tokenizer=self._tokenizer,
+                    )
+                )
+            )
 
-        if not ids_to_store:
+        if not sources_to_store:
             return
 
-        collection.add(
-            ids=ids_to_store, documents=documents_to_store, metadatas=metadatas_to_store
-        )
+        ids, documents, metadatas = map(list, zip(*sources_to_store))
+        collection.add(ids=ids, documents=documents, metadatas=metadatas)
 
     def retrieve(self, prompt: str, *, num_tokens: int, chat_config) -> list[Source]:
         collection = self._client.get_collection(
@@ -182,22 +182,32 @@ class ChromaSourceStorage(SourceStorage):
                     {"chunk_overlap": {"$eq": chunk_overlap}},
                 ]
             },
+            include=["distances", "metadatas", "documents"],
         )
         results = self._parse_result(result, result_type=ChromaResultType.QUERY)
         # That should be the default, but let's make extra sure here
         results = sorted(results, key=lambda r: r["distance"])
 
-        # FIXME: implement culling here based on distance
-        # FIXME: Limit number of tokens
+        # TODO: we should have some functionality here to remove results with a high
+        #  distance to keep only "valid" sources. However, there are two issues:
+        #  1. A "high distance" is fairly subjective
+        #  2. Whatever threshold we use is very much dependent on the encoding method
+        #  Thus, we likely need to have a callable parameter for this class
 
-        return [
-            Source(
-                name=result["metadata"]["document_name"],
-                location=result["metadata"]["page_numbers"],
-                text=result["document"],
-            )
-            for result in results
-        ]
+        return list(
+            take_sources_up_to_max_tokens(
+                (
+                    Source(
+                        document_name=result["metadata"]["document_name"],
+                        page_numbers=result["metadata"]["page_numbers"],
+                        text=result["document"],
+                        num_tokens=result["metadata"]["num_tokens"],
+                    )
+                    for result in results
+                ),
+                max_tokens=num_tokens,
+            ),
+        )
 
 
 @hookimpl(specname="ora_source_storage")

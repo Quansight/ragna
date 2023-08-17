@@ -4,7 +4,7 @@ import abc
 import dataclasses
 
 from pathlib import Path
-from typing import Collection
+from typing import Collection, Iterator
 
 from .component import Component
 from .utils import compute_id
@@ -32,7 +32,7 @@ class PageExtractor(Component, abc.ABC):
             return suffix in self.SUFFIX
 
     @abc.abstractmethod
-    def extract_pages(self, content: bytes) -> list[Page]:
+    def extract_pages(self, content: bytes) -> Iterator[Page]:
         ...
 
 
@@ -86,5 +86,5 @@ class Document:
     def id(self) -> str:
         return self.metadata.id
 
-    def extract_pages(self) -> list[Page]:
-        return self.page_extractor.extract_pages(self.content)
+    def extract_pages(self) -> Iterator[Page]:
+        yield from self.page_extractor.extract_pages(self.content)

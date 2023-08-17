@@ -1,4 +1,7 @@
-from itertools import chain, pairwise
+import itertools
+from typing import Iterable, Iterator
+
+from ora._backend import Source
 
 
 def page_numbers_to_str(page_numbers: list[int]) -> str:
@@ -9,8 +12,8 @@ def page_numbers_to_str(page_numbers: list[int]) -> str:
 
     ranges_str = []
     range_int = []
-    for current_page_number, next_page_number in pairwise(
-        chain(sorted(page_numbers), [None])
+    for current_page_number, next_page_number in itertools.pairwise(
+        itertools.chain(sorted(page_numbers), [None])
     ):
         range_int.append(current_page_number)
         if next_page_number is None or next_page_number > current_page_number + 1:
@@ -25,3 +28,16 @@ def page_numbers_to_str(page_numbers: list[int]) -> str:
             range_int = []
 
     return ", ".join(ranges_str)
+
+
+def take_sources_up_to_max_tokens(
+    sources: Iterable[Source], *, max_tokens: int
+) -> Iterator[Source]:
+    total = 0
+    for source in sources:
+        new_total = total + source.num_tokens
+        if new_total > max_tokens:
+            break
+
+        yield source
+        total = new_total
