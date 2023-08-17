@@ -13,7 +13,12 @@ from .list_requirements import make_requirements_tables
 
 __all__ = ["app"]
 
-app = typer.Typer(name="ragna", no_args_is_help=True)
+app = typer.Typer(
+    name="ragna",
+    invoke_without_command=True,
+    no_args_is_help=True,
+    add_completion=False,
+)
 console = Console()
 
 
