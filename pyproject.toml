@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ora"
+name = "ragna"
 authors = [
     { name = "Philip Meier", email = "pmeier@quansight.com" },
 ]
@@ -28,15 +28,15 @@ extensions = [
 ]
 
 [tool.setuptools_scm]
-write_to = "ora/_version.py"
+write_to = "ragna/_version.py"
 local_scheme = "node-and-timestamp"
 
 [project.scripts]
-ora = "ora._cli:app"
+ragna = "ragna._cli:app"
 
 [tool.setuptools.packages.find]
 include = [
-    "ora*",
+    "ragna*",
 ]
 
 [tool.usort.known]

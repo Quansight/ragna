@@ -67,7 +67,7 @@ class Document:
         except StopIteration:
             # FIXME: use logging
             print(
-                f"No registered PageExtractor (ora_page_extractor) is able to handle "
+                f"No registered PageExtractor (ragna_page_extractor) is able to handle "
                 f"{name}"
             )
             raise SystemExit(1)

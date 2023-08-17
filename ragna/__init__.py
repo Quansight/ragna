@@ -3,7 +3,7 @@ try:
 except ModuleNotFoundError:
     import warnings
 
-    warnings.warn("ora was not properly installed!")
+    warnings.warn("ragna was not properly installed!")
     del warnings
 
     __version__ = "UNKNOWN"

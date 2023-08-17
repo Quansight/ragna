@@ -1,7 +1,7 @@
 import itertools
 from typing import Iterable, Iterator
 
-from ora._backend import Source
+from ragna._backend import Source
 
 
 def page_numbers_to_str(page_numbers: list[int]) -> str:

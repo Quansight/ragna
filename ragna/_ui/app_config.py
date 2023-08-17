@@ -7,7 +7,7 @@ import panel as pn
 
 @dataclasses.dataclass
 class AppConfig:
-    cache_root: Path = Path.home() / "ora" / ".cache"
+    cache_root: Path = Path.home() / "ragna" / ".cache"
 
     def __post_init__(self):
         self.cache_root = self.cache_root.expanduser().resolve()

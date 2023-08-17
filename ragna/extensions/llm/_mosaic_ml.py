@@ -1,4 +1,4 @@
-from ora.extensions import hookimpl
+from ragna.extensions import hookimpl
 
 from ._llm_api import LlmApi
 
@@ -27,7 +27,7 @@ class MosaicMlMpt7bInstructLlm(MosaicMlLlmApi):
     _CONTEXT_SIZE = 2048
 
 
-@hookimpl(specname="ora_llm")
+@hookimpl(specname="ragna_llm")
 def mosaic_ml_mpt_7b_instruct_llm():
     return MosaicMlMpt7bInstructLlm
 
@@ -38,6 +38,6 @@ class MosaicMlMpt30bInstructLlm(MosaicMlLlmApi):
     _CONTEXT_SIZE = 8_192
 
 
-@hookimpl(specname="ora_llm")
+@hookimpl(specname="ragna_llm")
 def mosaic_ml_mpt_30b_instruct_llm():
     return MosaicMlMpt30bInstructLlm

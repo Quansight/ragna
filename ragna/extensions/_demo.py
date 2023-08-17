@@ -1,10 +1,10 @@
-from ora.extensions import hookimpl, Llm, SourceStorage
+from ragna.extensions import hookimpl, Llm, SourceStorage
 
 
-class OraDemoSourceStorage(SourceStorage):
+class RagnaDemoSourceStorage(SourceStorage):
     @classmethod
     def display_name(cls):
-        return "ora/DemoDocDb"
+        return "ragna/DemoDocDb"
 
     def store(self, documents: list) -> None:
         pass
@@ -13,15 +13,15 @@ class OraDemoSourceStorage(SourceStorage):
         return ["demo retrieval"]
 
 
-@hookimpl(specname="ora_source_storage")
-def ora_demo_source_storage():
-    return OraDemoSourceStorage
+@hookimpl(specname="ragna_source_storage")
+def ragna_demo_source_storage():
+    return RagnaDemoSourceStorage
 
 
-class OraDemoLlm(Llm):
+class RagnaDemoLlm(Llm):
     @classmethod
     def display_name(cls):
-        return "ora/DemoLLM"
+        return "ragna/DemoLLM"
 
     @property
     def context_size(self) -> int:
@@ -31,6 +31,6 @@ class OraDemoLlm(Llm):
         return "demo completion"
 
 
-@hookimpl(specname="ora_llm")
-def ora_demo_llm():
-    return OraDemoLlm
+@hookimpl(specname="ragna_llm")
+def ragna_demo_llm():
+    return RagnaDemoLlm

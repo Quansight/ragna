@@ -2,7 +2,7 @@ import enum
 
 from typing import Any, TYPE_CHECKING
 
-from ora.extensions import (
+from ragna.extensions import (
     Document,
     hookimpl,
     PackageRequirement,
@@ -11,7 +11,7 @@ from ora.extensions import (
     SourceStorage,
     Tokenizer,
 )
-from ora.utils import (
+from ragna.utils import (
     chunk_pages,
     compute_id,
     page_numbers_to_str,
@@ -210,6 +210,6 @@ class ChromaSourceStorage(SourceStorage):
         )
 
 
-@hookimpl(specname="ora_source_storage")
+@hookimpl(specname="ragna_source_storage")
 def chroma_source_storage():
     return ChromaSourceStorage

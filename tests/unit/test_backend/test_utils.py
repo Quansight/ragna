@@ -1,5 +1,5 @@
 import pytest
-from ora._backend import compute_id
+from ragna._backend import compute_id
 
 
 class TestComputeId:

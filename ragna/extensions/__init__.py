@@ -1,6 +1,6 @@
 import pluggy
 
-from ora._backend import (
+from ragna._backend import (
     Document,
     DocumentMetadata,
     EnvironmentVariableRequirement,
@@ -14,11 +14,11 @@ from ora._backend import (
     Tokenizer,
 )
 
-hookimpl = pluggy.HookimplMarker("ora")
+hookimpl = pluggy.HookimplMarker("ragna")
 del pluggy
 
 
-from ._demo import ora_demo_llm, ora_demo_source_storage
+from ._demo import ragna_demo_llm, ragna_demo_source_stragnage
 from .llm import (
     anthropic_claude_1_instant_llm,
     anthropic_claude_2_llm,

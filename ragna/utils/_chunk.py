@@ -3,7 +3,7 @@ import dataclasses
 from collections import deque
 from typing import Iterable, Iterator, TypeVar
 
-from ora._backend import Page, Tokenizer
+from ragna._backend import Page, Tokenizer
 
 T = TypeVar("T")
 
