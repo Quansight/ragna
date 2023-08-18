@@ -24,6 +24,8 @@ def load_extension(source: str) -> ModuleType:
     path = Path(source).expanduser().resolve()
     if path.exists():
         spec = importlib.util.spec_from_file_location(path.name, path)
+        if not spec or not spec.loader:
+            raise Exception("ADDME")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
     else:

@@ -5,3 +5,4 @@ dependencies:
   - python =3.11
   - pytest >=6
   - tomlkit
+  - mypy

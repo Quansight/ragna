@@ -26,9 +26,9 @@ class Source:
 
 class SourceStorage(Component, abc.ABC):
     @abc.abstractmethod
-    def store(self, documents: list[Document], app_config, chat_config) -> None:
+    def store(self, documents: list[Document], chat_config) -> None:
         ...
 
     @abc.abstractmethod
-    def retrieve(self, prompt: str, *, app_config, chat_config) -> list[Source]:
+    def retrieve(self, prompt: str, *, num_tokens: int, chat_config) -> list[Source]:
         ...

@@ -40,7 +40,7 @@ class ChromaSourceStorage(SourceStorage):
     # This needs to be a class variable to enable sharing it between multiple instances.
     # See https://docs.trychroma.com/usage-guide#initiating-a-persistent-chroma-client
     # for details
-    _client: "chromadb.Client | None" = None
+    _client: "chromadb.API" = None  # type: ignore[assignment]
 
     def __init__(
         self,
@@ -66,13 +66,13 @@ class ChromaSourceStorage(SourceStorage):
             embedding_function
             or chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
         )
-        self._tokenizer: Tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
+        self._tokenizer = tokenizer or tiktoken.get_encoding("cl100k_base")
 
     def _collection_name(self, user_name: str) -> str:
         return compute_id(user_name)
 
     def _parse_result(
-        self, result: dict[str, list | None], *, result_type: ChromaResultType
+        self, result: Any, *, result_type: ChromaResultType
     ) -> list[dict[str, Any]]:
         if result_type is ChromaResultType.QUERY:
             result = {
@@ -104,7 +104,13 @@ class ChromaSourceStorage(SourceStorage):
 
         chunk_size, chunk_overlap = self._extract_chunk_params(chat_config)
 
-        sources_to_store: list[tuple[str, str, dict[str, str]]] = []
+        sources_to_store: list[
+            tuple[
+                "chromadb.api.types.ID",
+                "chromadb.api.types.Document",
+                "chromadb.api.types.Metadata",
+            ]
+        ] = []
         for document in documents:
             result = collection.get(
                 where={
@@ -147,7 +153,7 @@ class ChromaSourceStorage(SourceStorage):
             return
 
         ids, documents, metadatas = map(list, zip(*sources_to_store))
-        collection.add(ids=ids, documents=documents, metadatas=metadatas)
+        collection.add(ids=ids, documents=documents, metadatas=metadatas)  # type: ignore [arg-type]
 
     def retrieve(self, prompt: str, *, num_tokens: int, chat_config) -> list[Source]:
         collection = self._client.get_collection(

@@ -1,4 +1,4 @@
-from ragna.extensions import hookimpl, Llm, SourceStorage
+from ragna.extensions import Document, hookimpl, Llm, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -6,10 +6,10 @@ class RagnaDemoSourceStorage(SourceStorage):
     def display_name(cls):
         return "ragna/DemoDocDb"
 
-    def store(self, documents: list) -> None:
+    def store(self, documents: list[Document], chat_config) -> None:
         pass
 
-    def retrieve(self, prompt: str, *, chat_config) -> list:
+    def retrieve(self, prompt: str, *, num_tokens: int, chat_config) -> list:
         return ["demo retrieval"]
 
 

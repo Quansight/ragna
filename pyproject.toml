@@ -60,3 +60,33 @@ testpaths = [
     "tests",
 ]
 xfail_strict = true
+
+[tool.mypy]
+
+files = "ragna"
+
+show_error_codes = true
+pretty = true
+
+allow_redefinition = true
+no_implicit_optional = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = "ragna._backend.hookspecs"
+disable_error_code = "empty-body"
+
+[[tool.mypy.overrides]]
+module = "ragna.extensions.*"
+disable_error_code = "has-type"
+
+[[tool.mypy.overrides]]
+module = [
+    "fitz",
+]
+ignore_missing_imports = true
