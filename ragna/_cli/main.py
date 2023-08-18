@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+from pathlib import Path
 from typing import Annotated, cast, Optional, Type
 
 import typer
@@ -6,7 +9,7 @@ from rich.console import Console
 
 import ragna
 from ragna._backend import AVAILABLE_SPECNAMES, Component
-from ragna._ui import app as ui_app
+from ragna._ui import app as ui_app, AppComponents, AppConfig
 
 from .extensions import load_and_register_extensions
 from .list_requirements import make_requirements_tables
@@ -77,33 +80,46 @@ def launch(
             rich_help_panel="Deployment",
         ),
     ] = "INFO",
+    cache_root: Annotated[
+        Path,
+        typer.Option(
+            envvar="RAGNA_CACHE_ROOT",
+            rich_help_panel="Deployment",
+        ),
+    ] = Path.home()
+    / ".cache"
+    / "ragna",
 ):
     plugin_manager = load_and_register_extensions(extensions)
 
     # FIXME: set log_level
 
-    components = {specname: {} for specname in AVAILABLE_SPECNAMES}
-    for specname in components:
+    app_config = AppConfig(url=url, port=port, cache_root=cache_root)
+
+    components = defaultdict(dict)
+    deselected = False
+    for specname in AVAILABLE_SPECNAMES:
+        components_attribute_name = f"{specname.removeprefix('ragna_')}s"
+
         for component_cls in cast(
             list[Type[Component]], getattr(plugin_manager.hook, specname)()
         ):
             name = component_cls.display_name()
             if not component_cls.is_available():
-                if no_deselect:
-                    # FIXME: this should be logged
-                    console.print(f"{name} is not available")
-                    raise typer.Exit(1)
-                else:
-                    continue
+                # FIXME: this should be logged
+                print(f"{name} is not available")
+                deselected = True
+                continue
 
-            components[specname][name] = component_cls()
+            components[components_attribute_name][name] = component_cls(app_config)
 
-    ui_app(
-        doc_dbs=components["ragna_doc_db"],
-        llms=components["ragna_llm"],
-        url=url,
-        port=port,
-    )
+    if deselected and no_deselect:
+        print("Needed to deselect at least one component")
+        raise SystemExit(1)
+
+    components = AppComponents(**components)
+
+    ui_app(app_config=app_config, components=components)
 
 
 @app.command()

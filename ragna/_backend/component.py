@@ -16,3 +16,6 @@ class Component:
 
     def __init__(self, app_config) -> None:
         self.app_config = app_config
+
+    def __str__(self) -> str:
+        return self.display_name()

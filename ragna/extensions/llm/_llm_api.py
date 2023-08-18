@@ -6,6 +6,7 @@ from ragna.extensions import (
     Llm,
     PackageRequirement,
     Requirement,
+    Source,
 )
 
 
@@ -23,10 +24,10 @@ class LlmApi(Llm):
             EnvironmentVariableRequirement(cls._API_KEY_ENV_VAR),
         ]
 
-    def complete(self, prompt: str, chat_config):
+    def complete(self, prompt: str, sources: list[Source], *, chat_config):
         # TODO: add retries
-        return self._call_api(prompt, chat_config)
+        return self._call_api(prompt, sources, chat_config=chat_config)
 
     @abc.abstractmethod
-    def _call_api(self, prompt: str, chat_config):
+    def _call_api(self, prompt: str, sources: list[Source], *, chat_config):
         ...

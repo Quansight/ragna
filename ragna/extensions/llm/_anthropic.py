@@ -1,4 +1,4 @@
-from ragna.extensions import hookimpl
+from ragna.extensions import hookimpl, Source
 
 from ._llm_api import LlmApi
 
@@ -16,7 +16,7 @@ class AnthropicLlmApi(LlmApi):
     def context_size(self) -> int:
         return self._CONTEXT_SIZE
 
-    def _call_api(self, prompt: str, chat_config):
+    def _call_api(self, prompt: str, sources: list[Source], *, chat_config):
         return f"I'm pretending to be {self._MODEL} from Anthropic"
 
 

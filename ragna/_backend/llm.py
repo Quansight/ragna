@@ -1,6 +1,7 @@
 import abc
 
 from .component import Component
+from .source_storage import Source
 
 
 class Llm(Component, abc.ABC):
@@ -10,5 +11,5 @@ class Llm(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def complete(self, prompt: str, chat_config):
+    def complete(self, prompt: str, sources: list[Source], *, chat_config):
         ...
