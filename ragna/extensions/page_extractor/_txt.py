@@ -6,7 +6,7 @@ from ragna.extensions import hookimpl, Page, PageExtractor
 class TxtPageExtractor(PageExtractor):
     SUFFIX = ".txt"
 
-    def extract_pages(self, content: bytes) -> Iterator[Page]:
+    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
         yield Page(content.decode())
 
 
