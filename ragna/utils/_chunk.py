@@ -1,7 +1,7 @@
 import dataclasses
 
 from collections import deque
-from typing import Iterable, Iterator, TypeVar
+from typing import Deque, Iterable, Iterator, TypeVar
 
 from ragna._backend import Page, Tokenizer
 
@@ -13,7 +13,7 @@ T = TypeVar("T")
 def _windowed_ragged(
     iterable: Iterable[T], *, n: int, step: int
 ) -> Iterator[tuple[T, ...]]:
-    window = deque(maxlen=n)
+    window: Deque[T] = deque(maxlen=n)
     i = n
     for _ in map(window.append, iterable):
         i -= 1

@@ -46,7 +46,7 @@ def make_requirements_tables(plugin_manager: PluginManager) -> Iterator[Table]:
 
 def split_requirements(
     requirements: list[Requirement],
-) -> dict[Type[Requirement], Requirement]:
+) -> dict[Type[Requirement], list[Requirement]]:
     split_reqs = defaultdict(list)
     for req in requirements:
         split_reqs[type(req)].append(req)
