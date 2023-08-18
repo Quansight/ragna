@@ -4,10 +4,21 @@ from typing import Any
 
 import panel as pn
 
+from ragna._backend import Llm, PageExtractor, SourceStorage
+
+
+@dataclasses.dataclass
+class AppComponents:
+    page_extractors: dict[str, PageExtractor]
+    source_storages: dict[str, SourceStorage]
+    llms: dict[str, Llm]
+
 
 @dataclasses.dataclass
 class AppConfig:
-    cache_root: Path = Path.home() / "ragna" / ".cache"
+    url: str
+    port: int
+    cache_root: Path
 
     def __post_init__(self):
         self.cache_root = self.cache_root.expanduser().resolve()

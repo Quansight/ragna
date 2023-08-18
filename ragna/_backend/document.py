@@ -4,7 +4,7 @@ import abc
 import dataclasses
 
 from pathlib import Path
-from typing import Collection, Iterator
+from typing import Collection, Iterable, Iterator
 
 from .component import Component
 from .utils import compute_id
@@ -58,7 +58,7 @@ class Document:
         name: str,
         content: bytes,
         *,
-        page_extractors: list[PageExtractor],
+        page_extractors: Iterable[PageExtractor],
     ) -> Document:
         try:
             page_extractor = next(

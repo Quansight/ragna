@@ -1,4 +1,4 @@
-from ragna.extensions import Document, hookimpl, Llm, SourceStorage
+from ragna.extensions import Document, hookimpl, Llm, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -27,8 +27,8 @@ class RagnaDemoLlm(Llm):
     def context_size(self) -> int:
         return 8_192
 
-    def complete(self, prompt: str, chat_config):
-        return "demo completion"
+    def complete(self, prompt: str, sources: list[Source], *, chat_config):
+        return "This is a demo completion"
 
 
 @hookimpl(specname="ragna_llm")
