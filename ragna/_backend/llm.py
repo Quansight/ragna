@@ -11,5 +11,5 @@ class Llm(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def complete(self, prompt: str, sources: list[Source], *, chat_config):
+    def complete(self, prompt: str, sources: list[Source], *, chat_config) -> str:
         ...
