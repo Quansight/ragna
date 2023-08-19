@@ -18,7 +18,12 @@ hookimpl = pluggy.HookimplMarker("ragna")
 del pluggy
 
 
-from ._demo import ragna_demo_llm, ragna_demo_source_storage
+from .demo import (
+    ragna_demo_llm,
+    ragna_demo_source_storage,
+    RagnaDemoLlm,
+    RagnaDemoSourceStorage,
+)
 from .llm import (
     anthropic_claude_1_instant_llm,
     anthropic_claude_2_llm,
