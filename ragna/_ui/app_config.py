@@ -4,7 +4,7 @@ from typing import Any
 
 import panel as pn
 
-from ragna._backend import Llm, PageExtractor, SourceStorage
+from ragna._backend import ChatConfig, Llm, PageExtractor, SourceStorage
 
 
 @dataclasses.dataclass
@@ -12,6 +12,7 @@ class AppComponents:
     page_extractors: dict[str, PageExtractor]
     source_storages: dict[str, SourceStorage]
     llms: dict[str, Llm]
+    chat_config: dict[str, ChatConfig]
 
 
 @dataclasses.dataclass
