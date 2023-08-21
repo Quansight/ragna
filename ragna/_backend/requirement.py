@@ -7,6 +7,8 @@ from functools import cached_property
 
 import packaging.requirements
 
+from ragna._compat import importlib_metadata_package_distributions
+
 
 class Requirement(abc.ABC):
     @abc.abstractmethod
@@ -35,7 +37,7 @@ class PackageRequirement(Requirement):
 
         for module_name in {
             module_name
-            for module_name, distribution_names in importlib.metadata.packages_distributions().items()
+            for module_name, distribution_names in importlib_metadata_package_distributions().items()
             if distribution.name in distribution_names
         }:
             try:

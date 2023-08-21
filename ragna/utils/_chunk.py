@@ -1,7 +1,7 @@
 import dataclasses
 
 from collections import deque
-from typing import Deque, Iterable, Iterator, TypeVar
+from typing import Deque, Iterable, Iterator, Optional, TypeVar
 
 from ragna._backend import Page, Tokenizer
 
@@ -30,7 +30,7 @@ def _windowed_ragged(
 @dataclasses.dataclass
 class Chunk:
     text: str
-    page_numbers: list[int] | None
+    page_numbers: Optional[list[int]]
     num_tokens: int
 
 
