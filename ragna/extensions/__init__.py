@@ -1,6 +1,7 @@
 import pluggy
 
 from ragna._backend import (
+    ChatConfig,
     Document,
     DocumentMetadata,
     EnvironmentVariableRequirement,
@@ -16,7 +17,6 @@ from ragna._backend import (
 
 hookimpl = pluggy.HookimplMarker("ragna")
 del pluggy
-
 
 from .demo import (
     ragna_demo_llm,
@@ -45,3 +45,5 @@ from .page_extractor import (
     TxtPageExtractor,
 )
 from .source_storage import chroma_source_storage, ChromaSourceStorage
+
+from .user_config import chat_config, DefautChatConfig

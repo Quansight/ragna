@@ -1,5 +1,6 @@
 from .component import Component
 from .document import Document, DocumentMetadata, Page, PageExtractor
+from .extra_config import ChatConfig
 from .llm import Llm
 from .requirement import EnvironmentVariableRequirement, PackageRequirement, Requirement
 from .source_storage import Source, SourceStorage, Tokenizer

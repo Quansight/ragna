@@ -3,9 +3,11 @@ from typing import Type
 import pluggy
 
 from .document import PageExtractor
-from .llm import Llm
 
+from .extra_config import ChatConfig
+from .llm import Llm
 from .source_storage import SourceStorage
+
 
 hookspec = pluggy.HookspecMarker("ragna")
 
@@ -23,3 +25,8 @@ def ragna_llm() -> Type[Llm]:
 @hookspec
 def ragna_source_storage() -> Type[SourceStorage]:
     """SourceStorage"""
+
+
+@hookspec
+def ragna_chat_config() -> Type[ChatConfig]:
+    """ChatConfig"""
