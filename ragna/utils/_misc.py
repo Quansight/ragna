@@ -3,6 +3,8 @@ from typing import Iterable, Iterator
 
 from ragna._backend import Source
 
+from ragna._compat import itertools_pairwise
+
 
 def page_numbers_to_str(page_numbers: list[int]) -> str:
     if not page_numbers:
@@ -12,7 +14,7 @@ def page_numbers_to_str(page_numbers: list[int]) -> str:
 
     ranges_str = []
     range_int = []
-    for current_page_number, next_page_number in itertools.pairwise(
+    for current_page_number, next_page_number in itertools_pairwise(
         itertools.chain(sorted(page_numbers), [None])
     ):
         range_int.append(current_page_number)
@@ -20,14 +22,11 @@ def page_numbers_to_str(page_numbers: list[int]) -> str:
             next_page_number is None
             or next_page_number > current_page_number + 1  # type: ignore[operator]
         ):
-            match range_int:
-                case [page]:
-                    range_str = str(page)
-                case [first_page, second_page]:
-                    range_str = f"{first_page}, {second_page}"
-                case [first_page, *_, last_page]:
-                    range_str = f"{first_page}-{last_page}"
-            ranges_str.append(range_str)
+            ranges_str.append(
+                ", ".join(map(str, range_int))
+                if len(range_int) < 3
+                else f"{range_int[0]}-{range_int[-1]}"
+            )
             range_int = []
 
     return ", ".join(ranges_str)

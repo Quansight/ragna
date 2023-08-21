@@ -1,6 +1,6 @@
 import enum
 
-from typing import Any, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from ragna.extensions import (
     Document,
@@ -46,7 +46,7 @@ class ChromaSourceStorage(SourceStorage):
         self,
         app_config,
         embedding_function: "chromadb.utils.embedding_functions.EmbeddingFunction | None" = None,
-        tokenizer: Tokenizer | None = None,
+        tokenizer: Optional[Tokenizer] = None,
     ):
         super().__init__(app_config)
         import chromadb
