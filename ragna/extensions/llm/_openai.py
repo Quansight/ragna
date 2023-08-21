@@ -16,8 +16,46 @@ class OpenaiLlmApi(LlmApi):
     def context_size(self) -> int:
         return self._CONTEXT_SIZE
 
-    def _call_api(self, prompt: str, sources: list[Source], *, chat_config):
-        return f"I'm pretending to be {self._MODEL} from OpenAI"
+    def _make_system_content(self, sources: list[Source]) -> str:
+        # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
+        instruction = (
+            "You are an helpful assistant that answers user questions given the context below. "
+            "If you don't know the answer, just say so. Don't try to make up an answer.\n"
+        )
+        return instruction + "\n\n".join(source.text for source in sources)
+
+    def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
+        import requests
+
+        # See https://platform.openai.com/docs/api-reference/chat/create
+        # and https://platform.openai.com/docs/api-reference/chat/object
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self._api_key}",
+            },
+            json={
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": self._make_system_content(sources),
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
+                ],
+                "model": self._MODEL,
+                "temperature": 0.0,
+                "max_tokens": max_new_tokens,
+            },
+        )
+        if not response.ok:
+            self._failed_api_call(
+                f"Server returned code {response.status_code} with {response.json()}"
+            )
+        return response.json()["choices"][0]["message"]["content"]
 
 
 class OpenaiGpt35Turbo16kLlm(OpenaiLlmApi):
