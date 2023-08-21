@@ -46,4 +46,4 @@ from .page_extractor import (
 )
 from .source_storage import chroma_source_storage, ChromaSourceStorage
 
-from .user_config import chat_config, DefautChatConfig
+from .user_config import chat_config, DefaultChatConfig

@@ -1,1 +1,1 @@
-from ._default import DefautChatConfig
+from ._default import chat_config, DefaultChatConfig

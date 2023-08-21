@@ -9,7 +9,7 @@ class DefaultChatConfig(ChatConfig):
     source_storage_name = "test"
     llm_name = "test"
 
-    def __init__(self, app_config, components):
+    def __init__(self, app_config):
         pass
 
     def __panel__(self):

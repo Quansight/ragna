@@ -12,7 +12,7 @@ class AppComponents:
     page_extractors: dict[str, PageExtractor]
     source_storages: dict[str, SourceStorage]
     llms: dict[str, Llm]
-    chat_config: dict[str, ChatConfig]
+    chat_configs: dict[str, ChatConfig]
 
 
 @dataclasses.dataclass
