@@ -3,11 +3,28 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+from typing import Annotated
+
+import typer
+
 from pluggy import PluginManager
 
 from ragna._backend import hookspecs
 
-__all__ = ["load_and_register_extensions"]
+
+Extensions = Annotated[
+    list[str],
+    typer.Option(
+        "-e",
+        "--extension",
+        help=(
+            "Extension to load. "
+            "Can be a path to a python module or the name of an importable package. "
+            "Can be given multiple times."
+        ),
+        rich_help_panel="Extensions",
+    ),
+]
 
 
 def load_and_register_extensions(extensions: list[str]) -> PluginManager:

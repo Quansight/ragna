@@ -18,9 +18,9 @@ def make_requirements_tables(plugin_manager: PluginManager) -> Iterator[Table]:
     all_plugins = plugin_manager.get_plugins()
     for plugin in all_plugins:
         table = Table(
-            "available",
-            "hookimpl",
+            "",
             "display name",
+            "hookimpl",
             "environment variables",
             "packages",
             title=f"module {plugin.__name__} from {plugin.__file__}",
@@ -34,8 +34,8 @@ def make_requirements_tables(plugin_manager: PluginManager) -> Iterator[Table]:
                 reqs = split_requirements(component_cls.requirements())
                 table.add_row(
                     yes_or_no(component_cls.is_available()),
-                    hookimpl,
                     component_cls.display_name(),
+                    hookimpl,
                     format_requirements(reqs[EnvironmentVariableRequirement]),
                     format_requirements(reqs[PackageRequirement]),
                 )

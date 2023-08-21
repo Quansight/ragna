@@ -1,4 +1,5 @@
 from ragna.extensions import Document, hookimpl, Llm, Source, SourceStorage
+from ragna.extensions.page_extractor import TxtPageExtractor  # noqa: F401
 
 
 class RagnaDemoSourceStorage(SourceStorage):
