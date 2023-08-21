@@ -4,11 +4,11 @@ from ._anthropic import (
     AnthropicClaude1InstantLlm,
     AnthropicClaude2,
 )
-from ._mosaic_ml import (
-    mosaic_ml_mpt_30b_instruct_llm,
-    mosaic_ml_mpt_7b_instruct_llm,
-    MosaicMlMpt30bInstructLlm,
-    MosaicMlMpt7bInstructLlm,
+from ._mosaicml import (
+    mosaicml_mpt_30b_instruct_llm,
+    mosaicml_mpt_7b_instruct_llm,
+    MosaicmlMpt30bInstructLlm,
+    MosaicmlMpt7bInstructLlm,
 )
 from ._openai import (
     openai_gpt_35_turbo_16k_llm,
