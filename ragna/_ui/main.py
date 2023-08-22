@@ -6,7 +6,7 @@ import param
 
 from ragna._backend import ChatConfig, Document
 from ragna._ui import AppComponents, AppConfig, js, style
-from ragna.extensions import DemoConfig
+from ragna.extensions import DefaultChatConfig
 
 pn.extension(sizing_mode="stretch_width")
 
@@ -160,7 +160,8 @@ class Page(param.Parameterized):
 
         # TODO: consider whether whether deep copy is required.
         # chat_config = self.components.chat_config.copy() or DefaultChatConfig()
-        chat_config = DemoConfig(self.app_config)
+        chat_config = DefaultChatConfig(self.app_config)
+        # chat_config = DemoConfig(self.app_config)
 
         modal = ModalConfiguration(
             self.app_config,

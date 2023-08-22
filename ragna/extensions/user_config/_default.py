@@ -14,8 +14,10 @@ class DefaultChatConfig(ChatConfig):
 
     def __panel__(self):
         return pn.Column(
-            pn.widgets.Select.from_param(self.param.source_storage_name),
-            pn.widgets.Select.from_param(self.param.llm_name),
+            pn.pane.Markdown("Hello"),
+            pn.pane.Markdown("Goodbye"),
+            # pn.widgets.Select.from_param(self.param.source_storage_name),
+            # pn.widgets.Select.from_param(self.param.llm_name),
         )
 
     def get_config(self) -> tuple[str, str, dict[str, Any]]:
