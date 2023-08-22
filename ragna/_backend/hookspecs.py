@@ -23,3 +23,8 @@ def ragna_llm() -> Type[Llm]:
 @hookspec
 def ragna_source_storage() -> Type[SourceStorage]:
     """SourceStorage"""
+
+
+@hookspec
+def ragna_get_logger() -> Type[SourceStorage]:
+    """"""

@@ -1,6 +1,6 @@
 import dataclasses
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import panel as pn
 
@@ -19,6 +19,7 @@ class AppConfig:
     url: str
     port: int
     cache_root: Path
+    get_logger: Callable
 
     def __post_init__(self):
         self.cache_root = self.cache_root.expanduser().resolve()
