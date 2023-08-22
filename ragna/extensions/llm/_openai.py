@@ -53,7 +53,7 @@ class OpenaiLlmApi(LlmApi):
         )
         if not response.ok:
             self._failed_api_call(
-                f"Server returned code {response.status_code} with {response.json()}"
+                status_code=response.status_code, response=response.json()
             )
         return response.json()["choices"][0]["message"]["content"]
 

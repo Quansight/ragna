@@ -6,11 +6,14 @@ import typer
 from rich.console import Console
 
 import ragna
-from ragna._backend import AVAILABLE_SPECNAMES, Component
+from ragna._backend import AVAILABLE_COMPONENT_SPECNAMES, Component
 from ragna._ui import app as ui_app, AppComponents, AppConfig
+
+from . import defaults
 
 from .extensions import Extensions, load_and_register_extensions
 from .list_requirements import make_requirements_tables
+
 
 __all__ = ["app"]
 
@@ -70,14 +73,6 @@ def launch(
             rich_help_panel="Deployment",
         ),
     ] = 31476,
-    log_level: Annotated[
-        str,
-        typer.Option(
-            help="Minimum level of messages that will be logged.",
-            envvar="RAGNA_LOG_LEVEL",
-            rich_help_panel="Deployment",
-        ),
-    ] = "INFO",
     cache_root: Annotated[
         Path,
         typer.Option(
@@ -91,11 +86,21 @@ def launch(
 ):
     plugin_manager = load_and_register_extensions(extensions)
 
-    # FIXME: set log_level
+    get_loggers = plugin_manager.hook.ragna_get_logger()
+    if not get_loggers:
+        get_logger = defaults.get_logger
+    elif len(get_loggers):
+        print("Found multiple loggers")
+        raise typer.Exit(1)
+    else:
+        get_logger = get_loggers[0]
 
-    app_config = AppConfig(url=url, port=port, cache_root=cache_root)
+    app_config = AppConfig(
+        url=url, port=port, cache_root=cache_root, get_logger=get_logger
+    )
 
-    components = {specname: {} for specname in AVAILABLE_SPECNAMES}
+    logger = get_logger()
+    components = {specname: {} for specname in AVAILABLE_COMPONENT_SPECNAMES}
     deselected = False
     for specname in components:
         for component_cls in cast(
@@ -103,8 +108,7 @@ def launch(
         ):
             name = component_cls.display_name()
             if not component_cls.is_available():
-                # FIXME: this should be logged as warning
-                print(f"{name} is not available")
+                logger.warning("Component not available", specname=specname, name=name)
                 deselected = True
                 continue
 
@@ -117,8 +121,7 @@ def launch(
     component_unavailable = False
     for specname, available_components in components.items():
         if not available_components:
-            # FIXME: this should be logged as error
-            print(f"No component available for hookimpl '{specname}'.")
+            logger.critical("No component available", specname=specname)
             component_unavailable = True
     if component_unavailable:
         raise typer.Exit(1)

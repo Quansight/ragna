@@ -13,3 +13,9 @@ AVAILABLE_SPECNAMES = frozenset(
     for name, obj in hookspecs.__dict__.items()
     if callable(obj) and hasattr(obj, "ragna_spec")
 )
+AVAILABLE_COMPONENT_SPECNAMES = {
+    "ragna_page_extractor",
+    "ragna_source_storage",
+    "ragna_llm",
+}
+AVAILABLE_OTHER_SPECNAMES = AVAILABLE_SPECNAMES - AVAILABLE_COMPONENT_SPECNAMES
