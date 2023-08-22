@@ -185,13 +185,18 @@ class Page(param.Parameterized):
         global site_template
         # TODO: needs to load docs into storage, wipe modal content, instantiate
         # chat_data, close modal, and display the chat.
-        user_config = self.components[
-            "user_config"
-        ]  # parameterized object with a __panel__ method
-        _ = self.new_chat_session(
-            chat_data=self.current_new_chat_data,
-            user_config=user_config,
-        )
+        # TODO: Chat session needs to be displayed... this would typically
+        # loaded dynamically from saved data. When creating afresh is there a
+        # convenient way of propagating it through? Likley store it on the page
+        # but that's not easily accessible here.
+        breakpoint()
+
+        ChatData(app_config=self.app_config)
+        # TODO: not sure whether to pass the user config into chat data (as extra) or session creation.
+        # chat_session = new_chat_session(
+        #     chat_data=self.current_new_chat_data,
+        #     user_config=user_config,
+        # )
 
         chat_name = self.current_new_chat_data.chat_name
 
@@ -300,8 +305,6 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.got_timezone = False
 
     def __panel__(self):
-        breakpoint()
-
         def divider():
             return pn.layout.Divider(styles={"padding": "0px 15px 0px 15px"})
 
@@ -332,3 +335,111 @@ class ModalConfiguration(pn.viewable.Viewer):
             sizing_mode="stretch_both",
             height_policy="max",
         )
+
+
+#     @param.depends("documents", watch=True)
+#     def update_document_names(self):
+#         new_docs = [document.name for document in self.documents]
+#         self.document_names = new_docs + self.document_names
+
+
+#     @param.depends("document_db_name", watch=True, on_init=True)
+#     def load_document_db(self):
+#         self.document_db = load_document_db(self.document_db_name)
+
+#     @param.depends("document_names", watch=True)
+#     def store_documents(self):
+#         self.document_db.store(
+#             self.documents, chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap
+#         )
+
+
+class ChatData(param.Parameterized):
+    # user? remove any objects that are large etc?
+    #  chunk_size etc won't always exist (extra key.. chroma looks for certain keys here or uses defaults
+    # middle of modal is customizable
+    #  add chat_name
+    # DB: user_name and chat name are sufficient to index
+    app_config = param.ClassSelector(AppConfig)
+    config = param.Dict()
+    chat_id = param.String()
+    sources_info = param.Dict(default={})
+    # TODO: Chat log will likely be a different param (with new chat interface)
+    chat_log = param.List(
+        default=[{"Model": "How can I help you with the selected sources?"}]
+    )
+    # TODO: not sure how this will be used (in combination with components?)
+    document_metadata = param.List()
+    # TODO: figure out if this is required... does it need to be
+    # a parameterize object... does it need to interact with chat data?
+    extra = param.Parameterized()
+    # I think the Following should be in config
+    # llm = param.String()
+    # source_storage = param.String()
+    # page_extractor = param.String()
+    # TODO: components should be passed in to methods so that they do not get serialized with this class
+    # components = param.ClassSelector(AppComponents)
+
+    def __init__(
+        self,
+        **params,
+    ):
+        super().__init__(**params)
+        breakpoint()
+
+
+#     @param.depends("llm_name", watch=True, on_init=True)
+#     def load_llm(self):
+#         self.llm = load_llm(*self.llm_name.split("/"))
+
+#     @param.depends("llm", watch=True, on_init=True)
+#     def update_max_context_tokens(self):
+#         # 1. We limit the default value to 8_000 tokens, because otherwise the response
+#         #    time is really high for a default setting
+#         # 2. We reserve at least 1_000 tokens for prompt and instruction
+#         self.max_context_tokens = min(
+#             (self.llm.max_context_size - 1_000) // 1_000 * 1_000, 8_000
+#         )
+#         # We set the bound to the actual maximum
+#         self.param.max_context_tokens.bounds = (0, self.llm.max_context_size)
+
+
+#     # TODO: when the value of pn.widgets.ChatBox can be properly bound to a param,
+#     #  remove the return values and decorate this method with
+#     #  @param.depends("chat_log", watch=True)
+#     async def complete_prompt(self):
+#         last_message = self.chat_log[-1]
+#         prompt = last_message.get("You")
+#         if not prompt:
+#             return False
+
+#         logger.info(f"User asked: {prompt}")
+#         if self.document_db.contains_docs():
+#             relevant_document_chunks = self.document_db.retrieve(
+#                 prompt, max_tokens=self.max_context_tokens
+#             )
+#             logger.info(
+#                 json.dumps(
+#                     {
+#                         "relevant_document_chunks": summarize_chunk_metadata(
+#                             relevant_document_chunks
+#                         )
+#                     }
+#                 )
+#             )
+#             source_info, context = zip(*relevant_document_chunks)
+
+#             answer = self.llm(
+#                 prompt,
+#                 context=context,
+#                 max_new_tokens=self.max_new_tokens,
+#                 instructize=True,
+#             )
+
+#             self.sources_info[(len(self.chat_log), answer)] = source_info
+#         else:
+#             answer = "Please choose documents"
+#         logger.info(f"Model responded: {answer}")
+
+#         self.chat_log.append({self.llm_name: answer})
+#         return True

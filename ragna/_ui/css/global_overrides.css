@@ -1,9 +1,0 @@
-#pn-Modal {
-    --dialog-width: 800px !important;
-    --dialog-height:500px !important; 
-}
-
-
-.pn-modal-close {
-    display: none !important;
-}

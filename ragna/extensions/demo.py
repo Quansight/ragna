@@ -65,7 +65,7 @@ class DemoConfig(ChatConfig):
     parameterized: param.Parameterized
 
     def __init__(self, app_config):
-        breakpoint()
+        pass
 
     def __panel__(self):
         return pn.Column(
@@ -75,6 +75,9 @@ class DemoConfig(ChatConfig):
 
     def get_config(self) -> tuple[str, str, dict[str, Any]]:
         return self.source_storage_name, self.llm_name, {}
+
+    def __repr__(self) -> str:
+        return "DemoConfig"
 
 
 @hookimpl(specname="ragna_chat_config")
