@@ -1,16 +1,6 @@
-from datetime import datetime, timedelta, timezone
-
 import param
 
 from ragna._ui import AppComponents, AppConfig
-
-
-def get_default_chat_name(timezone_offset=None):
-    if timezone_offset is None:
-        return f"Chat {datetime.now():%m/%d/%Y %I:%M %p}"
-    else:
-        tz = timezone(offset=timedelta(minutes=timezone_offset))
-        return f"Chat {datetime.now().astimezone(tz=tz):%m/%d/%Y %I:%M %p}"
 
 
 class ChatData(param.Parameterized):
