@@ -19,6 +19,8 @@ hookimpl = pluggy.HookimplMarker("ragna")
 del pluggy
 
 from .demo import (
+    DemoConfig,
+    ragna_demo_chat_config,
     ragna_demo_llm,
     ragna_demo_source_storage,
     RagnaDemoLlm,

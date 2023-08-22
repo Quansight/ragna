@@ -6,7 +6,7 @@ import param
 
 from ragna._backend import ChatConfig, Document
 from ragna._ui import AppComponents, AppConfig, js, style
-from ragna.extensions import DefaultChatConfig
+from ragna.extensions import DemoConfig
 
 pn.extension(sizing_mode="stretch_width")
 
@@ -160,16 +160,16 @@ class Page(param.Parameterized):
 
         # TODO: consider whether whether deep copy is required.
         # chat_config = self.components.chat_config.copy() or DefaultChatConfig()
-        chat_config = DefaultChatConfig(self.app_config)
-        site_template.modal.objects[0].objects = [
-            ModalConfiguration(
-                self.app_config,
-                self.components,
-                chat_config=chat_config,
-                start_button_callback=self.on_click_start_conv_button,
-                cancel_button_callback=self.on_click_cancel_button,
-            )
-        ]
+        chat_config = DemoConfig(self.app_config)
+
+        modal = ModalConfiguration(
+            self.app_config,
+            self.components,
+            chat_config=chat_config,
+            start_button_callback=self.on_click_start_conv_button,
+            cancel_button_callback=self.on_click_cancel_button,
+        )
+        site_template.modal.objects[0].objects = [modal]
         # Modal content is destroyed once the user cancels or starts a
         # conversation... any required information is propagated to ChatData.
         site_template.open_modal()
@@ -260,7 +260,6 @@ class ModalConfiguration(pn.viewable.Viewer):
     def __init__(self, app_config, components, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
         # TODO: sort out documents within this class
-        breakpoint()
 
         self.document_uploader = pn.widgets.FileInput(
             # accept=",".join(get_supported_suffixes()),
@@ -300,6 +299,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.got_timezone = False
 
     def __panel__(self):
+        breakpoint()
+
         def divider():
             return pn.layout.Divider(styles={"padding": "0px 15px 0px 15px"})
 
