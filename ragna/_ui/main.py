@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
+from typing import Any
+
 import openai
 import panel as pn
 import param
 
 from ragna._backend import ChatConfig, Document
 from ragna._ui import AppComponents, AppConfig, js, style
-from ragna.extensions import DefaultChatConfig
 
 pn.extension(sizing_mode="stretch_width")
 
@@ -25,9 +26,12 @@ site_template = pn.template.FastListTemplate(
 site_template.config.css_files = ["css/global_overrides.css"]
 
 
-def app(*, app_config, components):
+def app(*, app_config, components, the_config):
+    the_config = DemoConfig(app_config, components)
     global site_template
-    site_template.main.append(Page(app_config=app_config, components=components))
+    site_template.main.append(
+        Page(app_config=app_config, components=components, the_config=the_config)
+    )
     pn.serve(
         site_template,
         port=app_config.port,
@@ -37,6 +41,28 @@ def app(*, app_config, components):
         autoreload=True,
         allow_websocket_origin=[app_config.url, f"{app_config.url}:{app_config.port}"],
     )
+
+
+# extension targetted to developers
+class DemoConfig(param.Parameterized):
+    source_storage_name = param.Selector()
+
+    def __init__(self, app_config, components):
+        super().__init__(source_storage_name=list(components.source_storages.keys()))
+        pass
+
+    def __panel__(self):
+        """Empty to provide no input from users"""
+        return pn.Column(
+            pn.widgets.Select.from_param(self.param.source_storage_name),
+            # pn.widgets.Select.from_param(self.parametrized.param.llm_name),
+        )
+
+    def get_config(self) -> tuple[str, str, dict[str, Any]]:
+        return self.source_storage_name, self.llm_name, {}
+
+    def __repr__(self) -> str:
+        return "DemoConfig"
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -55,205 +81,6 @@ def new_chat_component_callback(
         messages=[{"role": "user", "content": contents}],
     )
     yield response.choices[0]["value"]["content"]
-
-
-class Page(param.Parameterized):
-    chat_session_ids = param.List(default=[])
-    tabs = param.Parameter()
-    app_config = param.ClassSelector(AppConfig)
-    components = param.ClassSelector(AppComponents)
-
-    def __init__(self, **params):
-        global site_template
-        super().__init__(**params)
-
-        # self.version = pn.widgets.StaticText(
-        #     name="Version",
-        #     value=__version__,
-        #     stylesheets=[style.VERSION_ID],
-        # )
-        self.new_chat_button = pn.widgets.Button(
-            name="New chat",
-            button_type="primary",
-            stylesheets=[style.NEW_CHAT_BUTTON],
-        )
-        self.new_chat_button.on_click(self.on_click_new_chat)
-
-        # preparing the modal : it contains a simple Column
-        # Due to the way Panel works, we'll update the column's objects,
-        # and not the modal ones.
-        site_template.modal.objects = [
-            pn.Column(
-                min_height=600,
-                sizing_mode="stretch_both",
-            )
-        ]
-        # TODO: chat ids should likely be stored on the app_config.
-        self.tabs = pn.Tabs(
-            *[
-                pn.param.ParamMethod(self.display_chat, lazy=True, name=chat_id)
-                for chat_id in self.chat_session_ids
-            ],
-            tabs_location="left",
-            dynamic=True,
-            stylesheets=[style.TABS],
-        )
-        self.tabs.param.watch(self.tab_changed, ["active"], onlychanged=True)
-
-        self.right_sidebar = pn.Column(
-            pn.pane.Markdown("# Test"),
-            stylesheets=[style.RIGHT_SIDEBAR_HIDDEN],
-            visible=False,
-        )
-
-    def __panel__(self):
-        """TODO: do not start with the modal... help user push the new chat button."""
-        js_for_modal = pn.pane.HTML(
-            js.SHADOWROOT_INDEXING
-            + """
-                         <script>   let buttons = $$$('button.bk-btn-primary');
-                                    buttons.forEach(function(btn){
-                                        if ( btn.innerHTML == '{new_chat_btn_name}' ){
-                                            btn.click();
-                                        }
-                                    });
-                         </script>
-                         """.replace(
-                "{new_chat_btn_name}", self.new_chat_button.name
-            ).strip(),
-            stylesheets=[":host { position:absolute; z-index:-999; }"],
-        )
-
-        return pn.Row(
-            pn.Column(
-                self.new_chat_button,
-                js_for_modal,
-                self.tabs,
-                stylesheets=[style.PAIGE_DASHBOARD],
-            ),
-            self.right_sidebar,
-            stylesheets=[style.RIGHT_SIDEBAR_EXPANDED],
-        )
-
-    def hide_info_sidebar(self, event):
-        self.right_sidebar.visible = False
-
-    def show_info_sidebar(self, content):
-        close_button = pn.widgets.Button(
-            icon="x",
-            button_type="light",
-            stylesheets=[style.CLOSE_BUTTON],
-        )
-        close_button.on_click(self.hide_info_sidebar)
-
-        self.right_sidebar.objects = [
-            close_button,
-            content,
-        ]
-        self.right_sidebar.visible = True
-
-    def show_sources_sidebar(self, content):
-        self.show_info_sidebar(content)
-
-    def on_click_new_chat(self, event):
-        global site_template
-
-        # TODO: consider whether whether deep copy is required.
-        # chat_config = self.components.chat_config.copy() or DefaultChatConfig()
-        chat_config = DefaultChatConfig(self.app_config)
-        # chat_config = DemoConfig(self.app_config)
-
-        modal = ModalConfiguration(
-            self.app_config,
-            self.components,
-            chat_config=chat_config,
-            start_button_callback=self.on_click_start_conv_button,
-            cancel_button_callback=self.on_click_cancel_button,
-        )
-        site_template.modal.objects[0].objects = [modal]
-        # Modal content is destroyed once the user cancels or starts a
-        # conversation... any required information is propagated to ChatData.
-        site_template.open_modal()
-
-    def tab_changed(self, event):
-        self.hide_info_sidebar(None)
-
-    def on_click_start_conv_button(self, event):
-        #  store the bytes uploaded so that they are destroyed
-        # modal should be quick... store documents in vector database when clicking start.
-        #  document needs to be destroyed but document_metadata should persist for source info etc.
-        global site_template
-        # TODO: needs to load docs into storage, wipe modal content, instantiate
-        # chat_data, close modal, and display the chat.
-        # TODO: Chat session needs to be displayed... this would typically
-        # loaded dynamically from saved data. When creating afresh is there a
-        # convenient way of propagating it through? Likley store it on the page
-        # but that's not easily accessible here.
-        breakpoint()
-
-        ChatData(app_config=self.app_config)
-        # TODO: not sure whether to pass the user config into chat data (as extra) or session creation.
-        # chat_session = new_chat_session(
-        #     chat_data=self.current_new_chat_data,
-        #     user_config=user_config,
-        # )
-
-        chat_name = self.current_new_chat_data.chat_name
-
-        self.tabs.append(
-            pn.param.ParamMethod(self.display_chat, lazy=True, name=chat_name)
-        )
-        self.tabs.active = len(self.tabs) - 1
-        site_template.close_modal()
-
-        self.current_new_chat_data = None
-
-        # source_storage = self.components.source_storages[self.source_storage_name]
-        # chat_config = ChatData(
-        #     source_storage=source_storage,
-        #     llm=self.components.llms[self.llm_name],
-        #     document_metadatas=[document.metadata for document in self.documents],
-        # )
-
-        # source_storage.store(self.documents, chat_config=chat_config)
-
-        # chat_config.chat_log.append(f"A: Hi, I'm {self.llm_name}!")
-        # self.chat_config = chat_config
-
-    def on_click_cancel_button(self, event):
-        global site_template
-        # TODO: all content should be destroyed
-        site_template.close_modal()
-
-    def display_chat(self):
-        """
-        TODO:
-
-        User/chat id should be sufficient to display a chat session (panel class
-        that uses chat_data)
-
-        Visiting a chat that has been previously created/stored will recreate
-        that session from stored chat data. Session recreation will fail if the
-        state of the session includes components that are not currently
-        available.
-        """
-        return self.chat_sessions[self.tabs.active]
-
-    #################################################################################
-
-    #################################################################################
-
-    @param.depends("file_input.param", watch=True)
-    def upload_documents(self):
-        if not self.file_input.value:
-            return
-
-        self.documents = [
-            Document._from_name_and_content(
-                name, content, page_extractors=self.components.page_extractors.values()
-            )
-            for name, content in zip(self.file_input.filename, self.file_input.value)
-        ]
 
 
 class ModalConfiguration(pn.viewable.Viewer):
@@ -354,17 +181,221 @@ class ModalConfiguration(pn.viewable.Viewer):
 #         )
 
 
+class Page(param.Parameterized):
+    chat_session_ids = param.List(default=[])
+    tabs = param.Parameter()
+    app_config = param.ClassSelector(AppConfig)
+    components = param.ClassSelector(AppComponents)
+    modal = param.ClassSelector(ModalConfiguration)
+    the_config = param.ClassSelector(param.Parameterized)
+
+    def __init__(self, **params):
+        global site_template
+        super().__init__(**params)
+
+        # self.version = pn.widgets.StaticText(
+        #     name="Version",
+        #     value=__version__,
+        #     stylesheets=[style.VERSION_ID],
+        # )
+        self.new_chat_button = pn.widgets.Button(
+            name="New chat",
+            button_type="primary",
+            stylesheets=[style.NEW_CHAT_BUTTON],
+        )
+        self.new_chat_button.on_click(self.on_click_new_chat)
+
+        # preparing the modal : it contains a simple Column
+        # Due to the way Panel works, we'll update the column's objects,
+        # and not the modal ones.
+        site_template.modal.objects = [
+            pn.Column(
+                min_height=600,
+                sizing_mode="stretch_both",
+            )
+        ]
+        # TODO: chat ids should likely be stored on the app_config.
+        self.tabs = pn.Tabs(
+            *[
+                pn.param.ParamMethod(self.display_chat, lazy=True, name=chat_id)
+                for chat_id in self.chat_session_ids
+            ],
+            tabs_location="left",
+            dynamic=True,
+            stylesheets=[style.TABS],
+        )
+        self.tabs.param.watch(self.tab_changed, ["active"], onlychanged=True)
+
+        self.right_sidebar = pn.Column(
+            pn.pane.Markdown("# Test"),
+            stylesheets=[style.RIGHT_SIDEBAR_HIDDEN],
+            visible=False,
+        )
+
+    def __panel__(self):
+        """TODO: do not start with the modal... help user push the new chat button."""
+        js_for_modal = pn.pane.HTML(
+            js.SHADOWROOT_INDEXING
+            + """
+                         <script>   let buttons = $$$('button.bk-btn-primary');
+                                    buttons.forEach(function(btn){
+                                        if ( btn.innerHTML == '{new_chat_btn_name}' ){
+                                            btn.click();
+                                        }
+                                    });
+                         </script>
+                         """.replace(
+                "{new_chat_btn_name}", self.new_chat_button.name
+            ).strip(),
+            stylesheets=[":host { position:absolute; z-index:-999; }"],
+        )
+
+        return pn.Row(
+            pn.Column(
+                self.new_chat_button,
+                js_for_modal,
+                self.tabs,
+                stylesheets=[style.PAIGE_DASHBOARD],
+            ),
+            self.right_sidebar,
+            stylesheets=[style.RIGHT_SIDEBAR_EXPANDED],
+        )
+
+    def hide_info_sidebar(self, event):
+        self.right_sidebar.visible = False
+
+    def show_info_sidebar(self, content):
+        close_button = pn.widgets.Button(
+            icon="x",
+            button_type="light",
+            stylesheets=[style.CLOSE_BUTTON],
+        )
+        close_button.on_click(self.hide_info_sidebar)
+
+        self.right_sidebar.objects = [
+            close_button,
+            content,
+        ]
+        self.right_sidebar.visible = True
+
+    def show_sources_sidebar(self, content):
+        self.show_info_sidebar(content)
+
+    def on_click_new_chat(self, event):
+        global site_template
+
+        # TODO: consider whether whether deep copy is required.
+        # chat_config = self.components.chat_config.copy() or DefaultChatConfig()
+        # chat_config = DefaultChatConfig(self.app_config)
+        chat_config = DemoConfig(self.app_config, self.components)
+
+        self.modal = ModalConfiguration(
+            self.app_config,
+            self.components,
+            chat_config=chat_config,
+            start_button_callback=self.on_click_start_conv_button,
+            cancel_button_callback=self.on_click_cancel_button,
+        )
+        site_template.modal.objects[0].objects = [self.modal]
+        # Modal content is destroyed once the user cancels or starts a
+        # conversation... any required information is propagated to ChatData.
+        site_template.open_modal()
+
+    def tab_changed(self, event):
+        self.hide_info_sidebar(None)
+
+    def on_click_start_conv_button(self, event):
+        #  store the bytes uploaded so that they are destroyed
+        # modal should be quick... store documents in vector database when clicking start.
+        #  document needs to be destroyed but document_metadata should persist for source info etc.
+        global site_template
+        # TODO: needs to load docs into storage, wipe modal content, instantiate
+        # chat_data, close modal, and display the chat.
+        # TODO: Chat session needs to be displayed... this would typically
+        # loaded dynamically from saved data. When creating afresh is there a
+        # convenient way of propagating it through? Likley store it on the page
+        # but that's not easily accessible here.
+        breakpoint()
+        # pass in doc metadata too...
+        ChatData(
+            app_config=self.app_config, chat_config=self.modal.chat_config.get_config()
+        )
+        # TODO: not sure whether to pass the user config into chat data (as extra) or session creation.
+        # chat_session = new_chat_session(
+        #     chat_data=self.current_new_chat_data,
+        #     user_config=user_config,
+        # )
+
+        chat_name = self.current_new_chat_data.chat_name
+
+        self.tabs.append(
+            pn.param.ParamMethod(self.display_chat, lazy=True, name=chat_name)
+        )
+        self.tabs.active = len(self.tabs) - 1
+        site_template.close_modal()
+
+        self.current_new_chat_data = None
+
+        # source_storage = self.components.source_storages[self.source_storage_name]
+        # chat_config = ChatData(
+        #     source_storage=source_storage,
+        #     llm=self.components.llms[self.llm_name],
+        #     document_metadatas=[document.metadata for document in self.documents],
+        # )
+
+        # source_storage.store(self.documents, chat_config=chat_config)
+
+        # chat_config.chat_log.append(f"A: Hi, I'm {self.llm_name}!")
+        # self.chat_config = chat_config
+
+    def on_click_cancel_button(self, event):
+        global site_template
+        # TODO: all content should be destroyed
+        site_template.close_modal()
+
+    def display_chat(self):
+        """
+        TODO:
+
+        User/chat id should be sufficient to display a chat session (panel class
+        that uses chat_data)
+
+        Visiting a chat that has been previously created/stored will recreate
+        that session from stored chat data. Session recreation will fail if the
+        state of the session includes components that are not currently
+        available.
+        """
+        return self.chat_sessions[self.tabs.active]
+
+    #################################################################################
+
+    #################################################################################
+
+    @param.depends("file_input.param", watch=True)
+    def upload_documents(self):
+        if not self.file_input.value:
+            return
+
+        self.documents = [
+            Document._from_name_and_content(
+                name, content, page_extractors=self.components.page_extractors.values()
+            )
+            for name, content in zip(self.file_input.filename, self.file_input.value)
+        ]
+
+
 class ChatData(param.Parameterized):
     # user? remove any objects that are large etc?
     #  chunk_size etc won't always exist (extra key.. chroma looks for certain keys here or uses defaults
     # middle of modal is customizable
     #  add chat_name
     # DB: user_name and chat name are sufficient to index
-    app_config = param.ClassSelector(AppConfig)
     config = param.Dict()
     chat_id = param.String()
+    chat_config = param.Tuple(length=3)  # unpack these
     sources_info = param.Dict(default={})
     # TODO: Chat log will likely be a different param (with new chat interface)
+    # (try to see if other metadata can be stored in the chat log)
     chat_log = param.List(
         default=[{"Model": "How can I help you with the selected sources?"}]
     )
