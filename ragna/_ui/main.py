@@ -1,13 +1,16 @@
+import json
 from datetime import datetime, timedelta, timezone
-
+from pathlib import Path
 from typing import Any
 
+import dateutil
 import panel as pn
 import param
 
 from ragna import __version__
 from ragna._backend import Document
 from ragna._ui import AppComponents, AppConfig, js, style
+from ragna.utils import compute_id
 
 pn.extension(sizing_mode="stretch_width")
 
@@ -26,6 +29,61 @@ def app(*, app_config, components):
     )
 
 
+class ChatData(param.Parameterized):
+    # TODO: components should be passed in to methods so that they do not get serialized with this class
+    # user? remove any objects that are large etc?
+    #  chunk_size etc won't always exist (extra key.. chroma looks for certain keys here or uses defaults
+    # middle of modal is customizable
+    #  add chat_name
+    # DB: user_name and chat name are sufficient to index
+    chat_id = param.String(instantiate=True, per_instance=True)
+    chat_name = param.String(instantiate=True, per_instance=True)
+    source_storage_name = param.String(instantiate=True, per_instance=True)
+    llm_name = param.String(instantiate=True, per_instance=True)
+    extra = param.Dict(instantiate=True, per_instance=True)
+    sources_info = param.Dict(default={}, instantiate=True, per_instance=True)
+    # TODO: Chat log will likely be a different param (with new chat interface)
+    # (try to see if other metadata can be stored in the chat log)
+    chat_log = param.List(instantiate=True, per_instance=True)
+    # TODO: not sure how this will be used (in combination with components?)
+    document_metadata = param.List(instantiate=True, per_instance=True)
+
+    def __init__(
+        self,
+        **params,
+    ):
+        super().__init__(
+            **params,
+        )
+
+    def _to_dict(self):
+        props = [
+            name
+            for name in dir(self)
+            if not name.startswith("_") and name not in ["param", "chat_log"]
+        ]
+        output = {p: getattr(self, p) for p in props}
+        output["chat_log"] = [self._entry_to_dict(entry) for entry in self.chat_log]
+        return output
+
+    def _from_dict(self, retrieved_archive):
+        retrieved_archive["chat_log"] = [
+            self._dict_to_entry(d) for d in retrieved_archive["chat_log"]
+        ]
+        return ChatData(**retrieved_archive)
+
+    def _entry_to_dict(self, entry):
+        return {
+            "value": entry.value,
+            "timestamp": entry.timestamp.isoformat(),
+            "user": entry.user,
+        }
+
+    def _dict_to_entry(self, retrieved_dict):
+        retrieved_dict["timestamp"] = dateutil.parser.parse(retrieved_dict["timestamp"])
+        return pn.widgets.ChatEntry(**retrieved_dict)
+
+
 # extension targetted to developers
 class DemoConfig(param.Parameterized):
     # TODO: a schema should be defined for this and it can be loaded in a
@@ -33,10 +91,13 @@ class DemoConfig(param.Parameterized):
     source_storage_name = param.Selector()
     llm_name = param.Selector()
     extra = param.Dict(default={})
+    components = param.ClassSelector(AppComponents)
+    app_config = param.ClassSelector(AppConfig)
 
     def __init__(
         self,
         *,
+        components,
         source_storage_names,
         llm_names,
         extra,
@@ -73,24 +134,6 @@ def get_default_chat_name(timezone_offset=None):
     else:
         tz = timezone(offset=timedelta(minutes=timezone_offset))
         return f"Chat {datetime.now().astimezone(tz=tz):%m/%d/%Y %I:%M %p}"
-
-
-class ChatSession(pn.viewable.Viewer):
-    def __init__(self, tab_id):
-        self.tab_id = tab_id
-
-    def __panel__(self):
-        return pn.pane.HTML(f"Hello from {self.tab_id}")
-
-
-# def new_chat_component_callback(
-#     contents: str, user: str, instance: pn.widgets.ChatInterface
-# ):
-#     response = openai.ChatCompletion.create(
-#         model="gpt-3.5-turbo",
-#         messages=[{"role": "user", "content": contents}],
-#     )
-#     yield response.choices[0]["value"]["content"]
 
 
 class ModalConfiguration(pn.viewable.Viewer):
@@ -174,24 +217,53 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
 
 
+class ChatStorage:
+    def __init__(self, location=Path("/tmp/chat_storage"), user="unknown") -> None:
+        self.location = location
+        self.user = user
+
+    def store(self, chat_data):
+        archive = self.location / f"{chat_data.chat_id}.json"
+        try:
+            archive.write_text(json.dumps(chat_data._to_dict()))
+        except TypeError:
+            pass
+
+    def retrieve(self, chat_id):
+        archive = self.location / f"{chat_id}.json"
+
+        if not archive.exists():
+            raise FileNotFoundError
+        retrieved = json.loads(archive.read_text())
+        chat_data = ChatData()._from_dict(retrieved)
+        return chat_data
+
+
 class Page(param.Parameterized):
-    chat_session_ids = param.List(default=[])
+    chat_sessions = param.List(default=[("placeholder", "someid")])
     tabs = param.Parameter()
     app_config = param.ClassSelector(AppConfig)
     components = param.ClassSelector(AppComponents)
     modal = param.ClassSelector(ModalConfiguration)
+    current_chat_data = param.ClassSelector(ChatData, instantiate=True)
+    chat_interface = param.ClassSelector(pn.widgets.ChatInterface)
 
     def __init__(self, **params):
         super().__init__(**params)
 
-        # TODO: populate this correctly
+        # TODO: populate these correctly
+        self.components.source_storages["chat_storage"] = ChatStorage(
+            self.app_config.cache_root, user=self.app_config.user
+        )
         self.chat_configs = [
             DemoConfig(
+                components=self.components,
                 source_storage_names=["source", "source2"],
                 llm_names=["gpt"],
                 extra={"some config": "value", "other_config": 42},
             )
         ]
+
         self.version = pn.widgets.StaticText(
             name="Version",
             value=__version__,
@@ -213,14 +285,14 @@ class Page(param.Parameterized):
         ]
         self.tabs = pn.Tabs(
             *[
-                pn.param.ParamMethod(self.display_chat, lazy=True, name=chat_id)
-                for chat_id in self.chat_session_ids
+                pn.param.ParamMethod(self.load_tab, lazy=False, name=chat_name)
+                for chat_id, chat_name in self.chat_sessions
             ],
             tabs_location="left",
             dynamic=True,
             stylesheets=[style.TABS],
         )
-        self.tabs.param.watch(self.tab_changed, ["active"], onlychanged=True)
+        self.tabs.param.watch(self.load_tab, ["active"], onlychanged=True)
 
         self.right_sidebar = pn.Column(
             pn.pane.Markdown("# No sources found"),
@@ -241,6 +313,11 @@ class Page(param.Parameterized):
         )
         self.site_template.main.objects = [main_area]
         return self.site_template
+
+    def callback(self, contents: str, user: str, instance: pn.widgets.ChatInterface):
+        message = f"Echoing {user}: {contents}"
+
+        return message
 
     def hide_info_sidebar(self, event):
         self.right_sidebar.visible = False
@@ -273,53 +350,130 @@ class Page(param.Parameterized):
         # conversation... any required information is propagated to ChatData.
         self.site_template.open_modal()
 
-    def tab_changed(self, event):
-        self.hide_info_sidebar(None)
-
     def on_click_start_conv_button(self, event):
         #  store the bytes uploaded so that they are destroyed
         # modal should be quick... store documents in vector database when clicking start.
         #  document needs to be destroyed but document_metadata should persist for source info etc.
         # TODO: needs to load docs into storage, wipe modal content, instantiate
         # chat_data, close modal, and display the chat.
-        # TODO: Chat session needs to be displayed... this would typically
-        # loaded dynamically from saved data. When creating afresh is there a
-        # convenient way of propagating it through? Likley store it on the page
-        # but that's not easily accessible here.
         # pass in doc metadata too...
+        if self.current_chat_data:
+            self.components.source_storages["chat_storage"].store(
+                self.current_chat_data
+            )
+        chat_name = self.modal.chat_name
+        chat_id = compute_id(str(datetime.now()))
+        self.chat_sessions.append((chat_name, chat_id))
+        self.site_template.close_modal()
+        self.tabs.append(
+            pn.param.ParamMethod(
+                self.load_tab,
+                name=chat_id,
+            )
+        )
+        self.tabs.active = len(self.tabs) - 1
+
+    def create_chat_data(self, chat_name, chat_id):
         all_chat_config_values = {}
         # TODO: we may want to update extra rather than overwrite it like we are doing here
         for config in self.chat_configs:
             all_chat_config_values.update(**config.get_config())
-
         self.current_chat_data = ChatData(**all_chat_config_values)
-        self.tabs.append(
-            pn.param.ParamMethod(
-                self.display_chat, lazy=True, name=self.current_chat_data.chat_name
-            )
+        self.current_chat_data = ChatData(
+            chat_id=chat_id, chat_name=chat_name, **all_chat_config_values
         )
-        self.tabs.active = len(self.tabs) - 1
-        self.site_template.close_modal()
+
+    @param.depends("tabs.active")
+    def load_tab(self, *args):
+        """
+        This function is WIP and messy. It is messy (and not working correctly) because I am struggling to work out a
+        way to usefully trigger it at the correct times. This is due to the
+        behavior dynamically loaded pn.Tabs. I believe the best solution is to
+        abandon pn.Tabs and simplify the logic here once reliable triggering is
+        achieved via buttons instead.
+        """
+        if self.tabs is None:
+            # page initialization
+            return
+        elif self.tabs.active is None:
+            # shouldn't get here
+            raise NotImplementedError
+
+        elif self.tabs.active == 0 and self.chat_interface is None:
+            # The first tab created... no chat interface exists and tab is being appended
+            return None
+
+        current_chat_session = self.chat_sessions[self.tabs.active]
+        if True:
+            # normal tab change
+            # Triggered  on changing the tab... we will want to work with the current session first
+
+            if self.current_chat_data is None:
+                # first tab load
+                self.create_chat_data(*current_chat_session)
+            elif (
+                current_chat_session[1] != self.current_chat_data.chat_id
+                and self.chat_interface is not None
+            ):
+                # save, load, and switch chat
+                self.current_chat_data.chat_log = self.chat_interface.value.copy()
+                self.components.source_storages["chat_storage"].store(
+                    self.current_chat_data
+                )
+                try:
+                    self.current_chat_data = self.components.source_storages[
+                        "chat_storage"
+                    ].retrieve(current_chat_session[1])
+                except FileNotFoundError:
+                    self.create_chat_data(*current_chat_session)
+                ####
+                self.chat_interface = pn.widgets.ChatInterface(
+                    value=self.current_chat_data.chat_log,
+                    callback=self.callback,
+                    callback_user="System",
+                    entry_params={
+                        "show_reaction_icons": False,
+                        "show_avatar": False,
+                    },
+                )
+                self.chat_interface.send(f"hello at {datetime.now()}")
+                self.hide_info_sidebar(None)
+                return pn.Column(
+                    f"{id(datetime.now())}, {self.current_chat_data.chat_id}",
+                    self.chat_interface,
+                )
+                ####
+            elif (
+                current_chat_session[1] == self.current_chat_data.chat_id
+                and self.chat_interface is None
+            ):
+                # creation of first tab (happens above and below though)
+                ####
+                self.chat_interface = pn.widgets.ChatInterface(
+                    value=self.current_chat_data.chat_log,
+                    callback=self.callback,
+                    callback_user="System",
+                    entry_params={
+                        "show_reaction_icons": False,
+                        "show_avatar": False,
+                    },
+                )
+                self.chat_interface.send(f"hello at {datetime.now()}")
+                self.hide_info_sidebar(None)
+                ####
+            elif current_chat_session[1] == self.current_chat_data.chat_id:
+                # should probably change interface here.
+                return pn.Column(
+                    f"{id(datetime.now())}, {self.current_chat_data.chat_id}",
+                    self.chat_interface,
+                )
+                pass
+            else:
+                pass
 
     def on_click_cancel_button(self, event):
         # TODO: all content should be destroyed
         self.site_template.close_modal()
-
-    def display_chat(self):
-        """
-        TODO:
-
-        User/chat id should be sufficient to display a chat session (panel class
-        that uses chat_data)
-
-        Visiting a chat that has been previously created/stored will recreate
-        that session from stored chat data. Session recreation will fail if the
-        state of the session includes components that are not currently
-        available.
-        """
-        tab_id = self.tabs.active
-        self.current_chat_session = ChatSession(tab_id=tab_id)
-        return self.current_chat_session
 
     @param.depends("file_input.param", watch=True)
     def upload_documents(self):
@@ -357,32 +511,3 @@ class Page(param.Parameterized):
 
         # append this to the end of the header
         self.site_template.header.append(pn.pane.HTML(js.CONNECTION_MONITOR))
-
-
-class ChatData(param.Parameterized):
-    # TODO: components should be passed in to methods so that they do not get serialized with this class
-    # user? remove any objects that are large etc?
-    #  chunk_size etc won't always exist (extra key.. chroma looks for certain keys here or uses defaults
-    # middle of modal is customizable
-    #  add chat_name
-    # DB: user_name and chat name are sufficient to index
-    chat_id = param.String()
-    chat_name = param.String()
-    source_storage_name = param.String()
-    llm_name = param.String()
-    extra = param.Dict()
-    sources_info = param.Dict(default={})
-    # TODO: Chat log will likely be a different param (with new chat interface)
-    # (try to see if other metadata can be stored in the chat log)
-    chat_log = param.List(
-        default=[{"Model": "How can I help you with the selected sources?"}]
-    )
-    # TODO: not sure how this will be used (in combination with components?)
-    document_metadata = param.List()
-
-    def __init__(
-        self,
-        **params,
-    ):
-        super().__init__(**params)
-        self.chat_name = get_default_chat_name()
