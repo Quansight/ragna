@@ -107,7 +107,7 @@ class ChromaSourceStorage(SourceStorage):
         sources_to_store: list[
             tuple[
                 "chromadb.api.types.ID",
-                "chromadb.api.types.Document",
+                "chromadb.api.types.DocumentData",
                 "chromadb.api.types.Metadata",
             ]
         ] = []
