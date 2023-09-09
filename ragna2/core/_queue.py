@@ -1,7 +1,9 @@
 import asyncio
 import contextlib
+import io
 import shutil
 import subprocess
+import sys
 import time
 
 from typing import Any, Callable, Optional, TypeVar
@@ -92,7 +94,14 @@ class Worker:
     @staticmethod
     def _execute_job(cloudpickled_fn: bytes) -> Any:
         fn = cloudpickle.loads(cloudpickled_fn)
-        return fn()
+
+        # FIXME: this will only surfaces the output in case the job succeeds. While
+        #  better than nothing, surfacing output in the failure cases is more important
+        #  Plus, we should probably also let the output happen here
+        with contextlib.redirect_stdout(
+            io.StringIO()
+        ) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
+            return fn(), (stdout.getvalue(), stderr.getvalue())
 
 
 async def _enqueue_job(
@@ -105,7 +114,14 @@ async def _enqueue_job(
     while True:
         status = job.get_status()
         if status == "finished":
-            return job.return_value()
+            return_value = job.return_value()
+            if return_value is None:
+                return return_value
+
+            result, (stdout, stderr) = return_value
+            sys.stdout.write(stdout)
+            sys.stderr.write(stderr)
+            return result
         elif status == "failed":
             return "failed"
         await asyncio.sleep(0.2)

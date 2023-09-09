@@ -27,7 +27,7 @@ class Component:
 
     def __init__(self, config) -> None:
         self.config = config
-        self.logger = config.get_logger(name=self.display_name())
+        self.logger = config.get_logger(name=str(self))
 
     def __str__(self) -> str:
         return self.display_name()
@@ -60,7 +60,7 @@ class Document(abc.ABC):
     def __init__(
         self,
         *,
-        id: Optional[int] = None,
+        id: Optional[str] = None,
         name: str,
         metadata: dict[str, Any],
         page_extractor=None,

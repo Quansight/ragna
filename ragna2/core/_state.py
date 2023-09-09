@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import functools
+import re
 import uuid
+from typing import Any
 
 from sqlalchemy import Column, create_engine, ForeignKey, JSON, select, Table
 
@@ -53,10 +55,12 @@ class DocumentData(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str]
+    # Mind the trailing underscore here. Unfortunately, this is necessary, because
+    # metadata without the underscore is reserved by SQLAlchemy
     metadata_: JSON
-    chats: Mapped[list[ChatData]] = relationship(
+    chat_datas: Mapped[list[ChatData]] = relationship(
         secondary=document_chat_data_association_table,
-        back_populates="documents",
+        back_populates="document_datas",
         default_factory=list,
     )
 
@@ -67,16 +71,17 @@ class ChatData(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     name: Mapped[str]
-    documents: Mapped[list[DocumentData]] = relationship(
+    document_datas: Mapped[list[DocumentData]] = relationship(
         secondary=document_chat_data_association_table,
-        back_populates="chats",
+        back_populates="chat_datas",
     )
     source_storage_name: Mapped[str]
     llm_name: Mapped[str]
     params: JSON
-    messages: Mapped[list[MessageData]] = relationship(
+    message_datas: Mapped[list[MessageData]] = relationship(
         default_factory=list, cascade="all, delete"
     )
+    closed: Mapped[bool] = mapped_column(default=False)
 
 
 class MessageData(Base):
@@ -100,6 +105,16 @@ class State:
     def make_id(self):
         return _make_id()
 
+    _UUID_STR_PATTERN = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    )
+
+    def is_id(self, obj: Any) -> bool:
+        if not isinstance(obj, str):
+            return False
+
+        return self._UUID_STR_PATTERN.match(obj) is not None
+
     @functools.lru_cache(maxsize=1024)
     def _get_user_id(self, username: str):
         user_id = self._session.execute(
@@ -113,16 +128,16 @@ class State:
         self._session.commit()
         return user.id
 
-    def add_document(self, *, user: str, name: str, metadata: JSON):
-        document = DocumentData(
-            id=_make_id(),
+    def add_document(self, *, user: str, name: str, metadata: dict[str, Any]):
+        document_data = DocumentData(
+            id=self.make_id(),
             user_id=self._get_user_id(user),
             name=name,
             metadata_=metadata,
         )
-        self._session.add(document)
+        self._session.add(document_data)
         self._session.commit()
-        return document
+        return document_data
 
     def get_document(self, id: str, user: str) -> DocumentData:
         return self._session.execute(
@@ -134,6 +149,8 @@ class State:
     def add_chat(
         self,
         *,
+        # This takes the ID instead of generating it itself, because we need to create
+        # the Chat object before we add it to the database
         id: str,
         user: str,
         name: str,
@@ -142,22 +159,22 @@ class State:
         llm_name: str,
         params,
     ) -> ChatData:
-        documents = (
+        document_datas = (
             self._session.execute(
                 select(DocumentData).where(DocumentData.id.in_(document_ids))
             )
             .scalars()
             .all()
         )
-        if len(documents) != len(document_ids):
+        if len(document_datas) != len(document_ids):
             raise RagnaException(
-                set(document_ids) - {document.id for document in documents}
+                set(document_ids) - {document.id for document in document_datas}
             )
         chat = ChatData(
             id=id,
             user_id=self._get_user_id(user),
             name=name,
-            documents=documents,
+            document_datas=document_datas,
             source_storage_name=source_storage_name,
             llm_name=llm_name,
             params=params,
@@ -176,4 +193,8 @@ class State:
         if chat_data is None:
             raise RagnaException
 
-        chat_data.messages.append(MessageData(chat_id=chat_data.id, content=content))
+        message_data = MessageData(
+            id=self.make_id(), chat_id=chat_data.id, content=content
+        )
+        chat_data.message_datas.append(message_data)
+        self._session.commit()

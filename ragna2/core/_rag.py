@@ -5,9 +5,9 @@ import datetime
 import subprocess
 import sys
 
-from typing import Optional
+from typing import Any, Optional, Sequence, TypeVar
 
-from ._component import Document
+from ._component import Component, Document
 
 from ._config import Config
 from ._exceptions import RagnaException
@@ -15,6 +15,8 @@ from ._exceptions import RagnaException
 from ._queue import _enqueue_job, _get_queue
 
 from ._state import State
+
+T = TypeVar("T", bound=Component)
 
 
 class Rag:
@@ -88,7 +90,7 @@ class Rag:
             raise RagnaException()
 
         if not components:
-            raise RagnaException()
+            self._logger.warning("No registered components available")
 
         return components
 
@@ -106,20 +108,25 @@ class Rag:
         *,
         user: str = "root",
         name: Optional[str] = None,
-        documents: list[Document | str],
-        source_storage_name: str,
-        llm_name: str,
+        documents: Sequence[Any],
+        source_storage: Any,
+        llm: Any,
         **params,
     ):
         documents = await self._parse_documents(documents, user=user)
+        source_storage = self._parse_component(
+            source_storage, registry=self._source_storages
+        )
+        llm = self._parse_component(llm, registry=self._llms)
 
         chat = Chat(
             rag=self,
+            user=user,
             id=self._state.make_id(),
             name=name,
             documents=documents,
-            source_storage=self._source_storages[source_storage_name],
-            llm=self._llms[llm_name],
+            source_storage=source_storage,
+            llm=llm,
             **params,
         )
 
@@ -128,8 +135,8 @@ class Rag:
             user=user,
             name=chat.name,
             document_ids=[document.id for document in documents],
-            source_storage_name=source_storage_name,
-            llm_name=llm_name,
+            source_storage_name=str(source_storage),
+            llm_name=str(llm),
             params=params,
         )
 
@@ -138,17 +145,20 @@ class Rag:
         return chat
 
     async def _parse_documents(
-        self, documents: list[Document | str], *, user: str
+        self, objs: Sequence[Any], *, user: str
     ) -> list[Document]:
         documents_ = []
-        for document in documents:
-            if isinstance(document, str):
-                data = self._state.get_document(id=document, user=user)
-                if data is None:
-                    raise RagnaException
-                document = self.config.document_class._from_data(data)
-            elif not isinstance(document, Document):
-                raise RagnaException
+        for obj in objs:
+            if isinstance(obj, Document):
+                document = obj
+            else:
+                if self._state.is_id(obj):
+                    data = self._state.get_document(id=obj, user=user)
+                    if data is None:
+                        raise RagnaException
+                    document = self.config.document_class._from_data(data)
+                else:
+                    document = self.config.document_class(obj)
 
             if document.id is None:
                 document.id = await self.add_document(user=user, document=document)
@@ -156,7 +166,18 @@ class Rag:
             documents_.append(document)
         return documents_
 
+    def _parse_component(self, obj: Any, *, registry: dict[str, T]) -> T:
+        if isinstance(obj, Component):
+            return obj
+        elif isinstance(obj, type) and issubclass(obj, Component):
+            return obj(self.config)
+        elif obj in registry:
+            return registry[obj]
+        else:
+            raise RagnaException(obj)
 
+
+# TOD: Make this a context manager and implement a close functionality
 class Chat:
     def __init__(
         self,
@@ -191,6 +212,12 @@ class Chat:
 
     def _unpack_chat_params(self):
         # THis does not support Optional parameters!!
+        # FIXME: we need to have two separate lists:  required and optional
+
+        # check missing against params with required
+        # check extra against augmented params with requires + optional
+        # use augmented_params for unpacking
+
         required_params = {
             **self.source_storage._required_params(),
             **self.llm._required_params(),
@@ -221,7 +248,7 @@ class Chat:
     async def start(self):
         return await self._enqueue(self.source_storage.store, self.documents)
 
-    async def answer(self, *, prompt: str):
+    async def answer(self, prompt: str):
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
         answer = await self._enqueue(self.llm.complete, prompt, sources)
         self._state.add_message(user=self._user, chat_id=self.id, content=answer)
