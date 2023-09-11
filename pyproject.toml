@@ -31,14 +31,28 @@ dynamic = ["version"]
 console = [
     "rich",
 ]
-api = []
-ui = []
-builtin-components = []
-# to update this, run scripts/update_optional_dependencies.py
-complete = [
+api = [
+    "fastapi",
+]
+ui = [
+    "panel ==1.3",
+    "param",
+    "aiohttp",
+]
+# to update the two entries below, run scripts/update_optional_dependencies.py
+builtin-components = [
     'chromadb>=0.4',
-    'pymupdf',
     'requests',
+    'tiktoken',
+]
+complete = [
+    'aiohttp',
+    'chromadb>=0.4',
+    'fastapi',
+    'panel==1.3',
+    'param',
+    'requests',
+    'rich',
     'tiktoken',
 ]
 
