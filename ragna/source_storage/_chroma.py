@@ -14,7 +14,6 @@ class ChromaSourceStorage(SourceStorage):
     def requirements(cls) -> list[Requirement]:
         return [PackageRequirement("chromadb >=0.4"), PackageRequirement("tiktoken")]
 
-    # FIXME: this is a hack
     def _client(self):
         import chromadb
 
@@ -78,9 +77,9 @@ class ChromaSourceStorage(SourceStorage):
         chat_id: str,
         chunk_size: int = 500,
     ) -> list[Source]:
-        collection = self._client().get_collection(chat_id)
-
-        assert collection.count() > 0
+        collection = self._client().get_collection(
+            chat_id, embedding_function=self._embedding_function()
+        )
 
         result = collection.query(
             query_texts=prompt,
@@ -95,7 +94,6 @@ class ChromaSourceStorage(SourceStorage):
             include=["distances", "metadatas", "documents"],
         )
 
-        # ids are always returned so we can use that as starting point
         num_results = len(result["ids"])
         result = {
             key: [None] * num_results if value is None else value[0]

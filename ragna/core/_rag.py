@@ -2,23 +2,18 @@ from __future__ import annotations
 
 import datetime
 import itertools
-
 import subprocess
 import sys
 from collections import defaultdict
-
 from typing import Any, Optional, Sequence, TypeVar
 
 from pydantic import BaseModel, create_model, Extra
 
 from ._component import Component
-
 from ._config import Config
 from ._exceptions import RagnaException
-
 from ._queue import _enqueue_job, _get_queue
 from ._source_storage import Document
-
 from ._state import State
 
 T = TypeVar("T", bound=Component)
@@ -30,7 +25,7 @@ class Rag:
         config: Optional[Config] = None,
         *,
         start_redis_server: Optional[bool] = None,
-        start_ragna_worker: bool = False,
+        start_ragna_worker: bool | int = False,
         deselect_unavailable_components=True,
     ):
         self.config = config or Config()
@@ -44,23 +39,9 @@ class Rag:
         )
         if redis_server_proc is not None:
             self._subprocesses.add(redis_server_proc)
-
-        # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
-        #  make the default value None, which means we only start if there is no other
-        #  worker
-        if start_ragna_worker:
-            # FIXME: Maybe this needs to take the config as whole? If not at least the URL
-            proc = subprocess.Popen([sys.executable, "-m", "ragna", "worker"])
-            try:
-                stdout, stderr = proc.communicate(timeout=2)
-            except subprocess.TimeoutExpired:
-                # This means the worker process did not shut down and thus seems to be
-                # running
-                self._subprocesses.add(proc)
-            else:
-                raise RagnaException(
-                    f"Worker process terminated unexpectedly {stdout} {stderr}"
-                )
+        ragna_worker_proc = self._start_ragna_worker(start_ragna_worker)
+        if ragna_worker_proc is not None:
+            self._subprocesses.add(ragna_worker_proc)
 
         self._source_storages = self._load_components(
             self.config.registered_source_storage_classes,
@@ -73,9 +54,36 @@ class Rag:
 
         self._chats: dict[int, Chat] = {}
 
+    def _start_ragna_worker(self, start: bool | int):
+        # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
+        #  make the default value None, which means we only start if there is no other
+        #  worker
+
+        if not start:
+            return None
+
+        # FIXME: Maybe this needs to take the config as whole? If not at least the URL
+        proc = subprocess.Popen(
+            [sys.executable, "-m", "ragna", "worker", "--num-workers", str(int(start))],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        try:
+            # FIXME: there needs to be a better way to check this.
+            stdout, stderr = proc.communicate(timeout=2)
+        except subprocess.TimeoutExpired:
+            # This means the worker process did not shut down and thus seems to be
+            # running
+            return proc
+        else:
+            raise RagnaException(
+                f"Worker process terminated unexpectedly {stdout} {stderr}"
+            )
+
     def __del__(self):
         for proc in self._subprocesses:
             proc.kill()
+        for proc in self._subprocesses:
             proc.communicate()
 
     def _load_components(

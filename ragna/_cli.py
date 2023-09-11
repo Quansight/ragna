@@ -1,6 +1,6 @@
 import typer
 
-from ragna.core import Worker
+from ragna.core._queue import Worker
 
 app = typer.Typer(
     name="ragna",
@@ -15,8 +15,9 @@ app = typer.Typer(
 def worker(
     *,
     queue_database_url: str = "redis://localhost:6379",
+    num_workers: int = 1,
 ):
-    Worker(queue_database_url=queue_database_url).work()
+    Worker(queue_database_url=queue_database_url, num_workers=num_workers).start()
 
 
 @app.command(help="List requirements")
