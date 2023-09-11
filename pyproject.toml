@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ragna"
+name = "Ragna"
 authors = [
     { name = "Philip Meier", email = "pmeier@quansight.com" },
 ]
@@ -18,12 +18,12 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "typer",
+    "rq",
+    "pydantic <2",
+    "structlog",
     "packaging",
     "importlib_metadata >=4.6; python_version < '3.10'",
-    "structlog",
-    "pydantic <2",
-    "rq",
+    "typer",
 ]
 dynamic = ["version"]
 

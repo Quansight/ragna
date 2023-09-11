@@ -13,7 +13,7 @@ def _itertools_pairwise():
 
         T = TypeVar("T")
 
-        # https://docs.python.org/3/library/itertools.html?highlight=pairwise#itertools.pairwise
+        # https://docs.python.org/3/library/itertools.html#itertools.pairwise
         def pairwise(iterable: Iterable[T]) -> Iterator[tuple[T, T]]:
             # pairwise('ABCDEFG') --> AB BC CD DE EF FG
             a, b = tee(iterable)
