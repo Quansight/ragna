@@ -8,4 +8,10 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import extensions, utils
+from . import core, llm, source_storage
+
+from .core import Config, Rag
+
+demo_config = Config()
+demo_config.register_component(source_storage.RagnaDemoSourceStorage)
+demo_config.register_component(llm.RagnaDemoLlm)

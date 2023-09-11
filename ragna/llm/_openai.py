@@ -1,6 +1,6 @@
-from ragna.extensions import hookimpl, Source
+from ragna.core import Source
 
-from ._llm_api import LlmApi
+from ._llm_api import ApiException, LlmApi
 
 
 class OpenaiLlmApi(LlmApi):
@@ -52,7 +52,7 @@ class OpenaiLlmApi(LlmApi):
             },
         )
         if not response.ok:
-            self._failed_api_call(
+            raise ApiException(
                 status_code=response.status_code, response=response.json()
             )
         return response.json()["choices"][0]["message"]["content"]
@@ -64,17 +64,7 @@ class OpenaiGpt35Turbo16kLlm(OpenaiLlmApi):
     _CONTEXT_SIZE = 16_384
 
 
-@hookimpl(specname="ragna_llm")
-def openai_gpt_35_turbo_16k_llm():
-    return OpenaiGpt35Turbo16kLlm
-
-
 class OpenaiGpt4Llm(OpenaiLlmApi):
     # https://platform.openai.com/docs/models/gpt-4
     _MODEL = "gpt-4"
     _CONTEXT_SIZE = 8_192
-
-
-@hookimpl(specname="ragna_llm")
-def openai_gpt_4_llm():
-    return OpenaiGpt4Llm

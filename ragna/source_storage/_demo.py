@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from ragna2.core import Document, RagnaException, Source, SourceStorage
+from ragna.core import Document, RagnaException, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):

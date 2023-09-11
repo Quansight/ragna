@@ -1,7 +1,7 @@
 import abc
 import os
 
-from ragna2.core import (
+from ragna.core import (
     EnvVarRequirement,
     Llm,
     PackageRequirement,

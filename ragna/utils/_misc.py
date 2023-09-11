@@ -1,9 +1,9 @@
 import itertools
 from typing import Iterable, Iterator
 
-from ragna._backend import Source
-
 from ragna._compat import itertools_pairwise
+
+from ragna.core import Source
 
 
 def page_numbers_to_str(page_numbers: list[int]) -> str:

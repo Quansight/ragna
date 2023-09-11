@@ -1,8 +1,8 @@
 import uuid
 
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
+from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
 
-from ragna2.core import Document, PackageRequirement, Requirement, Source, SourceStorage
+from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
 class ChromaSourceStorage(SourceStorage):

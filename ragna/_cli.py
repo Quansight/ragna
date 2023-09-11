@@ -1,6 +1,6 @@
 import typer
 
-from ragna2.core import Worker
+from ragna.core import Worker
 
 app = typer.Typer(
     name="ragna",

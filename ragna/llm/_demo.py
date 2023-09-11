@@ -1,6 +1,6 @@
 import sys
 
-from ragna2.core import Llm, Source
+from ragna.core import Llm, Source
 
 
 class RagnaDemoLlm(Llm):
