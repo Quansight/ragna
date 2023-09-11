@@ -12,8 +12,11 @@ from typing import Any, Optional, Type, Union
 
 import structlog
 
-from ._component import Component, Document, Llm, SourceStorage
+from ._component import Component
+from ._document import Document
 from ._exceptions import RagnaException
+from ._llm import Llm
+from ._source_storage import SourceStorage
 
 
 class LocalDocument(Document):
@@ -45,8 +48,7 @@ class LocalDocument(Document):
     def path(self) -> Path:
         return Path(self.metadata["path"])
 
-    async def read(self) -> bytes:
-        # FIXME: check if aiofiles is available. if so, use that
+    def read(self) -> bytes:
         with open(self.path, "rb") as stream:
             return stream.read()
 
@@ -56,11 +58,13 @@ class Config:
     local_cache_root: Path = Path.home() / ".cache" / "ragna"
     state_database_url: str = dataclasses.field(default=None)
     queue_database_url: str = "redis://127.0.0.1:6379"
-    source_storage_classes: dict[str, Type[SourceStorage]] = dataclasses.field(
+    document_class = LocalDocument
+    registered_source_storage_classes: dict[
+        str, Type[SourceStorage]
+    ] = dataclasses.field(default_factory=dict)
+    registered_llm_classes: dict[str, Type[Llm]] = dataclasses.field(
         default_factory=dict
     )
-    llm_classes: dict[str, Type[Llm]] = dataclasses.field(default_factory=dict)
-    document_class = LocalDocument
 
     def __post_init__(self):
         self.local_cache_root = self._parse_local_cache_root(self.local_cache_root)
@@ -99,9 +103,9 @@ class Config:
         ):
             raise RagnaException()
         if issubclass(cls, SourceStorage):
-            registry = self.source_storage_classes
+            registry = self.registered_source_storage_classes
         elif issubclass(cls, Llm):
-            registry = self.llm_classes
+            registry = self.registered_llm_classes
         else:
             raise RagnaException
 

@@ -25,7 +25,6 @@ class OpenaiLlmApi(LlmApi):
         return instruction + "\n\n".join(source.text for source in sources)
 
     def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
-        return "foo"
         import requests
 
         # See https://platform.openai.com/docs/api-reference/chat/create

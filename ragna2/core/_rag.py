@@ -1,18 +1,23 @@
 from __future__ import annotations
 
 import datetime
+import itertools
 
 import subprocess
 import sys
+from collections import defaultdict
 
 from typing import Any, Optional, Sequence, TypeVar
 
-from ._component import Component, Document
+from pydantic import BaseModel, create_model, Extra
+
+from ._component import Component
 
 from ._config import Config
 from ._exceptions import RagnaException
 
 from ._queue import _enqueue_job, _get_queue
+from ._source_storage import Document
 
 from ._state import State
 
@@ -58,11 +63,11 @@ class Rag:
                 )
 
         self._source_storages = self._load_components(
-            self.config.source_storage_classes,
+            self.config.registered_source_storage_classes,
             deselect_unavailable_components=deselect_unavailable_components,
         )
         self._llms = self._load_components(
-            self.config.llm_classes,
+            self.config.registered_llm_classes,
             deselect_unavailable_components=deselect_unavailable_components,
         )
 
@@ -170,6 +175,8 @@ class Rag:
         if isinstance(obj, Component):
             return obj
         elif isinstance(obj, type) and issubclass(obj, Component):
+            if not obj.is_available():
+                raise RagnaException(obj)
             return obj(self.config)
         elif obj in registry:
             return registry[obj]
@@ -200,7 +207,69 @@ class Chat:
         self.llm = llm
 
         self.params = params
-        self._unpacked_params = self._unpack_chat_params()
+        self._unpacked_params = self._unpack_chat_params(params)
+
+    def __repr__(self):
+        return f"{type(self).__name__}(id={self.id}, name={self.name})"
+
+    class _SpecialChatParams(BaseModel):
+        user: str
+        chat_id: str
+        chat_name: str
+
+    def _unpack_chat_params(self, params):
+        source_storage_models = self.source_storage._models()
+        llm_models = self.llm._models()
+
+        ChatModel = self._merge_models(
+            self._SpecialChatParams,
+            *source_storage_models.values(),
+            *llm_models.values(),
+        )
+
+        chat_model = ChatModel(
+            user=self._user,
+            chat_id=self.id,
+            chat_name=self.name,
+            **params,
+        )
+
+        return {
+            method: model(**chat_model.dict(exclude_none=True)).dict()
+            for method, model in itertools.chain(
+                source_storage_models.items(), llm_models.items()
+            )
+        }
+
+    def _merge_models(self, *models):
+        raw_field_definitions = defaultdict(list)
+        for model_cls in models:
+            for name, field in model_cls.__fields__.items():
+                raw_field_definitions[name].append(
+                    (field.type_, ... if field.required else field.default)
+                )
+
+        field_definitions = {}
+        for name, definitions in raw_field_definitions.items():
+            if len(definitions) == 1:
+                field_definitions[name] = definitions[0]
+                continue
+
+            types, defaults = zip(*definitions)
+
+            types = set(types)
+            if len(types) > 1:
+                raise RagnaException(f"Mismatching types for field {name}: {types}")
+            type_ = types.pop()
+
+            default = ... if any(default is ... for default in defaults) else None
+
+            field_definitions[name] = (type_, default)
+
+        class Config:
+            extra = Extra.forbid
+
+        return create_model(str(self), __config__=Config, **field_definitions)
 
     @property
     def _logger(self):
@@ -209,33 +278,6 @@ class Chat:
     @property
     def _state(self):
         return self._rag._state
-
-    def _unpack_chat_params(self):
-        # THis does not support Optional parameters!!
-        # FIXME: we need to have two separate lists:  required and optional
-
-        # check missing against params with required
-        # check extra against augmented params with requires + optional
-        # use augmented_params for unpacking
-
-        required_params = {
-            **self.source_storage._required_params(),
-            **self.llm._required_params(),
-        }
-        all_required_params = set()
-        for x in required_params.values():
-            all_required_params.update(x)
-        missing = all_required_params - self.params.keys()
-        if missing:
-            raise RagnaException(missing)
-        extra = self.params.keys() - all_required_params
-        if extra:
-            raise RagnaException(extra)
-
-        return {
-            method: {key: self.params[key] for key in keys}
-            for method, keys in required_params.items()
-        }
 
     async def _enqueue(self, fn, *args):
         unpacked_params = self._unpacked_params[fn]

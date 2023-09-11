@@ -19,15 +19,11 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "typer",
-    "rich",
-    "pluggy",
-    # TODO: this needs to be constrained to panel >=1.3 as soon as that is released.
-    #  See README.md#panel for details
-    "panel",
     "packaging",
-    "param",
     "importlib_metadata >=4.6; python_version < '3.10'",
     "structlog",
+    "pydantic <2",
+    "rq",
 ]
 dynamic = ["version"]
 
@@ -88,14 +84,6 @@ warn_unused_ignores = true
 
 warn_return_any = true
 warn_unused_configs = true
-
-[[tool.mypy.overrides]]
-module = "ragna._backend.hookspecs"
-disable_error_code = "empty-body"
-
-[[tool.mypy.overrides]]
-module = "ragna.extensions.*"
-disable_error_code = "has-type"
 
 [[tool.mypy.overrides]]
 module = [

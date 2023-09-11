@@ -1,15 +1,9 @@
-import abc
-
-import dataclasses
 import functools
 import inspect
 
-from typing import Any, Optional, Protocol, Sequence
+from pydantic import create_model
 
 from ._requirement import Requirement
-
-
-# FIXME make this a package: core, llm, source_storage, document
 
 
 class Component:
@@ -35,97 +29,31 @@ class Component:
     __ragna_protocol_methods__: list[str]
 
     @functools.cache
-    def _required_params(self):
+    def _models(self):
         protocol_cls, protocol_methods = next(
             (cls, cls.__ragna_protocol_methods__)
             for cls in type(self).__mro__
             if "__ragna_protocol_methods__" in cls.__dict__
         )
-        required = {}
-        for name in protocol_methods:
-            method = getattr(self, name)
+        models = {}
+        for method_name in protocol_methods:
+            method = getattr(self, method_name)
             concrete_params = inspect.signature(method).parameters
-            protocol_params = inspect.signature(getattr(protocol_cls, name)).parameters
-            extra_params = concrete_params.keys() - protocol_params.keys()
+            protocol_params = inspect.signature(
+                getattr(protocol_cls, method_name)
+            ).parameters
+            extra_param_names = concrete_params.keys() - protocol_params.keys()
 
-            required[method] = {
-                param
-                for param in extra_params
-                if concrete_params[param].default is inspect.Parameter.empty
-            }
-        return required
-
-
-class Document(abc.ABC):
-    def __init__(
-        self,
-        *,
-        id: Optional[str] = None,
-        name: str,
-        metadata: dict[str, Any],
-        page_extractor=None,
-    ):
-        self.id = id
-        self.name = name
-        self.metadata = metadata
-        # probably need to be a lazy import
-        # FIXME we also need to check availability here as well
-        # use urlsplit
-        # self.page_extractor = page_extractor or _BUILTIN_PAGE_EXTRACTORS.get(
-        #     Path(name).suffix
-        # )
-
-    @abc.abstractmethod
-    async def read(self) -> bytes:
-        ...
-
-    async def extract_pages(self):
-        async for page in self.page_extractor.extract_pages(
-            name=self.name, content=await self.read()
-        ):
-            yield page
-
-    @classmethod
-    def _from_data(cls, data):
-        return cls(id=data.id, name=data.name, metadata=data.metadata_)
-
-
-class Tokenizer(Protocol):
-    def encode(self, text: str) -> list[int]:
-        ...
-
-    def decode(self, tokens: Sequence[int]) -> str:
-        ...
-
-
-@dataclasses.dataclass
-class Source:
-    document_name: str
-    page_numbers: str
-    text: str
-    num_tokens: int
-
-
-class SourceStorage(Component, abc.ABC):
-    __ragna_protocol_methods__ = ["store", "retrieve"]
-
-    @abc.abstractmethod
-    def store(self, documents: list[Document]) -> None:
-        ...
-
-    @abc.abstractmethod
-    def retrieve(self, prompt: str) -> list[Source]:
-        ...
-
-
-class Llm(Component, abc.ABC):
-    __ragna_protocol_methods__ = ["complete"]
-
-    @property
-    @abc.abstractmethod
-    def context_size(self) -> int:
-        ...
-
-    @abc.abstractmethod
-    def complete(self, prompt: str, sources: list[Source]) -> str:
-        ...
+            models[method] = create_model(
+                f"{self}::{method_name}",
+                **{
+                    (param := concrete_params[param_name]).name: (
+                        param.annotation,
+                        param.default
+                        if param.default is not inspect.Parameter.empty
+                        else ...,
+                    )
+                    for param_name in extra_param_names
+                },
+            )
+        return models

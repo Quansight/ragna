@@ -3,7 +3,7 @@ import dataclasses
 from collections import deque
 from typing import Deque, Iterable, Iterator, Optional, TypeVar
 
-from ragna2.core import Page, Tokenizer
+from ragna._backend import Page, Tokenizer
 
 T = TypeVar("T")
 
