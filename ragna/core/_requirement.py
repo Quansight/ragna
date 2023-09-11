@@ -59,3 +59,13 @@ class EnvVarRequirement(Requirement):
 
     def __str__(self):
         return self._name
+
+
+class RequirementMixin:
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return []
+
+    @classmethod
+    def is_available(cls) -> bool:
+        return all(requirement.is_available() for requirement in cls.requirements())

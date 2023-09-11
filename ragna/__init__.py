@@ -12,6 +12,30 @@ from . import core, llm, source_storage
 
 from .core import Config, Rag
 
-demo_config = Config()
-demo_config.register_component(source_storage.RagnaDemoSourceStorage)
-demo_config.register_component(llm.RagnaDemoLlm)
+
+def _demo_config():
+    demo_config = Config()
+    demo_config.register_component(source_storage.RagnaDemoSourceStorage)
+    demo_config.register_component(llm.RagnaDemoLlm)
+    return demo_config
+
+
+demo_config = _demo_config()
+del _demo_config
+
+
+def _builtin_config():
+    from ragna.core import Llm, SourceStorage
+
+    builtin_config = Config()
+
+    for module, cls in [(source_storage, SourceStorage), (llm, Llm)]:
+        for obj in module.__dict__.values():
+            if isinstance(obj, type) and issubclass(obj, cls):
+                builtin_config.register_component(obj)
+
+    return builtin_config
+
+
+builtin_config = _builtin_config()
+del _builtin_config

@@ -27,14 +27,21 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-# to update this, run scripts/update_optional_dependencies.py
 [project.optional-dependencies]
-extensions = [
+console = [
+    "rich",
+]
+api = []
+ui = []
+builtin-components = []
+# to update this, run scripts/update_optional_dependencies.py
+complete = [
     'chromadb>=0.4',
     'pymupdf',
     'requests',
     'tiktoken',
 ]
+
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"

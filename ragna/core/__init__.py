@@ -1,5 +1,5 @@
 from ._config import Config
-from ._document import Document, Page, PageExtractor
+from ._document import Document, LocalDocument, Page, PageExtractor
 from ._exceptions import RagnaException
 from ._llm import Llm
 from ._rag import Rag

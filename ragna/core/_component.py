@@ -3,21 +3,13 @@ import inspect
 
 from pydantic import create_model
 
-from ._requirement import Requirement
+from ._requirement import RequirementMixin
 
 
-class Component:
+class Component(RequirementMixin):
     @classmethod
     def display_name(cls) -> str:
         return cls.__name__
-
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return []
-
-    @classmethod
-    def is_available(cls) -> bool:
-        return all(requirement.is_available() for requirement in cls.requirements())
 
     def __init__(self, config) -> None:
         self.config = config

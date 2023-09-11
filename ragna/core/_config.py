@@ -2,55 +2,23 @@ from __future__ import annotations
 
 import dataclasses
 
+import importlib.util
+
 import inspect
 
 import logging
 import sys
 from pathlib import Path
 
-from typing import Any, Optional, Type, Union
+from typing import Type
 
 import structlog
 
 from ._component import Component
-from ._document import Document
+from ._document import LocalDocument
 from ._exceptions import RagnaException
 from ._llm import Llm
 from ._source_storage import SourceStorage
-
-
-class LocalDocument(Document):
-    def __init__(
-        self,
-        path: Optional[Union[str | Path]] = None,
-        *,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
-        if metadata is None:
-            metadata = {}
-        metadata_path = metadata.get("path")
-
-        if path is None and metadata_path is None:
-            raise RagnaException()
-        elif path is not None and metadata_path is not None:
-            raise RagnaException()
-        elif metadata_path is not None:
-            path = metadata_path
-        else:
-            metadata["path"] = str(path)
-        if name is None:
-            name = Path(path).name
-        super().__init__(name=name, metadata=metadata, **kwargs)
-
-    @property
-    def path(self) -> Path:
-        return Path(self.metadata["path"])
-
-    def read(self) -> bytes:
-        with open(self.path, "rb") as stream:
-            return stream.read()
 
 
 @dataclasses.dataclass
@@ -94,6 +62,29 @@ class Config:
     def _is_writable(self, path):
         # FIXME: implement this
         return True
+
+    @staticmethod
+    def _load_from_source(source: str) -> Config:
+        name = None
+        parts = source.split("::")
+        if len(parts) == 2:
+            source, name = parts
+        elif len(parts) != 1:
+            raise RagnaException
+
+        path = Path(source).expanduser().resolve()
+        if path.exists():
+            spec = importlib.util.spec_from_file_location(path.name, path)
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+        else:
+            try:
+                module = importlib.import_module(source)
+            except ModuleNotFoundError:
+                source, name = source.rsplit(".", 1)
+                module = importlib.import_module(source)
+
+        return getattr(module, name or "config")
 
     def register_component(self, cls):
         if not (

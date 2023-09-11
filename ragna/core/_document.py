@@ -5,9 +5,8 @@ import dataclasses
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
-from ._component import Component
 from ._exceptions import RagnaException
-from ._requirement import PackageRequirement, Requirement
+from ._requirement import PackageRequirement, Requirement, RequirementMixin
 
 
 class Document(abc.ABC):
@@ -45,18 +44,47 @@ class Document(abc.ABC):
         return cls(id=data.id, name=data.name, metadata=data.metadata_)
 
 
+class LocalDocument(Document):
+    def __init__(
+        self,
+        path: Optional[str | Path] = None,
+        *,
+        name: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        **kwargs,
+    ):
+        if metadata is None:
+            metadata = {}
+        metadata_path = metadata.get("path")
+
+        if path is None and metadata_path is None:
+            raise RagnaException()
+        elif path is not None and metadata_path is not None:
+            raise RagnaException()
+        elif metadata_path is not None:
+            path = metadata_path
+        else:
+            metadata["path"] = str(path)
+        if name is None:
+            name = Path(path).name
+        super().__init__(name=name, metadata=metadata, **kwargs)
+
+    @property
+    def path(self) -> Path:
+        return Path(self.metadata["path"])
+
+    def read(self) -> bytes:
+        with open(self.path, "rb") as stream:
+            return stream.read()
+
+
 @dataclasses.dataclass
 class Page:
     text: str
     number: Optional[int] = None
 
 
-class PageExtractor(Component, abc.ABC):
-    def __init__(self):
-        # FIXME: this is an ugly hack. Since we subclass from Component, we would also
-        #  need to provide a config. That is not possible right now
-        pass
-
+class PageExtractor(RequirementMixin, abc.ABC):
     @abc.abstractmethod
     def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
         ...
