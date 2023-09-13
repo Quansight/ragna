@@ -19,6 +19,37 @@ from ._state import State
 T = TypeVar("T", bound=Component)
 
 
+def parse_component(obj: Any, *, registry: dict[str, T], config: Config) -> T:
+    if isinstance(obj, Component):
+        return obj
+    elif isinstance(obj, type) and issubclass(obj, Component):
+        if not obj.is_available():
+            raise RagnaException(obj)
+        return obj(config)
+    elif obj in registry:
+        return registry[obj]
+    else:
+        raise RagnaException(obj)
+
+
+def load_components(
+    component_classes: dict, *, deselect_unavailable_components: bool, config: Config
+):
+    components = {}
+    deselected = False
+    for name, component_class in component_classes.items():
+        if not component_class.is_available():
+            deselected = True
+            continue
+
+        components[name] = component_class(config)
+
+    if deselected and not deselect_unavailable_components:
+        raise RagnaException()
+
+    return components
+
+
 class Rag:
     def __init__(
         self,
@@ -43,16 +74,16 @@ class Rag:
         if ragna_worker_proc is not None:
             self._subprocesses.add(ragna_worker_proc)
 
-        self._source_storages = self._load_components(
+        self._source_storages = load_components(
             self.config.registered_source_storage_classes,
             deselect_unavailable_components=deselect_unavailable_components,
+            config=config,
         )
-        self._llms = self._load_components(
+        self._llms = load_components(
             self.config.registered_llm_classes,
             deselect_unavailable_components=deselect_unavailable_components,
+            config=config,
         )
-
-        self._chats: dict[int, Chat] = {}
 
     def _start_ragna_worker(self, start: bool | int):
         # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
@@ -86,27 +117,6 @@ class Rag:
         for proc in self._subprocesses:
             proc.communicate()
 
-    def _load_components(
-        self, component_classes: dict, *, deselect_unavailable_components
-    ):
-        components = {}
-        deselected = False
-        for name, component_class in component_classes.items():
-            if not component_class.is_available():
-                self._logger.warn("Component not available", name=name)
-                deselected = True
-                continue
-
-            components[name] = component_class(self.config)
-
-        if deselected and not deselect_unavailable_components:
-            raise RagnaException()
-
-        if not components:
-            self._logger.warning("No registered components available")
-
-        return components
-
     async def add_document(self, *, user: str, document: Document):
         if document.id is not None:
             raise RagnaException()
@@ -127,10 +137,10 @@ class Rag:
         **params,
     ):
         documents = await self._parse_documents(documents, user=user)
-        source_storage = self._parse_component(
-            source_storage, registry=self._source_storages
+        source_storage = parse_component(
+            source_storage, registry=self._source_storages, config=self.config
         )
-        llm = self._parse_component(llm, registry=self._llms)
+        llm = parse_component(llm, registry=self._llms, config=self.config)
 
         chat = Chat(
             rag=self,
@@ -178,18 +188,6 @@ class Rag:
 
             documents_.append(document)
         return documents_
-
-    def _parse_component(self, obj: Any, *, registry: dict[str, T]) -> T:
-        if isinstance(obj, Component):
-            return obj
-        elif isinstance(obj, type) and issubclass(obj, Component):
-            if not obj.is_available():
-                raise RagnaException(obj)
-            return obj(self.config)
-        elif obj in registry:
-            return registry[obj]
-        else:
-            raise RagnaException(obj)
 
 
 # TOD: Make this a context manager and implement a close functionality
@@ -303,3 +301,73 @@ class Chat:
         answer = await self._enqueue(self.llm.complete, prompt, sources)
         self._state.add_message(user=self._user, chat_id=self.id, content=answer)
         return answer
+
+
+class SimpleRag:
+    def __init__(
+        self,
+        config: Optional[Config] = None,
+        *,
+        deselect_unavailable_components: bool = True,
+    ):
+        self.config = config or Config()
+        self._logger = self.config.get_logger()
+
+        self._source_storages = load_components(
+            self.config.registered_source_storage_classes,
+            deselect_unavailable_components=deselect_unavailable_components,
+            config=config,
+        )
+        self._llms = load_components(
+            self.config.registered_llm_classes,
+            deselect_unavailable_components=deselect_unavailable_components,
+            config=config,
+        )
+
+    def start_new_chat(
+        self,
+        *,
+        user: str = "root",
+        name: Optional[str] = None,
+        documents: Sequence[Any],
+        source_storage: Any,
+        llm: Any,
+        **params,
+    ):
+        documents = [
+            document
+            if isinstance(document, Document)
+            else self.config.document_class(document)
+            for document in documents
+        ]
+        source_storage = parse_component(
+            source_storage, registry=self._source_storages, config=self.config
+        )
+        llm = parse_component(llm, registry=self._llms, config=self.config)
+
+        chat = SimpleChat(
+            rag=self,
+            user=user,
+            id=State.make_id(),
+            name=name,
+            documents=documents,
+            source_storage=source_storage,
+            llm=llm,
+            **params,
+        )
+
+        chat.start()
+
+        return chat
+
+
+class SimpleChat(Chat):
+    def _call(self, fn, *args):
+        return fn(*args, **self._unpacked_params[fn])
+
+    def start(self):
+        self._call(self.source_storage.store, self.documents)
+
+    def answer(self, prompt: str):
+        sources = self._call(self.source_storage.retrieve, prompt)
+        return self._call(self.llm.complete, prompt, sources)

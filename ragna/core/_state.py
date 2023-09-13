@@ -102,18 +102,20 @@ class State:
         if hasattr(self, "_session"):
             self._session.close()
 
-    def make_id(self):
+    @staticmethod
+    def make_id():
         return _make_id()
 
     _UUID_STR_PATTERN = re.compile(
         r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
     )
 
-    def is_id(self, obj: Any) -> bool:
+    @staticmethod
+    def is_id(obj: Any) -> bool:
         if not isinstance(obj, str):
             return False
 
-        return self._UUID_STR_PATTERN.match(obj) is not None
+        return State._UUID_STR_PATTERN.match(obj) is not None
 
     @functools.lru_cache(maxsize=1024)
     def _get_user_id(self, username: str):
