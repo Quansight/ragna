@@ -52,7 +52,105 @@ class Rag:
             deselect_unavailable_components=deselect_unavailable_components,
         )
 
-        self._chats: dict[int, Chat] = {}
+        # This needs to be a proper cache
+        self._chats: dict[(str, str), Chat] = {}
+
+    async def add_document(self, *, user: str, document: Document):
+        if document.id is not None:
+            raise RagnaException()
+
+        data = self._state.add_document(
+            user=user, name=document.name, metadata=document.metadata
+        )
+        return data.id
+
+    async def get_chat(self, *, user: str, id: str):
+        key = (user, id)
+        chats = self._chats
+        if key not in chats:
+            chats = await self.get_chats(user=user)
+        if key not in chats:
+            raise RagnaException()
+
+        return chats[key]
+
+    async def get_chats(self, *, user: str = "root"):
+        chats = []
+        for chat_data in self._state.get_chats(user=user):
+            key = (user, chat_data.id)
+            if key not in self._chats:
+                self._chats[key] = Chat(
+                    rag=self,
+                    user=user,
+                    id=chat_data.id,
+                    name=chat_data.name,
+                    documents=[
+                        self.config.document_class(
+                            id=document_data.id,
+                            name=document_data.name,
+                            metadata=document_data.metadata,
+                        )
+                        for document_data in chat_data.document_datas
+                    ],
+                    source_storage=self._parse_component(
+                        chat_data.source_storage_name, registry=self._source_storages
+                    ),
+                    llm=self._parse_component(chat_data.llm_name, registry=self._llms),
+                    **chat_data.params,
+                )
+
+            chats.append(self._chats[key])
+        return chats
+
+    async def new_chat(
+        self,
+        *,
+        user: str = "root",
+        name: Optional[str] = None,
+        documents: Sequence[Any],
+        source_storage: Any,
+        llm: Any,
+        **params,
+    ):
+        documents = await self._parse_documents(documents, user=user)
+        source_storage = self._parse_component(
+            source_storage, registry=self._source_storages
+        )
+        llm = self._parse_component(llm, registry=self._llms)
+
+        chat = Chat(
+            rag=self,
+            user=user,
+            id=self._state.make_id(),
+            name=name,
+            documents=documents,
+            source_storage=source_storage,
+            llm=llm,
+            **params,
+        )
+
+        self._state.add_chat(
+            id=chat.id,
+            user=user,
+            name=chat.name,
+            document_ids=[document.id for document in documents],
+            source_storage_name=str(source_storage),
+            llm_name=str(llm),
+            params=params,
+        )
+
+        return chat
+
+    async def start_chat(self):
+        pass
+
+    async def close_chat(self):
+        pass
+
+    async def answer(self, *, user: str = "root", chat_id: str, prompt: str):
+        chat = self._chats.get((user, chat_id))
+        chat
+        pass
 
     def _start_ragna_worker(self, start: bool | int):
         # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
@@ -106,56 +204,6 @@ class Rag:
             self._logger.warning("No registered components available")
 
         return components
-
-    async def add_document(self, *, user: str, document: Document):
-        if document.id is not None:
-            raise RagnaException()
-
-        data = self._state.add_document(
-            user=user, name=document.name, metadata=document.metadata
-        )
-        return data.id
-
-    async def start_new_chat(
-        self,
-        *,
-        user: str = "root",
-        name: Optional[str] = None,
-        documents: Sequence[Any],
-        source_storage: Any,
-        llm: Any,
-        **params,
-    ):
-        documents = await self._parse_documents(documents, user=user)
-        source_storage = self._parse_component(
-            source_storage, registry=self._source_storages
-        )
-        llm = self._parse_component(llm, registry=self._llms)
-
-        chat = Chat(
-            rag=self,
-            user=user,
-            id=self._state.make_id(),
-            name=name,
-            documents=documents,
-            source_storage=source_storage,
-            llm=llm,
-            **params,
-        )
-
-        self._state.add_chat(
-            id=chat.id,
-            user=user,
-            name=chat.name,
-            document_ids=[document.id for document in documents],
-            source_storage_name=str(source_storage),
-            llm_name=str(llm),
-            params=params,
-        )
-
-        await chat.start()
-
-        return chat
 
     async def _parse_documents(
         self, objs: Sequence[Any], *, user: str
@@ -300,6 +348,19 @@ class Chat:
 
     async def answer(self, prompt: str):
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
-        answer = await self._enqueue(self.llm.complete, prompt, sources)
-        self._state.add_message(user=self._user, chat_id=self.id, content=answer)
-        return answer
+        content = await self._enqueue(self.llm.complete, prompt, sources)
+        self._state.add_message(user=self._user, chat_id=self.id, content=content)
+        return Answer(sources=sources, content=content)
+
+
+class Answer:
+    def __init__(self, *, sources, content):
+        self.sources = sources
+        self.content = content
+
+    def __iter__(self):
+        yield self.sources
+        yield self.content
+
+    def __str__(self):
+        return self.content

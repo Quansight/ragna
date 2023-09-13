@@ -5,6 +5,7 @@ from pathlib import Path
 
 import ragna
 import tomlkit
+import tomlkit.items
 
 from packaging.requirements import Requirement
 
@@ -50,9 +51,9 @@ def update_pyproject_toml(manual_optional_dependencies, builtin_optional_depende
     with open(PYPROJECT_TOML) as file:
         document = tomlkit.load(file)
 
-    document["project"]["optional-dependencies"]["builtin-components"] = tomlkit.array(
-        format_optional_dependencies(builtin_optional_dependencies)
-    ).multiline(True)
+    document["project"]["optional-dependencies"]["builtin-components"] = to_array(
+        builtin_optional_dependencies
+    )
 
     complete_optional_dependencies = defaultdict(list)
     for key in itertools.chain(
@@ -65,22 +66,25 @@ def update_pyproject_toml(manual_optional_dependencies, builtin_optional_depende
             builtin_optional_dependencies.get(key, [])
         )
 
-    document["project"]["optional-dependencies"]["complete"] = tomlkit.array(
-        format_optional_dependencies(complete_optional_dependencies)
-    ).multiline(True)
+    document["project"]["optional-dependencies"]["complete"] = to_array(
+        complete_optional_dependencies
+    )
 
     with open(PYPROJECT_TOML, "w") as file:
         tomlkit.dump(document, file)
 
 
-def format_optional_dependencies(optional_dependencies):
-    return str(
-        sorted(
-            (
-                str(Requirement(f"{name} {reduce(lambda a, b: a & b, specifiers)}"))
-                for name, specifiers in optional_dependencies.items()
-            )
+def to_array(optional_dependencies):
+    value = sorted(
+        (
+            str(Requirement(f"{name} {reduce(lambda a, b: a & b, specifiers)}"))
+            for name, specifiers in optional_dependencies.items()
         )
+    )
+    return tomlkit.items.Array(
+        list(map(tomlkit.items.String.from_raw, value)),
+        trivia=tomlkit.items.Trivia(),
+        multiline=True,
     )
 
 

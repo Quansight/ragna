@@ -64,7 +64,7 @@ class Config:
         return True
 
     @staticmethod
-    def _load_from_source(source: str) -> Config:
+    def load_from_source(source: str) -> Config:
         name = None
         parts = source.split("::")
         if len(parts) == 2:

@@ -63,6 +63,10 @@ class DocumentData(Base):
         back_populates="document_datas",
         default_factory=list,
     )
+    source_datas: Mapped[list[SourceData]] = relationship(
+        back_populates="document_datas",
+        default_factory=list,
+    )
 
 
 class ChatData(Base):
@@ -84,12 +88,40 @@ class ChatData(Base):
     closed: Mapped[bool] = mapped_column(default=False)
 
 
+source_message_data_association_table = Table(
+    "source_message_data_association_table",
+    Base.metadata,
+    Column("source_id", ForeignKey("sources.id"), primary_key=True),
+    Column("message_id", ForeignKey("messages.id"), primary_key=True),
+)
+
+
+class SourceData(Base):
+    __tablename__ = "sources"
+
+    id: Mapped[str] = mapped_column(primary_key=True)
+    document_id: Mapped[str] = mapped_column(ForeignKey("documents.id"))
+    document_data: Mapped[DocumentData] = relationship(back_populates="source_datas")
+    page_numbers: Mapped[str]
+    message_datas: Mapped[list[MessageData]] = relationship(
+        secondary=source_message_data_association_table,
+        back_populates="source_datas",
+        default_factory=list,
+    )
+
+
 class MessageData(Base):
     __tablename__ = "messages"
 
     id: Mapped[str] = mapped_column(primary_key=True)
     chat_id: Mapped[str] = mapped_column(ForeignKey("chats.id"))
     content: Mapped[str]
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"))
+    source_datas: Mapped[list[SourceData]] = relationship(
+        secondary=source_message_data_association_table,
+        back_populates="message_datas",
+        default_factory=list,
+    )
 
 
 class State:
@@ -145,6 +177,11 @@ class State:
                 DocumentData.id == id & DocumentData.user_id == self._get_user_id(user)
             )
         ).scalar_one_or_none()
+
+    def get_chats(self, user: str):
+        return self._session.execute(
+            select(ChatData).where(ChatData.user_id == self._get_user_id(user))
+        )
 
     def add_chat(
         self,

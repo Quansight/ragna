@@ -118,6 +118,7 @@ class ChromaSourceStorage(SourceStorage):
             take_sources_up_to_max_tokens(
                 (
                     Source(
+                        document_id=result["ids"],
                         document_name=result["metadatas"]["document_name"],
                         page_numbers=result["metadatas"]["page_numbers"],
                         text=result["documents"],

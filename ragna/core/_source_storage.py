@@ -16,6 +16,7 @@ class Tokenizer(Protocol):
 
 @dataclasses.dataclass
 class Source:
+    document_id: str
     document_name: str
     page_numbers: str
     text: str
