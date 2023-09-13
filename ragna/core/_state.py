@@ -142,7 +142,8 @@ class State:
     def get_document(self, id: str, user: str) -> DocumentData:
         return self._session.execute(
             select(DocumentData).where(
-                DocumentData.id == id & DocumentData.user_id == self._get_user_id(user)
+                (DocumentData.id == id)
+                & (DocumentData.user_id == self._get_user_id(user))
             )
         ).scalar_one_or_none()
 
@@ -182,6 +183,18 @@ class State:
         self._session.add(chat)
         self._session.commit()
         return chat
+
+    def close_chat(self, *, id: str, user: str):
+        chat_data = self._session.execute(
+            select(ChatData).where(
+                (ChatData.id == id) & (ChatData.user_id == self._get_user_id(user))
+            )
+        ).scalar_one_or_none()
+        if chat_data is None:
+            raise RagnaException()
+
+        chat_data.closed = True
+        self._session.commit()
 
     def add_message(self, user: str, chat_id: str, content: str):
         chat_data = self._session.execute(

@@ -116,7 +116,7 @@ class Rag:
         )
         return data.id
 
-    async def start_new_chat(
+    async def new_chat(
         self,
         *,
         user: str = "root",
@@ -152,8 +152,6 @@ class Rag:
             llm_name=str(llm),
             params=params,
         )
-
-        await chat.start()
 
         return chat
 
@@ -192,7 +190,6 @@ class Rag:
             raise RagnaException(obj)
 
 
-# TOD: Make this a context manager and implement a close functionality
 class Chat:
     def __init__(
         self,
@@ -216,6 +213,9 @@ class Chat:
 
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
+
+        self._started = False
+        self._closed = False
 
     def __repr__(self):
         return f"{type(self).__name__}(id={self.id}, name={self.name})"
@@ -295,10 +295,26 @@ class Chat:
             **getattr(fn, "__ragna_job_kwargs__", {}),
         )
 
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, *_):
+        self.close()
+
     async def start(self):
-        return await self._enqueue(self.source_storage.store, self.documents)
+        await self._enqueue(self.source_storage.store, self.documents)
+        self._started = True
+
+    def close(self):
+        self._rag._state.close_chat(id=self.id, user=self._user)
+        self._closed = True
 
     async def answer(self, prompt: str):
+        if not self._started:
+            raise RagnaException()
+        if self._closed:
+            raise RagnaException()
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
         answer = await self._enqueue(self.llm.complete, prompt, sources)
         self._state.add_message(user=self._user, chat_id=self.id, content=answer)
