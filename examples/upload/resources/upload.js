@@ -22,10 +22,12 @@ async function getUploadInformations(file) {
 
 async function uploadFile(file, uploadInformations) {
 
+    // Can we get raw bytes here to avoid coding ping pong?
     const reader = new FileReader();
     reader.addEventListener('load', (event) => {
         fileData = event.target.result;
 
+        // Let's not hard code this here, since this is fundamental
         const url = "http://localhost:8000/upload-document";
         
         var body = new FormData()
