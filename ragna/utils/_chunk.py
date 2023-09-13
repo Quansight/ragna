@@ -3,7 +3,7 @@ import dataclasses
 from collections import deque
 from typing import Deque, Iterable, Iterator, Optional, TypeVar
 
-from ragna._backend import Page, Tokenizer
+from ragna.core import Page, Tokenizer
 
 T = TypeVar("T")
 
@@ -39,9 +39,9 @@ def chunk_pages(
 ) -> Iterator[Chunk]:
     for window in _windowed_ragged(
         (
-            (token, page.number)
+            (tokens, page.number)
             for page in pages
-            for token in tokenizer.encode(page.text)
+            for tokens in tokenizer.encode(page.text)
         ),
         n=chunk_size,
         step=chunk_size - chunk_overlap,
