@@ -1,9 +1,43 @@
 # Ragna
 
-## `panel`
+## Local install
 
-The main component in the UI is the chat box. It will get a significant revamp in `panel==1.3`. However, until that is released, we need to install from source and in particular from the [`chat_components` branch](https://github.com/holoviz/panel/tree/chat_components). Fortunately, `panel` contains no compiled parts and thus it is as easy as
-
+```bash
+$ conda env create --file environment.yaml
+$ conda activate ragna-dev
+$ pip install --editable '.[complete]'
+$ ragna --version
+$ ragna ls
 ```
-pip install git+https://github.com/holoviz/panel@chat_components
+
+## Minimal example
+
+```python
+import asyncio
+
+from ragna import Rag
+from ragna.llm import RagnaDemoLlm
+from ragna.source_storage import RagnaDemoSourceStorage
+
+
+async def main():
+    rag = Rag()
+
+    path = "ragna.txt"
+    with open(path, "w") as file:
+        file.write("Ragna is an OSS RAG app with Python and REST API.\n")
+
+    chat = await rag.start_new_chat(
+        documents=[path],
+        source_storage=RagnaDemoSourceStorage,
+        llm=RagnaDemoLlm,
+    )
+
+    print(await chat.answer("What is Ragna?"))
+
+
+# This is only needed when running inside a regular editor.
+# When running inside a notebook, the code inside the main function can be run directly
+if __name__ == "__main__":
+    asyncio.run(main())
 ```

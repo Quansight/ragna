@@ -25,7 +25,7 @@ class Rag:
         config: Optional[Config] = None,
         *,
         start_redis_server: Optional[bool] = None,
-        start_ragna_worker: bool | int = False,
+        start_ragna_worker: bool | int = True,
         deselect_unavailable_components=True,
     ):
         self.config = config or Config()
