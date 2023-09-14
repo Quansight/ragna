@@ -40,8 +40,15 @@ class Document(abc.ABC):
         )
 
     @classmethod
-    def _from_data(cls, data):
+    def _from_state(cls, data):
         return cls(id=data.id, name=data.name, metadata=data.metadata_)
+
+    def _to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "metadata": self.metadata,
+        }
 
 
 class LocalDocument(Document):

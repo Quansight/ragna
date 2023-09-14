@@ -2,8 +2,8 @@ import abc
 import os
 
 from ragna.core import (
+    Assistant,
     EnvVarRequirement,
-    Llm,
     PackageRequirement,
     RagnaException,
     Requirement,
@@ -26,7 +26,7 @@ class ApiException(RagnaException):
         self.additional_context = additional_context
 
 
-class LlmApi(Llm):
+class AssistantApi(Assistant):
     _API_KEY_ENV_VAR: str
 
     def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
@@ -44,9 +44,7 @@ class LlmApi(Llm):
 
     # FIXME: add retries
     @job_config()
-    def complete(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ):
+    def answer(self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256):
         try:
             return self._call_api(prompt, sources, max_new_tokens=max_new_tokens)
         except ApiException as api_exception:

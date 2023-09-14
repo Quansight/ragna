@@ -16,6 +16,8 @@ from sqlalchemy.orm import (
     Session,
 )
 
+from ragna.core import MessageRole
+
 from ._exceptions import RagnaException
 
 
@@ -27,6 +29,12 @@ def _make_id() -> str:
     return str(uuid.uuid4())
 
 
+# FIXME: try and use this
+class RagnaId(str):
+    pass
+
+
+# FIXME: do we actually need this?
 class UserData(Base):
     __tablename__ = "users"
 
@@ -64,7 +72,7 @@ class DocumentData(Base):
         default_factory=list,
     )
     source_datas: Mapped[list[SourceData]] = relationship(
-        back_populates="document_datas",
+        back_populates="document_data",
         default_factory=list,
     )
 
@@ -100,9 +108,12 @@ class SourceData(Base):
     __tablename__ = "sources"
 
     id: Mapped[str] = mapped_column(primary_key=True)
+
     document_id: Mapped[str] = mapped_column(ForeignKey("documents.id"))
     document_data: Mapped[DocumentData] = relationship(back_populates="source_datas")
-    page_numbers: Mapped[str]
+
+    location: Mapped[str]
+
     message_datas: Mapped[list[MessageData]] = relationship(
         secondary=source_message_data_association_table,
         back_populates="source_datas",
@@ -116,6 +127,7 @@ class MessageData(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     chat_id: Mapped[str] = mapped_column(ForeignKey("chats.id"))
     content: Mapped[str]
+    role: Mapped[MessageRole]
     source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"))
     source_datas: Mapped[list[SourceData]] = relationship(
         secondary=source_message_data_association_table,

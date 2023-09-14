@@ -16,7 +16,7 @@ from .core import Config, Rag
 def _demo_config():
     demo_config = Config()
     demo_config.register_component(source_storage.RagnaDemoSourceStorage)
-    demo_config.register_component(llm.RagnaDemoLlm)
+    demo_config.register_component(llm.RagnaDemoAssistant)
     return demo_config
 
 
@@ -25,11 +25,11 @@ del _demo_config
 
 
 def _builtin_config():
-    from ragna.core import Llm, SourceStorage
+    from ragna.core import Assistant, SourceStorage
 
     builtin_config = Config()
 
-    for module, cls in [(source_storage, SourceStorage), (llm, Llm)]:
+    for module, cls in [(source_storage, SourceStorage), (llm, Assistant)]:
         for obj in module.__dict__.values():
             if isinstance(obj, type) and issubclass(obj, cls):
                 builtin_config.register_component(obj)

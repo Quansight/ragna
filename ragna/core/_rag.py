@@ -9,14 +9,16 @@ from typing import Any, Optional, Sequence, TypeVar
 
 from pydantic import BaseModel, create_model, Extra
 
-from ._component import Component
+from ._component import RagComponent
 from ._config import Config
 from ._exceptions import RagnaException
 from ._queue import _enqueue_job, _get_queue
 from ._source_storage import Document
 from ._state import State
 
-T = TypeVar("T", bound=Component)
+T = TypeVar("T", bound=RagComponent)
+
+DEFAULT_USER = "Ragna"
 
 
 class Rag:
@@ -52,10 +54,9 @@ class Rag:
             deselect_unavailable_components=deselect_unavailable_components,
         )
 
-        # This needs to be a proper cache
         self._chats: dict[(str, str), Chat] = {}
 
-    async def add_document(self, *, user: str, document: Document):
+    async def _add_document(self, *, user: str, document: Document):
         if document.id is not None:
             raise RagnaException()
 
@@ -64,48 +65,32 @@ class Rag:
         )
         return data.id
 
-    async def get_chat(self, *, user: str, id: str):
-        key = (user, id)
-        chats = self._chats
-        if key not in chats:
-            chats = await self.get_chats(user=user)
-        if key not in chats:
-            raise RagnaException()
-
-        return chats[key]
-
-    async def get_chats(self, *, user: str = "root"):
-        chats = []
-        for chat_data in self._state.get_chats(user=user):
-            key = (user, chat_data.id)
-            if key not in self._chats:
-                self._chats[key] = Chat(
-                    rag=self,
-                    user=user,
-                    id=chat_data.id,
-                    name=chat_data.name,
-                    documents=[
-                        self.config.document_class(
-                            id=document_data.id,
-                            name=document_data.name,
-                            metadata=document_data.metadata,
-                        )
-                        for document_data in chat_data.document_datas
-                    ],
-                    source_storage=self._parse_component(
-                        chat_data.source_storage_name, registry=self._source_storages
-                    ),
-                    llm=self._parse_component(chat_data.llm_name, registry=self._llms),
-                    **chat_data.params,
-                )
-
-            chats.append(self._chats[key])
+    async def _get_chats(self, *, user: str = DEFAULT_USER):
+        chats = [
+            Chat._from_state(rag=self, user=user, data=data)
+            for data in self._state.get_chats(user=user)
+        ]
+        self._chats.update({(user, chat.id): chat for chat in chats})
         return chats
+
+    async def _get_chat(self, *, user: str = DEFAULT_USER, id: str):
+        key = (user, id)
+
+        chat = self._chats.get(key)
+        if chat is not None:
+            return chat
+
+        await self.get_chats(user=user)
+        chat = self._chats.get(key)
+        if chat is not None:
+            raise chat
+
+        raise RagnaException
 
     async def new_chat(
         self,
         *,
-        user: str = "root",
+        user: str = "Ragna",
         name: Optional[str] = None,
         documents: Sequence[Any],
         source_storage: Any,
@@ -140,17 +125,6 @@ class Rag:
         )
 
         return chat
-
-    async def start_chat(self):
-        pass
-
-    async def close_chat(self):
-        pass
-
-    async def answer(self, *, user: str = "root", chat_id: str, prompt: str):
-        chat = self._chats.get((user, chat_id))
-        chat
-        pass
 
     def _start_ragna_worker(self, start: bool | int):
         # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
@@ -222,15 +196,15 @@ class Rag:
                     document = self.config.document_class(obj)
 
             if document.id is None:
-                document.id = await self.add_document(user=user, document=document)
+                document.id = await self._add_document(user=user, document=document)
 
             documents_.append(document)
         return documents_
 
     def _parse_component(self, obj: Any, *, registry: dict[str, T]) -> T:
-        if isinstance(obj, Component):
+        if isinstance(obj, RagComponent):
             return obj
-        elif isinstance(obj, type) and issubclass(obj, Component):
+        elif isinstance(obj, type) and issubclass(obj, RagComponent):
             if not obj.is_available():
                 raise RagnaException(obj)
             return obj(self.config)
@@ -264,9 +238,6 @@ class Chat:
 
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
-
-    def __repr__(self):
-        return f"{type(self).__name__}(id={self.id}, name={self.name})"
 
     class _SpecialChatParams(BaseModel):
         user: str
@@ -348,19 +319,28 @@ class Chat:
 
     async def answer(self, prompt: str):
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
-        content = await self._enqueue(self.llm.complete, prompt, sources)
+        content = await self._enqueue(self.llm.answer, prompt, sources)
         self._state.add_message(user=self._user, chat_id=self.id, content=content)
         return Answer(sources=sources, content=content)
 
-
-class Answer:
-    def __init__(self, *, sources, content):
-        self.sources = sources
-        self.content = content
-
-    def __iter__(self):
-        yield self.sources
-        yield self.content
-
-    def __str__(self):
-        return self.content
+    @classmethod
+    def _from_state(cls, *, rag, user, data):
+        return cls(
+            rag=rag,
+            user=user,
+            id=data.id,
+            name=data.name,
+            documents=[
+                rag.config.document_class(
+                    id=document_data.id,
+                    name=document_data.name,
+                    metadata=document_data.metadata,
+                )
+                for document_data in data.document_datas
+            ],
+            source_storage=rag._parse_component(
+                data.source_storage_name, registry=rag._source_storages
+            ),
+            llm=rag._parse_component(data.llm_name, registry=rag._llms),
+            **data.params,
+        )

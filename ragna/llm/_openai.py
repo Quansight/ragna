@@ -1,9 +1,9 @@
 from ragna.core import Source
 
-from ._llm_api import ApiException, LlmApi
+from ._llm_api import ApiException, AssistantApi
 
 
-class OpenaiLlmApi(LlmApi):
+class OpenaiLlmApi(AssistantApi):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int

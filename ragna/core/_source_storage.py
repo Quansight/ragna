@@ -2,7 +2,7 @@ import abc
 import dataclasses
 from typing import Protocol, Sequence
 
-from ._component import Component
+from ._component import RagComponent
 from ._document import Document
 
 
@@ -16,14 +16,15 @@ class Tokenizer(Protocol):
 
 @dataclasses.dataclass
 class Source:
+    id: str
     document_id: str
     document_name: str
-    page_numbers: str
-    text: str
+    location: str
+    content: str
     num_tokens: int
 
 
-class SourceStorage(Component, abc.ABC):
+class SourceStorage(RagComponent, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod

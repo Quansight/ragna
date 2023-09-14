@@ -14,10 +14,11 @@ from typing import Type
 
 import structlog
 
-from ._component import Component
+from ._assistant import Assistant
+
+from ._component import RagComponent
 from ._document import LocalDocument
 from ._exceptions import RagnaException
-from ._llm import Llm
 from ._source_storage import SourceStorage
 
 
@@ -30,7 +31,7 @@ class Config:
     registered_source_storage_classes: dict[
         str, Type[SourceStorage]
     ] = dataclasses.field(default_factory=dict)
-    registered_llm_classes: dict[str, Type[Llm]] = dataclasses.field(
+    registered_llm_classes: dict[str, Type[Assistant]] = dataclasses.field(
         default_factory=dict
     )
 
@@ -89,13 +90,13 @@ class Config:
     def register_component(self, cls):
         if not (
             isinstance(cls, type)
-            and issubclass(cls, Component)
+            and issubclass(cls, RagComponent)
             and not inspect.isabstract(cls)
         ):
             raise RagnaException()
         if issubclass(cls, SourceStorage):
             registry = self.registered_source_storage_classes
-        elif issubclass(cls, Llm):
+        elif issubclass(cls, Assistant):
             registry = self.registered_llm_classes
         else:
             raise RagnaException
