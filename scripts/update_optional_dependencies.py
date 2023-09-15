@@ -36,7 +36,7 @@ def extract_optional_dependencies():
     optional_dependencies = defaultdict(list)
     for cls in itertools.chain(
         ragna.builtin_config.registered_source_storage_classes.values(),
-        ragna.builtin_config.registered_llm_classes.values(),
+        ragna.builtin_config.registered_assistant_classes.values(),
     ):
         for requirement in cls.requirements():
             if not isinstance(requirement, ragna.core.PackageRequirement):

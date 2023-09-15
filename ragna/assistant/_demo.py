@@ -6,7 +6,7 @@ from ragna.core import Assistant, Source
 class RagnaDemoAssistant(Assistant):
     @classmethod
     def display_name(cls):
-        return "Ragna/DemoLLM"
+        return "Ragna/DemoAssistant"
 
     @property
     def context_size(self) -> int:

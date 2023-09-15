@@ -3,10 +3,13 @@ from __future__ import annotations
 import abc
 import dataclasses
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 from ._exceptions import RagnaException
 from ._requirement import PackageRequirement, Requirement, RequirementMixin
+
+if TYPE_CHECKING:
+    from ._config import Config
 
 
 class Document(abc.ABC):
@@ -30,6 +33,17 @@ class Document(abc.ABC):
                 raise RagnaException()
         self.page_extractor = page_extractor
 
+    @classmethod
+    @abc.abstractmethod
+    async def get_upload_info(
+        cls, *, config: Config, user: str, id: str, name: str
+    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+        pass
+
+    @abc.abstractmethod
+    def is_available(self) -> bool:
+        ...
+
     @abc.abstractmethod
     def read(self) -> bytes:
         ...
@@ -38,17 +52,6 @@ class Document(abc.ABC):
         yield from self.page_extractor.extract_pages(
             name=self.name, content=self.read()
         )
-
-    @classmethod
-    def _from_state(cls, data):
-        return cls(id=data.id, name=data.name, metadata=data.metadata_)
-
-    def _to_json(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "metadata": self.metadata,
-        }
 
 
 class LocalDocument(Document):
@@ -76,9 +79,27 @@ class LocalDocument(Document):
             name = Path(path).name
         super().__init__(name=name, metadata=metadata, **kwargs)
 
+    @classmethod
+    async def get_upload_info(
+        cls, *, config: Config, user: str, id: str, name: str
+    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+        url = f"{config.ragna_api_url}/document/upload"
+        # FIXME: use a proper JWT token here that includes the user and id
+        data = {"token": f"{user}::{id}"}
+        metadata = {"path": str(config.local_cache_root / "documents" / id)}
+        return url, data, metadata
+
+    @classmethod
+    def _extract_user_and_document_id_from_token(cls, token: str) -> tuple[str, str]:
+        user, id = token.split("::")
+        return user, id
+
     @property
     def path(self) -> Path:
         return Path(self.metadata["path"])
+
+    def is_available(self) -> bool:
+        return self.path.exists()
 
     def read(self) -> bytes:
         with open(self.path, "rb") as stream:

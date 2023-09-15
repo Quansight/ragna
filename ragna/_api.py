@@ -1,30 +1,30 @@
+import functools
 import uuid
+
+from traceback import format_exception
 
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 
-from pydantic import BaseModel, Field, HttpUrl, Json
+from pydantic import BaseModel, Field, HttpUrl
 
-from ragna.core import Chat, MessageRole, Rag
+from ragna.core import Chat, LocalDocument, MessageRole, Rag, RagnaException
 
 
 class DocumentModel(BaseModel):
     id: UUID
     name: str
 
-    @classmethod
-    def _from_document(cls, document):
-        return cls(
-            id=UUID(document.id),
-            name=document.name,
-        )
+
+class UploadData(BaseModel):
+    token: str
 
 
 class DocumentUploadInfoModel(BaseModel):
     url: HttpUrl
-    data: dict[str, Any]
+    data: UploadData
     document: DocumentModel
 
 
@@ -59,17 +59,18 @@ class MessageModel(BaseModel):
 
 class ChatMetadataModel(BaseModel):
     name: str
-    documents: list[UUID]
+    document_ids: list[UUID]
     source_storage: str
-    llm: str
-    params: Json[dict] = Field(default_factory=dict)
+    assistant: str
+    params: dict = Field(default_factory=dict)
 
     @classmethod
     def _from_chat(cls, chat):
         return cls(
             name=chat.name,
-            documents=[d.id for d in chat.documents],
+            document_ids=[d.id for d in chat.documents],
             source_storage=str(chat.source_storage),
+            assistant=str(chat.assistant),
             params=chat.params,
         )
 
@@ -88,24 +89,54 @@ class ChatModel(BaseModel):
         )
 
 
+import re
+
+
 # Can we make this a custom type for the DB? Maybe just subclass from str?
 class RagnaId:
-    @staticmethod
-    def make():
-        return RagnaId.from_uuid(uuid.uuid4())
+    _UUID_STR_PATTERN = re.compile(
+        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    )
 
     @staticmethod
     def is_valid(obj: Any) -> bool:
-        if not isinstance(obj, str):
+        if isinstance(obj, UUID):
+            obj = str(obj)
+        elif not isinstance(obj, str):
             return False
+
+        return RagnaId._UUID_STR_PATTERN.match(obj) is not None
 
     @staticmethod
     def from_uuid(uuid: UUID) -> str:
         return str(uuid)
 
+    @staticmethod
+    def make():
+        return RagnaId.from_uuid(uuid.uuid4())
+
+
+def process_exception(afn):
+    @functools.wraps(afn)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await afn(*args, **kwargs)
+        except ():
+            raise
+        except RagnaException as exc:
+            # FIXME: process that here
+            raise HTTPException(
+                status_code=400, detail="\n".join(format_exception(exc))
+            ) from None
+        except Exception as exc:
+            print(exc)
+            raise HTTPException(status_code=500) from None
+
+    return wrapper
+
 
 def api(**kwargs):
-    rag = Rag(**kwargs)
+    rag = Rag(**kwargs, start_ragna_worker=False, start_redis_server=False)
 
     app = FastAPI()
 
@@ -116,18 +147,35 @@ def api(**kwargs):
     UserDependency = Annotated[str, Depends(_authorize_user)]
 
     @app.get("/document/new")
-    def get_document_upload_info(
-        user: UserDependency, name: str
+    async def get_document_upload_info(
+        user: UserDependency,
+        name: str,
     ) -> DocumentUploadInfoModel:
+        id = RagnaId.make()
+        url, data, metadata = await rag.config.document_class.get_upload_info(
+            config=rag.config, user=user, id=id, name=name
+        )
+        rag._add_document(user=user, id=id, name=name, metadata=metadata)
         return DocumentUploadInfoModel(
-            url="https://foo.org",
-            data={},
-            document=DocumentModel(id=RagnaId.make(), name=name),
+            url=url, data=UploadData(**data), document=DocumentModel(id=id, name=name)
         )
 
     @app.post("/document/upload")
-    def upload_document(user: UserDependency) -> DocumentModel:
-        pass
+    # @process_exception
+    async def upload_document(data: UploadData) -> DocumentModel:
+        if not issubclass(rag.config.document_class, LocalDocument):
+            raise RagnaException
+
+        user, id = rag.config.document_class._extract_user_and_document_id_from_token(
+            data.token
+        )
+        document = rag._get_document(user=user, id=id)
+
+        document.path.parent.mkdir(parents=True, exist_ok=True)
+        with open(document.path, "wb") as file:
+            file.write(b"FIXME")
+
+        return DocumentModel(id=id, name=document.name)
 
     @app.get("/chats")
     async def get_chats(user: UserDependency) -> list[ChatModel]:
@@ -141,9 +189,9 @@ def api(**kwargs):
             await rag.new_chat(
                 user=user,
                 name=chat_metadata.name,
-                documents=[str(d) for d in chat_metadata.documents],
+                documents=[RagnaId.from_uuid(u) for u in chat_metadata.document_ids],
                 source_storage=chat_metadata.source_storage,
-                llm=chat_metadata.llm,
+                assistant=chat_metadata.assistant,
                 **chat_metadata.params,
             )
         )

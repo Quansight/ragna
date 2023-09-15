@@ -44,7 +44,7 @@ class Message:
 
 
 class Assistant(RagComponent, abc.ABC):
-    __ragna_protocol_methods__ = ["complete"]
+    __ragna_protocol_methods__ = ["answer"]
 
     @property
     @abc.abstractmethod

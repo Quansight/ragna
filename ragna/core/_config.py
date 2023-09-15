@@ -24,14 +24,19 @@ from ._source_storage import SourceStorage
 
 @dataclasses.dataclass
 class Config:
-    local_cache_root: Path = Path.home() / ".cache" / "ragna"
     state_database_url: str = dataclasses.field(default=None)
     queue_database_url: str = "redis://127.0.0.1:6379"
+    ragna_api_url: str = "http://127.0.0.1:31476"
+    ragna_ui_url: str = "http://127.0.0.1:31477"
+
+    local_cache_root: Path = Path.home() / ".cache" / "ragna"
+
     document_class = LocalDocument
+
     registered_source_storage_classes: dict[
         str, Type[SourceStorage]
     ] = dataclasses.field(default_factory=dict)
-    registered_llm_classes: dict[str, Type[Assistant]] = dataclasses.field(
+    registered_assistant_classes: dict[str, Type[Assistant]] = dataclasses.field(
         default_factory=dict
     )
 
@@ -97,7 +102,7 @@ class Config:
         if issubclass(cls, SourceStorage):
             registry = self.registered_source_storage_classes
         elif issubclass(cls, Assistant):
-            registry = self.registered_llm_classes
+            registry = self.registered_assistant_classes
         else:
             raise RagnaException
 

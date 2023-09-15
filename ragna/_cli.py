@@ -2,6 +2,7 @@ import itertools
 from collections import defaultdict
 
 from typing import Annotated, Optional, Type
+from urllib.parse import urlsplit
 
 import typer
 
@@ -62,7 +63,7 @@ def ls(*, config: ConfigAnnotated = "ragna.builtin_config"):
 
     for name, cls in itertools.chain(
         config.registered_source_storage_classes.items(),
-        config.registered_llm_classes.items(),
+        config.registered_assistant_classes.items(),
     ):
         requirements = _split_requirements(cls.requirements())
         table.add_row(
@@ -110,7 +111,10 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 
     from ragna._api import api
 
-    uvicorn.run(api(config=config))
+    print(ragna.__version__)
+
+    components = urlsplit(config.ragna_api_url)
+    uvicorn.run(api(config=config), host=components.hostname, port=components.port)
 
 
 @app.command(help="Start Ragna worker(s)")

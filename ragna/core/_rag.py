@@ -9,6 +9,8 @@ from typing import Any, Optional, Sequence, TypeVar
 
 from pydantic import BaseModel, create_model, Extra
 
+from ._assistant import Message
+
 from ._component import RagComponent
 from ._config import Config
 from ._exceptions import RagnaException
@@ -18,8 +20,6 @@ from ._state import State
 
 T = TypeVar("T", bound=RagComponent)
 
-DEFAULT_USER = "Ragna"
-
 
 class Rag:
     def __init__(
@@ -27,7 +27,7 @@ class Rag:
         config: Optional[Config] = None,
         *,
         start_redis_server: Optional[bool] = None,
-        start_ragna_worker: bool | int = False,
+        start_ragna_worker: bool | int = True,
         deselect_unavailable_components=True,
     ):
         self.config = config or Config()
@@ -40,47 +40,71 @@ class Rag:
             self.config.queue_database_url, start_redis_server=start_redis_server
         )
         if redis_server_proc is not None:
+            self._logger.info("Started redis server")
             self._subprocesses.add(redis_server_proc)
         ragna_worker_proc = self._start_ragna_worker(start_ragna_worker)
         if ragna_worker_proc is not None:
+            self._logger.info("Started ragna worker")
             self._subprocesses.add(ragna_worker_proc)
 
         self._source_storages = self._load_components(
             self.config.registered_source_storage_classes,
             deselect_unavailable_components=deselect_unavailable_components,
         )
-        self._llms = self._load_components(
-            self.config.registered_llm_classes,
+        self._assistants = self._load_components(
+            self.config.registered_assistant_classes,
             deselect_unavailable_components=deselect_unavailable_components,
         )
 
         self._chats: dict[(str, str), Chat] = {}
 
-    async def _add_document(self, *, user: str, document: Document):
-        if document.id is not None:
-            raise RagnaException()
+    def _add_document(self, *, user: str, id: str, name: str, metadata):
+        self._state.add_document(user=user, id=id, name=name, metadata=metadata)
 
-        data = self._state.add_document(
-            user=user, name=document.name, metadata=document.metadata
+    def _get_document(self, user: str, id: str):
+        data = self._state.get_document(user=user, id=id)
+        if data is None:
+            raise RagnaException
+        return self.config.document_class(
+            id=id, name=data.name, metadata=data.metadata_
         )
-        return data.id
 
-    async def _get_chats(self, *, user: str = DEFAULT_USER):
+    async def _get_chats(self, *, user: str):
         chats = [
-            Chat._from_state(rag=self, user=user, data=data)
+            Chat(
+                rag=self,
+                user=user,
+                id=data.id,
+                name=data.name,
+                documents=[
+                    self.config.document_class(
+                        id=document_data.id,
+                        name=document_data.name,
+                        metadata=document_data.metadata_,
+                    )
+                    for document_data in data.document_datas
+                ],
+                source_storage=self._parse_component(
+                    data.source_storage, registry=self._source_storages
+                ),
+                assistant=self._parse_component(
+                    data.assistant, registry=self._assistants
+                ),
+                **data.params,
+            )
             for data in self._state.get_chats(user=user)
         ]
         self._chats.update({(user, chat.id): chat for chat in chats})
         return chats
 
-    async def _get_chat(self, *, user: str = DEFAULT_USER, id: str):
+    async def _get_chat(self, *, user: str, id: str):
         key = (user, id)
 
         chat = self._chats.get(key)
         if chat is not None:
             return chat
 
-        await self.get_chats(user=user)
+        await self._get_chats(user=user)
         chat = self._chats.get(key)
         if chat is not None:
             raise chat
@@ -94,14 +118,14 @@ class Rag:
         name: Optional[str] = None,
         documents: Sequence[Any],
         source_storage: Any,
-        llm: Any,
+        assistant: Any,
         **params,
     ):
-        documents = await self._parse_documents(documents, user=user)
+        documents = self._parse_documents(documents, user=user)
         source_storage = self._parse_component(
             source_storage, registry=self._source_storages
         )
-        llm = self._parse_component(llm, registry=self._llms)
+        assistant = self._parse_component(assistant, registry=self._assistants)
 
         chat = Chat(
             rag=self,
@@ -110,7 +134,7 @@ class Rag:
             name=name,
             documents=documents,
             source_storage=source_storage,
-            llm=llm,
+            assistant=assistant,
             **params,
         )
 
@@ -119,8 +143,8 @@ class Rag:
             user=user,
             name=chat.name,
             document_ids=[document.id for document in documents],
-            source_storage_name=str(source_storage),
-            llm_name=str(llm),
+            source_storage=str(source_storage),
+            assistant=str(assistant),
             params=params,
         )
 
@@ -152,12 +176,6 @@ class Rag:
                 f"Worker process terminated unexpectedly {stdout} {stderr}"
             )
 
-    def __del__(self):
-        for proc in self._subprocesses:
-            proc.kill()
-        for proc in self._subprocesses:
-            proc.communicate()
-
     def _load_components(
         self, component_classes: dict, *, deselect_unavailable_components
     ):
@@ -179,24 +197,26 @@ class Rag:
 
         return components
 
-    async def _parse_documents(
-        self, objs: Sequence[Any], *, user: str
-    ) -> list[Document]:
+    def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
         documents_ = []
-        for obj in objs:
-            if isinstance(obj, Document):
-                document = obj
+        for document in document:
+            if self._state.is_id(document):
+                document = self._get_document(id=document, user=user)
             else:
-                if self._state.is_id(obj):
-                    data = self._state.get_document(id=obj, user=user)
-                    if data is None:
-                        raise RagnaException
-                    document = self.config.document_class._from_data(data)
-                else:
-                    document = self.config.document_class(obj)
+                if not isinstance(document, Document):
+                    document = self.config.document_class(document)
 
-            if document.id is None:
-                document.id = await self._add_document(user=user, document=document)
+                if document.id is None:
+                    document.id = self._state.make_id()
+                    self._add_document(
+                        user=user,
+                        id=document.id,
+                        name=document.name,
+                        metadata=document.metadata,
+                    )
+
+            if not document.is_available():
+                raise RagnaException()
 
             documents_.append(document)
         return documents_
@@ -213,8 +233,13 @@ class Rag:
         else:
             raise RagnaException(obj)
 
+    def __del__(self):
+        for proc in self._subprocesses:
+            proc.kill()
+        for proc in self._subprocesses:
+            proc.communicate()
 
-# TOD: Make this a context manager and implement a close functionality
+
 class Chat:
     def __init__(
         self,
@@ -225,7 +250,7 @@ class Chat:
         name: Optional[str] = None,
         documents,
         source_storage,
-        llm,
+        assistant,
         **params,
     ):
         self._rag = rag
@@ -234,10 +259,35 @@ class Chat:
         self.name = name or f"{datetime.datetime.now():%c}"
         self.documents = documents
         self.source_storage = source_storage
-        self.llm = llm
+        self.assistant = assistant
 
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
+
+        self.messages: list[Message] = []
+
+        self._started = False
+        self._closed = False
+
+    async def start(self):
+        if self._started:
+            raise RagnaException()
+        elif self._closed:
+            raise RagnaException()
+
+        await self._enqueue(self.source_storage.store, self.documents)
+        self._rag._state.start_chat(user=self._user, id=self.id)
+        self._started = True
+
+    async def close(self):
+        self._rag._state.close_chat(id=self.id, user=self._user)
+        self._closed = True
+
+    async def answer(self, prompt: str):
+        sources = await self._enqueue(self.source_storage.retrieve, prompt)
+        content = await self._enqueue(self.assistant.answer, prompt, sources)
+        self.rag._state.add_message(user=self._user, chat_id=self.id, content=content)
+        return Answer(sources=sources, content=content)
 
     class _SpecialChatParams(BaseModel):
         user: str
@@ -246,12 +296,12 @@ class Chat:
 
     def _unpack_chat_params(self, params):
         source_storage_models = self.source_storage._models()
-        llm_models = self.llm._models()
+        assistant_models = self.assistant._models()
 
         ChatModel = self._merge_models(
             self._SpecialChatParams,
             *source_storage_models.values(),
-            *llm_models.values(),
+            *assistant_models.values(),
         )
 
         chat_model = ChatModel(
@@ -264,7 +314,7 @@ class Chat:
         return {
             method: model(**chat_model.dict(exclude_none=True)).dict()
             for method, model in itertools.chain(
-                source_storage_models.items(), llm_models.items()
+                source_storage_models.items(), assistant_models.items()
             )
         }
 
@@ -298,14 +348,6 @@ class Chat:
 
         return create_model(str(self), __config__=Config, **field_definitions)
 
-    @property
-    def _logger(self):
-        return self._rag._logger
-
-    @property
-    def _state(self):
-        return self._rag._state
-
     async def _enqueue(self, fn, *args):
         unpacked_params = self._unpacked_params[fn]
         return await _enqueue_job(
@@ -314,33 +356,10 @@ class Chat:
             **getattr(fn, "__ragna_job_kwargs__", {}),
         )
 
-    async def start(self):
-        return await self._enqueue(self.source_storage.store, self.documents)
+    async def __aenter__(self):
+        await self.start()
+        return self
 
-    async def answer(self, prompt: str):
-        sources = await self._enqueue(self.source_storage.retrieve, prompt)
-        content = await self._enqueue(self.llm.answer, prompt, sources)
-        self._state.add_message(user=self._user, chat_id=self.id, content=content)
-        return Answer(sources=sources, content=content)
-
-    @classmethod
-    def _from_state(cls, *, rag, user, data):
-        return cls(
-            rag=rag,
-            user=user,
-            id=data.id,
-            name=data.name,
-            documents=[
-                rag.config.document_class(
-                    id=document_data.id,
-                    name=document_data.name,
-                    metadata=document_data.metadata,
-                )
-                for document_data in data.document_datas
-            ],
-            source_storage=rag._parse_component(
-                data.source_storage_name, registry=rag._source_storages
-            ),
-            llm=rag._parse_component(data.llm_name, registry=rag._llms),
-            **data.params,
-        )
+    async def __aexit__(self, *_):
+        # FIXME: does this suppress the exception?
+        await self.close()

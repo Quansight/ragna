@@ -120,8 +120,8 @@ class ChromaSourceStorage(SourceStorage):
                     Source(
                         document_id=result["ids"],
                         document_name=result["metadatas"]["document_name"],
-                        page_numbers=result["metadatas"]["page_numbers"],
-                        text=result["documents"],
+                        location=result["metadatas"]["page_numbers"],
+                        content=result["documents"],
                         num_tokens=result["metadatas"]["num_tokens"],
                     )
                     for result in results

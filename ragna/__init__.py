@@ -8,7 +8,7 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import core, llm, source_storage
+from . import assistant, core, source_storage
 
 from .core import Config, Rag
 
@@ -16,7 +16,7 @@ from .core import Config, Rag
 def _demo_config():
     demo_config = Config()
     demo_config.register_component(source_storage.RagnaDemoSourceStorage)
-    demo_config.register_component(llm.RagnaDemoAssistant)
+    demo_config.register_component(assistant.RagnaDemoAssistant)
     return demo_config
 
 
@@ -29,7 +29,7 @@ def _builtin_config():
 
     builtin_config = Config()
 
-    for module, cls in [(source_storage, SourceStorage), (llm, Assistant)]:
+    for module, cls in [(source_storage, SourceStorage), (assistant, Assistant)]:
         for obj in module.__dict__.values():
             if isinstance(obj, type) and issubclass(obj, cls):
                 builtin_config.register_component(obj)

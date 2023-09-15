@@ -1,9 +1,9 @@
 from ragna.core import Source
 
-from ._llm_api import ApiException, AssistantApi
+from ._api import ApiException, AssistantApi
 
 
-class OpenaiLlmApi(AssistantApi):
+class OpenaiAssistantApi(AssistantApi):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int
@@ -58,13 +58,13 @@ class OpenaiLlmApi(AssistantApi):
         return response.json()["choices"][0]["message"]["content"]
 
 
-class OpenaiGpt35Turbo16kLlm(OpenaiLlmApi):
+class OpenaiGpt35Turbo16kAssistant(OpenaiAssistantApi):
     # https://platform.openai.com/docs/models/gpt-3-5
     _MODEL = "gpt-3.5-turbo-16k"
     _CONTEXT_SIZE = 16_384
 
 
-class OpenaiGpt4Llm(OpenaiLlmApi):
+class OpenaiGpt4Assistant(OpenaiAssistantApi):
     # https://platform.openai.com/docs/models/gpt-4
     _MODEL = "gpt-4"
     _CONTEXT_SIZE = 8_192
