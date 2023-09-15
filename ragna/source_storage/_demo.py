@@ -37,7 +37,7 @@ class RagnaDemoSourceStorage(SourceStorage):
                 document_name=name,
                 page_numbers="N/A",
                 text=(
-                    text := f"I'm pretending to be a chunk of text from inside {name}."
+                    text := f"I pretend to be a chunk of text from inside {name} extracted by {str(self)}"
                 ),
                 num_tokens=len(text.split()),
             )

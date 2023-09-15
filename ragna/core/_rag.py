@@ -284,9 +284,13 @@ class Chat:
         self._closed = True
 
     async def answer(self, prompt: str):
+        if not self._started:
+            raise RagnaException
+        elif self._closed:
+            raise RagnaException
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
         content = await self._enqueue(self.assistant.answer, prompt, sources)
-        self.rag._state.add_message(user=self._user, chat_id=self.id, content=content)
+        self._rag._state.add_message(user=self._user, chat_id=self.id, content=content)
         return Answer(sources=sources, content=content)
 
     class _SpecialChatParams(BaseModel):

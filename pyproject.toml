@@ -18,11 +18,14 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "rq",
-    "pydantic <2",
-    "structlog",
     "packaging",
     "importlib_metadata >=4.6; python_version < '3.10'",
+    "sqlalchemy >=2",
+    "redis",
+    "rq",
+    "cloudpickle",
+    "pydantic <2",
+    "structlog",
     "typer",
 ]
 dynamic = ["version"]
@@ -36,9 +39,9 @@ api = [
     "uvicorn",
 ]
 ui = [
-    "panel ==1.3",
-    "param",
-    "aiohttp",
+#    "panel ==1.3",
+#    "param",
+#    "aiohttp",
 ]
 # to update the two entries below, run scripts/update_optional_dependencies.py
 builtin-components = [
@@ -47,16 +50,14 @@ builtin-components = [
     "tiktoken",
 ]
 complete = [
-    "aiohttp",
     "chromadb>=0.4",
     "fastapi",
-    "panel==1.3",
-    "param",
     "requests",
     "rich",
     "tiktoken",
     "uvicorn",
 ]
+
 
 
 [tool.setuptools_scm]
