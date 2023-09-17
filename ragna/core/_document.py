@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import dataclasses
+import time
 from pathlib import Path
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
@@ -79,20 +80,45 @@ class LocalDocument(Document):
             name = Path(path).name
         super().__init__(name=name, metadata=metadata, **kwargs)
 
+    _JWT_ALGORITHM = "HS256"
+
     @classmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: str, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+        if not PackageRequirement("PyJWT").is_available():
+            raise RagnaException()
+
+        import jwt
+
         url = f"{config.ragna_api_url}/document/upload"
-        # FIXME: use a proper JWT token here that includes the user and id
-        data = {"token": f"{user}::{id}"}
+        data = {
+            "token": jwt.encode(
+                payload={
+                    "user": user,
+                    "id": id,
+                    "exp": time.time() + config.upload_token_ttl,
+                },
+                key=config.upload_token_secret,
+                algorithm=cls._JWT_ALGORITHM,
+            )
+        }
         metadata = {"path": str(config.local_cache_root / "documents" / id)}
         return url, data, metadata
 
     @classmethod
-    def _extract_user_and_document_id_from_token(cls, token: str) -> tuple[str, str]:
-        user, id = token.split("::")
-        return user, id
+    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, str]:
+        import jwt
+
+        try:
+            payload = jwt.decode(token, key=secret, algorithms=cls._JWT_ALGORITHM)
+        except jwt.InvalidSignatureError:
+            raise RagnaException
+        except jwt.ExpiredSignatureError:
+            raise RagnaException
+        except Exception as exc:
+            raise RagnaException(str(type(exc)))
+        return payload["user"], payload["id"]
 
     @property
     def path(self) -> Path:

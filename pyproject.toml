@@ -37,6 +37,9 @@ console = [
 api = [
     "fastapi",
     "uvicorn",
+    "PyJWT",
+    "python-multipart",
+    "httpx",
 ]
 ui = [
 #    "panel ==1.3",
@@ -50,6 +53,7 @@ builtin-components = [
     "tiktoken",
 ]
 complete = [
+    "PyJWT",
     "chromadb>=0.4",
     "fastapi",
     "requests",

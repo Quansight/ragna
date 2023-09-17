@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import re
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -19,7 +19,7 @@ from sqlalchemy import (
 
 from sqlalchemy.orm import DeclarativeBase, relationship, Session
 
-from ragna.core import MessageRole
+from ragna.core import MessageRole, Source
 
 from ._exceptions import RagnaException
 
@@ -183,7 +183,6 @@ class State:
         return document_data
 
     def get_document(self, id: str, user: str) -> DocumentData:
-        print(dir(Base))
         return self._session.execute(
             select(DocumentData).where(
                 (DocumentData.id == id)
@@ -192,7 +191,7 @@ class State:
         ).scalar_one_or_none()
 
     def get_chats(self, user: str):
-        # FIXME: only return unclosed chats here
+        # Add filters for started and closed here
         return (
             self._session.execute(
                 select(ChatData).where(ChatData.user_id == self._get_user_id(user))
@@ -261,16 +260,45 @@ class State:
         chat_data.closed = True
         self._session.commit()
 
-    def add_message(self, user: str, id: str, chat_id: str, content: str):
+    def add_message(
+        self,
+        *,
+        user: str,
+        chat_id: str,
+        id: str,
+        content: str,
+        role: MessageRole,
+        sources: Optional[list[Source]] = None,
+    ):
         chat_data = self._session.execute(
             select(ChatData).where(
                 (ChatData.user_id == self._get_user_id(user)) & (ChatData.id == chat_id)
             )
         ).scalar_one_or_none()
-
         if chat_data is None:
             raise RagnaException
 
-        message_data = MessageData(id=id, chat_id=chat_data.id, content=content)
+        print(sources)
+
+        if sources is not None:
+            source_datas = (
+                self._session.execute(
+                    select(SourceData).where(
+                        SourceData.id.in_([source.id for source in sources])
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        else:
+            source_datas = []
+
+        message_data = MessageData(
+            id=id,
+            chat_id=chat_data.id,
+            content=content,
+            role=role,
+            source_datas=source_datas,
+        )
         chat_data.message_datas.append(message_data)
         self._session.commit()

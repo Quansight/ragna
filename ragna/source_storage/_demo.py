@@ -1,4 +1,5 @@
 import json
+import uuid
 from pathlib import Path
 
 from ragna.core import Document, RagnaException, Source, SourceStorage
@@ -19,7 +20,7 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def store(self, documents: list[Document], *, chat_id: str) -> None:
         with open(self._make_path(chat_id), "w") as file:
-            json.dump([document.name for document in documents], file)
+            json.dump([(document.id, document.name) for document in documents], file)
 
     def retrieve(self, prompt: str, chat_id: str) -> list[Source]:
         path = self._make_path(chat_id)
@@ -28,18 +29,21 @@ class RagnaDemoSourceStorage(SourceStorage):
 
         try:
             with open(path) as file:
-                document_names = json.load(file)
+                documents = json.load(file)
         except Exception:
             raise RagnaException
 
         return [
             Source(
+                # FIXME
+                id=str(uuid.uuid4()),
+                document_id=id,
                 document_name=name,
-                page_numbers="N/A",
-                text=(
+                location="N/A",
+                content=(
                     text := f"I pretend to be a chunk of text from inside {name} extracted by {str(self)}"
                 ),
                 num_tokens=len(text.split()),
             )
-            for name in document_names
+            for id, name in documents
         ]

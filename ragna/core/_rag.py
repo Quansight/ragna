@@ -9,7 +9,7 @@ from typing import Any, Optional, Sequence, TypeVar
 
 from pydantic import BaseModel, create_model, Extra
 
-from ._assistant import Message
+from ._assistant import Message, MessageRole
 
 from ._component import RagComponent
 from ._config import Config
@@ -57,59 +57,6 @@ class Rag:
         )
 
         self._chats: dict[(str, str), Chat] = {}
-
-    def _add_document(self, *, user: str, id: str, name: str, metadata):
-        self._state.add_document(user=user, id=id, name=name, metadata=metadata)
-
-    def _get_document(self, user: str, id: str):
-        data = self._state.get_document(user=user, id=id)
-        if data is None:
-            raise RagnaException
-        return self.config.document_class(
-            id=id, name=data.name, metadata=data.metadata_
-        )
-
-    async def _get_chats(self, *, user: str):
-        chats = [
-            Chat(
-                rag=self,
-                user=user,
-                id=data.id,
-                name=data.name,
-                documents=[
-                    self.config.document_class(
-                        id=document_data.id,
-                        name=document_data.name,
-                        metadata=document_data.metadata_,
-                    )
-                    for document_data in data.document_datas
-                ],
-                source_storage=self._parse_component(
-                    data.source_storage, registry=self._source_storages
-                ),
-                assistant=self._parse_component(
-                    data.assistant, registry=self._assistants
-                ),
-                **data.params,
-            )
-            for data in self._state.get_chats(user=user)
-        ]
-        self._chats.update({(user, chat.id): chat for chat in chats})
-        return chats
-
-    async def _get_chat(self, *, user: str, id: str):
-        key = (user, id)
-
-        chat = self._chats.get(key)
-        if chat is not None:
-            return chat
-
-        await self._get_chats(user=user)
-        chat = self._chats.get(key)
-        if chat is not None:
-            raise chat
-
-        raise RagnaException
 
     async def new_chat(
         self,
@@ -239,6 +186,59 @@ class Rag:
         for proc in self._subprocesses:
             proc.communicate()
 
+    def _add_document(self, *, user: str, id: str, name: str, metadata):
+        self._state.add_document(user=user, id=id, name=name, metadata=metadata)
+
+    def _get_document(self, user: str, id: str):
+        data = self._state.get_document(user=user, id=id)
+        if data is None:
+            raise RagnaException
+        return self.config.document_class(
+            id=id, name=data.name, metadata=data.metadata_
+        )
+
+    def _get_chats(self, *, user: str):
+        chats = [
+            Chat(
+                rag=self,
+                user=user,
+                id=data.id,
+                name=data.name,
+                documents=[
+                    self.config.document_class(
+                        id=document_data.id,
+                        name=document_data.name,
+                        metadata=document_data.metadata_,
+                    )
+                    for document_data in data.document_datas
+                ],
+                source_storage=self._parse_component(
+                    data.source_storage, registry=self._source_storages
+                ),
+                assistant=self._parse_component(
+                    data.assistant, registry=self._assistants
+                ),
+                **data.params,
+            )
+            for data in self._state.get_chats(user=user)
+        ]
+        self._chats.update({(user, chat.id): chat for chat in chats})
+        return chats
+
+    def _get_chat(self, *, user: str, id: str):
+        key = (user, id)
+
+        chat = self._chats.get(key)
+        if chat is not None:
+            return chat
+
+        self._get_chats(user=user)
+        chat = self._chats.get(key)
+        if chat is not None:
+            return chat
+
+        raise RagnaException
+
 
 class Chat:
     def __init__(
@@ -254,7 +254,9 @@ class Chat:
         **params,
     ):
         self._rag = rag
+        self._state = self._rag._state
         self._user = user
+
         self.id = id
         self.name = name or f"{datetime.datetime.now():%c}"
         self.documents = documents
@@ -276,22 +278,69 @@ class Chat:
             raise RagnaException()
 
         await self._enqueue(self.source_storage.store, self.documents)
-        self._rag._state.start_chat(user=self._user, id=self.id)
+        self._state.start_chat(user=self._user, id=self.id)
         self._started = True
 
+        welcome = Message(
+            id=self._state.make_id(),
+            content="How can I help you with the documents?",
+            role=MessageRole.SYSTEM,
+        )
+        self.messages.append(welcome)
+        self._state.add_message(
+            user=self._user,
+            chat_id=self.id,
+            id=welcome.id,
+            content=welcome.content,
+            role=welcome.role,
+        )
+
+        return self
+
     async def close(self):
-        self._rag._state.close_chat(id=self.id, user=self._user)
+        self._state.close_chat(id=self.id, user=self._user)
         self._closed = True
+
+        return self
 
     async def answer(self, prompt: str):
         if not self._started:
             raise RagnaException
         elif self._closed:
             raise RagnaException
+
+        prompt = Message(
+            id=self._state.make_id(), content=prompt, role=MessageRole.USER
+        )
+        self.messages.append(prompt)
+        self._state.add_message(
+            user=self._user,
+            chat_id=self.id,
+            id=prompt.id,
+            content=prompt.content,
+            role=prompt.role,
+        )
+
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
+        print(sources)
         content = await self._enqueue(self.assistant.answer, prompt, sources)
-        self._rag._state.add_message(user=self._user, chat_id=self.id, content=content)
-        return Answer(sources=sources, content=content)
+        answer = Message(
+            id=self._state.make_id(),
+            content=content,
+            role=MessageRole.ASSISTANT,
+            sources=sources,
+        )
+        self._state.add_message(
+            user=self._user,
+            chat_id=self.id,
+            id=answer.id,
+            content=answer.content,
+            role=answer.role,
+            sources=answer.sources,
+        )
+        self.messages.append(answer)
+
+        return answer
 
     class _SpecialChatParams(BaseModel):
         user: str
@@ -314,9 +363,9 @@ class Chat:
             chat_name=self.name,
             **params,
         )
-
+        chat_params = chat_model.dict(exclude_none=True)
         return {
-            method: model(**chat_model.dict(exclude_none=True)).dict()
+            method: model(**chat_params).dict()
             for method, model in itertools.chain(
                 source_storage_models.items(), assistant_models.items()
             )

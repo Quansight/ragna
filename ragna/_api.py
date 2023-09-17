@@ -1,13 +1,12 @@
 import functools
+import re
 import uuid
-
 from traceback import format_exception
-
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException
-
+import aiofiles
+from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field, HttpUrl
 
 from ragna.core import Chat, LocalDocument, MessageRole, Rag, RagnaException
@@ -34,6 +33,7 @@ class SourceModel(BaseModel):
     document_name: str
     location: str
 
+    # FIXME: public
     @classmethod
     def _from_source(cls, source):
         return cls(
@@ -53,7 +53,10 @@ class MessageModel(BaseModel):
     @classmethod
     def _from_message(cls, message):
         return cls(
-            id=message.id, role=message.role, content=message.content, sources=[]
+            id=message.id,
+            role=message.role,
+            content=message.content,
+            sources=[SourceModel._from_source(s) for s in message.sources],
         )
 
 
@@ -79,6 +82,8 @@ class ChatModel(BaseModel):
     id: UUID
     metadata: ChatMetadataModel
     messages: list[MessageModel]
+    started: bool
+    closed: bool
 
     @classmethod
     def _from_chat(cls, chat):
@@ -86,10 +91,14 @@ class ChatModel(BaseModel):
             id=chat.id,
             metadata=ChatMetadataModel._from_chat(chat),
             messages=[MessageModel._from_message(m) for m in chat.messages],
+            started=chat._started,
+            closed=chat._closed,
         )
 
 
-import re
+class AnswerOutputModel(BaseModel):
+    message: MessageModel
+    chat: ChatModel
 
 
 # Can we make this a custom type for the DB? Maybe just subclass from str?
@@ -162,24 +171,27 @@ def api(**kwargs):
 
     @app.post("/document/upload")
     # @process_exception
-    async def upload_document(data: UploadData) -> DocumentModel:
+    async def upload_document(
+        token: Annotated[str, Form()], file: UploadFile
+    ) -> DocumentModel:
         if not issubclass(rag.config.document_class, LocalDocument):
             raise RagnaException
 
-        user, id = rag.config.document_class._extract_user_and_document_id_from_token(
-            data.token
+        user, id = rag.config.document_class._decode_upload_token(
+            token, secret=rag.config.upload_token_secret
         )
         document = rag._get_document(user=user, id=id)
 
         document.path.parent.mkdir(parents=True, exist_ok=True)
-        with open(document.path, "wb") as file:
-            file.write(b"FIXME")
+        async with aiofiles.open(document.path, "wb") as document_file:
+            while content := await file.read(1024):
+                await document_file.write(content)
 
         return DocumentModel(id=id, name=document.name)
 
     @app.get("/chats")
     async def get_chats(user: UserDependency) -> list[ChatModel]:
-        return [ChatModel._from_chat(chat) for chat in await rag._get_chats(user=user)]
+        return [ChatModel._from_chat(chat) for chat in rag._get_chats(user=user)]
 
     @app.post("/chat/new")
     async def new_chat(
@@ -196,10 +208,13 @@ def api(**kwargs):
             )
         )
 
-    IdDependency = Annotated[str, Depends(RagnaId.from_uuid)]
+    async def _get_id(id: UUID) -> str:
+        return RagnaId.from_uuid(id)
+
+    IdDependency = Annotated[str, Depends(_get_id)]
 
     async def _get_chat(*, user: UserDependency, id: IdDependency) -> Chat:
-        return await rag.get_chat(user=user, id=id)
+        return rag._get_chat(user=user, id=id)
 
     ChatDependency = Annotated[Chat, Depends(_get_chat, use_cache=False)]
 
@@ -216,7 +231,10 @@ def api(**kwargs):
         return ChatModel._from_chat(await chat.close())
 
     @app.post("/chat/{id}/answer")
-    async def answer(chat: ChatDependency, prompt: str) -> MessageModel:
-        return MessageModel._from_message(await chat.answer(prompt))
+    async def answer(chat: ChatDependency, prompt: str) -> AnswerOutputModel:
+        return AnswerOutputModel(
+            message=MessageModel._from_message(await chat.answer(prompt)),
+            chat=ChatModel._from_chat(chat),
+        )
 
     return app

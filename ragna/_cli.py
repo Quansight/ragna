@@ -111,8 +111,6 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 
     from ragna._api import api
 
-    print(ragna.__version__)
-
     components = urlsplit(config.ragna_api_url)
     uvicorn.run(api(config=config), host=components.hostname, port=components.port)
 

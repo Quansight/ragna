@@ -16,8 +16,8 @@ class RagnaDemoAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> str:
         sources_display = [
             (
-                f"- {source.document_name}, page(s) {source.page_numbers}: "
-                f"{textwrap.shorten(source.text, width=100)}"
+                f"- {source.document_name}, page(s) {source.location}: "
+                f"{textwrap.shorten(source.content, width=100)}"
             )
             for source in sources[:3]
         ]

@@ -7,6 +7,8 @@ import importlib.util
 import inspect
 
 import logging
+
+import secrets
 import sys
 from pathlib import Path
 
@@ -32,6 +34,8 @@ class Config:
     local_cache_root: Path = Path.home() / ".cache" / "ragna"
 
     document_class = LocalDocument
+    upload_token_secret: str = dataclasses.field(default_factory=secrets.token_hex)
+    upload_token_ttl: int = 30
 
     registered_source_storage_classes: dict[
         str, Type[SourceStorage]
