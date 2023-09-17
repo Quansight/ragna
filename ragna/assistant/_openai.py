@@ -25,11 +25,11 @@ class OpenaiAssistantApi(AssistantApi):
         return instruction + "\n\n".join(source.text for source in sources)
 
     def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
-        import requests
+        import httpx
 
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/object
-        response = requests.post(
+        response = httpx.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",
@@ -51,7 +51,7 @@ class OpenaiAssistantApi(AssistantApi):
                 "max_tokens": max_new_tokens,
             },
         )
-        if not response.ok:
+        if not response.is_error:
             raise ApiException(
                 status_code=response.status_code, response=response.json()
             )

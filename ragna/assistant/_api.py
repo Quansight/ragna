@@ -38,7 +38,7 @@ class AssistantApi(Assistant):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            PackageRequirement("requests"),
+            PackageRequirement("httpx"),
             EnvVarRequirement(cls._API_KEY_ENV_VAR),
         ]
 
