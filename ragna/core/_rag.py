@@ -190,11 +190,11 @@ class Rag:
         self._state.add_document(user=user, id=id, name=name, metadata=metadata)
 
     def _get_document(self, user: str, id: RagnaId):
-        data = self._state.get_document(user=user, id=id)
-        if data is None:
+        state = self._state.get_document(user=user, id=id)
+        if state is None:
             raise RagnaException
         return self.config.document_class(
-            id=id, name=data.name, metadata=data.metadata_
+            id=id, name=state.name, metadata=state.metadata_
         )
 
     def _get_chats(self, *, user: str):
@@ -202,25 +202,25 @@ class Rag:
             Chat(
                 rag=self,
                 user=user,
-                id=data.id,
-                name=data.name,
+                id=state.id,
+                name=state.name,
                 documents=[
                     self.config.document_class(
                         id=document_data.id,
                         name=document_data.name,
                         metadata=document_data.metadata_,
                     )
-                    for document_data in data.document_datas
+                    for document_data in state.document_datas
                 ],
                 source_storage=self._parse_component(
-                    data.source_storage, registry=self._source_storages
+                    state.source_storage, registry=self._source_storages
                 ),
                 assistant=self._parse_component(
-                    data.assistant, registry=self._assistants
+                    state.assistant, registry=self._assistants
                 ),
-                **data.params,
+                **state.params,
             )
-            for data in self._state.get_chats(user=user)
+            for state in self._state.get_chats(user=user)
         ]
         self._chats.update({(user, chat.id): chat for chat in chats})
         return chats

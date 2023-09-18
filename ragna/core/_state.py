@@ -5,7 +5,6 @@ import re
 from typing import Any, Optional
 
 from sqlalchemy import Column, create_engine, ForeignKey, select, Table, types
-
 from sqlalchemy.orm import DeclarativeBase, relationship, Session
 
 from ragna.core import MessageRole, RagnaException, RagnaId, Source
@@ -32,23 +31,22 @@ class Base(DeclarativeBase):
 # FIXME: Do we actually need this table? If we are sure that a user is unique and has to
 #  be authenticated from the API layer, it seems having an extra mapping here is not
 #  needed?
-class UserData(Base):
+class UserState(Base):
     __tablename__ = "users"
 
     id = Column(Id, primary_key=True)
     name = Column(types.String)
 
 
-document_chat_data_association_table = Table(
-    "document_chat_data_association_table",
+document_chat_state_association_table = Table(
+    "document_chat_state_association_table",
     Base.metadata,
     Column("document_id", ForeignKey("documents.id"), primary_key=True),
     Column("chat_id", ForeignKey("chats.id"), primary_key=True),
 )
 
 
-# Name this state?
-class DocumentData(Base):
+class DocumentState(Base):
     __tablename__ = "documents"
 
     id = Column(Id, primary_key=True)
@@ -57,62 +55,62 @@ class DocumentData(Base):
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
     # metadata without the underscore is reserved by SQLAlchemy
     metadata_ = Column(types.JSON)
-    chat_datas = relationship(
+    chat_states = relationship(
         "ChatData",
-        secondary=document_chat_data_association_table,
-        back_populates="document_datas",
+        secondary=document_chat_state_association_table,
+        back_populates="document_states",
     )
-    source_datas = relationship(
+    source_states = relationship(
         "SourceData",
-        back_populates="document_data",
+        back_populates="document_state",
     )
 
 
-class ChatData(Base):
+class ChatState(Base):
     __tablename__ = "chats"
 
     id = Column(Id, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
-    document_datas = relationship(
+    document_states = relationship(
         "DocumentData",
-        secondary=document_chat_data_association_table,
-        back_populates="chat_datas",
+        secondary=document_chat_state_association_table,
+        back_populates="chat_states",
     )
     source_storage = Column(types.String)
     assistant = Column(types.String)
     params = Column(types.JSON)
-    message_datas = relationship("MessageData", cascade="all, delete")
+    message_states = relationship("MessageData", cascade="all, delete")
     started = Column(types.Boolean)
     closed = Column(types.Boolean)
 
 
-source_message_data_association_table = Table(
-    "source_message_data_association_table",
+source_message_state_association_table = Table(
+    "source_message_state_association_table",
     Base.metadata,
     Column("source_id", ForeignKey("sources.id"), primary_key=True),
     Column("message_id", ForeignKey("messages.id"), primary_key=True),
 )
 
 
-class SourceData(Base):
+class SourceState(Base):
     __tablename__ = "sources"
 
     id = Column(Id, primary_key=True)
 
     document_id = Column(ForeignKey("documents.id"))
-    document_data = relationship("DocumentData", back_populates="source_datas")
+    document_state = relationship("DocumentData", back_populates="source_states")
 
     location = Column(types.String)
 
-    message_datas = relationship(
+    message_states = relationship(
         "MessageData",
-        secondary=source_message_data_association_table,
-        back_populates="source_datas",
+        secondary=source_message_state_association_table,
+        back_populates="source_states",
     )
 
 
-class MessageData(Base):
+class MessageState(Base):
     __tablename__ = "messages"
 
     id = Column(Id, primary_key=True)
@@ -120,10 +118,10 @@ class MessageData(Base):
     content = Column(types.String)
     role = Column(types.Enum(MessageRole))
     source_id = Column(ForeignKey("sources.id"))
-    source_datas = relationship(
+    source_states = relationship(
         "SourceData",
-        secondary=source_message_data_association_table,
-        back_populates="message_datas",
+        secondary=source_message_state_association_table,
+        back_populates="message_states",
     )
 
 
@@ -149,35 +147,35 @@ class State:
 
     @functools.lru_cache(maxsize=1024)
     def _get_user_id(self, user: str):
-        user_data = self._session.execute(
-            select(UserData).where(UserData.name == user)
+        user_state = self._session.execute(
+            select(UserState).where(UserState.name == user)
         ).scalar_one_or_none()
-        if user_data is not None:
-            return user_data.id
+        if user_state is not None:
+            return user_state.id
 
-        user_data = UserData(id=RagnaId.make(), name=user)
-        self._session.add(user_data)
+        user_state = UserState(id=RagnaId.make(), name=user)
+        self._session.add(user_state)
         self._session.commit()
-        return user_data.id
+        return user_state.id
 
     def add_document(
         self, *, user: str, id: RagnaId, name: str, metadata: dict[str, Any]
     ):
-        document_data = DocumentData(
+        document_state = DocumentState(
             id=id,
             user_id=self._get_user_id(user),
             name=name,
             metadata_=metadata,
         )
-        self._session.add(document_data)
+        self._session.add(document_state)
         self._session.commit()
-        return document_data
+        return document_state
 
-    def get_document(self, user: str, id: RagnaId) -> DocumentData:
+    def get_document(self, user: str, id: RagnaId) -> DocumentState:
         return self._session.execute(
-            select(DocumentData).where(
-                (DocumentData.user_id == self._get_user_id(user))
-                & (DocumentData.id == id)
+            select(DocumentState).where(
+                (DocumentState.user_id == self._get_user_id(user))
+                & (DocumentState.id == id)
             )
         ).scalar_one_or_none()
 
@@ -185,7 +183,7 @@ class State:
         # FIXME: Add filters for started and closed here
         return (
             self._session.execute(
-                select(ChatData).where(ChatData.user_id == self._get_user_id(user))
+                select(ChatState).where(ChatState.user_id == self._get_user_id(user))
             )
             .scalars()
             .all()
@@ -201,23 +199,23 @@ class State:
         source_storage: str,
         assistant: str,
         params,
-    ) -> ChatData:
-        document_datas = (
+    ) -> ChatState:
+        document_states = (
             self._session.execute(
-                select(DocumentData).where(DocumentData.id.in_(document_ids))
+                select(DocumentState).where(DocumentState.id.in_(document_ids))
             )
             .scalars()
             .all()
         )
-        if len(document_datas) != len(document_ids):
+        if len(document_states) != len(document_ids):
             raise RagnaException(
-                set(document_ids) - {document.id for document in document_datas}
+                set(document_ids) - {document.id for document in document_states}
             )
-        chat = ChatData(
+        chat = ChatState(
             id=id,
             user_id=self._get_user_id(user),
             name=name,
-            document_datas=document_datas,
+            document_states=document_states,
             source_storage=source_storage,
             assistant=assistant,
             params=params,
@@ -229,23 +227,23 @@ class State:
         return chat
 
     def _get_chat(self, *, user: str, id: RagnaId):
-        chat_data = self._session.execute(
-            select(ChatData).where(
-                (ChatData.id == id) & (ChatData.user_id == self._get_user_id(user))
+        chat_state = self._session.execute(
+            select(ChatState).where(
+                (ChatState.id == id) & (ChatState.user_id == self._get_user_id(user))
             )
         ).scalar_one_or_none()
-        if chat_data is None:
+        if chat_state is None:
             raise RagnaException()
-        return chat_data
+        return chat_state
 
     def start_chat(self, *, user: str, id: RagnaId):
-        chat_data = self._get_chat(user=user, id=id)
-        chat_data.started = True
+        chat_state = self._get_chat(user=user, id=id)
+        chat_state.started = True
         self._session.commit()
 
     def close_chat(self, *, user: str, id: RagnaId):
-        chat_data = self._get_chat(user=user, id=id)
-        chat_data.closed = True
+        chat_state = self._get_chat(user=user, id=id)
+        chat_state.closed = True
         self._session.commit()
 
     def add_message(
@@ -258,33 +256,35 @@ class State:
         role: MessageRole,
         sources: Optional[list[Source]] = None,
     ):
-        chat_data = self._session.execute(
-            select(ChatData).where(
-                (ChatData.user_id == self._get_user_id(user)) & (ChatData.id == chat_id)
+        chat_state = self._session.execute(
+            select(ChatState).where(
+                (ChatState.user_id == self._get_user_id(user))
+                & (ChatState.id == chat_id)
             )
         ).scalar_one_or_none()
-        if chat_data is None:
+        if chat_state is None:
             raise RagnaException
 
         if sources is not None:
-            source_datas = (
+            # FIXME: sources are never stored!
+            source_states = (
                 self._session.execute(
-                    select(SourceData).where(
-                        SourceData.id.in_([source.id for source in sources])
+                    select(SourceState).where(
+                        SourceState.id.in_([source.id for source in sources])
                     )
                 )
                 .scalars()
                 .all()
             )
         else:
-            source_datas = []
+            source_states = []
 
-        message_data = MessageData(
+        message_state = MessageState(
             id=id,
-            chat_id=chat_data.id,
+            chat_id=chat_state.id,
             content=content,
             role=role,
-            source_datas=source_datas,
+            source_states=source_states,
         )
-        chat_data.message_datas.append(message_data)
+        chat_state.message_states.append(message_state)
         self._session.commit()
