@@ -322,7 +322,6 @@ class Chat:
         )
 
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
-        print(sources)
         content = await self._enqueue(self.assistant.answer, prompt, sources)
         answer = Message(
             id=self._state.make_id(),

@@ -103,7 +103,6 @@ async def _enqueue_job(
             sys.stderr.write(stderr)
             return result
         elif status == "failed":
-            print(job.latest_result(), job.exc_info)
             return "failed"
         await asyncio.sleep(0.2)
 

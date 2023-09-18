@@ -278,8 +278,6 @@ class State:
         if chat_data is None:
             raise RagnaException
 
-        print(sources)
-
         if sources is not None:
             source_datas = (
                 self._session.execute(

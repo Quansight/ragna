@@ -1,7 +1,6 @@
 import functools
 import re
 import uuid
-from traceback import format_exception
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -132,13 +131,9 @@ def process_exception(afn):
             return await afn(*args, **kwargs)
         except ():
             raise
-        except RagnaException as exc:
-            # FIXME: process that here
-            raise HTTPException(
-                status_code=400, detail="\n".join(format_exception(exc))
-            ) from None
-        except Exception as exc:
-            print(exc)
+        except RagnaException:
+            raise HTTPException(status_code=400) from None
+        except Exception:
             raise HTTPException(status_code=500) from None
 
     return wrapper
