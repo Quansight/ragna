@@ -1,4 +1,6 @@
 import json
+
+import textwrap
 from pathlib import Path
 
 from ragna.core import Document, RagnaException, RagnaId, Source, SourceStorage
@@ -20,7 +22,19 @@ class RagnaDemoSourceStorage(SourceStorage):
     def store(self, documents: list[Document], *, chat_id: RagnaId) -> None:
         with open(self._make_path(chat_id), "w") as file:
             json.dump(
-                [(str(document.id), document.name) for document in documents], file
+                [
+                    {
+                        "document_id": str(document.id),
+                        "document_name": document.name,
+                        "location": f"page {page.number}"
+                        if (page := next(document.extract_pages())).number
+                        else "",
+                        "content": (content := textwrap.shorten(page.text, width=100)),
+                        "num_tokens": len(content.split()),
+                    }
+                    for document in documents
+                ],
+                file,
             )
 
     def retrieve(self, prompt: str, *, chat_id: RagnaId) -> list[Source]:
@@ -30,20 +44,18 @@ class RagnaDemoSourceStorage(SourceStorage):
 
         try:
             with open(path) as file:
-                documents = json.load(file)
+                sources = json.load(file)
         except Exception:
             raise RagnaException
 
         return [
             Source(
                 id=RagnaId.make(),
-                document_id=RagnaId(id),
-                document_name=name,
-                location="N/A",
-                content=(
-                    text := f"I pretend to be a chunk of text from inside {name} extracted by {str(self)}"
-                ),
-                num_tokens=len(text.split()),
+                document_id=RagnaId(source["document_id"]),
+                document_name=source["document_name"],
+                location=source["location"],
+                content=source["content"],
+                num_tokens=source["num_tokens"],
             )
-            for id, name in documents
+            for source in sources
         ]

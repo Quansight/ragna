@@ -15,6 +15,11 @@ class MessageRole(enum.Enum):
     ASSISTANT = "assistant"
 
 
+# while live, each source needs to have content
+# after reconstructing, this is gone
+# how do we model this?
+
+
 class Message:
     def __init__(
         self,

@@ -14,8 +14,9 @@ from ._assistant import Message, MessageRole
 from ._component import RagComponent
 from ._config import Config
 from ._core import RagnaException, RagnaId
+from ._document import Document
 from ._queue import _enqueue_job, _get_queue
-from ._source_storage import Document
+from ._source_storage import ReconstructedSource
 from ._state import State
 
 T = TypeVar("T", bound=RagComponent)
@@ -181,10 +182,11 @@ class Rag:
             raise RagnaException(obj)
 
     def __del__(self):
-        for proc in self._subprocesses:
-            proc.kill()
-        for proc in self._subprocesses:
-            proc.communicate()
+        if hasattr(self, "_subprocesses"):
+            for proc in self._subprocesses:
+                proc.kill()
+            for proc in self._subprocesses:
+                proc.communicate()
 
     def _add_document(self, *, user: str, id: RagnaId, name: str, metadata):
         self._state.add_document(user=user, id=id, name=name, metadata=metadata)
@@ -202,25 +204,42 @@ class Rag:
             Chat(
                 rag=self,
                 user=user,
-                id=state.id,
-                name=state.name,
+                id=chat_state.id,
+                name=chat_state.name,
                 documents=[
                     self.config.document_class(
                         id=document_state.id,
                         name=document_state.name,
                         metadata=document_state.metadata_,
                     )
-                    for document_state in state.document_states
+                    for document_state in chat_state.document_states
                 ],
                 source_storage=self._parse_component(
-                    state.source_storage, registry=self._source_storages
+                    chat_state.source_storage, registry=self._source_storages
                 ),
                 assistant=self._parse_component(
-                    state.assistant, registry=self._assistants
+                    chat_state.assistant, registry=self._assistants
                 ),
-                **state.params,
+                messages=[
+                    Message(
+                        id=message_state.id,
+                        content=message_state.content,
+                        role=message_state.role,
+                        sources=[
+                            ReconstructedSource(
+                                id=source_state.id,
+                                document_id=source_state.document_id,
+                                document_name=source_state.document_state.name,
+                                location=source_state.location,
+                            )
+                            for source_state in message_state.source_states
+                        ],
+                    )
+                    for message_state in chat_state.message_states
+                ],
+                **chat_state.params,
             )
-            for state in self._state.get_chats(user=user)
+            for chat_state in self._state.get_chats(user=user)
         ]
         self._chats.update({(user, chat.id): chat for chat in chats})
         return chats
@@ -233,6 +252,7 @@ class Rag:
             return chat
 
         self._get_chats(user=user)
+
         chat = self._chats.get(key)
         if chat is not None:
             return chat
@@ -251,6 +271,7 @@ class Chat:
         documents,
         source_storage,
         assistant,
+        messages: Optional[list[Message]] = None,
         **params,
     ):
         self._rag = rag
@@ -266,7 +287,7 @@ class Chat:
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
-        self.messages: list[Message] = []
+        self.messages = messages or []
 
         self._started = False
         self._closed = False
@@ -286,14 +307,7 @@ class Chat:
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
-        self.messages.append(welcome)
-        self._state.add_message(
-            user=self._user,
-            chat_id=self.id,
-            id=welcome.id,
-            content=welcome.content,
-            role=welcome.role,
-        )
+        self._append_message(welcome)
 
         return self
 
@@ -310,34 +324,30 @@ class Chat:
             raise RagnaException
 
         prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
-        self.messages.append(prompt)
-        self._state.add_message(
-            user=self._user,
-            chat_id=self.id,
-            id=prompt.id,
-            content=prompt.content,
-            role=prompt.role,
-        )
+        self._append_message(prompt)
 
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
         content = await self._enqueue(self.assistant.answer, prompt, sources)
+
         answer = Message(
             id=RagnaId.make(),
             content=content,
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
+        self._append_message(answer)
+        return answer
+
+    def _append_message(self, message: Message):
+        self.messages.append(message)
         self._state.add_message(
             user=self._user,
             chat_id=self.id,
-            id=answer.id,
-            content=answer.content,
-            role=answer.role,
-            sources=answer.sources,
+            id=message.id,
+            content=message.content,
+            role=message.role,
+            sources=message.sources,
         )
-        self.messages.append(answer)
-
-        return answer
 
     class _SpecialChatParams(BaseModel):
         user: str

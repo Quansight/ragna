@@ -125,6 +125,7 @@ class ChromaSourceStorage(SourceStorage):
             take_sources_up_to_max_tokens(
                 (
                     Source(
+                        id=RagnaId.make(),
                         document_id=result["ids"],
                         document_name=result["metadatas"]["document_name"],
                         location=result["metadatas"]["page_numbers"],

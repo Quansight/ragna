@@ -103,7 +103,7 @@ async def _enqueue_job(
             sys.stderr.write(stderr)
             return result
         elif status == "failed":
-            return "failed"
+            raise RagnaException(job.latest_result().exc_string)
         await asyncio.sleep(0.2)
 
 

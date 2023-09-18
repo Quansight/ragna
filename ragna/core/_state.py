@@ -216,7 +216,7 @@ class State:
         self._session.commit()
         return chat
 
-    def _get_chat(self, *, user: str, id: RagnaId):
+    def get_chat(self, *, user: str, id: RagnaId):
         chat_state = self._session.execute(
             select(ChatState).where(
                 (ChatState.id == id) & (ChatState.user_id == self._get_user_id(user))
@@ -227,12 +227,12 @@ class State:
         return chat_state
 
     def start_chat(self, *, user: str, id: RagnaId):
-        chat_state = self._get_chat(user=user, id=id)
+        chat_state = self.get_chat(user=user, id=id)
         chat_state.started = True
         self._session.commit()
 
     def close_chat(self, *, user: str, id: RagnaId):
-        chat_state = self._get_chat(user=user, id=id)
+        chat_state = self.get_chat(user=user, id=id)
         chat_state.closed = True
         self._session.commit()
 

@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 
 from pydantic import BaseModel, Field, HttpUrl, validator
 
-from ragna.core import Chat, LocalDocument, MessageRole, Rag, RagnaException, RagnaId
+from ragna.core import Chat, LocalDocument, MessageRole, RagnaException, RagnaId
 
 
 class DocumentModel(BaseModel):
@@ -26,7 +26,6 @@ class DocumentUploadInfoModel(BaseModel):
 
 
 class SourceModel(BaseModel):
-    id: RagnaId
     document_id: RagnaId
     document_name: str
     location: str
@@ -124,9 +123,7 @@ def process_exception(afn):
     return wrapper
 
 
-def api(**kwargs):
-    rag = Rag(**kwargs, start_ragna_worker=False, start_redis_server=False)
-
+def api(rag):
     app = FastAPI()
 
     async def _authorize_user(user: str) -> str:

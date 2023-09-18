@@ -13,18 +13,18 @@ from . import assistant, core, source_storage
 from .core import Config, Rag
 
 
-def _demo_config():
-    demo_config = Config()
+def demo_config():
+    # Not specifying any path will create the database in memory
+    demo_config = Config(state_database_url="sqlite://")
     demo_config.register_component(source_storage.RagnaDemoSourceStorage)
     demo_config.register_component(assistant.RagnaDemoAssistant)
     return demo_config
 
 
-demo_config = _demo_config()
-del _demo_config
+demo_config = demo_config()
 
 
-def _builtin_config():
+def builtin_config():
     from ragna.core import Assistant, SourceStorage
 
     builtin_config = Config()
@@ -37,5 +37,4 @@ def _builtin_config():
     return builtin_config
 
 
-builtin_config = _builtin_config()
-del _builtin_config
+builtin_config = builtin_config()
