@@ -1,6 +1,13 @@
 import uuid
 
-from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
+from ragna.core import (
+    Document,
+    PackageRequirement,
+    RagnaId,
+    Requirement,
+    Source,
+    SourceStorage,
+)
 
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
@@ -39,12 +46,12 @@ class ChromaSourceStorage(SourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: str,
+        chat_id: RagnaId,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
         collection = self._client().get_or_create_collection(
-            chat_id, embedding_function=self._embedding_function()
+            str(chat_id), embedding_function=self._embedding_function()
         )
 
         ids = []
@@ -73,12 +80,12 @@ class ChromaSourceStorage(SourceStorage):
         self,
         prompt: str,
         *,
-        num_tokens: int = 1024,
-        chat_id: str,
+        chat_id: RagnaId,
         chunk_size: int = 500,
+        num_tokens: int = 1024,
     ) -> list[Source]:
         collection = self._client().get_collection(
-            chat_id, embedding_function=self._embedding_function()
+            str(chat_id), embedding_function=self._embedding_function()
         )
 
         result = collection.query(

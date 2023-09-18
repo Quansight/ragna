@@ -5,6 +5,7 @@ import enum
 from typing import Optional
 
 from ._component import RagComponent
+from ._core import RagnaId
 from ._source_storage import Source
 
 
@@ -18,7 +19,7 @@ class Message:
     def __init__(
         self,
         *,
-        id: str,
+        id: RagnaId,
         content: str,
         role: MessageRole,
         sources: Optional[list[Source]] = None,
@@ -30,14 +31,6 @@ class Message:
 
     def __str__(self):
         return self.content
-
-    @classmethod
-    def _from_state(cls, data):
-        return cls(
-            content=data.content,
-            role=MessageRole[data.role],
-            sources=[Source._from_state(s) for s in data.source_datas],
-        )
 
 
 # FIXME: context_size -> max_input_size

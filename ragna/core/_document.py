@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
-from ._exceptions import RagnaException
+from ._core import RagnaException, RagnaId
 from ._requirement import PackageRequirement, Requirement, RequirementMixin
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ class Document(abc.ABC):
     def __init__(
         self,
         *,
-        id: Optional[str] = None,
+        id: Optional[RagnaId] = None,
         name: str,
         metadata: dict[str, Any],
         page_extractor: Optional[PageExtractor] = None,
@@ -84,7 +84,7 @@ class LocalDocument(Document):
 
     @classmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: str, name: str
+        cls, *, config: Config, user: str, id: RagnaId, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("PyJWT").is_available():
             raise RagnaException()
@@ -96,18 +96,18 @@ class LocalDocument(Document):
             "token": jwt.encode(
                 payload={
                     "user": user,
-                    "id": id,
+                    "id": str(id),
                     "exp": time.time() + config.upload_token_ttl,
                 },
                 key=config.upload_token_secret,
                 algorithm=cls._JWT_ALGORITHM,
             )
         }
-        metadata = {"path": str(config.local_cache_root / "documents" / id)}
+        metadata = {"path": str(config.local_cache_root / "documents" / str(id))}
         return url, data, metadata
 
     @classmethod
-    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, str]:
+    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, RagnaId]:
         import jwt
 
         try:
@@ -118,7 +118,7 @@ class LocalDocument(Document):
             raise RagnaException
         except Exception as exc:
             raise RagnaException(str(type(exc)))
-        return payload["user"], payload["id"]
+        return payload["user"], RagnaId(payload["id"])
 
     @property
     def path(self) -> Path:

@@ -1,8 +1,7 @@
 import json
-import uuid
 from pathlib import Path
 
-from ragna.core import Document, RagnaException, Source, SourceStorage
+from ragna.core import Document, RagnaException, RagnaId, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -15,14 +14,16 @@ class RagnaDemoSourceStorage(SourceStorage):
         self._root = config.local_cache_root / "demo-source-storage"
         self._root.mkdir(exist_ok=True)
 
-    def _make_path(self, chat_id: str) -> Path:
+    def _make_path(self, chat_id: RagnaId) -> Path:
         return self._root / f"{chat_id}.json"
 
-    def store(self, documents: list[Document], *, chat_id: str) -> None:
+    def store(self, documents: list[Document], *, chat_id: RagnaId) -> None:
         with open(self._make_path(chat_id), "w") as file:
-            json.dump([(document.id, document.name) for document in documents], file)
+            json.dump(
+                [(str(document.id), document.name) for document in documents], file
+            )
 
-    def retrieve(self, prompt: str, chat_id: str) -> list[Source]:
+    def retrieve(self, prompt: str, *, chat_id: RagnaId) -> list[Source]:
         path = self._make_path(chat_id)
         if not path.exists():
             raise RagnaException
@@ -35,9 +36,8 @@ class RagnaDemoSourceStorage(SourceStorage):
 
         return [
             Source(
-                # FIXME
-                id=str(uuid.uuid4()),
-                document_id=id,
+                id=RagnaId.make(),
+                document_id=RagnaId(id),
                 document_name=name,
                 location="N/A",
                 content=(

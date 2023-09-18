@@ -3,6 +3,7 @@ import dataclasses
 from typing import Protocol, Sequence
 
 from ._component import RagComponent
+from ._core import RagnaId
 from ._document import Document
 
 
@@ -16,8 +17,8 @@ class Tokenizer(Protocol):
 
 @dataclasses.dataclass
 class Source:
-    id: str
-    document_id: str
+    id: RagnaId
+    document_id: RagnaId
     document_name: str
     location: str
     content: str

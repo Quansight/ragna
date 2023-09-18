@@ -13,7 +13,7 @@ from ._assistant import Message, MessageRole
 
 from ._component import RagComponent
 from ._config import Config
-from ._exceptions import RagnaException
+from ._core import RagnaException, RagnaId
 from ._queue import _enqueue_job, _get_queue
 from ._source_storage import Document
 from ._state import State
@@ -77,7 +77,7 @@ class Rag:
         chat = Chat(
             rag=self,
             user=user,
-            id=self._state.make_id(),
+            id=RagnaId.make(),
             name=name,
             documents=documents,
             source_storage=source_storage,
@@ -147,14 +147,14 @@ class Rag:
     def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
         documents_ = []
         for document in document:
-            if self._state.is_id(document):
+            if isinstance(document, RagnaId):
                 document = self._get_document(id=document, user=user)
             else:
                 if not isinstance(document, Document):
                     document = self.config.document_class(document)
 
                 if document.id is None:
-                    document.id = self._state.make_id()
+                    document.id = RagnaId.make()
                     self._add_document(
                         user=user,
                         id=document.id,
@@ -186,10 +186,10 @@ class Rag:
         for proc in self._subprocesses:
             proc.communicate()
 
-    def _add_document(self, *, user: str, id: str, name: str, metadata):
+    def _add_document(self, *, user: str, id: RagnaId, name: str, metadata):
         self._state.add_document(user=user, id=id, name=name, metadata=metadata)
 
-    def _get_document(self, user: str, id: str):
+    def _get_document(self, user: str, id: RagnaId):
         data = self._state.get_document(user=user, id=id)
         if data is None:
             raise RagnaException
@@ -225,7 +225,7 @@ class Rag:
         self._chats.update({(user, chat.id): chat for chat in chats})
         return chats
 
-    def _get_chat(self, *, user: str, id: str):
+    def _get_chat(self, *, user: str, id: RagnaId):
         key = (user, id)
 
         chat = self._chats.get(key)
@@ -246,7 +246,7 @@ class Chat:
         *,
         rag: Rag,
         user: str,
-        id: str,
+        id: RagnaId,
         name: Optional[str] = None,
         documents,
         source_storage,
@@ -282,7 +282,7 @@ class Chat:
         self._started = True
 
         welcome = Message(
-            id=self._state.make_id(),
+            id=RagnaId.make(),
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
@@ -309,9 +309,7 @@ class Chat:
         elif self._closed:
             raise RagnaException
 
-        prompt = Message(
-            id=self._state.make_id(), content=prompt, role=MessageRole.USER
-        )
+        prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
         self.messages.append(prompt)
         self._state.add_message(
             user=self._user,
@@ -324,7 +322,7 @@ class Chat:
         sources = await self._enqueue(self.source_storage.retrieve, prompt)
         content = await self._enqueue(self.assistant.answer, prompt, sources)
         answer = Message(
-            id=self._state.make_id(),
+            id=RagnaId.make(),
             content=content,
             role=MessageRole.ASSISTANT,
             sources=sources,
@@ -343,7 +341,7 @@ class Chat:
 
     class _SpecialChatParams(BaseModel):
         user: str
-        chat_id: str
+        chat_id: RagnaId
         chat_name: str
 
     def _unpack_chat_params(self, params):

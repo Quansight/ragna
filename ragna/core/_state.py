@@ -2,48 +2,41 @@ from __future__ import annotations
 
 import functools
 import re
-import uuid
 from typing import Any, Optional
 
-from sqlalchemy import (
-    Boolean,
-    Column,
-    create_engine,
-    Enum,
-    ForeignKey,
-    JSON,
-    select,
-    String,
-    Table,
-)
+from sqlalchemy import Column, create_engine, ForeignKey, select, Table, types
 
 from sqlalchemy.orm import DeclarativeBase, relationship, Session
 
-from ragna.core import MessageRole, Source
+from ragna.core import MessageRole, RagnaException, RagnaId, Source
 
-from ._exceptions import RagnaException
+
+class Id(types.TypeDecorator):
+    impl = types.Uuid
+
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return RagnaId.from_uuid(value)
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def _make_id() -> str:
-    return str(uuid.uuid4())
-
-
-# FIXME: try and use this
-class RagnaId(str):
-    pass
-
-
-# FIXME Make this actual UUID columns?
-# FIXME: do we actually need this?
+# FIXME: Do we actually need this table? If we are sure that a user is unique and has to
+#  be authenticated from the API layer, it seems having an extra mapping here is not
+#  needed?
 class UserData(Base):
     __tablename__ = "users"
 
-    id = Column(String, primary_key=True)
-    name = Column(String)
+    id = Column(Id, primary_key=True)
+    name = Column(types.String)
 
 
 document_chat_data_association_table = Table(
@@ -58,12 +51,12 @@ document_chat_data_association_table = Table(
 class DocumentData(Base):
     __tablename__ = "documents"
 
-    id = Column(String, primary_key=True)
+    id = Column(Id, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
-    name = Column(String)
+    name = Column(types.String)
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
     # metadata without the underscore is reserved by SQLAlchemy
-    metadata_ = Column(JSON)
+    metadata_ = Column(types.JSON)
     chat_datas = relationship(
         "ChatData",
         secondary=document_chat_data_association_table,
@@ -78,20 +71,20 @@ class DocumentData(Base):
 class ChatData(Base):
     __tablename__ = "chats"
 
-    id = Column(String, primary_key=True)
+    id = Column(Id, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
-    name = Column(String)
+    name = Column(types.String)
     document_datas = relationship(
         "DocumentData",
         secondary=document_chat_data_association_table,
         back_populates="chat_datas",
     )
-    source_storage = Column(String)
-    assistant = Column(String)
-    params = Column(JSON)
+    source_storage = Column(types.String)
+    assistant = Column(types.String)
+    params = Column(types.JSON)
     message_datas = relationship("MessageData", cascade="all, delete")
-    started = Column(Boolean)
-    closed = Column(Boolean)
+    started = Column(types.Boolean)
+    closed = Column(types.Boolean)
 
 
 source_message_data_association_table = Table(
@@ -105,12 +98,12 @@ source_message_data_association_table = Table(
 class SourceData(Base):
     __tablename__ = "sources"
 
-    id = Column(String, primary_key=True)
+    id = Column(Id, primary_key=True)
 
     document_id = Column(ForeignKey("documents.id"))
     document_data = relationship("DocumentData", back_populates="source_datas")
 
-    location = Column(String)
+    location = Column(types.String)
 
     message_datas = relationship(
         "MessageData",
@@ -122,10 +115,10 @@ class SourceData(Base):
 class MessageData(Base):
     __tablename__ = "messages"
 
-    id = Column(String, primary_key=True)
+    id = Column(Id, primary_key=True)
     chat_id = Column(ForeignKey("chats.id"))
-    content = Column(String)
-    role = Column(Enum(MessageRole))
+    content = Column(types.String)
+    role = Column(types.Enum(MessageRole))
     source_id = Column(ForeignKey("sources.id"))
     source_datas = relationship(
         "SourceData",
@@ -134,7 +127,6 @@ class MessageData(Base):
     )
 
 
-# FIXME: user first in all signatures!
 class State:
     def __init__(self, url: str):
         self._engine = create_engine(url)
@@ -144,9 +136,6 @@ class State:
     def __del__(self):
         if hasattr(self, "_session"):
             self._session.close()
-
-    def make_id(self):
-        return _make_id()
 
     _UUID_STR_PATTERN = re.compile(
         r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
@@ -159,19 +148,21 @@ class State:
         return self._UUID_STR_PATTERN.match(obj) is not None
 
     @functools.lru_cache(maxsize=1024)
-    def _get_user_id(self, username: str):
-        user_id = self._session.execute(
-            select(UserData.id).where(UserData.name == username)
+    def _get_user_id(self, user: str):
+        user_data = self._session.execute(
+            select(UserData).where(UserData.name == user)
         ).scalar_one_or_none()
-        if user_id is not None:
-            return user_id
+        if user_data is not None:
+            return user_data.id
 
-        user = UserData(id=_make_id(), name=username)
-        self._session.add(user)
+        user_data = UserData(id=RagnaId.make(), name=user)
+        self._session.add(user_data)
         self._session.commit()
-        return user.id
+        return user_data.id
 
-    def add_document(self, *, id: str, user: str, name: str, metadata: dict[str, Any]):
+    def add_document(
+        self, *, user: str, id: RagnaId, name: str, metadata: dict[str, Any]
+    ):
         document_data = DocumentData(
             id=id,
             user_id=self._get_user_id(user),
@@ -182,16 +173,16 @@ class State:
         self._session.commit()
         return document_data
 
-    def get_document(self, id: str, user: str) -> DocumentData:
+    def get_document(self, user: str, id: RagnaId) -> DocumentData:
         return self._session.execute(
             select(DocumentData).where(
-                (DocumentData.id == id)
-                & (DocumentData.user_id == self._get_user_id(user))
+                (DocumentData.user_id == self._get_user_id(user))
+                & (DocumentData.id == id)
             )
         ).scalar_one_or_none()
 
     def get_chats(self, user: str):
-        # Add filters for started and closed here
+        # FIXME: Add filters for started and closed here
         return (
             self._session.execute(
                 select(ChatData).where(ChatData.user_id == self._get_user_id(user))
@@ -203,13 +194,10 @@ class State:
     def add_chat(
         self,
         *,
-        # FIXME: always generate IDs on the OUTSIDE
-        # This takes the ID instead of generating it itself, because we need to create
-        # the Chat object before we add it to the database
-        id: str,
         user: str,
+        id: RagnaId,
         name: str,
-        document_ids: list[str],
+        document_ids: list[RagnaId],
         source_storage: str,
         assistant: str,
         params,
@@ -240,7 +228,7 @@ class State:
         self._session.commit()
         return chat
 
-    def _get_chat(self, *, user: str, id: str):
+    def _get_chat(self, *, user: str, id: RagnaId):
         chat_data = self._session.execute(
             select(ChatData).where(
                 (ChatData.id == id) & (ChatData.user_id == self._get_user_id(user))
@@ -250,12 +238,12 @@ class State:
             raise RagnaException()
         return chat_data
 
-    def start_chat(self, *, id: str, user: str):
+    def start_chat(self, *, user: str, id: RagnaId):
         chat_data = self._get_chat(user=user, id=id)
         chat_data.started = True
         self._session.commit()
 
-    def close_chat(self, *, id: str, user: str):
+    def close_chat(self, *, user: str, id: RagnaId):
         chat_data = self._get_chat(user=user, id=id)
         chat_data.closed = True
         self._session.commit()
@@ -264,8 +252,8 @@ class State:
         self,
         *,
         user: str,
-        chat_id: str,
-        id: str,
+        chat_id: RagnaId,
+        id: RagnaId,
         content: str,
         role: MessageRole,
         sources: Optional[list[Source]] = None,

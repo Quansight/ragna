@@ -19,8 +19,8 @@ import structlog
 from ._assistant import Assistant
 
 from ._component import RagComponent
+from ._core import RagnaException
 from ._document import LocalDocument
-from ._exceptions import RagnaException
 from ._source_storage import SourceStorage
 
 

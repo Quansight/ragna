@@ -1,18 +1,17 @@
 import functools
-import re
-import uuid
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 import aiofiles
 from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
-from pydantic import BaseModel, Field, HttpUrl
 
-from ragna.core import Chat, LocalDocument, MessageRole, Rag, RagnaException
+from pydantic import BaseModel, Field, HttpUrl, validator
+
+from ragna.core import Chat, LocalDocument, MessageRole, Rag, RagnaException, RagnaId
 
 
 class DocumentModel(BaseModel):
-    id: UUID
+    id: RagnaId
     name: str
 
 
@@ -27,8 +26,8 @@ class DocumentUploadInfoModel(BaseModel):
 
 
 class SourceModel(BaseModel):
-    id: UUID
-    document_id: UUID
+    id: RagnaId
+    document_id: RagnaId
     document_name: str
     location: str
 
@@ -43,7 +42,7 @@ class SourceModel(BaseModel):
 
 
 class MessageModel(BaseModel):
-    id: UUID
+    id: RagnaId
     role: MessageRole
     content: str
     sources: list[SourceModel]
@@ -60,10 +59,16 @@ class MessageModel(BaseModel):
 
 class ChatMetadataModel(BaseModel):
     name: str
+    # For some reason list[RagnaId] does not work and will get parsed into list[UUID].
+    # Thus, we use a validator below to do the conversion.
     document_ids: list[UUID]
     source_storage: str
     assistant: str
     params: dict = Field(default_factory=dict)
+
+    @validator("document_ids")
+    def uuid_to_ragna_id(cls, document_ids: list[UUID]) -> list[RagnaId]:
+        return [RagnaId.from_uuid(u) for u in document_ids]
 
     @classmethod
     def from_chat(cls, chat):
@@ -77,7 +82,7 @@ class ChatMetadataModel(BaseModel):
 
 
 class ChatModel(BaseModel):
-    id: UUID
+    id: RagnaId
     metadata: ChatMetadataModel
     messages: list[MessageModel]
     started: bool
@@ -102,30 +107,6 @@ class AnswerOutputModel(BaseModel):
 class ComponentsModel(BaseModel):
     source_storages: list[str]
     assistants: list[str]
-
-
-# FIXME Can we make this a custom type for the DB? Maybe just subclass from str?
-class RagnaId:
-    _UUID_STR_PATTERN = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    )
-
-    @staticmethod
-    def is_valid(obj: Any) -> bool:
-        if isinstance(obj, UUID):
-            obj = str(obj)
-        elif not isinstance(obj, str):
-            return False
-
-        return RagnaId._UUID_STR_PATTERN.match(obj) is not None
-
-    @staticmethod
-    def from_uuid(uuid: UUID) -> str:
-        return str(uuid)
-
-    @staticmethod
-    def make():
-        return RagnaId.from_uuid(uuid.uuid4())
 
 
 def process_exception(afn):
@@ -207,17 +188,17 @@ def api(**kwargs):
             await rag.new_chat(
                 user=user,
                 name=chat_metadata.name,
-                documents=[RagnaId.from_uuid(u) for u in chat_metadata.document_ids],
+                documents=chat_metadata.document_ids,
                 source_storage=chat_metadata.source_storage,
                 assistant=chat_metadata.assistant,
                 **chat_metadata.params,
             )
         )
 
-    async def _get_id(id: UUID) -> str:
+    async def _get_id(id: UUID) -> RagnaId:
         return RagnaId.from_uuid(id)
 
-    IdDependency = Annotated[str, Depends(_get_id)]
+    IdDependency = Annotated[RagnaId, Depends(_get_id)]
 
     async def _get_chat(*, user: UserDependency, id: IdDependency) -> Chat:
         return rag._get_chat(user=user, id=id)

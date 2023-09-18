@@ -13,7 +13,7 @@ from redis import ConnectionError, Redis
 from rq import Queue, Worker as _Worker
 from rq.worker_pool import WorkerPool as _WorkerPool
 
-from ._exceptions import RagnaException
+from ._core import RagnaException
 
 T = TypeVar("T")
 
