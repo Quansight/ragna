@@ -206,11 +206,11 @@ class Rag:
                 name=state.name,
                 documents=[
                     self.config.document_class(
-                        id=document_data.id,
-                        name=document_data.name,
-                        metadata=document_data.metadata_,
+                        id=document_state.id,
+                        name=document_state.name,
+                        metadata=document_state.metadata_,
                     )
-                    for document_data in state.document_datas
+                    for document_state in state.document_states
                 ],
                 source_storage=self._parse_component(
                     state.source_storage, registry=self._source_storages

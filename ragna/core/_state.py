@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import re
 from typing import Any, Optional
 
 from sqlalchemy import Column, create_engine, ForeignKey, select, Table, types
@@ -56,12 +55,12 @@ class DocumentState(Base):
     # metadata without the underscore is reserved by SQLAlchemy
     metadata_ = Column(types.JSON)
     chat_states = relationship(
-        "ChatData",
+        "ChatState",
         secondary=document_chat_state_association_table,
         back_populates="document_states",
     )
     source_states = relationship(
-        "SourceData",
+        "SourceState",
         back_populates="document_state",
     )
 
@@ -73,14 +72,14 @@ class ChatState(Base):
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
     document_states = relationship(
-        "DocumentData",
+        "DocumentState",
         secondary=document_chat_state_association_table,
         back_populates="chat_states",
     )
     source_storage = Column(types.String)
     assistant = Column(types.String)
     params = Column(types.JSON)
-    message_states = relationship("MessageData", cascade="all, delete")
+    message_states = relationship("MessageState")
     started = Column(types.Boolean)
     closed = Column(types.Boolean)
 
@@ -99,12 +98,12 @@ class SourceState(Base):
     id = Column(Id, primary_key=True)
 
     document_id = Column(ForeignKey("documents.id"))
-    document_state = relationship("DocumentData", back_populates="source_states")
+    document_state = relationship("DocumentState", back_populates="source_states")
 
     location = Column(types.String)
 
     message_states = relationship(
-        "MessageData",
+        "MessageState",
         secondary=source_message_state_association_table,
         back_populates="source_states",
     )
@@ -119,7 +118,7 @@ class MessageState(Base):
     role = Column(types.Enum(MessageRole))
     source_id = Column(ForeignKey("sources.id"))
     source_states = relationship(
-        "SourceData",
+        "SourceState",
         secondary=source_message_state_association_table,
         back_populates="message_states",
     )
@@ -134,16 +133,6 @@ class State:
     def __del__(self):
         if hasattr(self, "_session"):
             self._session.close()
-
-    _UUID_STR_PATTERN = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    )
-
-    def is_id(self, obj: Any) -> bool:
-        if not isinstance(obj, str):
-            return False
-
-        return self._UUID_STR_PATTERN.match(obj) is not None
 
     @functools.lru_cache(maxsize=1024)
     def _get_user_id(self, user: str):
@@ -171,6 +160,7 @@ class State:
         self._session.commit()
         return document_state
 
+    @functools.lru_cache(maxsize=1024)
     def get_document(self, user: str, id: RagnaId) -> DocumentState:
         return self._session.execute(
             select(DocumentState).where(
@@ -266,16 +256,28 @@ class State:
             raise RagnaException
 
         if sources is not None:
-            # FIXME: sources are never stored!
-            source_states = (
+            sources = {s.id: s for s in sources}
+            source_states = list(
                 self._session.execute(
-                    select(SourceState).where(
-                        SourceState.id.in_([source.id for source in sources])
-                    )
+                    select(SourceState).where(SourceState.id.in_(sources.keys()))
                 )
                 .scalars()
                 .all()
             )
+            missing_source_ids = sources.keys() - {state.id for state in source_states}
+            if missing_source_ids:
+                for id in missing_source_ids:
+                    source = sources[id]
+                    source_state = SourceState(
+                        id=RagnaId.make(),
+                        document_id=source.document_id,
+                        document_state=self.get_document(
+                            user=user, id=source.document_id
+                        ),
+                        location=source.location,
+                    )
+                    self._session.add(source_state)
+                    source_states.append(source_state)
         else:
             source_states = []
 
@@ -286,5 +288,8 @@ class State:
             role=role,
             source_states=source_states,
         )
+        self._session.add(message_state)
+
         chat_state.message_states.append(message_state)
+
         self._session.commit()
