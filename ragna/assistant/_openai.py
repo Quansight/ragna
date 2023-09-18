@@ -13,7 +13,7 @@ class OpenaiAssistantApi(AssistantApi):
         return f"OpenAI/{cls._MODEL}"
 
     @property
-    def context_size(self) -> int:
+    def max_input_size(self) -> int:
         return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:

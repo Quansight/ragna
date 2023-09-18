@@ -10,7 +10,7 @@ class RagnaDemoAssistant(Assistant):
         return "Ragna/DemoAssistant"
 
     @property
-    def context_size(self) -> int:
+    def max_input_size(self) -> int:
         return sys.maxsize
 
     def answer(self, prompt: str, sources: list[Source]) -> str:

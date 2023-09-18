@@ -33,15 +33,12 @@ class Message:
         return self.content
 
 
-# FIXME: context_size -> max_input_size
-
-
 class Assistant(RagComponent, abc.ABC):
     __ragna_protocol_methods__ = ["answer"]
 
     @property
     @abc.abstractmethod
-    def context_size(self) -> int:
+    def max_input_size(self) -> int:
         ...
 
     @abc.abstractmethod
