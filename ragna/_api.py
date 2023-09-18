@@ -99,6 +99,11 @@ class AnswerOutputModel(BaseModel):
     chat: ChatModel
 
 
+class ComponentsModel(BaseModel):
+    source_storages: list[str]
+    assistants: list[str]
+
+
 # FIXME Can we make this a custom type for the DB? Maybe just subclass from str?
 class RagnaId:
     _UUID_STR_PATTERN = re.compile(
@@ -149,6 +154,17 @@ def api(**kwargs):
 
     UserDependency = Annotated[str, Depends(_authorize_user)]
 
+    @app.get("/chats")
+    async def get_chats(user: UserDependency) -> list[ChatModel]:
+        return [ChatModel.from_chat(chat) for chat in rag._get_chats(user=user)]
+
+    @app.get("/components")
+    async def get_components(user: UserDependency) -> ComponentsModel:
+        return ComponentsModel(
+            source_storages=list(rag._source_storages.keys()),
+            assistants=list(rag._assistants.keys()),
+        )
+
     @app.get("/document/new")
     async def get_document_upload_info(
         user: UserDependency,
@@ -182,10 +198,6 @@ def api(**kwargs):
                 await document_file.write(content)
 
         return DocumentModel(id=id, name=document.name)
-
-    @app.get("/chats")
-    async def get_chats(user: UserDependency) -> list[ChatModel]:
-        return [ChatModel.from_chat(chat) for chat in rag._get_chats(user=user)]
 
     @app.post("/chat/new")
     async def new_chat(
