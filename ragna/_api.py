@@ -32,9 +32,8 @@ class SourceModel(BaseModel):
     document_name: str
     location: str
 
-    # FIXME: public
     @classmethod
-    def _from_source(cls, source):
+    def from_source(cls, source):
         return cls(
             id=source.id,
             document_id=source.document_id,
@@ -50,12 +49,12 @@ class MessageModel(BaseModel):
     sources: list[SourceModel]
 
     @classmethod
-    def _from_message(cls, message):
+    def from_message(cls, message):
         return cls(
             id=message.id,
             role=message.role,
             content=message.content,
-            sources=[SourceModel._from_source(s) for s in message.sources],
+            sources=[SourceModel.from_source(s) for s in message.sources],
         )
 
 
@@ -67,7 +66,7 @@ class ChatMetadataModel(BaseModel):
     params: dict = Field(default_factory=dict)
 
     @classmethod
-    def _from_chat(cls, chat):
+    def from_chat(cls, chat):
         return cls(
             name=chat.name,
             document_ids=[d.id for d in chat.documents],
@@ -85,11 +84,11 @@ class ChatModel(BaseModel):
     closed: bool
 
     @classmethod
-    def _from_chat(cls, chat):
+    def from_chat(cls, chat):
         return cls(
             id=chat.id,
-            metadata=ChatMetadataModel._from_chat(chat),
-            messages=[MessageModel._from_message(m) for m in chat.messages],
+            metadata=ChatMetadataModel.from_chat(chat),
+            messages=[MessageModel.from_message(m) for m in chat.messages],
             started=chat._started,
             closed=chat._closed,
         )
@@ -100,7 +99,7 @@ class AnswerOutputModel(BaseModel):
     chat: ChatModel
 
 
-# Can we make this a custom type for the DB? Maybe just subclass from str?
+# FIXME Can we make this a custom type for the DB? Maybe just subclass from str?
 class RagnaId:
     _UUID_STR_PATTERN = re.compile(
         r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
@@ -186,13 +185,13 @@ def api(**kwargs):
 
     @app.get("/chats")
     async def get_chats(user: UserDependency) -> list[ChatModel]:
-        return [ChatModel._from_chat(chat) for chat in rag._get_chats(user=user)]
+        return [ChatModel.from_chat(chat) for chat in rag._get_chats(user=user)]
 
     @app.post("/chat/new")
     async def new_chat(
         *, user: UserDependency, chat_metadata: ChatMetadataModel
     ) -> ChatModel:
-        return ChatModel._from_chat(
+        return ChatModel.from_chat(
             await rag.new_chat(
                 user=user,
                 name=chat_metadata.name,
@@ -215,21 +214,21 @@ def api(**kwargs):
 
     @app.get("/chat/{id}")
     async def get_chat(chat: ChatDependency) -> ChatModel:
-        return ChatModel._from_chat(chat)
+        return ChatModel.from_chat(chat)
 
     @app.post("/chat/{id}/start")
     async def start_chat(chat: ChatDependency) -> ChatModel:
-        return ChatModel._from_chat(await chat.start())
+        return ChatModel.from_chat(await chat.start())
 
     @app.post("/chat/{id}/close")
     async def close_chat(chat: ChatDependency) -> ChatModel:
-        return ChatModel._from_chat(await chat.close())
+        return ChatModel.from_chat(await chat.close())
 
     @app.post("/chat/{id}/answer")
     async def answer(chat: ChatDependency, prompt: str) -> AnswerOutputModel:
         return AnswerOutputModel(
-            message=MessageModel._from_message(await chat.answer(prompt)),
-            chat=ChatModel._from_chat(chat),
+            message=MessageModel.from_message(await chat.answer(prompt)),
+            chat=ChatModel.from_chat(chat),
         )
 
     return app
