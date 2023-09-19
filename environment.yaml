@@ -7,6 +7,7 @@ dependencies:
   - redis-server
   - jupyter
   - python-dotenv
+  - boto3
   - pytest >=6
   - tomlkit
   - mypy
