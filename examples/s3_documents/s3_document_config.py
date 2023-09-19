@@ -1,7 +1,10 @@
 import os
 from typing import Any
 
+from ragna.assistant import RagnaDemoAssistant
+
 from ragna.core import Config, Document, PackageRequirement, RagnaException
+from ragna.source_storage import RagnaDemoSourceStorage
 
 
 class S3Document(Document):
@@ -29,7 +32,7 @@ class S3Document(Document):
         response = s3.generate_presigned_post(
             Bucket=bucket,
             Key=str(id),
-            ExpiresIn=config.upload_token_ttl * 10,
+            ExpiresIn=config.upload_token_ttl,
         )
 
         url = response["url"]
@@ -60,4 +63,9 @@ class S3Document(Document):
         return s3.Object(self.metadata["bucket"], str(self.id)).get()["Body"].read()
 
 
-config = Config(document_class=S3Document)
+config = Config(
+    state_database_url="sqlite://",
+    document_class=S3Document,
+)
+config.register_component(RagnaDemoSourceStorage)
+config.register_component(RagnaDemoAssistant)
