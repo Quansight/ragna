@@ -62,24 +62,21 @@ def _get_connection(url, *, start_redis_server, startup_timeout=5) -> tuple[Redi
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    try:
-        connection = Redis.from_url(url)
 
-        start = time.time()
-        while (time.time() - start) < startup_timeout:
+    connection = Redis.from_url(url)
+
+    start = time.time()
+    while (time.time() - start) < startup_timeout:
+        with contextlib.suppress(ConnectionError):
             if connection.ping():
                 break
 
             time.sleep(0.5)
             time.perf_counter()
-        else:
-            raise RagnaException()
-    except (ConnectionError, RagnaException) as error:
+    else:
         proc.kill()
         stdout, stderr = proc.communicate()
-        raise RagnaException(
-            f"Unable to start redis-server. {stdout} {stderr}"
-        ) from error
+        raise RagnaException(f"Unable to start redis-server. {stdout} {stderr}")
 
     return connection, proc
 

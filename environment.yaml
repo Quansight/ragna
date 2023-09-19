@@ -6,6 +6,7 @@ dependencies:
   - pip
   - redis-server
   - jupyter
+  - python-dotenv
   - pytest >=6
   - tomlkit
   - mypy

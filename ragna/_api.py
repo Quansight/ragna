@@ -15,13 +15,9 @@ class DocumentModel(BaseModel):
     name: str
 
 
-class UploadData(BaseModel):
-    token: str
-
-
 class DocumentUploadInfoModel(BaseModel):
     url: HttpUrl
-    data: UploadData
+    data: dict
     document: DocumentModel
 
 
@@ -154,7 +150,7 @@ def api(rag):
         )
         rag._add_document(user=user, id=id, name=name, metadata=metadata)
         return DocumentUploadInfoModel(
-            url=url, data=UploadData(**data), document=DocumentModel(id=id, name=name)
+            url=url, data=data, document=DocumentModel(id=id, name=name)
         )
 
     @app.post("/document/upload")

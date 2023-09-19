@@ -20,7 +20,7 @@ from ._assistant import Assistant
 
 from ._component import RagComponent
 from ._core import RagnaException
-from ._document import LocalDocument
+from ._document import Document, LocalDocument
 from ._source_storage import SourceStorage
 
 
@@ -33,7 +33,7 @@ class Config:
 
     local_cache_root: Path = Path.home() / ".cache" / "ragna"
 
-    document_class = LocalDocument
+    document_class: Type[Document] = LocalDocument
     upload_token_secret: str = dataclasses.field(default_factory=secrets.token_hex)
     upload_token_ttl: int = 30
 
