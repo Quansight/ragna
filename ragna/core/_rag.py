@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import functools
 import itertools
 import subprocess
 import sys
@@ -121,24 +122,26 @@ class Rag:
             return proc
         else:
             raise RagnaException(
-                f"Worker process terminated unexpectedly {stdout} {stderr}"
+                "Worker process terminated unexpectedly", stdout=stdout, stderr=stderr
             )
 
     def _load_components(
         self, component_classes: dict, *, deselect_unavailable_components
     ):
         components = {}
-        deselected = False
+        deselected = []
         for name, component_class in component_classes.items():
             if not component_class.is_available():
-                self._logger.warn("Component not available", name=name)
-                deselected = True
+                deselected.append(name)
                 continue
 
             components[name] = component_class(self.config)
 
         if deselected and not deselect_unavailable_components:
-            raise RagnaException()
+            raise RagnaException(
+                "Need to deselect at least one component, but deselect_unavailable_components=False",
+                deselected=deselected,
+            )
 
         if not components:
             self._logger.warning("No registered components available")
@@ -164,7 +167,12 @@ class Rag:
                     )
 
             if not document.is_available():
-                raise RagnaException()
+                raise RagnaException(
+                    "Document not available",
+                    document=document,
+                    http_status_code=404,
+                    http_detail=f"Document with ID {document.id} not available.",
+                )
 
             documents_.append(document)
         return documents_
@@ -174,12 +182,12 @@ class Rag:
             return obj
         elif isinstance(obj, type) and issubclass(obj, RagComponent):
             if not obj.is_available():
-                raise RagnaException(obj)
+                raise RagnaException("Component not available", name=obj.display_name())
             return obj(self.config)
         elif obj in registry:
             return registry[obj]
         else:
-            raise RagnaException(obj)
+            raise RagnaException("Unknown component", component=obj)
 
     def __del__(self):
         if hasattr(self, "_subprocesses"):
@@ -194,7 +202,13 @@ class Rag:
     def _get_document(self, user: str, id: RagnaId):
         state = self._state.get_document(user=user, id=id)
         if state is None:
-            raise RagnaException
+            raise RagnaException(
+                "Document not found",
+                user=user,
+                id=id,
+                http_status_code=404,
+                http_detail=RagnaException.EVENT,
+            )
         return self.config.document_class(
             id=id, name=state.name, metadata=state.metadata_
         )
@@ -257,7 +271,13 @@ class Rag:
         if chat is not None:
             return chat
 
-        raise RagnaException
+        raise RagnaException(
+            "Chat not found",
+            user=user,
+            id=id,
+            http_status_code=404,
+            detail=RagnaException.EVENT,
+        )
 
 
 class Chat:
@@ -294,9 +314,19 @@ class Chat:
 
     async def start(self):
         if self._started:
-            raise RagnaException()
+            raise RagnaException(
+                "Chat is already started",
+                chat=self,
+                http_status_code=400,
+                detail=RagnaException.EVENT,
+            )
         elif self._closed:
-            raise RagnaException()
+            raise RagnaException(
+                "Chat is closed and cannot be restarted",
+                chat=self,
+                http_status_code=400,
+                http_detail=RagnaException.EVENT,
+            )
 
         await self._enqueue(self.source_storage.store, self.documents)
         self._state.start_chat(user=self._user, id=self.id)
@@ -319,15 +349,25 @@ class Chat:
 
     async def answer(self, prompt: str):
         if not self._started:
-            raise RagnaException
+            raise RagnaException(
+                "Chat is not started",
+                chat=self,
+                http_status_code=400,
+                detail=RagnaException.EVENT,
+            )
         elif self._closed:
-            raise RagnaException
+            raise RagnaException(
+                "Chat is closed",
+                chat=self,
+                http_status_code=400,
+                http_detail=RagnaException.EVENT,
+            )
 
         prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
         self._append_message(prompt)
 
-        sources = await self._enqueue(self.source_storage.retrieve, prompt)
-        content = await self._enqueue(self.assistant.answer, prompt, sources)
+        sources = await self._enqueue(self.source_storage.retrieve, prompt.content)
+        content = await self._enqueue(self.assistant.answer, prompt.content, sources)
 
         answer = Message(
             id=RagnaId.make(),
@@ -410,16 +450,19 @@ class Chat:
 
     async def _enqueue(self, fn, *args):
         unpacked_params = self._unpacked_params[fn]
-        return await _enqueue_job(
-            self._rag._queue,
-            lambda: fn(*args, **unpacked_params),
-            **getattr(fn, "__ragna_job_kwargs__", {}),
-        )
+        try:
+            return await _enqueue_job(
+                self._rag._queue,
+                functools.partial(fn, *args, **unpacked_params),
+                **getattr(fn, "__ragna_job_kwargs__", {}),
+            )
+        except RagnaException as exc:
+            exc.extra["fn"] = fn.__qualname__
+            raise exc
 
     async def __aenter__(self):
         await self.start()
         return self
 
     async def __aexit__(self, *_):
-        # FIXME: does this suppress the exception?
         await self.close()

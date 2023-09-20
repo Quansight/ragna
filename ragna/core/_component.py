@@ -15,7 +15,7 @@ class RagComponent(RequirementMixin):
         self.config = config
         self.logger = config.get_logger(name=str(self))
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return self.display_name()
 
     __ragna_protocol_methods__: list[str]

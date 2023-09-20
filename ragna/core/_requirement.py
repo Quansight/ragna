@@ -15,7 +15,7 @@ class Requirement(abc.ABC):
         ...
 
     @abc.abstractmethod
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         ...
 
 
@@ -45,7 +45,7 @@ class PackageRequirement(Requirement):
 
         return True
 
-    def __str__(self):
+    def __repr__(self):
         return str(self._requirement)
 
 
@@ -57,7 +57,7 @@ class EnvVarRequirement(Requirement):
     def is_available(self) -> bool:
         return self._name in os.environ
 
-    def __str__(self):
+    def __repr__(self):
         return self._name
 
 

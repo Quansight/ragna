@@ -20,9 +20,10 @@ class OpenaiAssistantApi(AssistantApi):
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
         instruction = (
             "You are an helpful assistant that answers user questions given the context below. "
-            "If you don't know the answer, just say so. Don't try to make up an answer.\n"
+            "If you don't know the answer, just say so. Don't try to make up an answer. "
+            "Only use the sources below to generate the answer."
         )
-        return instruction + "\n\n".join(source.text for source in sources)
+        return instruction + "\n\n".join(source.content for source in sources)
 
     def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
         import httpx
@@ -51,7 +52,7 @@ class OpenaiAssistantApi(AssistantApi):
                 "max_tokens": max_new_tokens,
             },
         )
-        if not response.is_error:
+        if response.is_error:
             raise ApiException(
                 status_code=response.status_code, response=response.json()
             )

@@ -1,5 +1,3 @@
-import uuid
-
 from ragna.core import (
     Document,
     PackageRequirement,
@@ -64,7 +62,7 @@ class ChromaSourceStorage(SourceStorage):
                 chunk_overlap=chunk_overlap,
                 tokenizer=self._tokenizer(),
             ):
-                ids.append(document.id or str(uuid.uuid4()))
+                ids.append(str(document.id))
                 texts.append(chunk.text)
                 metadatas.append(
                     {
@@ -126,7 +124,7 @@ class ChromaSourceStorage(SourceStorage):
                 (
                     Source(
                         id=RagnaId.make(),
-                        document_id=result["ids"],
+                        document_id=RagnaId(result["ids"]),
                         document_name=result["metadatas"]["document_name"],
                         location=result["metadatas"]["page_numbers"],
                         content=result["documents"],

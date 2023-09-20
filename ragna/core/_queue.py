@@ -1,6 +1,8 @@
 import asyncio
 import contextlib
 import io
+
+import pickle
 import shutil
 import subprocess
 import sys
@@ -8,7 +10,6 @@ import time
 from typing import Any, Callable, Optional, TypeVar
 from urllib.parse import urlsplit
 
-import cloudpickle
 from redis import ConnectionError, Redis
 from rq import Queue, Worker as _Worker
 from rq.worker_pool import WorkerPool as _WorkerPool
@@ -33,15 +34,15 @@ def _get_connection(url, *, start_redis_server, startup_timeout=5) -> tuple[Redi
         connection = None
 
     if connection is None and start_redis_server is False:
-        raise RagnaException("redis is not running")
+        raise RagnaException("redis-server is not running")
     elif connection is not None and start_redis_server is True:
-        raise RagnaException("redis is already running")
+        raise RagnaException("redis-server is already running")
     elif connection is not None:
         return connection, None
 
     url_components = urlsplit(url)
     if url_components.hostname not in {"localhost", "127.0.0.1"}:
-        raise RagnaException("Can only start on localhost")
+        raise RagnaException("Can only start redis-server on localhost")
     # FIXME: check if port is open
     # with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
     #     if sock.connect_ex((url_components.hostname, url_components.port)):
@@ -72,11 +73,12 @@ def _get_connection(url, *, start_redis_server, startup_timeout=5) -> tuple[Redi
                 break
 
             time.sleep(0.5)
-            time.perf_counter()
     else:
         proc.kill()
         stdout, stderr = proc.communicate()
-        raise RagnaException(f"Unable to start redis-server. {stdout} {stderr}")
+        raise RagnaException(
+            "Unable to start redis-server", stdout=stdout, stderr=stderr
+        )
 
     return connection, proc
 
@@ -84,7 +86,7 @@ def _get_connection(url, *, start_redis_server, startup_timeout=5) -> tuple[Redi
 async def _enqueue_job(
     queue: Queue, fn: Callable[[], T], **job_kwargs: Any
 ) -> Optional[T]:
-    job = queue.enqueue(Worker._execute_job, cloudpickle.dumps(fn), **job_kwargs)
+    job = queue.enqueue(Worker._execute_job, pickle.dumps(fn), **job_kwargs)
     # FIXME: There is a way to get a notification from redis if the job is done.
     #   We should prefer that over polling.
     # -> pubsub
@@ -100,7 +102,7 @@ async def _enqueue_job(
             sys.stderr.write(stderr)
             return result
         elif status == "failed":
-            raise RagnaException(job.latest_result().exc_string)
+            raise RagnaException("Job failed", traceback=job.latest_result().exc_string)
         await asyncio.sleep(0.2)
 
 
@@ -121,7 +123,7 @@ class Worker:
 
     @staticmethod
     def _execute_job(cloudpickled_fn: bytes) -> Any:
-        fn = cloudpickle.loads(cloudpickled_fn)
+        fn = pickle.loads(cloudpickled_fn)
 
         # FIXME: this will only surfaces the output in case the job succeeds. While
         #  better than nothing, surfacing output in the failure cases is more important

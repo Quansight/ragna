@@ -123,11 +123,7 @@ def api(
     )
 
     components = urlsplit(config.ragna_api_url)
-    uvicorn.run(
-        api(rag),
-        host=components.hostname,
-        port=components.port,
-    )
+    uvicorn.run(api(rag), host=components.hostname, port=components.port)
 
 
 @app.command(help="Start Ragna worker(s)")

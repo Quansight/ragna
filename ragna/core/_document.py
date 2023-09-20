@@ -113,11 +113,13 @@ class LocalDocument(Document):
         try:
             payload = jwt.decode(token, key=secret, algorithms=cls._JWT_ALGORITHM)
         except jwt.InvalidSignatureError:
-            raise RagnaException
+            raise RagnaException(
+                "Token invalid", http_status_code=401, http_detail=RagnaException.EVENT
+            )
         except jwt.ExpiredSignatureError:
-            raise RagnaException
-        except Exception as exc:
-            raise RagnaException(str(type(exc)))
+            raise RagnaException(
+                "Token expired", http_status_code=401, http_detail=RagnaException.EVENT
+            )
         return payload["user"], RagnaId(payload["id"])
 
     @property

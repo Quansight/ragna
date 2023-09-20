@@ -115,19 +115,13 @@ class Config:
         return cls
 
     def get_logger(self, **initial_values):
-        dev_friendly = sys.stderr.isatty()
+        human_readable = sys.stderr.isatty()
 
         processors = [
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             structlog.processors.add_log_level,
-            structlog.processors.CallsiteParameterAdder(
-                parameters=[
-                    structlog.processors.CallsiteParameter.PATHNAME,
-                    structlog.processors.CallsiteParameter.LINENO,
-                ]
-            ),
         ]
-        if dev_friendly:
+        if human_readable:
             processors.extend(
                 [
                     structlog.processors.ExceptionPrettyPrinter(),

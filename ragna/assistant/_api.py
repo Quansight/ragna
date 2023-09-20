@@ -11,7 +11,7 @@ from ragna.core import (
 )
 
 
-# This needs to be somewhere else
+# FIXME: This needs to be somewhere else
 def job_config(**kwargs):
     def decorator(fn):
         fn.__ragna_job_kwargs__ = kwargs
@@ -53,9 +53,6 @@ class AssistantApi(Assistant):
                 **api_exception.additional_context,
                 llm_name=str(self),
             )
-        except Exception:
-            # FIXME: properly log exception here
-            self.logger.error("ADDME", llm_name=str(self))
 
         return (
             "I'm sorry, but I'm having trouble helping you at this time. "

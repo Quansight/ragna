@@ -7,6 +7,8 @@ from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 
 from pydantic import BaseModel, Field, HttpUrl, validator
 
+import ragna
+
 from ragna.core import Chat, LocalDocument, MessageRole, RagnaException, RagnaId
 
 
@@ -104,23 +106,34 @@ class ComponentsModel(BaseModel):
     assistants: list[str]
 
 
-def process_exception(afn):
+def process_ragna_exception(afn):
     @functools.wraps(afn)
     async def wrapper(*args, **kwargs):
         try:
             return await afn(*args, **kwargs)
-        except ():
-            raise
-        except RagnaException:
-            raise HTTPException(status_code=400) from None
+        except RagnaException as exc:
+            if exc.http_detail is RagnaException.EVENT:
+                detail = exc.event
+            elif exc.http_detail is RagnaException.MESSAGE:
+                detail = str(exc)
+            else:
+                detail = exc.http_detail
+            raise HTTPException(
+                status_code=exc.http_status_code, detail=detail
+            ) from None
         except Exception:
-            raise HTTPException(status_code=500) from None
+            raise
 
     return wrapper
 
 
 def api(rag):
     app = FastAPI()
+
+    @app.get("/health")
+    @process_ragna_exception
+    async def health() -> str:
+        return ragna.__version__
 
     async def _authorize_user(user: str) -> str:
         # FIXME: implement auth here
@@ -129,10 +142,12 @@ def api(rag):
     UserDependency = Annotated[str, Depends(_authorize_user)]
 
     @app.get("/chats")
+    @process_ragna_exception
     async def get_chats(user: UserDependency) -> list[ChatModel]:
         return [ChatModel.from_chat(chat) for chat in rag._get_chats(user=user)]
 
     @app.get("/components")
+    @process_ragna_exception
     async def get_components(user: UserDependency) -> ComponentsModel:
         return ComponentsModel(
             source_storages=list(rag._source_storages.keys()),
@@ -140,6 +155,7 @@ def api(rag):
         )
 
     @app.get("/document/new")
+    @process_ragna_exception
     async def get_document_upload_info(
         user: UserDependency,
         name: str,
@@ -154,12 +170,15 @@ def api(rag):
         )
 
     @app.post("/document/upload")
-    # @process_exception
+    @process_ragna_exception
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> DocumentModel:
         if not issubclass(rag.config.document_class, LocalDocument):
-            raise RagnaException
+            raise HTTPException(
+                status_code=400,
+                detail="Ragna configuration does not support local upload",
+            )
 
         user, id = rag.config.document_class._decode_upload_token(
             token, secret=rag.config.upload_token_secret
@@ -174,6 +193,7 @@ def api(rag):
         return DocumentModel(id=id, name=document.name)
 
     @app.post("/chat/new")
+    @process_ragna_exception
     async def new_chat(
         *, user: UserDependency, chat_metadata: ChatMetadataModel
     ) -> ChatModel:
@@ -199,18 +219,22 @@ def api(rag):
     ChatDependency = Annotated[Chat, Depends(_get_chat, use_cache=False)]
 
     @app.get("/chat/{id}")
+    @process_ragna_exception
     async def get_chat(chat: ChatDependency) -> ChatModel:
         return ChatModel.from_chat(chat)
 
     @app.post("/chat/{id}/start")
+    @process_ragna_exception
     async def start_chat(chat: ChatDependency) -> ChatModel:
         return ChatModel.from_chat(await chat.start())
 
     @app.post("/chat/{id}/close")
+    @process_ragna_exception
     async def close_chat(chat: ChatDependency) -> ChatModel:
         return ChatModel.from_chat(await chat.close())
 
     @app.post("/chat/{id}/answer")
+    @process_ragna_exception
     async def answer(chat: ChatDependency, prompt: str) -> AnswerOutputModel:
         return AnswerOutputModel(
             message=MessageModel.from_message(await chat.answer(prompt)),

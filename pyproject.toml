@@ -23,7 +23,6 @@ dependencies = [
     "sqlalchemy >=2",
     "redis",
     "rq",
-    "cloudpickle",
     "pydantic <2",
     "structlog",
     "typer",
