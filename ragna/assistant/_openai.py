@@ -1,9 +1,9 @@
 from ragna.core import Source
 
-from ._llm_api import ApiException, LlmApi
+from ._api import ApiException, AssistantApi
 
 
-class OpenaiLlmApi(LlmApi):
+class OpenaiAssistantApi(AssistantApi):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int
@@ -13,23 +13,24 @@ class OpenaiLlmApi(LlmApi):
         return f"OpenAI/{cls._MODEL}"
 
     @property
-    def context_size(self) -> int:
+    def max_input_size(self) -> int:
         return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
         instruction = (
             "You are an helpful assistant that answers user questions given the context below. "
-            "If you don't know the answer, just say so. Don't try to make up an answer.\n"
+            "If you don't know the answer, just say so. Don't try to make up an answer. "
+            "Only use the sources below to generate the answer."
         )
-        return instruction + "\n\n".join(source.text for source in sources)
+        return instruction + "\n\n".join(source.content for source in sources)
 
     def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
-        import requests
+        import httpx
 
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/object
-        response = requests.post(
+        response = httpx.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",
@@ -51,20 +52,20 @@ class OpenaiLlmApi(LlmApi):
                 "max_tokens": max_new_tokens,
             },
         )
-        if not response.ok:
+        if response.is_error:
             raise ApiException(
                 status_code=response.status_code, response=response.json()
             )
         return response.json()["choices"][0]["message"]["content"]
 
 
-class OpenaiGpt35Turbo16kLlm(OpenaiLlmApi):
+class OpenaiGpt35Turbo16kAssistant(OpenaiAssistantApi):
     # https://platform.openai.com/docs/models/gpt-3-5
     _MODEL = "gpt-3.5-turbo-16k"
     _CONTEXT_SIZE = 16_384
 
 
-class OpenaiGpt4Llm(OpenaiLlmApi):
+class OpenaiGpt4Assistant(OpenaiAssistantApi):
     # https://platform.openai.com/docs/models/gpt-4
     _MODEL = "gpt-4"
     _CONTEXT_SIZE = 8_192

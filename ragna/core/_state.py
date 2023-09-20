@@ -1,95 +1,14 @@
 from __future__ import annotations
 
 import functools
-import re
-import uuid
-from typing import Any
+from typing import Any, Optional
 
-from sqlalchemy import Column, create_engine, ForeignKey, JSON, select, Table
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
 
-from sqlalchemy.orm import (
-    DeclarativeBase,
-    Mapped,
-    mapped_column,
-    MappedAsDataclass,
-    relationship,
-    Session,
-)
+from ragna.core import MessageRole, RagnaException, RagnaId, Source
 
-from ._exceptions import RagnaException
-
-
-class Base(MappedAsDataclass, DeclarativeBase):
-    pass
-
-
-def _make_id() -> str:
-    return str(uuid.uuid4())
-
-
-class UserData(Base):
-    __tablename__ = "users"
-
-    # TODO: With Python >= 3.10, we could add
-    #  (..., init=False, kw_only=True, default_factory=_make_id)
-    # and thus avoid generating the id on the outside.
-    # This doesn't work right now, because
-    # 1. we can't have a field with default (id) before one without (name)
-    # 2. kw_only will solve 1., but is only available for Python >= 3.10
-    # Same for all other tables below
-    id: Mapped[str] = mapped_column(primary_key=True)
-    name: Mapped[str]
-
-
-document_chat_data_association_table = Table(
-    "document_chat_data_association_table",
-    Base.metadata,
-    Column("document_id", ForeignKey("documents.id"), primary_key=True),
-    Column("chat_id", ForeignKey("chats.id"), primary_key=True),
-)
-
-
-class DocumentData(Base):
-    __tablename__ = "documents"
-
-    id: Mapped[str] = mapped_column(primary_key=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    name: Mapped[str]
-    # Mind the trailing underscore here. Unfortunately, this is necessary, because
-    # metadata without the underscore is reserved by SQLAlchemy
-    metadata_: JSON
-    chat_datas: Mapped[list[ChatData]] = relationship(
-        secondary=document_chat_data_association_table,
-        back_populates="document_datas",
-        default_factory=list,
-    )
-
-
-class ChatData(Base):
-    __tablename__ = "chats"
-
-    id: Mapped[str] = mapped_column(primary_key=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
-    name: Mapped[str]
-    document_datas: Mapped[list[DocumentData]] = relationship(
-        secondary=document_chat_data_association_table,
-        back_populates="chat_datas",
-    )
-    source_storage_name: Mapped[str]
-    llm_name: Mapped[str]
-    params: JSON
-    message_datas: Mapped[list[MessageData]] = relationship(
-        default_factory=list, cascade="all, delete"
-    )
-    closed: Mapped[bool] = mapped_column(default=False)
-
-
-class MessageData(Base):
-    __tablename__ = "messages"
-
-    id: Mapped[str] = mapped_column(primary_key=True)
-    chat_id: Mapped[str] = mapped_column(ForeignKey("chats.id"))
-    content: Mapped[str]
+from ._orm import Base, ChatState, DocumentState, MessageState, SourceState, UserState
 
 
 class State:
@@ -102,99 +21,162 @@ class State:
         if hasattr(self, "_session"):
             self._session.close()
 
-    def make_id(self):
-        return _make_id()
-
-    _UUID_STR_PATTERN = re.compile(
-        r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    )
-
-    def is_id(self, obj: Any) -> bool:
-        if not isinstance(obj, str):
-            return False
-
-        return self._UUID_STR_PATTERN.match(obj) is not None
-
     @functools.lru_cache(maxsize=1024)
-    def _get_user_id(self, username: str):
-        user_id = self._session.execute(
-            select(UserData.id).where(UserData.name == username)
+    def _get_user_id(self, user: str):
+        user_state = self._session.execute(
+            select(UserState).where(UserState.name == user)
         ).scalar_one_or_none()
-        if user_id is not None:
-            return user_id
+        if user_state is not None:
+            return user_state.id
 
-        user = UserData(id=_make_id(), name=username)
-        self._session.add(user)
+        user_state = UserState(id=RagnaId.make(), name=user)
+        self._session.add(user_state)
         self._session.commit()
-        return user.id
+        return user_state.id
 
-    def add_document(self, *, user: str, name: str, metadata: dict[str, Any]):
-        document_data = DocumentData(
-            id=self.make_id(),
+    def add_document(
+        self, *, user: str, id: RagnaId, name: str, metadata: dict[str, Any]
+    ):
+        document_state = DocumentState(
+            id=id,
             user_id=self._get_user_id(user),
             name=name,
             metadata_=metadata,
         )
-        self._session.add(document_data)
+        self._session.add(document_state)
         self._session.commit()
-        return document_data
+        return document_state
 
-    def get_document(self, id: str, user: str) -> DocumentData:
+    @functools.lru_cache(maxsize=1024)
+    def get_document(self, user: str, id: RagnaId) -> DocumentState:
         return self._session.execute(
-            select(DocumentData).where(
-                DocumentData.id == id & DocumentData.user_id == self._get_user_id(user)
+            select(DocumentState).where(
+                (DocumentState.user_id == self._get_user_id(user))
+                & (DocumentState.id == id)
             )
         ).scalar_one_or_none()
 
-    def add_chat(
-        self,
-        *,
-        # This takes the ID instead of generating it itself, because we need to create
-        # the Chat object before we add it to the database
-        id: str,
-        user: str,
-        name: str,
-        document_ids: list[str],
-        source_storage_name: str,
-        llm_name: str,
-        params,
-    ) -> ChatData:
-        document_datas = (
+    def get_chats(self, user: str):
+        # FIXME: Add filters for started and closed here
+        return (
             self._session.execute(
-                select(DocumentData).where(DocumentData.id.in_(document_ids))
+                select(ChatState).where(ChatState.user_id == self._get_user_id(user))
             )
             .scalars()
             .all()
         )
-        if len(document_datas) != len(document_ids):
-            raise RagnaException(
-                set(document_ids) - {document.id for document in document_datas}
+
+    def add_chat(
+        self,
+        *,
+        user: str,
+        id: RagnaId,
+        name: str,
+        document_ids: list[RagnaId],
+        source_storage: str,
+        assistant: str,
+        params,
+    ) -> ChatState:
+        document_states = (
+            self._session.execute(
+                select(DocumentState).where(DocumentState.id.in_(document_ids))
             )
-        chat = ChatData(
+            .scalars()
+            .all()
+        )
+        if len(document_states) != len(document_ids):
+            raise RagnaException(
+                set(document_ids) - {document.id for document in document_states}
+            )
+        chat = ChatState(
             id=id,
             user_id=self._get_user_id(user),
             name=name,
-            document_datas=document_datas,
-            source_storage_name=source_storage_name,
-            llm_name=llm_name,
+            document_states=document_states,
+            source_storage=source_storage,
+            assistant=assistant,
             params=params,
+            started=False,
+            closed=False,
         )
         self._session.add(chat)
         self._session.commit()
         return chat
 
-    def add_message(self, user: str, chat_id: str, content: str):
-        chat_data = self._session.execute(
-            select(ChatData).where(
-                (ChatData.user_id == self._get_user_id(user)) & (ChatData.id == chat_id)
+    def get_chat(self, *, user: str, id: RagnaId):
+        chat_state = self._session.execute(
+            select(ChatState).where(
+                (ChatState.id == id) & (ChatState.user_id == self._get_user_id(user))
             )
         ).scalar_one_or_none()
+        if chat_state is None:
+            raise RagnaException()
+        return chat_state
 
-        if chat_data is None:
+    def start_chat(self, *, user: str, id: RagnaId):
+        chat_state = self.get_chat(user=user, id=id)
+        chat_state.started = True
+        self._session.commit()
+
+    def close_chat(self, *, user: str, id: RagnaId):
+        chat_state = self.get_chat(user=user, id=id)
+        chat_state.closed = True
+        self._session.commit()
+
+    def add_message(
+        self,
+        *,
+        user: str,
+        chat_id: RagnaId,
+        id: RagnaId,
+        content: str,
+        role: MessageRole,
+        sources: Optional[list[Source]] = None,
+    ):
+        chat_state = self._session.execute(
+            select(ChatState).where(
+                (ChatState.user_id == self._get_user_id(user))
+                & (ChatState.id == chat_id)
+            )
+        ).scalar_one_or_none()
+        if chat_state is None:
             raise RagnaException
 
-        message_data = MessageData(
-            id=self.make_id(), chat_id=chat_data.id, content=content
+        if sources is not None:
+            sources = {s.id: s for s in sources}
+            source_states = list(
+                self._session.execute(
+                    select(SourceState).where(SourceState.id.in_(sources.keys()))
+                )
+                .scalars()
+                .all()
+            )
+            missing_source_ids = sources.keys() - {state.id for state in source_states}
+            if missing_source_ids:
+                for id in missing_source_ids:
+                    source = sources[id]
+                    source_state = SourceState(
+                        id=RagnaId.make(),
+                        document_id=source.document_id,
+                        document_state=self.get_document(
+                            user=user, id=source.document_id
+                        ),
+                        location=source.location,
+                    )
+                    self._session.add(source_state)
+                    source_states.append(source_state)
+        else:
+            source_states = []
+
+        message_state = MessageState(
+            id=id,
+            chat_id=chat_state.id,
+            content=content,
+            role=role,
+            source_states=source_states,
         )
-        chat_data.message_datas.append(message_data)
+        self._session.add(message_state)
+
+        chat_state.message_states.append(message_state)
+
         self._session.commit()

@@ -6,7 +6,7 @@ from pydantic import create_model
 from ._requirement import RequirementMixin
 
 
-class Component(RequirementMixin):
+class RagComponent(RequirementMixin):
     @classmethod
     def display_name(cls) -> str:
         return cls.__name__
@@ -15,7 +15,7 @@ class Component(RequirementMixin):
         self.config = config
         self.logger = config.get_logger(name=str(self))
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return self.display_name()
 
     __ragna_protocol_methods__: list[str]
@@ -37,7 +37,7 @@ class Component(RequirementMixin):
             extra_param_names = concrete_params.keys() - protocol_params.keys()
 
             models[method] = create_model(
-                f"{self}::{method_name}",
+                f"{type(self).__name__}.{method_name}",
                 **{
                     (param := concrete_params[param_name]).name: (
                         param.annotation,

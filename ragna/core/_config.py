@@ -7,6 +7,8 @@ import importlib.util
 import inspect
 
 import logging
+
+import secrets
 import sys
 from pathlib import Path
 
@@ -14,23 +16,31 @@ from typing import Type
 
 import structlog
 
-from ._component import Component
-from ._document import LocalDocument
-from ._exceptions import RagnaException
-from ._llm import Llm
+from ._assistant import Assistant
+
+from ._component import RagComponent
+from ._core import RagnaException
+from ._document import Document, LocalDocument
 from ._source_storage import SourceStorage
 
 
 @dataclasses.dataclass
 class Config:
-    local_cache_root: Path = Path.home() / ".cache" / "ragna"
     state_database_url: str = dataclasses.field(default=None)
     queue_database_url: str = "redis://127.0.0.1:6379"
-    document_class = LocalDocument
+    ragna_api_url: str = "http://127.0.0.1:31476"
+    ragna_ui_url: str = "http://127.0.0.1:31477"
+
+    local_cache_root: Path = Path.home() / ".cache" / "ragna"
+
+    document_class: Type[Document] = LocalDocument
+    upload_token_secret: str = dataclasses.field(default_factory=secrets.token_hex)
+    upload_token_ttl: int = 30
+
     registered_source_storage_classes: dict[
         str, Type[SourceStorage]
     ] = dataclasses.field(default_factory=dict)
-    registered_llm_classes: dict[str, Type[Llm]] = dataclasses.field(
+    registered_assistant_classes: dict[str, Type[Assistant]] = dataclasses.field(
         default_factory=dict
     )
 
@@ -64,7 +74,7 @@ class Config:
         return True
 
     @staticmethod
-    def _load_from_source(source: str) -> Config:
+    def load_from_source(source: str) -> Config:
         name = None
         parts = source.split("::")
         if len(parts) == 2:
@@ -89,14 +99,14 @@ class Config:
     def register_component(self, cls):
         if not (
             isinstance(cls, type)
-            and issubclass(cls, Component)
+            and issubclass(cls, RagComponent)
             and not inspect.isabstract(cls)
         ):
             raise RagnaException()
         if issubclass(cls, SourceStorage):
             registry = self.registered_source_storage_classes
-        elif issubclass(cls, Llm):
-            registry = self.registered_llm_classes
+        elif issubclass(cls, Assistant):
+            registry = self.registered_assistant_classes
         else:
             raise RagnaException
 
@@ -105,19 +115,13 @@ class Config:
         return cls
 
     def get_logger(self, **initial_values):
-        dev_friendly = sys.stderr.isatty()
+        human_readable = sys.stderr.isatty()
 
         processors = [
             structlog.processors.TimeStamper(fmt="iso", utc=True),
             structlog.processors.add_log_level,
-            structlog.processors.CallsiteParameterAdder(
-                parameters=[
-                    structlog.processors.CallsiteParameter.PATHNAME,
-                    structlog.processors.CallsiteParameter.LINENO,
-                ]
-            ),
         ]
-        if dev_friendly:
+        if human_readable:
             processors.extend(
                 [
                     structlog.processors.ExceptionPrettyPrinter(),

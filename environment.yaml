@@ -5,6 +5,9 @@ dependencies:
   - python =3.9
   - pip
   - redis-server
+  - jupyter
+  - python-dotenv
+  - boto3
   - pytest >=6
   - tomlkit
   - mypy

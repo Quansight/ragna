@@ -2,8 +2,8 @@ import abc
 import os
 
 from ragna.core import (
+    Assistant,
     EnvVarRequirement,
-    Llm,
     PackageRequirement,
     RagnaException,
     Requirement,
@@ -11,7 +11,7 @@ from ragna.core import (
 )
 
 
-# This needs to be somewhere else
+# FIXME: This needs to be somewhere else
 def job_config(**kwargs):
     def decorator(fn):
         fn.__ragna_job_kwargs__ = kwargs
@@ -26,7 +26,7 @@ class ApiException(RagnaException):
         self.additional_context = additional_context
 
 
-class LlmApi(Llm):
+class AssistantApi(Assistant):
     _API_KEY_ENV_VAR: str
 
     def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
@@ -38,15 +38,13 @@ class LlmApi(Llm):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            PackageRequirement("requests"),
+            PackageRequirement("httpx"),
             EnvVarRequirement(cls._API_KEY_ENV_VAR),
         ]
 
     # FIXME: add retries
     @job_config()
-    def complete(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ):
+    def answer(self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256):
         try:
             return self._call_api(prompt, sources, max_new_tokens=max_new_tokens)
         except ApiException as api_exception:
@@ -55,9 +53,6 @@ class LlmApi(Llm):
                 **api_exception.additional_context,
                 llm_name=str(self),
             )
-        except Exception:
-            # FIXME: properly log exception here
-            self.logger.error("ADDME", llm_name=str(self))
 
         return (
             "I'm sorry, but I'm having trouble helping you at this time. "
