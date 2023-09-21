@@ -11,3 +11,11 @@ dependencies:
   - pytest >=6
   - tomlkit
   - mypy
+  - pip
+  # documentation
+  - pip:
+    - sphinx
+    - furo
+    - myst-parser
+    - sphinx-design
+    - sphinx-copybutton
