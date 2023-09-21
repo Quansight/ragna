@@ -17,7 +17,9 @@ release = '0.1'
 extensions = [
     "myst_parser",
     "sphinx_design",
+    "sphinx_inline_tabs",
     "sphinx_copybutton",
+    "sphinxext.opengraph"
     ]
 
 templates_path = ['_templates']
