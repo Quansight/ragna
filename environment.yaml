@@ -11,13 +11,12 @@ dependencies:
   - pytest >=6
   - tomlkit
   - mypy
-  - pip
   # documentation
+  - sphinx
+  - myst-parser # https://myst-parser.readthedocs.io/en/latest/intro.html
+  - sphinx-copybutton # https://sphinx-copybutton.readthedocs.io/en/latest/
   - pip:
-    - sphinx
-    - furo
-    - myst-parser
-    - sphinx-design
-    - sphinx-inline-tabs
-    - sphinx-copybutton
-    - sphinxext-opengraph
+      - furo # https://pradyunsg.me/furo/
+      - sphinx-design # https://sphinx-design.readthedocs.io/en/latest/index.html
+      - sphinx-inline-tabs # https://sphinx-inline-tabs.readthedocs.io/en/latest/
+      - sphinxext-opengraph # https://sphinxext-opengraph.readthedocs.io/en/latest/
