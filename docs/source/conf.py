@@ -9,7 +9,10 @@
 project = 'Ragna'
 copyright = '2023, Ragna development team'
 author = 'Ragna development team'
-release = '0.1'
+import ragna
+
+release = ragna.__version__
+version = ".".join(ragna.__version__.split(".")[:2])
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
