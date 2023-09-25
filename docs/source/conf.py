@@ -3,14 +3,13 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import datetime
-
-import importlib_metadata
+import importlib.metadata
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "Ragna"
-metadata = importlib_metadata.metadata("Ragna")
+metadata = importlib.metadata.metadata("Ragna")
 
 author = ", ".join(
     author_email.split("<", 1)[0].strip()
