@@ -3,20 +3,20 @@ channels:
   - conda-forge
 dependencies:
   - python =3.9
-  - pip
   - redis-server
-  - jupyter
-  - python-dotenv
-  - boto3
-  - pytest >=6
-  - tomlkit
-  - mypy
-  # documentation
-  - sphinx
-  - myst-parser # https://myst-parser.readthedocs.io/en/latest/intro.html
-  - sphinx-copybutton # https://sphinx-copybutton.readthedocs.io/en/latest/
+  - pip
   - pip:
-      - furo # https://pradyunsg.me/furo/
-      - sphinx-design # https://sphinx-design.readthedocs.io/en/latest/index.html
-      - sphinx-inline-tabs # https://sphinx-inline-tabs.readthedocs.io/en/latest/
-      - sphinxext-opengraph # https://sphinxext-opengraph.readthedocs.io/en/latest/
+    - jupyter
+    - python-dotenv
+    - boto3
+    - pytest >=6
+    - tomlkit
+    - mypy
+    # documentation
+    - sphinx
+    - myst-parser
+    - sphinx-copybutton
+    - furo
+    - sphinx-design
+    - sphinx-inline-tabs
+    - sphinxext-opengraph
