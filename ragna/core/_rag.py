@@ -3,11 +3,8 @@ from __future__ import annotations
 import datetime
 import functools
 import itertools
-import subprocess
-import sys
 from collections import defaultdict
 from typing import Any, Optional, Sequence, TypeVar
-
 
 from pydantic import BaseModel, create_model, Extra
 
@@ -29,28 +26,13 @@ class Rag:
         self,
         config: Optional[Config] = None,
         *,
-        start_redis_server: Optional[bool] = None,
-        start_ragna_worker: bool | int = True,
         deselect_unavailable_components=True,
     ):
         self.config = config or Config()
         self._logger = self.config.get_logger()
 
         self._state = State(self.config.state_database_url)
-
-        self._subprocesses = set()
-        self._queue = Queue()
-        # self._queue.task(name=RagnaTask.__qualname__)(Worker._execute_job)
-        # self._queue, redis_server_proc = _get_queue(
-        #     self.config.queue_database_url, start_redis_server=start_redis_server
-        # )
-        # if redis_server_proc is not None:
-        #     self._logger.info("Started redis server")
-        #     self._subprocesses.add(redis_server_proc)
-        # ragna_worker_proc = self._start_ragna_worker(start_ragna_worker)
-        # if ragna_worker_proc is not None:
-        #     self._logger.info("Started ragna worker")
-        #     self._subprocesses.add(ragna_worker_proc)
+        self._queue = Queue(self.config.queue_database_url)
 
         self._source_storages = self._load_components(
             self.config.registered_source_storage_classes,
@@ -101,32 +83,6 @@ class Rag:
         )
 
         return chat
-
-    def _start_ragna_worker(self, start: bool | int):
-        # FIXME: can we detect if any workers are subscribed to the queue? If so, let's
-        #  make the default value None, which means we only start if there is no other
-        #  worker
-
-        if not start:
-            return None
-
-        # FIXME: Maybe this needs to take the config as whole? If not at least the URL
-        proc = subprocess.Popen(
-            [sys.executable, "-m", "ragna", "worker", "--num-workers", str(int(start))],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        try:
-            # FIXME: there needs to be a better way to check this.
-            stdout, stderr = proc.communicate(timeout=2)
-        except subprocess.TimeoutExpired:
-            # This means the worker process did not shut down and thus seems to be
-            # running
-            return proc
-        else:
-            raise RagnaException(
-                "Worker process terminated unexpectedly", stdout=stdout, stderr=stderr
-            )
 
     def _load_components(
         self, component_classes: dict, *, deselect_unavailable_components

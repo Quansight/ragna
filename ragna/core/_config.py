@@ -1,23 +1,17 @@
 from __future__ import annotations
 
 import dataclasses
-
 import importlib.util
-
 import inspect
-
 import logging
-
 import secrets
 import sys
 from pathlib import Path
-
-from typing import Type
+from typing import Optional, Type
 
 import structlog
 
 from ._assistant import Assistant
-
 from ._component import RagComponent
 from ._core import RagnaException
 from ._document import Document, LocalDocument
@@ -27,7 +21,7 @@ from ._source_storage import SourceStorage
 @dataclasses.dataclass
 class Config:
     state_database_url: str = dataclasses.field(default=None)
-    queue_database_url: str = "redis://127.0.0.1:6379"
+    queue_database_url: Optional[str] = None
     ragna_api_url: str = "http://127.0.0.1:31476"
     ragna_ui_url: str = "http://127.0.0.1:31477"
 

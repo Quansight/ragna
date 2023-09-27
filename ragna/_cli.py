@@ -9,7 +9,7 @@ import typer
 import ragna
 
 from ragna.core import Config, EnvVarRequirement, PackageRequirement, Rag, Requirement
-from ragna.core._queue import Worker
+from ragna.core._queue import Queue
 
 app = typer.Typer(
     name="ragna",
@@ -97,12 +97,7 @@ def _yes_or_no(condition):
 
 
 @app.command(help="Start Ragna API")
-def api(
-    *,
-    config: ConfigAnnotated = "ragna.builtin_config",
-    start_redis_server: Optional[bool] = None,
-    start_ragna_worker: bool = True,
-):
+def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
     required_packages = [
         package
         for package in ["fastapi", "uvicorn"]
@@ -116,11 +111,7 @@ def api(
 
     from ragna._api import api
 
-    rag = Rag(
-        config=config,
-        start_redis_server=start_redis_server,
-        start_ragna_worker=start_ragna_worker,
-    )
+    rag = Rag(config=config)
 
     components = urlsplit(config.ragna_api_url)
     uvicorn.run(api(rag), host=components.hostname, port=components.port)
@@ -129,7 +120,7 @@ def api(
 @app.command(help="Start Ragna worker(s)")
 def worker(
     *,
-    # queue_database_url: Annotated[str, typer.Argument()] = "redis://localhost:6379",
+    queue_database_url: Annotated[str, typer.Argument()],
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
-    Worker(num_workers=num_workers).start()
+    Queue(queue_database_url).create_worker(num_workers).run()
