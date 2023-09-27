@@ -8,6 +8,7 @@ import sys
 from collections import defaultdict
 from typing import Any, Optional, Sequence, TypeVar
 
+
 from pydantic import BaseModel, create_model, Extra
 
 from ._assistant import Message, MessageRole
@@ -16,7 +17,7 @@ from ._component import RagComponent
 from ._config import Config
 from ._core import RagnaException, RagnaId
 from ._document import Document
-from ._queue import _enqueue_job, _get_queue
+from ._queue import Queue
 from ._source_storage import ReconstructedSource
 from ._state import State
 
@@ -38,16 +39,18 @@ class Rag:
         self._state = State(self.config.state_database_url)
 
         self._subprocesses = set()
-        self._queue, redis_server_proc = _get_queue(
-            self.config.queue_database_url, start_redis_server=start_redis_server
-        )
-        if redis_server_proc is not None:
-            self._logger.info("Started redis server")
-            self._subprocesses.add(redis_server_proc)
-        ragna_worker_proc = self._start_ragna_worker(start_ragna_worker)
-        if ragna_worker_proc is not None:
-            self._logger.info("Started ragna worker")
-            self._subprocesses.add(ragna_worker_proc)
+        self._queue = Queue()
+        # self._queue.task(name=RagnaTask.__qualname__)(Worker._execute_job)
+        # self._queue, redis_server_proc = _get_queue(
+        #     self.config.queue_database_url, start_redis_server=start_redis_server
+        # )
+        # if redis_server_proc is not None:
+        #     self._logger.info("Started redis server")
+        #     self._subprocesses.add(redis_server_proc)
+        # ragna_worker_proc = self._start_ragna_worker(start_ragna_worker)
+        # if ragna_worker_proc is not None:
+        #     self._logger.info("Started ragna worker")
+        #     self._subprocesses.add(ragna_worker_proc)
 
         self._source_storages = self._load_components(
             self.config.registered_source_storage_classes,
@@ -451,8 +454,7 @@ class Chat:
     async def _enqueue(self, fn, *args):
         unpacked_params = self._unpacked_params[fn]
         try:
-            return await _enqueue_job(
-                self._rag._queue,
+            return await self._rag._queue.enqueue(
                 functools.partial(fn, *args, **unpacked_params),
                 **getattr(fn, "__ragna_job_kwargs__", {}),
             )

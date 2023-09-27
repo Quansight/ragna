@@ -129,7 +129,7 @@ def api(
 @app.command(help="Start Ragna worker(s)")
 def worker(
     *,
-    queue_database_url: Annotated[str, typer.Argument()] = "redis://localhost:6379",
+    # queue_database_url: Annotated[str, typer.Argument()] = "redis://localhost:6379",
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
-    Worker(queue_database_url=queue_database_url, num_workers=num_workers).start()
+    Worker(num_workers=num_workers).start()
