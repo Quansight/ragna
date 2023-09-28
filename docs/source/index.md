@@ -39,8 +39,7 @@ tutorials/explore-web-app.md
 :hidden:
 
 community/welcome.md
-community/contribute-code.md
-community/contribute-docs.md
+community/contribute.md
 ```
 <!-- community/brand.md -->
 <!-- community/release.md -->
