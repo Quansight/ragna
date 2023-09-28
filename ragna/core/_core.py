@@ -17,7 +17,7 @@ class RagnaException(Exception):
         self.http_detail = http_detail
         self.extra = extra
 
-    def __repr__(self):
+    def __str__(self):
         return ", ".join([self.event, *[f"{k}={v}" for k, v in self.extra.items()]])
 
 
