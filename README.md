@@ -40,3 +40,16 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+## Documentation
+
+Ragna uses Sphinx to build it's documentation.
+
+You can contribute to the documentation at `docs/source`,
+and start a development build that auto-refreshes on new changes with:
+
+```bash
+sphinx-autobuild docs/source docs/build/html
+```
+
+which serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).

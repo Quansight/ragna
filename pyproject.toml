@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Ragna"
 authors = [
-    { name = "Philip Meier", email = "pmeier@quansight.com" },
+    { name = "Ragna Development Team", email = "connect@quansight.com" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
