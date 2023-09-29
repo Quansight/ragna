@@ -1,8 +1,9 @@
 import contextlib
 import io
-import pickle
 from typing import Optional
 from urllib.parse import urlsplit
+
+import cloudpickle
 
 import huey.api
 import huey.utils
@@ -13,7 +14,7 @@ from ._requirement import PackageRequirement
 
 
 def execute(serialized_fn):
-    fn = pickle.loads(serialized_fn)
+    fn = cloudpickle.loads(serialized_fn)
 
     # FIXME: this will only surfaces the output in case the job succeeds. While
     #  better than nothing, surfacing output in the failure cases is more important
@@ -60,7 +61,7 @@ class Queue:
         huey.api.TaskWrapper(self._huey, execute, name=_Task.__name__)
 
     async def enqueue(self, fn, **task_kwargs):
-        task = _Task(args=(pickle.dumps(fn),), **task_kwargs)
+        task = _Task(args=(cloudpickle.dumps(fn),), **task_kwargs)
         result = self._huey.enqueue(task)
         output = await aget_result(result)
         if isinstance(output, huey.utils.Error):
