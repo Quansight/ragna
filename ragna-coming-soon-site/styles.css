@@ -1,0 +1,80 @@
+@import url("https://rsms.me/inter/inter-ui.css");
+
+body {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  font-family: "Inter UI", sans-serif;
+  text-align: center;
+  color: white;
+}
+
+.background {
+  position: absolute;
+  width: 100%;
+  background-image: linear-gradient(-180deg, #000000 0%, #200835 100%);
+  overflow: hidden;
+  z-index: 1;
+  /* Make the rubber band scroll not show empty white space */
+  top: -10%;
+  height: 120%;
+  min-height: 120vh;
+  margin-bottom: -20%;
+}
+
+.container {
+  position: relative;
+  z-index: 2;
+  padding: 104px 0 24px 0;
+  width: 95%;
+  max-width: 600px;
+  margin: auto;
+}
+
+h1 {
+  display: block;
+  font-size: 80px;
+  margin: 0 0 24px 0;
+}
+
+@media (max-width: 500px) {
+  h1 {
+    font-size: 16vw;
+  }
+}
+
+h2 {
+  font-weight: 500;
+  font-size: 24px;
+}
+
+h3 {
+  font-weight: 300;
+  font-size: 24px;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.title {
+  font-weight: bolder;
+  color: #020103;
+  letter-spacing: -6.7px;
+  text-transform: uppercase;
+  padding: 0 16px;
+  background: #A43A8F;
+}
+
+.header {
+  margin-bottom: 104px;
+}
+
+.coming-soon {
+  margin-top: 64px;
+}
+
+.footer {
+  margin-top: 224px;
+}
