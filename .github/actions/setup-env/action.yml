@@ -1,0 +1,30 @@
+name: setup-dev-env
+description: "Setup development environment"
+
+inputs:
+  python-version:
+    default: "3.9"
+    description: "Python version to install."
+
+runs:
+  using: composite
+
+  steps:
+    - name: Set correct Python version
+      shell: bash
+      run: |
+        sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
+        cat environment.yml
+
+    - name: Setup mambaforge and development environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-variant: Mambaforge
+        miniforge-version: latest
+        activate-environment: ./environment.yml
+
+    - name: Display conda info and list development environment
+      shell: bash -el {0}
+      run: |
+        conda info
+        conda list

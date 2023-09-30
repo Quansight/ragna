@@ -1,0 +1,21 @@
+on:
+  pull_request:
+
+jobs:
+  defaults:
+    run:
+      runs-on: ubuntu-latest
+      shell: bash -el {0}
+
+  pre-commit:
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./..github/actions/setup-env
+
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure --color=always
