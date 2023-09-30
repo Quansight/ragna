@@ -12,7 +12,7 @@ from ragna.core import Config, EnvVarRequirement, PackageRequirement, Rag, Requi
 from ragna.core._queue import Queue
 
 app = typer.Typer(
-    name="ragna",
+    name='ragna',
     invoke_without_command=True,
     no_args_is_help=True,
     add_completion=False,
@@ -22,7 +22,7 @@ app = typer.Typer(
 
 def version_callback(value: bool):
     if value:
-        print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
+        print(f'ragna {ragna.__version__} from {ragna.__path__[0]}')
         raise typer.Exit()
 
 
@@ -31,7 +31,7 @@ def _main(
     version: Annotated[
         Optional[bool],
         typer.Option(
-            "--version", callback=version_callback, help="Show version and exit."
+            '--version', callback=version_callback, help='Show version and exit.'
         ),
     ] = None
 ):
@@ -40,24 +40,24 @@ def _main(
 
 ConfigAnnotated = Annotated[
     Config,
-    typer.Option("--config", "-c", metavar="", parser=Config.load_from_source),
+    typer.Option('--config', '-c', metavar='', parser=Config.load_from_source),
 ]
 
 
-@app.command(help="List requirements")
-def ls(*, config: ConfigAnnotated = "ragna.builtin_config"):
-    if not PackageRequirement("rich").is_available():
-        print("Please install rich")
+@app.command(help='List requirements')
+def ls(*, config: ConfigAnnotated = 'ragna.builtin_config'):
+    if not PackageRequirement('rich').is_available():
+        print('Please install rich')
         raise typer.Exit(1)
 
     import rich
     from rich.table import Table
 
     table = Table(
-        "",
-        "name",
-        "environment variables",
-        "packages",
+        '',
+        'name',
+        'environment variables',
+        'packages',
         show_lines=True,
     )
 
@@ -87,24 +87,24 @@ def _split_requirements(
 
 def _format_requirements(requirements: list[Requirement]):
     if not requirements:
-        return "N/A"
+        return 'N/A'
 
-    return "\n".join(f"{_yes_or_no(req.is_available())} {req}" for req in requirements)
+    return '\n'.join(f'{_yes_or_no(req.is_available())} {req}' for req in requirements)
 
 
 def _yes_or_no(condition):
-    return ":white_check_mark:" if condition else ":x:"
+    return ':white_check_mark:' if condition else ':x:'
 
 
-@app.command(help="Start Ragna API")
-def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
+@app.command(help='Start Ragna API')
+def api(*, config: ConfigAnnotated = 'ragna.builtin_config'):
     required_packages = [
         package
-        for package in ["fastapi", "uvicorn"]
+        for package in ['fastapi', 'uvicorn']
         if not PackageRequirement(package).is_available()
     ]
     if required_packages:
-        print(f"Please install {', '.join(required_packages)}")
+        print(f'Please install {", ".join(required_packages)}')
         raise typer.Exit(1)
 
     import uvicorn
@@ -117,10 +117,10 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
     uvicorn.run(api(rag), host=components.hostname, port=components.port)
 
 
-@app.command(help="Start Ragna worker(s)")
+@app.command(help='Start Ragna worker(s)')
 def worker(
     *,
     queue_database_url: Annotated[str, typer.Argument()],
-    num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
+    num_workers: Annotated[int, typer.Option('--num-workers', '-n')] = 1,
 ):
     Queue(queue_database_url).create_worker(num_workers).run()
