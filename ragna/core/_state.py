@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
-from ragna.core import MessageRole, RagnaException, RagnaId, Source
+from ragna.core import Message, RagnaException, RagnaId
 
 from ._orm import Base, ChatState, DocumentState, MessageState, SourceState, UserState
 
@@ -125,13 +125,10 @@ class State:
 
     def add_message(
         self,
+        message: Message,
         *,
         user: str,
         chat_id: RagnaId,
-        id: RagnaId,
-        content: str,
-        role: MessageRole,
-        sources: Optional[list[Source]] = None,
     ):
         chat_state = self._session.execute(
             select(ChatState).where(
@@ -142,8 +139,8 @@ class State:
         if chat_state is None:
             raise RagnaException
 
-        if sources is not None:
-            sources = {s.id: s for s in sources}
+        if message.sources is not None:
+            sources = {s.id: s for s in message.sources}
             source_states = list(
                 self._session.execute(
                     select(SourceState).where(SourceState.id.in_(sources.keys()))
@@ -169,11 +166,12 @@ class State:
             source_states = []
 
         message_state = MessageState(
-            id=id,
+            id=message.id,
             chat_id=chat_state.id,
-            content=content,
-            role=role,
+            content=message.content,
+            role=message.role,
             source_states=source_states,
+            timestamp=message.timestamp,
         )
         self._session.add(message_state)
 

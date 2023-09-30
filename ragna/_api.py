@@ -1,3 +1,4 @@
+import datetime
 import functools
 from typing import Annotated
 from uuid import UUID
@@ -43,6 +44,7 @@ class MessageModel(BaseModel):
     role: MessageRole
     content: str
     sources: list[SourceModel]
+    timestamp: datetime.datetime
 
     @classmethod
     def from_message(cls, message):
@@ -51,6 +53,7 @@ class MessageModel(BaseModel):
             role=message.role,
             content=message.content,
             sources=[SourceModel.from_source(s) for s in message.sources],
+            timestamp=message.timestamp,
         )
 
 

@@ -117,3 +117,4 @@ class MessageState(Base):
         secondary=source_message_state_association_table,
         back_populates="message_states",
     )
+    timestamp = Column(types.DateTime)

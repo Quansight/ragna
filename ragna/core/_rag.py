@@ -340,12 +340,9 @@ class Chat:
     def _append_message(self, message: Message):
         self.messages.append(message)
         self._state.add_message(
+            message,
             user=self._user,
             chat_id=self.id,
-            id=message.id,
-            content=message.content,
-            role=message.role,
-            sources=message.sources,
         )
 
     class _SpecialChatParams(BaseModel):
