@@ -3,11 +3,11 @@ on:
 
 defaults:
   run:
-    runs-on: ubuntu-latest
     shell: bash -el {0}
 
 jobs:
   pre-commit:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
