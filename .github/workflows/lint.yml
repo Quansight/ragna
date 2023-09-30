@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup environment
-        uses: ./..github/actions/setup-env
+        uses: ./.github/actions/setup-env
 
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure --color=always
