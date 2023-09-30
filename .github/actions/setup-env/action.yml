@@ -24,7 +24,7 @@ runs:
 
     - name: Reset environment file
       shell: bash
-      run: sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
+      run: git checkout -- environment.yml
 
     - name: Display conda info
       shell: bash -el {0}
