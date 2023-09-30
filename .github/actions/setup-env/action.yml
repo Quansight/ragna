@@ -10,25 +10,42 @@ runs:
   using: composite
 
   steps:
-    - name: Set correct Python version in environment file
-      shell: bash
-      run: sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
-
     - name: Setup mambaforge and development environment
       uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
-        environment-file: ./environment.yml
         activate-environment: ragna-dev
 
-    - name: Reset environment file
-      shell: bash
-      run: git checkout -- environment.yml
-
     - name: Display conda info
-      shell: bash -el {0}
+      shell: bash
       run: conda info
+
+    - name: Set cache date
+      id: cache-key
+      shell: bash
+      run: |
+        DATE=$(date +'%Y%m%d')
+        echo $DATE
+        echo "DATE=$DATE" >> $GITHUB_OUTPUT
+
+    - name: Restore conda environment
+      id: cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.CONDA }}/envs
+        key: ${{ runner.os }}-${{ runner.arch }}--${{ inputs.python-version }}--${{steps.cache-key.outputs.date }}--${{ hashFiles('environment.yml', 'pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}--${{ runner.arch }}--${{ inputs.python-version }}
+
+    - name: Update conda environment if necessary
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
+        cat environment.yml
+        mamba env update --file environment.yml
+        git checkout -- environment.yml
 
     - name: Install ragna
       shell: bash -el {0}
