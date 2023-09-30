@@ -1,5 +1,7 @@
 import datetime
 
+from pprint import pprint
+
 import httpx
 
 
@@ -95,6 +97,9 @@ def main():
             "prompt": "Ok, in that case show me some pretty markdown!",
         },
     )
+
+    chats = client.get(f"{url}/chats", params={"user": user}).json()
+    pprint(chats)
 
 
 if __name__ == "__main__":
