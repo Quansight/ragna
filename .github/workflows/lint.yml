@@ -1,13 +1,13 @@
 on:
   pull_request:
 
-defaults:
-  run:
-    shell: bash -el {0}
-
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
