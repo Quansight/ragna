@@ -1,6 +1,7 @@
 from ._core import RagnaException, RagnaId  # usort: skip
 
 from ._config import Config
+from ._queue import task_config
 from ._requirement import (
     EnvVarRequirement,
     PackageRequirement,

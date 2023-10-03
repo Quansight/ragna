@@ -7,7 +7,7 @@ import logging
 import secrets
 import sys
 from pathlib import Path
-from typing import Optional, Type
+from typing import Type
 
 import structlog
 
@@ -20,12 +20,12 @@ from ._source_storage import SourceStorage
 
 @dataclasses.dataclass
 class Config:
-    state_database_url: str = dataclasses.field(default=None)
-    queue_database_url: Optional[str] = None
+    local_cache_root: Path = Path.home() / ".cache" / "ragna"
+
+    state_database_url: str = "sqlite://"
+    queue_database_url: str = "memory"
     ragna_api_url: str = "http://127.0.0.1:31476"
     ragna_ui_url: str = "http://127.0.0.1:31477"
-
-    local_cache_root: Path = Path.home() / ".cache" / "ragna"
 
     document_class: Type[Document] = LocalDocument
     upload_token_secret: str = dataclasses.field(default_factory=secrets.token_hex)
@@ -40,9 +40,6 @@ class Config:
 
     def __post_init__(self):
         self.local_cache_root = self._parse_local_cache_root(self.local_cache_root)
-
-        if self.state_database_url is None:
-            self.state_database_url = f"sqlite:///{self.local_cache_root / 'ragna.db'}"
 
     def _parse_local_cache_root(self, path):
         if not isinstance(path, Path):
