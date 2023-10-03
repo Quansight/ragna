@@ -1,5 +1,3 @@
-import contextlib
-import io
 from typing import Optional
 from urllib.parse import urlsplit
 
@@ -15,14 +13,7 @@ from ._requirement import PackageRequirement
 
 def execute(serialized_fn):
     fn = cloudpickle.loads(serialized_fn)
-
-    # FIXME: this will only surfaces the output in case the job succeeds. While
-    #  better than nothing, surfacing output in the failure cases is more important
-    #  Plus, we should probably also let the output happen here
-    with contextlib.redirect_stdout(
-        io.StringIO()
-    ) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
-        return fn(), (stdout.getvalue(), stderr.getvalue())
+    return fn()
 
 
 class _Task(huey.api.Task):
@@ -33,19 +24,22 @@ class _Task(huey.api.Task):
 
 class Queue:
     def __init__(self, url: Optional[str] = None):
-        name = "ragna"
+        # FIXME: we need to store_none=True here. SourceStorage.store returns None and
+        #  if we wouldn't store it, waiting for a result is timing out. Maybe there is a
+        #  better way to do this?
+        common_kwargs = dict(name="ragna", store_none=True)
         if url is None:
-            huey_ = huey.MemoryHuey(name=name, immediate=True)
+            huey_ = huey.MemoryHuey(immediate=True, **common_kwargs)
         else:
             components = urlsplit(url)
             if components.scheme in {"", "file"}:
-                huey_ = huey.FileHuey(name=name, path=components.path)
+                huey_ = huey.FileHuey(path=components.path, **common_kwargs)
             elif components.scheme in {"redis", "rediss"}:
                 if not PackageRequirement("redis").is_available():
                     raise RagnaException("redis not installed")
                 import redis
 
-                huey_ = huey.RedisHuey(name=name, url=url)
+                huey_ = huey.RedisHuey(url=url, **common_kwargs)
                 try:
                     huey_.storage.conn.ping()
                 except redis.exceptions.ConnectionError:
@@ -66,8 +60,7 @@ class Queue:
         output = await aget_result(result)
         if isinstance(output, huey.utils.Error):
             raise RagnaException("Task failed", **output.metadata)
-        return_value, (stdout, stderr) = output
-        return return_value
+        return output
 
     def create_worker(self, num_workers: int = 1):
         return self._huey.create_consumer(workers=num_workers)
