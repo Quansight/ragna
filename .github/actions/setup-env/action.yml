@@ -5,6 +5,9 @@ inputs:
   python-version:
     default: "3.9"
     description: "Python version to install."
+  optional-dependencies:
+    default: "true"
+    description: "Install ragna with [complete], i.e. all optional dependencies"
 
 runs:
   using: composite
@@ -49,7 +52,12 @@ runs:
 
     - name: Install ragna
       shell: bash -el {0}
-      run: pip install --editable .[complete]
+      run: |
+        PROJECT_PATH="${PWD}"
+        if [[ ${{ inputs.optional-dependencies }} == "true" ]]; then
+          PROJECT_PATH="${PROJECT_PATH}[complete]"
+        fi
+        pip install --editable "${PROJECT_PATH}"
 
     - name: Display development environment
       shell: bash -el {0}

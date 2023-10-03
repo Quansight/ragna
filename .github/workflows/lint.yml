@@ -18,6 +18,8 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          optional-dependencies: "false"
 
       - uses: actions/cache@v3
         with:
