@@ -49,7 +49,7 @@ runs:
 
     - name: Install ragna
       shell: bash -el {0}
-      run: pip install --editable .
+      run: pip install --editable .[complete]
 
     - name: Display development environment
       shell: bash -el {0}
