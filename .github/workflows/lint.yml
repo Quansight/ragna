@@ -18,6 +18,15 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          optional-dependencies: "false"
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit|${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit
 
       - name: Setup lint utilities
         run: pre-commit install-hooks
