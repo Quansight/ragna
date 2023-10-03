@@ -1,8 +1,6 @@
 import abc
 import os
 
-import httpx
-
 import ragna
 
 from ragna.core import (
@@ -33,6 +31,9 @@ class AssistantApi(Assistant):
 
     def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
         super().__init__(config)
+
+        import httpx
+
         self._client = httpx.Client(
             headers={"User-Agent": f"{ragna.__version__}/{self}"}
         )
