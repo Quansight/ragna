@@ -1,9 +1,7 @@
-import json
-
 import textwrap
-from pathlib import Path
+from typing import Any
 
-from ragna.core import Document, RagnaException, RagnaId, Source, SourceStorage
+from ragna.core import Document, RagnaId, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -13,41 +11,23 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def __init__(self, config):
         super().__init__(config)
-        self._root = config.local_cache_root / "demo-source-storage"
-        self._root.mkdir(exist_ok=True)
-
-    def _make_path(self, chat_id: RagnaId) -> Path:
-        return self._root / f"{chat_id}.json"
+        self._storage: dict[RagnaId, Any] = {}
 
     def store(self, documents: list[Document], *, chat_id: RagnaId) -> None:
-        with open(self._make_path(chat_id), "w") as file:
-            json.dump(
-                [
-                    {
-                        "document_id": str(document.id),
-                        "document_name": document.name,
-                        "location": f"page {page.number}"
-                        if (page := next(document.extract_pages())).number
-                        else "",
-                        "content": (content := textwrap.shorten(page.text, width=100)),
-                        "num_tokens": len(content.split()),
-                    }
-                    for document in documents
-                ],
-                file,
-            )
+        self._storage[chat_id] = [
+            {
+                "document_id": str(document.id),
+                "document_name": document.name,
+                "location": f"page {page.number}"
+                if (page := next(document.extract_pages())).number
+                else "",
+                "content": (content := textwrap.shorten(page.text, width=100)),
+                "num_tokens": len(content.split()),
+            }
+            for document in documents
+        ]
 
     def retrieve(self, prompt: str, *, chat_id: RagnaId) -> list[Source]:
-        path = self._make_path(chat_id)
-        if not path.exists():
-            raise RagnaException
-
-        try:
-            with open(path) as file:
-                sources = json.load(file)
-        except Exception:
-            raise RagnaException
-
         return [
             Source(
                 id=RagnaId.make(),
@@ -57,5 +37,5 @@ class RagnaDemoSourceStorage(SourceStorage):
                 content=source["content"],
                 num_tokens=source["num_tokens"],
             )
-            for source in sources
+            for source in self._storage[chat_id]
         ]

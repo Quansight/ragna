@@ -1,6 +1,8 @@
 import abc
 import os
 
+import ragna
+
 from ragna.core import (
     Assistant,
     EnvVarRequirement,
@@ -9,15 +11,6 @@ from ragna.core import (
     Requirement,
     Source,
 )
-
-
-# FIXME: This needs to be somewhere else
-def job_config(**kwargs):
-    def decorator(fn):
-        fn.__ragna_job_kwargs__ = kwargs
-        return fn
-
-    return decorator
 
 
 class ApiException(RagnaException):
@@ -29,12 +22,6 @@ class ApiException(RagnaException):
 class AssistantApi(Assistant):
     _API_KEY_ENV_VAR: str
 
-    def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
-        super().__init__(config)
-        self._num_retries = num_retries
-        self._retry_delay = retry_delay
-        self._api_key = os.environ[self._API_KEY_ENV_VAR]
-
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
@@ -42,8 +29,20 @@ class AssistantApi(Assistant):
             EnvVarRequirement(cls._API_KEY_ENV_VAR),
         ]
 
-    # FIXME: add retries
-    @job_config()
+    def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
+        super().__init__(config)
+
+        import httpx
+
+        self._client = httpx.Client(
+            headers={"User-Agent": f"{ragna.__version__}/{self}"}
+        )
+        self._num_retries = num_retries
+        self._retry_delay = retry_delay
+        self._api_key = os.environ[self._API_KEY_ENV_VAR]
+
+    # FIXME: add retries with ragna.core.task_config. Note that for this to work, we
+    #  need to actually raise here
     def answer(self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256):
         try:
             return self._call_api(prompt, sources, max_new_tokens=max_new_tokens)

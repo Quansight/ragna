@@ -51,8 +51,8 @@ def api(rag):
     @process_ragna_exception
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
-            source_storages=list(rag._source_storages.keys()),
-            assistants=list(rag._assistants.keys()),
+            source_storages=list(rag.config.registered_source_storage_classes),
+            assistants=list(rag.config.registered_assistant_classes),
         )
 
     @app.get("/document")
