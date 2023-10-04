@@ -26,7 +26,6 @@ dependencies = [
     "sqlalchemy >=2",
     "structlog",
     "typer",
-    "requests",
 ]
 dynamic = ["version"]
 
