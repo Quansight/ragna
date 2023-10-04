@@ -4,6 +4,28 @@ on:
   pull_request:
 
 jobs:
+  optional-dependencies:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          optional-dependencies: "false"
+
+      - name: Test optional dependencies
+        run: |
+          python scripts/update_optional_dependencies.py
+          git diff --exit-code
+
   pre-commit:
     runs-on: ubuntu-latest
     defaults:
