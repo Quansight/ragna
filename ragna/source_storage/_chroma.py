@@ -17,28 +17,29 @@ class ChromaSourceStorage(SourceStorage):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("chromadb >=0.4"), PackageRequirement("tiktoken")]
+        return [
+            PackageRequirement("chromadb >=0.4"),
+            PackageRequirement("tiktoken"),
+        ]
 
-    def _client(self):
+    def __init__(self, config):
+        super().__init__(config)
+
         import chromadb
+        import chromadb.utils.embedding_functions
+        import tiktoken
 
-        return chromadb.Client(
+        self._client = chromadb.Client(
             chromadb.config.Settings(
                 is_persistent=True,
                 persist_directory=str(self.config.local_cache_root / "chroma"),
                 anonymized_telemetry=False,
             )
         )
-
-    def _embedding_function(self):
-        import chromadb.utils.embedding_functions
-
-        return chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
-
-    def _tokenizer(self):
-        import tiktoken
-
-        return tiktoken.get_encoding("cl100k_base")
+        self._embedding_function = (
+            chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
+        )
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
 
     def store(
         self,
@@ -48,8 +49,8 @@ class ChromaSourceStorage(SourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._client().get_or_create_collection(
-            str(chat_id), embedding_function=self._embedding_function()
+        collection = self._client.get_or_create_collection(
+            str(chat_id), embedding_function=self._embedding_function
         )
 
         ids = []
@@ -60,7 +61,7 @@ class ChromaSourceStorage(SourceStorage):
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._tokenizer(),
+                tokenizer=self._tokenizer,
             ):
                 ids.append(str(document.id))
                 texts.append(chunk.text)
@@ -82,8 +83,8 @@ class ChromaSourceStorage(SourceStorage):
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._client().get_collection(
-            str(chat_id), embedding_function=self._embedding_function()
+        collection = self._client.get_collection(
+            str(chat_id), embedding_function=self._embedding_function
         )
 
         result = collection.query(
