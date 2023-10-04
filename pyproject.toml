@@ -38,6 +38,7 @@ api = [
     "PyJWT",
     "python-multipart",
     "uvicorn",
+    "requests",
 ]
 ui = [
 #    "panel ==1.3",
