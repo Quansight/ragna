@@ -1,5 +1,3 @@
-from pprint import pprint
-
 import panel as pn
 import param
 
@@ -13,22 +11,25 @@ class CentralView(pn.viewable.Viewer):
         self.api_wrapper = api_wrapper
 
     def set_current_chat(self, chat):
-        print("set current chat", chat["id"])
         self.current_chat = chat
 
-    def custom_chat_entry(self, value):
-        return pn.pane.HTML(
-            f"""
-                     <div style='background-color:red;'>{value}</div>
-                     
-                     """
-        )
+    async def chat_callback(
+        self, contents: str, user: str, instance: pn.widgets.ChatInterface
+    ):
+        # message = f"Echoing {user}: {contents}"
+        # return message
+        print(user, contents)
+        if user == "User":
+            yield {
+                "user": "User",
+                "avatar": "🦿",
+                "value": self.api_wrapper.answer(
+                    self.current_chat["id"], "Ragna", contents
+                ),
+            }
+            instance.respond()
 
-    @pn.depends("current_chat", watch=True)
-    def chat_interface(self):
-        print("chat interface", self.current_chat["id"])
-        pprint(self.current_chat)
-
+    def get_chat_entries(self):
         ragna_stylesheet = """
                             :host {
                                 
@@ -54,11 +55,10 @@ class CentralView(pn.viewable.Viewer):
                 timestamp=m["timestamp"],
                 show_reaction_icons=False,
                 # show_user=False,
-                # renderers=[self.custom_chat_entry],
                 stylesheets=[
-                    """
-                                                :host {  background-color:aliceblue; }
-                                                """,
+                    """ :host {  background-color:transparent; }
+    
+                    """,
                     user_stylesheet if m["role"] == "user" else ragna_stylesheet,
                 ],
             )
@@ -72,54 +72,21 @@ class CentralView(pn.viewable.Viewer):
                 """ :host { 
                                                             background-color: #F3F3F3 !important;
                                                             border-radius: 10px !important;
-                                                            border: 1px solid #EEEEEE !important;
+                                                            border: 1px solid rgb(248, 248, 248) !important;
                                                           
                                                           } """
             ]
 
             chat_entries.append(chat_entry)
 
-        ARM_BOT = "Arm Bot"
-        LEG_BOT = "Leg Bot"
+        return chat_entries
 
-        def callback_test(contents: str, user: str, instance: pn.widgets.ChatInterface):
-            # message = f"Echoing {user}: {contents}"
-            # return message
-            print(user, contents)
-            if user == "User":
-                yield {
-                    "user": ARM_BOT,
-                    "avatar": "🦾",
-                    "value": f"Hey, {LEG_BOT}! Did you hear the user?",
-                }
-                instance.respond()
-            elif user == ARM_BOT:
-                user_entry = instance.value[-3]
-                user_contents = user_entry.value
-                yield {
-                    "user": LEG_BOT,
-                    "avatar": "🦿",
-                    "value": f'Yeah! They said "{user_contents}".',
-                }
-
-        async def callback(
-            contents: str, user: str, instance: pn.widgets.ChatInterface
-        ):
-            # message = f"Echoing {user}: {contents}"
-            # return message
-            print(user, contents)
-            if user == "User":
-                yield {
-                    "user": LEG_BOT,
-                    "avatar": "🦿",
-                    "value": self.api_wrapper.answer(
-                        self.current_chat["id"], "Ragna", contents
-                    ),
-                }
-                instance.respond()
+    @pn.depends("current_chat")
+    def chat_interface(self):
+        chat_entries = self.get_chat_entries()
 
         chat_interface = pn.widgets.ChatInterface(
-            callback=callback,
+            callback=self.chat_callback,
             callback_user="System",
             show_rerun=False,
             show_undo=False,
@@ -130,13 +97,13 @@ class CentralView(pn.viewable.Viewer):
             sizing_mode="stretch_width",
             stylesheets=[
                 """
-                                                               :host {  
-                                                                background-color:pink; 
-                                                                margin-left: 18% !important;
-                                                                margin-right: 18% !important;
-                                                                min-width:45%;
-                                                               }
-                                                               """
+                    :host {  
+                    /*background-color:pink;*/
+                    margin-left: 18% !important;
+                    margin-right: 18% !important;
+                    min-width:45%;
+                    }
+                    """,
             ],
         )
 
@@ -148,25 +115,68 @@ class CentralView(pn.viewable.Viewer):
 
         chat_interface._chat_log.stylesheets.append(
             """ :host .chat-feed-log {  
-                                                            height: unset; max-height: 90%; }
-                                                                 """
+                    height: unset; max-height: 90%; }
+            """
         )
 
         return chat_interface
 
-    def __panel__(self):
-        print("current_chat", self.current_chat["id"])
+    @pn.depends("current_chat")
+    def header(self):
+        chat_name_header = pn.pane.HTML(
+            f"<p>{self.current_chat['metadata']['name']}</p>",
+            sizing_mode="stretch_width",
+            stylesheets=[
+                """ :host {  
+                            background-color: #F9F9F9;
+                            border-bottom: 1px solid #EEEEEE;
+                            width: 100% !important;
+                            margin:0px;
+                            height:54px;
+                        }
 
+                        :host div {
+                            height:100%;
+                            vertical-align: middle;
+                        }
+
+                        :host p {
+                            max-width: 50%;
+                            height:100%;
+
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                            overflow: hidden;
+                            margin: 0px 0px 0px 10px;
+
+                            font-size:20px;
+                            text-decoration: underline;
+                            text-underline-offset: 4px;
+
+                            /* I don't understand why this is necessary to vertically align the text ... */
+                            line-height:250%; 
+                            
+                        }
+                        """
+            ],
+        )
+
+        return chat_name_header
+
+    def __panel__(self):
         result = pn.Column(
-            pn.pane.Markdown("# main_content"),
+            self.header,
             self.chat_interface,
             sizing_mode="stretch_width",
             stylesheets=[
-                """   
-                                       :host { 
-                                            background-color: orange;
+                """                    :host { 
+                                            /*background-color: orange;*/
+                                            background-color: #FCFCFC;
+                                            
                                             height:100%;
                                             max-width: 100%;
+                                            margin-left: min(15px, 2%);
+                                            border-left: 1px solid #EEEEEE;
                                         }
                                 """
             ],
