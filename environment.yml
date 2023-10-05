@@ -14,10 +14,6 @@ dependencies:
     - mypy
     - pre-commit
     # documentation
-    - sphinx
-    - myst-parser
-    - sphinx-copybutton
-    - furo
-    - sphinx-design
-    - sphinx-inline-tabs
-    - sphinxext-opengraph
+    - mkdocs
+    - mkdocs-material
+    - mkdocstrings
