@@ -1,0 +1,5 @@
+site_name: Ragna
+theme:
+  name: material
+  features:
+    - navigation.sections
