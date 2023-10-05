@@ -11,8 +11,8 @@ MAIN_COLOR = "#10BBE5"
 # TABS_SIDEBAR_WIDTH = "20em"
 
 # set modal height (in x heights)
-# MODAL_MIN_HEIGHT = 70
-# MODAL_MAX_HEIGHT = 300
+MODAL_MIN_HEIGHT = 70
+MODAL_MAX_HEIGHT = 300
 
 
 APP_RAW = """
