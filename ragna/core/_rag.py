@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import itertools
 from collections import defaultdict
-from typing import Any, Optional, Sequence, TypeVar
+from typing import Any, Optional, Sequence, Type, TypeVar, Union
 
 from pydantic import BaseModel, create_model, Extra
 
-from ._assistant import Message, MessageRole
+from ._assistant import Assistant, Message, MessageRole
 
 from ._component import RagComponent
 from ._config import Config
 from ._core import RagnaException, RagnaId
 from ._document import Document
 from ._queue import Queue
-from ._source_storage import ReconstructedSource
+from ._source_storage import ReconstructedSource, SourceStorage
 from ._state import State
 
 T = TypeVar("T", bound=RagComponent)
@@ -26,22 +25,13 @@ class Rag:
         self,
         config: Optional[Config] = None,
         *,
-        deselect_unavailable_components=True,
+        load_components: Optional[bool] = None,
     ):
         self.config = config or Config()
         self._logger = self.config.get_logger()
 
         self._state = State(self.config.state_database_url)
-        self._queue = Queue(self.config.queue_database_url)
-
-        self._source_storages = self._load_components(
-            self.config.registered_source_storage_classes,
-            deselect_unavailable_components=deselect_unavailable_components,
-        )
-        self._assistants = self._load_components(
-            self.config.registered_assistant_classes,
-            deselect_unavailable_components=deselect_unavailable_components,
-        )
+        self._queue = Queue(self.config, load_components=load_components)
 
         self._chats: dict[(str, str), Chat] = {}
 
@@ -51,15 +41,13 @@ class Rag:
         user: str = "Ragna",
         name: Optional[str] = None,
         documents: Sequence[Any],
-        source_storage: Any,
-        assistant: Any,
+        source_storage: Union[Type[RagComponent], RagComponent, str],
+        assistant: Union[Type[RagComponent], RagComponent, str],
         **params,
     ):
         documents = self._parse_documents(documents, user=user)
-        source_storage = self._parse_component(
-            source_storage, registry=self._source_storages
-        )
-        assistant = self._parse_component(assistant, registry=self._assistants)
+        source_storage = self._queue.load_component(source_storage)
+        assistant = self._queue.load_component(assistant)
 
         chat = Chat(
             rag=self,
@@ -77,35 +65,12 @@ class Rag:
             user=user,
             name=chat.name,
             document_ids=[document.id for document in documents],
-            source_storage=str(source_storage),
-            assistant=str(assistant),
+            source_storage=source_storage.display_name(),
+            assistant=assistant.display_name(),
             params=params,
         )
 
         return chat
-
-    def _load_components(
-        self, component_classes: dict, *, deselect_unavailable_components
-    ):
-        components = {}
-        deselected = []
-        for name, component_class in component_classes.items():
-            if not component_class.is_available():
-                deselected.append(name)
-                continue
-
-            components[name] = component_class(self.config)
-
-        if deselected and not deselect_unavailable_components:
-            raise RagnaException(
-                "Need to deselect at least one component, but deselect_unavailable_components=False",
-                deselected=deselected,
-            )
-
-        if not components:
-            self._logger.warning("No registered components available")
-
-        return components
 
     def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
         documents_ = []
@@ -135,25 +100,6 @@ class Rag:
 
             documents_.append(document)
         return documents_
-
-    def _parse_component(self, obj: Any, *, registry: dict[str, T]) -> T:
-        if isinstance(obj, RagComponent):
-            return obj
-        elif isinstance(obj, type) and issubclass(obj, RagComponent):
-            if not obj.is_available():
-                raise RagnaException("Component not available", name=obj.display_name())
-            return obj(self.config)
-        elif obj in registry:
-            return registry[obj]
-        else:
-            raise RagnaException("Unknown component", component=obj)
-
-    def __del__(self):
-        if hasattr(self, "_subprocesses"):
-            for proc in self._subprocesses:
-                proc.kill()
-            for proc in self._subprocesses:
-                proc.communicate()
 
     def _add_document(self, *, user: str, id: RagnaId, name: str, metadata):
         self._state.add_document(user=user, id=id, name=name, metadata=metadata)
@@ -187,12 +133,8 @@ class Rag:
                     )
                     for document_state in chat_state.document_states
                 ],
-                source_storage=self._parse_component(
-                    chat_state.source_storage, registry=self._source_storages
-                ),
-                assistant=self._parse_component(
-                    chat_state.assistant, registry=self._assistants
-                ),
+                source_storage=self._queue.load_component(chat_state.source_storage),
+                assistant=self._queue.load_component(chat_state.assistant),
                 messages=[
                     Message(
                         id=message_state.id,
@@ -248,8 +190,8 @@ class Chat:
         id: RagnaId,
         name: Optional[str] = None,
         documents,
-        source_storage,
-        assistant,
+        source_storage: Type[SourceStorage],
+        assistant: Type[Assistant],
         messages: Optional[list[Message]] = None,
         **params,
     ):
@@ -287,7 +229,7 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
 
-        await self._enqueue(self.source_storage.store, self.documents)
+        await self._enqueue(self.source_storage, "store", self.documents)
         self._state.start_chat(user=self._user, id=self.id)
         self._started = True
 
@@ -325,8 +267,8 @@ class Chat:
         prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
         self._append_message(prompt)
 
-        sources = await self._enqueue(self.source_storage.retrieve, prompt.content)
-        content = await self._enqueue(self.assistant.answer, prompt.content, sources)
+        sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
+        content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
 
         answer = Message(
             id=RagnaId.make(),
@@ -340,12 +282,9 @@ class Chat:
     def _append_message(self, message: Message):
         self.messages.append(message)
         self._state.add_message(
+            message,
             user=self._user,
             chat_id=self.id,
-            id=message.id,
-            content=message.content,
-            role=message.role,
-            sources=message.sources,
         )
 
     class _SpecialChatParams(BaseModel):
@@ -371,8 +310,8 @@ class Chat:
         )
         chat_params = chat_model.dict(exclude_none=True)
         return {
-            method: model(**chat_params).dict()
-            for method, model in itertools.chain(
+            component_and_action: model(**chat_params).dict()
+            for component_and_action, model in itertools.chain(
                 source_storage_models.items(), assistant_models.items()
             )
         }
@@ -407,15 +346,14 @@ class Chat:
 
         return create_model(str(self), __config__=Config, **field_definitions)
 
-    async def _enqueue(self, fn, *args):
-        unpacked_params = self._unpacked_params[fn]
+    async def _enqueue(self, component, action, *args):
         try:
             return await self._rag._queue.enqueue(
-                functools.partial(fn, *args, **unpacked_params),
-                **getattr(fn, "__ragna_job_kwargs__", {}),
+                component, action, args, self._unpacked_params[(component, action)]
             )
         except RagnaException as exc:
-            exc.extra["fn"] = fn.__qualname__
+            exc.extra["component"] = component.display_name()
+            exc.extra["action"] = action
             raise exc
 
     async def __aenter__(self):

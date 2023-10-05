@@ -1,4 +1,5 @@
 import itertools
+import logging
 from collections import defaultdict
 
 from typing import Annotated, Optional, Type
@@ -120,7 +121,12 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 @app.command(help="Start Ragna worker(s)")
 def worker(
     *,
-    queue_database_url: Annotated[str, typer.Argument()],
+    config: ConfigAnnotated = "ragna.builtin_config",
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
-    Queue(queue_database_url).create_worker(num_workers).run()
+    queue = Queue(config, load_components=True)
+    worker = queue.create_worker(num_workers)
+
+    # FIXME: we need to configure this properly
+    logging.basicConfig(level=logging.INFO)
+    worker.run()

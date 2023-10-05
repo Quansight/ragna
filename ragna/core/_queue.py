@@ -1,73 +1,127 @@
-import contextlib
-import io
-from typing import Optional
+import itertools
+from typing import Optional, Type, Union
 from urllib.parse import urlsplit
-
-import cloudpickle
 
 import huey.api
 import huey.utils
 from huey.contrib.asyncio import aget_result
 
+from ._component import RagComponent
+from ._config import Config
+
 from ._core import RagnaException
 from ._requirement import PackageRequirement
 
 
-def execute(serialized_fn):
-    fn = cloudpickle.loads(serialized_fn)
+def task_config(retries: int = 0, retry_delay: int = 0):
+    def decorator(fn):
+        fn.__ragna_task_config__ = dict(retries=retries, retry_delay=retry_delay)
+        return fn
 
-    # FIXME: this will only surfaces the output in case the job succeeds. While
-    #  better than nothing, surfacing output in the failure cases is more important
-    #  Plus, we should probably also let the output happen here
-    with contextlib.redirect_stdout(
-        io.StringIO()
-    ) as stdout, contextlib.redirect_stderr(io.StringIO()) as stderr:
-        return fn(), (stdout.getvalue(), stderr.getvalue())
+    return decorator
+
+
+_COMPONENTS: dict[Type[RagComponent], RagComponent] = {}
+
+
+def execute(component, fn, args, kwargs):
+    self = _COMPONENTS[component]
+    return fn(self, *args, **kwargs)
 
 
 class _Task(huey.api.Task):
     def execute(self):
-        (serialized_fn,) = self.args
-        return execute(serialized_fn)
+        return execute(*self.args)
 
 
 class Queue:
-    def __init__(self, url: Optional[str] = None):
-        name = "ragna"
-        if url is None:
-            huey_ = huey.MemoryHuey(name=name, immediate=True)
+    def __init__(self, config: Config, *, load_components: Optional[bool]):
+        self._config = config
+        self._huey = self._load_huey(config.queue_database_url)
+
+        if load_components is None:
+            load_components = isinstance(self._huey, huey.MemoryHuey)
+        if load_components:
+            for component in itertools.chain(
+                config.registered_source_storage_classes.values(),
+                config.registered_assistant_classes.values(),
+            ):
+                self.load_component(component)
+
+    def _load_huey(self, url: Optional[str]):
+        # FIXME: we need to store_none=True here. SourceStorage.store returns None and
+        #  if we wouldn't store it, waiting for a result is timing out. Maybe there is a
+        #  better way to do this?
+        common_kwargs = dict(name="ragna", store_none=True)
+        if url == "memory":
+            _huey = huey.MemoryHuey(immediate=True, **common_kwargs)
         else:
             components = urlsplit(url)
             if components.scheme in {"", "file"}:
-                huey_ = huey.FileHuey(name=name, path=components.path)
+                _huey = huey.FileHuey(path=components.path, **common_kwargs)
             elif components.scheme in {"redis", "rediss"}:
                 if not PackageRequirement("redis").is_available():
                     raise RagnaException("redis not installed")
                 import redis
 
-                huey_ = huey.RedisHuey(name=name, url=url)
+                _huey = huey.RedisHuey(url=url, **common_kwargs)
                 try:
-                    huey_.storage.conn.ping()
+                    _huey.storage.conn.ping()
                 except redis.exceptions.ConnectionError:
                     raise RagnaException("Unable to connect to redis", url=url)
             else:
                 raise RagnaException("Unknown URL scheme", url=url)
-        self._huey = huey_
         # This is registering the execute function above to be called if a task is
         # enqueued. We need to create the TaskWrapper object here, because this is the
         # only way to dynamically register tasks while staying in the public API. This
         # could be replaced by
         # self._huey._registry._registry[f"{__name__}.{_Task.__name__}"] = _Task
-        huey.api.TaskWrapper(self._huey, execute, name=_Task.__name__)
+        huey.api.TaskWrapper(_huey, execute, name=_Task.__name__)
 
-    async def enqueue(self, fn, **task_kwargs):
-        task = _Task(args=(cloudpickle.dumps(fn),), **task_kwargs)
+        return _huey
+
+    def load_component(
+        self, component: Union[Type[RagComponent], RagComponent, str]
+    ) -> Type[RagComponent]:
+        if isinstance(component, type) and issubclass(component, RagComponent):
+            cls = component
+            instance = None
+        elif isinstance(component, RagComponent):
+            cls = type(component)
+            instance = component
+        elif isinstance(component, str):
+            try:
+                cls = next(
+                    cls for cls in _COMPONENTS if cls.display_name() == component
+                )
+            except StopIteration:
+                raise RagnaException("Unknown component", component=component)
+            instance = None
+
+        if cls in _COMPONENTS:
+            return cls
+
+        if instance is None:
+            if not cls.is_available():
+                raise RagnaException("Component not available", name=cls.display_name())
+
+            instance = cls(self._config)
+
+        _COMPONENTS[cls] = instance
+
+        return cls
+
+    async def enqueue(self, component, action, args, kwargs):
+        fn = getattr(component, action)
+        task = _Task(
+            args=(component, fn, args, kwargs),
+            **getattr(fn, "__ragna_task_config__", dict()),
+        )
         result = self._huey.enqueue(task)
         output = await aget_result(result)
         if isinstance(output, huey.utils.Error):
             raise RagnaException("Task failed", **output.metadata)
-        return_value, (stdout, stderr) = output
-        return return_value
+        return output
 
     def create_worker(self, num_workers: int = 1):
         return self._huey.create_consumer(workers=num_workers)

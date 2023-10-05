@@ -1,5 +1,5 @@
 import abc
-
+import datetime
 import enum
 
 from typing import Optional
@@ -28,6 +28,7 @@ class Message:
         self.content = content
         self.role = role
         self.sources = sources or []
+        self.timestamp = datetime.datetime.utcnow()
 
     def __repr__(self):
         return self.content

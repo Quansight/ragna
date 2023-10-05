@@ -26,11 +26,9 @@ class OpenaiAssistantApi(AssistantApi):
         return instruction + "\n\n".join(source.content for source in sources)
 
     def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
-        import httpx
-
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/object
-        response = httpx.post(
+        response = self._client.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",

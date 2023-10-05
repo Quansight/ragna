@@ -12,6 +12,7 @@ dependencies:
     - pytest >=6
     - tomlkit
     - mypy
+    - pre-commit
     # documentation
     - mkdocs
     - mkdocs-material
