@@ -7,12 +7,16 @@ class LeftSidebar(pn.viewable.Viewer):
 
         self.api_wrapper = api_wrapper
         self.on_click_chat = None
+        self.on_click_new_chat = None
 
         self.chat_buttons = []
 
-    def on_click_chat_wrapper(self, event, chat):
-        print("wrapper", event)
+    def trigger_on_click_new_chat(self, event):
+        print("on click new chat")
+        if self.on_click_new_chat is not None:
+            self.on_click_new_chat(event)
 
+    def on_click_chat_wrapper(self, event, chat):
         for button in self.chat_buttons:
             if "selected" in button.css_classes:
                 button.css_classes = []
@@ -79,7 +83,7 @@ class LeftSidebar(pn.viewable.Viewer):
                                       }
 
                                       :host div button:before {
-                                        content: url("/imgs/chat_bubble.png");
+                                        content: url("/imgs/chat_bubble.svg");
                                         margin-right: 10px;
                                         display: inline-block;
                                       }
@@ -138,9 +142,10 @@ class LeftSidebar(pn.viewable.Viewer):
                                                          text-align: left;
                                                           
                                                          }
-"""
+                """
             ],
         )
+        new_chat_button.on_click(self.trigger_on_click_new_chat)
 
         objects = (
             [header, new_chat_button]
@@ -155,16 +160,15 @@ class LeftSidebar(pn.viewable.Viewer):
             *objects,
             stylesheets=[
                 """   
-                                        :host { 
-                                            
-                                            background-color: white;
-                                            overflow-x: hidden;
-                                            height: 100%;
-                                            min-width: 220px;
-                                            width: 15%;
-                                            border-right: 1px solid #EEEEEE;
-                                        }
-                                """
+                        :host { 
+                            background-color: white;
+                            overflow-x: hidden;
+                            height: 100%;
+                            min-width: 220px;
+                            width: 15%;
+                            border-right: 1px solid #EEEEEE;
+                        }
+                """
             ],
         )
 

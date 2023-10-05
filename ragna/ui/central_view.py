@@ -9,6 +9,17 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         self.api_wrapper = api_wrapper
+        self.on_click_chat_info = None
+
+    def on_click_chat_info_wrapper(self, event):
+        if self.on_click_chat_info is not None:
+            self.on_click_chat_info(
+                event,
+                pn.Column(
+                    pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
+                    stylesheets=[""" :host {  background-color: lightblue ; }  """],
+                ),
+            )
 
     def set_current_chat(self, chat):
         self.current_chat = chat
@@ -21,11 +32,9 @@ class CentralView(pn.viewable.Viewer):
         print(user, contents)
         if user == "User":
             yield {
-                "user": "User",
-                "avatar": "🦿",
-                "value": self.api_wrapper.answer(
-                    self.current_chat["id"], "Ragna", contents
-                ),
+                "user": "Ragna",
+                "avatar": "🤖",
+                "value": self.api_wrapper.answer(self.current_chat["id"], contents),
             }
             instance.respond()
 
@@ -48,36 +57,37 @@ class CentralView(pn.viewable.Viewer):
 
         chat_entries = []
 
-        for m in self.current_chat["messages"]:
-            chat_entry = pn.widgets.ChatEntry(
-                value=m["content"],
-                user="Pierrot" if m["role"] == "user" else "Ragna",
-                timestamp=m["timestamp"],
-                show_reaction_icons=False,
-                # show_user=False,
-                stylesheets=[
-                    """ :host {  background-color:transparent; }
-    
-                    """,
-                    user_stylesheet if m["role"] == "user" else ragna_stylesheet,
-                ],
-            )
+        if self.current_chat is not None:
+            for m in self.current_chat["messages"]:
+                chat_entry = pn.widgets.ChatEntry(
+                    value=m["content"],
+                    user="User" if m["role"] == "user" else "Ragna",
+                    timestamp=m["timestamp"],
+                    show_reaction_icons=False,
+                    # show_user=False,
+                    stylesheets=[
+                        """ :host {  background-color:transparent; }
+        
+                        """,
+                        user_stylesheet if m["role"] == "user" else ragna_stylesheet,
+                    ],
+                )
 
-            # print(chat_entry._composite)
-            # chat_entry._composite is a row
-            # chat_entry._composite[1] is a Column containing the username, the text+reactions, and the timestamp
-            # chat_entry._composite[1][1] is the row containing the text+reactions
-            # print(chat_entry._composite[1][1][0])
-            chat_entry._composite[1][1][0].stylesheets = [
-                """ :host { 
-                                                            background-color: #F3F3F3 !important;
-                                                            border-radius: 10px !important;
-                                                            border: 1px solid rgb(248, 248, 248) !important;
-                                                          
-                                                          } """
-            ]
+                # print(chat_entry._composite)
+                # chat_entry._composite is a row
+                # chat_entry._composite[1] is a Column containing the username, the text+reactions, and the timestamp
+                # chat_entry._composite[1][1] is the row containing the text+reactions
+                # print(chat_entry._composite[1][1][0])
+                chat_entry._composite[1][1][0].stylesheets = [
+                    """ :host { 
+                                                                background-color: #F3F3F3 !important;
+                                                                border-radius: 10px !important;
+                                                                border: 1px solid rgb(248, 248, 248) !important;
+                                                            
+                                                            } """
+                ]
 
-            chat_entries.append(chat_entry)
+                chat_entries.append(chat_entry)
 
         return chat_entries
 
@@ -123,22 +133,17 @@ class CentralView(pn.viewable.Viewer):
 
     @pn.depends("current_chat")
     def header(self):
+        current_chat_name = ""
+        if self.current_chat is not None:
+            current_chat_name = self.current_chat["metadata"]["name"]
+
+        # self.current_chat['metadata']['document_ids']
+
         chat_name_header = pn.pane.HTML(
-            f"<p>{self.current_chat['metadata']['name']}</p>",
+            f"<p>{current_chat_name}</p>",
             sizing_mode="stretch_width",
             stylesheets=[
-                """ :host {  
-                            background-color: #F9F9F9;
-                            border-bottom: 1px solid #EEEEEE;
-                            width: 100% !important;
-                            margin:0px;
-                            height:54px;
-                        }
-
-                        :host div {
-                            height:100%;
-                            vertical-align: middle;
-                        }
+                """ 
 
                         :host p {
                             max-width: 50%;
@@ -161,7 +166,38 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
-        return chat_name_header
+        chat_info_button = pn.widgets.Button(
+            name="Chat Info", button_style="outline", icon="info-circle"
+        )
+        chat_info_button.stylesheets.append(
+            """
+                                    :host {  
+                                                margin-top:10px;
+                                    }
+                                      
+                                """
+        )
+        chat_info_button.on_click(self.on_click_chat_info_wrapper)
+
+        return pn.Row(
+            chat_name_header,
+            chat_info_button,
+            stylesheets=[
+                """:host {  
+                                    background-color: #F9F9F9;
+                                    border-bottom: 1px solid #EEEEEE;
+                                    width: 100% !important;
+                                    margin:0px;
+                                    height:54px;
+                                }
+
+                                :host div {
+                                    
+                                    vertical-align: middle;
+                                }
+"""
+            ],
+        )
 
     def __panel__(self):
         result = pn.Column(
@@ -177,6 +213,7 @@ class CentralView(pn.viewable.Viewer):
                                             max-width: 100%;
                                             margin-left: min(15px, 2%);
                                             border-left: 1px solid #EEEEEE;
+                                            border-right: 1px solid #EEEEEE;
                                         }
                                 """
             ],

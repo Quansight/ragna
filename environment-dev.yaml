@@ -6,6 +6,7 @@ dependencies:
   - redis-server
   - pip
   - aiofiles
+  - emoji
 
   # for development only
   - pre-commit
