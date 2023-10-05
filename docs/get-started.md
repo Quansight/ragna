@@ -34,3 +34,4 @@ async def main():
 # If inside a notebook, the code inside the main function can be run directly.
 if __name__ == "__main__":
     asyncio.run(main())
+```
