@@ -16,4 +16,4 @@ dependencies:
     # documentation
     - mkdocs
     - mkdocs-material
-    - mkdocstrings
+    - mkdocstrings[python]
