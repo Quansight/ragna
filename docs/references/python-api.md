@@ -9,3 +9,5 @@
 ### ::: ragna.core.SourceStorage
 
 ### ::: ragna.core.Document
+
+### ::: ragna.core.RagnaException
