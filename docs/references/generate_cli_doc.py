@@ -5,21 +5,27 @@ from pathlib import Path
 from ragna._cli import app
 
 
-def get_help(*args):
+def main():
+    with open(Path(__file__).parent / "cli.md", "w") as file:
+        file.write(f"# CLI reference\n\n{get_doc(None)}")
+        for command in app.registered_commands:
+            file.write(get_doc(command.name or command.callback.__name__))
+
+
+def get_doc(command):
+    return f"## `ragna{f' {command}' if command else ''}`\n\n```\n{get_help(command)}\n```\n\n"
+
+
+def get_help(command):
     with contextlib.suppress(SystemExit), contextlib.redirect_stdout(
         io.StringIO()
     ) as stdout:
-        app(list(args) + ["--help"])
+        app(([command] if command else []) + ["--help"])
 
-    return stdout.getvalue().strip().replace(Path(__file__).name, "ragna")
+    lines = stdout.getvalue().strip().splitlines()
+    lines[0] = lines[0].replace(Path(__file__).name, "ragna")
+    return "\n".join(line.strip() for line in lines)
 
 
-with open(Path(__file__).parent / "cli.md", "w") as file:
-    file.write("# CLI reference\n\n")
-
-    file.write(f"## `ragna`\n\n```\n{get_help()}\n```\n\n")
-
-    for command in app.registered_commands:
-        name = command.name or command.callback.__name__
-
-        file.write(f"## `ragna {name}`\n\n```\n{get_help(name)}\n```\n\n")
+if __name__ == "__main__":
+    main()
