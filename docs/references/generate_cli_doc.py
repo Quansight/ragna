@@ -13,7 +13,10 @@ def main():
 
 
 def get_doc(command):
-    return f"## `ragna{f' {command}' if command else ''}`\n\n```\n{get_help(command)}\n```\n\n"
+    return (
+        f"## `ragna{f' {command}' if command else ''}`\n\n"
+        f"```\n{get_help(command)}\n```\n\n"
+    )
 
 
 def get_help(command):
