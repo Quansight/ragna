@@ -72,9 +72,11 @@ class Rag:
 
         return chat
 
-    def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
+    def _parse_documents(
+        self, documents: Sequence[Any], *, user: str
+    ) -> list[Document]:
         documents_ = []
-        for document in document:
+        for document in documents:
             if isinstance(document, RagnaId):
                 document = self._get_document(id=document, user=user)
             else:
