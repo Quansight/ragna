@@ -49,7 +49,7 @@ class ChromaSourceStorage(SourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._client.get_or_create_collection(
+        collection = self._client.create_collection(
             str(chat_id), embedding_function=self._embedding_function
         )
 
