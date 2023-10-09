@@ -16,14 +16,7 @@ dependencies:
     - mypy
     - pre-commit
     # documentation
-    - sphinx
-    - myst-parser
-    - sphinx-copybutton
-    - furo
-    - sphinx-design
-    - sphinx-inline-tabs
-    - sphinxext-opengraph
-
+    
     # Temporary dependency for the new Panel Chat Interface.
     # TODO: remove this dependency once the new Panel Chat Interface is released,
     # and pin Panel's version
