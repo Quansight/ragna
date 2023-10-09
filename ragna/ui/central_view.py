@@ -36,24 +36,38 @@ class CentralView(pn.viewable.Viewer):
                 "avatar": "🤖",
                 "value": self.api_wrapper.answer(self.current_chat["id"], contents),
             }
+
             instance.respond()
 
     def get_chat_entries(self):
-        ragna_stylesheet = """
-                            :host {
-                                
-                            }
-                                """
-
-        user_stylesheet = """
-                    :host {
-                            flex-direction:row-reverse;
-                            }
-
-                    .right {
-                            width:fit-content;
+        pn.widgets.ChatEntry._stylesheets = pn.widgets.ChatEntry._stylesheets + [
+            """ :host .right, :host .center, :host .chat-entry {
+                            width:100% !important;
                     }
-                    """
+                """,
+            """
+                    :host div.bk-panel-models-layout-Column { 
+                            width:100% !important;
+                    }
+                """,
+            """
+                    :host .message {
+                        width: calc(100% - 15px);
+                    }
+                """,
+            """
+                    :host .chat-entry-user {
+                        background-color: rgba(243, 243, 243);
+                        border: 1px solid rgb(238, 238, 238);
+                    }
+                """,
+            """
+                    :host .chat-entry-ragna {
+                        background-color: white;
+                        border: 1px solid rgb(234, 234, 234);
+                    }
+                """,
+        ]
 
         chat_entries = []
 
@@ -61,31 +75,46 @@ class CentralView(pn.viewable.Viewer):
             for m in self.current_chat["messages"]:
                 chat_entry = pn.widgets.ChatEntry(
                     value=m["content"],
-                    user="User" if m["role"] == "user" else "Ragna",
+                    # user="User" if m["role"] == "user" else "Ragna (Chat GPT 3.5)",
+                    # actually looking better with empty user name than show_user=False
+                    user="",
+                    # show_user=False,
+                    renderers=[
+                        lambda txt: pn.pane.Markdown(
+                            txt,
+                            css_classes=[
+                                "chat-entry-user"
+                                if m["role"] == "user"
+                                else "chat-entry-ragna"
+                            ],
+                        )
+                    ],
+                    css_classes=[
+                        "chat-entry",
+                        "chat-entry-user"
+                        if m["role"] == "user"
+                        else "chat-entry-ragna",
+                    ],
+                    avatar="👤" if m["role"] == "user" else "🤖",
                     timestamp=m["timestamp"],
                     show_reaction_icons=False,
                     # show_user=False,
-                    stylesheets=[
-                        """ :host {  background-color:transparent; }
-        
-                        """,
-                        user_stylesheet if m["role"] == "user" else ragna_stylesheet,
-                    ],
                 )
 
-                # print(chat_entry._composite)
-                # chat_entry._composite is a row
-                # chat_entry._composite[1] is a Column containing the username, the text+reactions, and the timestamp
-                # chat_entry._composite[1][1] is the row containing the text+reactions
-                # print(chat_entry._composite[1][1][0])
-                chat_entry._composite[1][1][0].stylesheets = [
-                    """ :host { 
-                                                                background-color: #F3F3F3 !important;
-                                                                border-radius: 10px !important;
-                                                                border: 1px solid rgb(248, 248, 248) !important;
-                                                            
-                                                            } """
-                ]
+                chat_entry.chat_copy_icon.visible = False
+
+                # WORKS BUT UGLY
+                # chat_entry._composite[1].stylesheets = list(chat_entry._composite[1].stylesheets) + [
+                #         """ :host div.center {
+                #                 width: 100%;
+                #             }
+                #             :host {
+                #                 /*background-color:red !important;*/
+                #             }
+                #         """.strip(),
+                # ]
+
+                # chat_entry._composite[1][1][0].stylesheets += [ """ :host, :host .message {width:calc(100% - 10px);}""" ]
 
                 chat_entries.append(chat_entry)
 
@@ -105,29 +134,46 @@ class CentralView(pn.viewable.Viewer):
             value=chat_entries,
             view_latest=True,
             sizing_mode="stretch_width",
+            renderers=[lambda txt: pn.pane.Markdown(txt)],
             stylesheets=[
                 """
                     :host {  
                     /*background-color:pink;*/
                     margin-left: 18% !important;
-                    margin-right: 18% !important;
+                    /*margin-right: 18% !important;*/
                     min-width:45%;
+                    border: none !important;
+                    height:100%;
+                    margin-bottom: 20px; 
                     }
+
+                    :host .chat-feed-log {
+                        padding-right:18% !important;
+                    }
+
+                    :host .chat-interface-input-container {
+                        margin-right: 19%;
+                        margin-left:2%;
+                    }
+
                     """,
             ],
         )
 
-        chat_interface._composite.objects = [pn.layout.spacer.VSpacer()] + [
-            w
-            for w in chat_interface._composite.objects
-            if not isinstance(w, pn.layout.spacer.VSpacer)
-        ]
-
-        chat_interface._chat_log.stylesheets.append(
-            """ :host .chat-feed-log {  
-                    height: unset; max-height: 90%; }
-            """
-        )
+        # Trick to make the chat start from the bottom :
+        #  - move the spacer first, and not last
+        # chat_interface._composite.objects =  (
+        #     [pn.layout.spacer.VSpacer()] +
+        #     [
+        #     w
+        #     for w in chat_interface._composite.objects
+        #     if not isinstance(w, pn.layout.spacer.VSpacer)
+        # ])
+        # chat_interface._chat_log.stylesheets.append(
+        #     """ :host .chat-feed-log {
+        #             height: unset; max-height: 90%; }
+        #     """
+        # )
 
         return chat_interface
 
@@ -207,7 +253,8 @@ class CentralView(pn.viewable.Viewer):
             stylesheets=[
                 """                    :host { 
                                             /*background-color: orange;*/
-                                            background-color: #FCFCFC;
+                                            /*background-color: #FCFCFC;*/
+                                            background-color: white;
                                             
                                             height:100%;
                                             max-width: 100%;

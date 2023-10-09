@@ -63,6 +63,7 @@ class RightSidebar(pn.viewable.Viewer):
                                         height:100%;
                                         min-width: unset;
                                         width: 0px;
+                                        overflow:hidden;
 
                                         margin-left: min(15px, 2%);
                                         border-left: 1px solid #EEEEEE;
@@ -76,7 +77,7 @@ class RightSidebar(pn.viewable.Viewer):
 
 
                                 :host(.visible_sidebar) {
-                                        animation: 0.33s ease-in forwards show_right_sidebar;
+                                        animation: 0.25s ease-in forwards show_right_sidebar;
                                 }
 
                                 @keyframes show_right_sidebar {
@@ -90,6 +91,22 @@ class RightSidebar(pn.viewable.Viewer):
                                         width: 25%;
                                     }
                                 }
+
+                                
+                                :host(.visible_sidebar) .close_button {
+                                    animation: 0.25s ease-in forwards show_close_button;
+                                }
+
+                                @keyframes show_close_button {
+                                    from {
+                                        transform: translateX(20px);
+                                    }
+                                    to {
+                                        transform: translateX(0px);
+                                    }
+                                }
+
+                                /* hide */
 
                                 :host(.hidden_sidebar) {
                                         animation: 0.33s ease-in forwards hide_right_sidebar;
@@ -107,7 +124,6 @@ class RightSidebar(pn.viewable.Viewer):
                                     }
                                 }
 
-
                                 :host(.hidden_sidebar) .close_button {
                                     animation: 0.33s ease-in forwards hide_close_button;
                                 }
@@ -123,18 +139,6 @@ class RightSidebar(pn.viewable.Viewer):
 
                                 
 
-                                :host(.visible_sidebar) .close_button {
-                                    animation: 0.33s ease-in forwards show_close_button;
-                                }
-
-                                @keyframes show_close_button {
-                                    from {
-                                        transform: translateX(20px);
-                                    }
-                                    to {
-                                        transform: translateX(0px);
-                                    }
-                                }
 
                                 """
             ],
