@@ -46,8 +46,8 @@ class Rag:
         **params,
     ):
         documents = self._parse_documents(documents, user=user)
-        source_storage = self._queue.load_component(source_storage)
-        assistant = self._queue.load_component(assistant)
+        source_storage = self._queue.parse_component(source_storage, load=True)
+        assistant = self._queue.parse_component(assistant, load=True)
 
         chat = Chat(
             rag=self,
@@ -135,8 +135,8 @@ class Rag:
                     )
                     for document_state in chat_state.document_states
                 ],
-                source_storage=self._queue.load_component(chat_state.source_storage),
-                assistant=self._queue.load_component(chat_state.assistant),
+                source_storage=self._queue.parse_component(chat_state.source_storage),
+                assistant=self._queue.parse_component(chat_state.assistant),
                 messages=[
                     Message(
                         id=message_state.id,
