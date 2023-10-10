@@ -21,11 +21,11 @@ def task_config(retries: int = 0, retry_delay: int = 0):
     return decorator
 
 
-_LOADED_COMPONENTS: dict[Type[RagComponent], Optional[RagComponent]] = {}
+_COMPONENTS: dict[Type[RagComponent], Optional[RagComponent]] = {}
 
 
 def execute(component, fn, args, kwargs):
-    self = _LOADED_COMPONENTS[component]
+    self = _COMPONENTS[component]
     assert self is not None
     return fn(self, *args, **kwargs)
 
@@ -95,14 +95,14 @@ class Queue:
         elif isinstance(component, str):
             try:
                 cls = next(
-                    cls for cls in _LOADED_COMPONENTS if cls.display_name() == component
+                    cls for cls in _COMPONENTS if cls.display_name() == component
                 )
             except StopIteration:
                 raise RagnaException("Unknown component", component=component)
             instance = None
 
         if instance is None:
-            instance = _LOADED_COMPONENTS.get(cls)
+            instance = _COMPONENTS.get(cls)
 
         if instance is not None:
             return cls
@@ -113,7 +113,7 @@ class Queue:
 
             instance = cls(self._config)
 
-        _LOADED_COMPONENTS[cls] = instance
+        _COMPONENTS[cls] = instance
 
         return cls
 
