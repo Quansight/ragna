@@ -48,6 +48,8 @@ ui = [
 builtin-components = [
     "chromadb>=0.4",
     "httpx",
+    "lancedb>=0.2",
+    "sentence-transformers",
     "tiktoken",
 ]
 complete = [
@@ -56,8 +58,10 @@ complete = [
     "chromadb>=0.4",
     "fastapi",
     "httpx",
+    "lancedb>=0.2",
     "python-multipart",
     "rich",
+    "sentence-transformers",
     "tiktoken",
     "uvicorn",
 ]
