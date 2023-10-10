@@ -9,7 +9,7 @@ import typer
 
 import ragna
 
-from ragna.core import Config, EnvVarRequirement, PackageRequirement, Rag, Requirement
+from ragna.core import Config, EnvVarRequirement, PackageRequirement, Requirement
 from ragna.core._queue import Queue
 
 app = typer.Typer(
@@ -112,10 +112,8 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 
     from ragna._api import api
 
-    rag = Rag(config=config)
-
     components = urlsplit(config.ragna_api_url)
-    uvicorn.run(api(rag), host=components.hostname, port=components.port)
+    uvicorn.run(api(config), host=components.hostname, port=components.port)
 
 
 @app.command(help="Start Ragna worker(s)")

@@ -1,5 +1,5 @@
 import itertools
-from typing import Optional, Type, Union
+from typing import Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -8,7 +8,6 @@ from huey.contrib.asyncio import aget_result
 
 from ._component import RagComponent
 from ._config import Config
-
 from ._core import RagnaException
 from ._requirement import PackageRequirement
 
@@ -32,6 +31,9 @@ def execute(component, fn, args, kwargs):
 class _Task(huey.api.Task):
     def execute(self):
         return execute(*self.args)
+
+
+T = TypeVar("T", bound=RagComponent)
 
 
 class Queue:
@@ -80,9 +82,7 @@ class Queue:
 
         return _huey
 
-    def load_component(
-        self, component: Union[Type[RagComponent], RagComponent, str]
-    ) -> Type[RagComponent]:
+    def load_component(self, component: Union[Type[T], T, str]) -> Type[T]:
         if isinstance(component, type) and issubclass(component, RagComponent):
             cls = component
             instance = None

@@ -14,8 +14,7 @@ from ._config import Config
 from ._core import RagnaException, RagnaId
 from ._document import Document
 from ._queue import Queue
-from ._source_storage import ReconstructedSource, SourceStorage
-from ._state import State
+from ._source_storage import SourceStorage
 
 T = TypeVar("T", bound=RagComponent)
 
@@ -30,7 +29,6 @@ class Rag:
         self.config = config or Config()
         self._logger = self.config.get_logger()
 
-        self._state = State(self.config.state_database_url)
         self._queue = Queue(self.config, load_components=load_components)
 
         self._chats: dict[(str, str), Chat] = {}
@@ -38,21 +36,18 @@ class Rag:
     async def new_chat(
         self,
         *,
-        user: str = "Ragna",
         name: Optional[str] = None,
         documents: Sequence[Any],
         source_storage: Union[Type[RagComponent], RagComponent, str],
         assistant: Union[Type[RagComponent], RagComponent, str],
         **params,
     ):
-        documents = self._parse_documents(documents, user=user)
+        documents = self._parse_documents(documents)
         source_storage = self._queue.load_component(source_storage)
         assistant = self._queue.load_component(assistant)
 
-        chat = Chat(
-            rag=self,
-            user=user,
-            id=RagnaId.make(),
+        return Chat(
+            queue=self._queue,
             name=name,
             documents=documents,
             source_storage=source_storage,
@@ -60,37 +55,11 @@ class Rag:
             **params,
         )
 
-        self._state.add_chat(
-            id=chat.id,
-            user=user,
-            name=chat.name,
-            document_ids=[document.id for document in documents],
-            source_storage=source_storage.display_name(),
-            assistant=assistant.display_name(),
-            params=params,
-        )
-
-        return chat
-
-    def _parse_documents(
-        self, documents: Sequence[Any], *, user: str
-    ) -> list[Document]:
+    def _parse_documents(self, documents: Sequence[Any]) -> list[Document]:
         documents_ = []
         for document in documents:
-            if isinstance(document, RagnaId):
-                document = self._get_document(id=document, user=user)
-            else:
-                if not isinstance(document, Document):
-                    document = self.config.document_class(document)
-
-                if document.id is None:
-                    document.id = RagnaId.make()
-                    self._add_document(
-                        user=user,
-                        id=document.id,
-                        name=document.name,
-                        metadata=document.metadata,
-                    )
+            if not isinstance(document, Document):
+                document = self.config.document_class(document)
 
             if not document.is_available():
                 raise RagnaException(
@@ -103,106 +72,22 @@ class Rag:
             documents_.append(document)
         return documents_
 
-    def _add_document(self, *, user: str, id: RagnaId, name: str, metadata):
-        self._state.add_document(user=user, id=id, name=name, metadata=metadata)
-
-    def _get_document(self, user: str, id: RagnaId):
-        state = self._state.get_document(user=user, id=id)
-        if state is None:
-            raise RagnaException(
-                "Document not found",
-                user=user,
-                id=id,
-                http_status_code=404,
-                http_detail=RagnaException.EVENT,
-            )
-        return self.config.document_class(
-            id=id, name=state.name, metadata=state.metadata_
-        )
-
-    def _get_chats(self, *, user: str):
-        chats = [
-            Chat(
-                rag=self,
-                user=user,
-                id=chat_state.id,
-                name=chat_state.name,
-                documents=[
-                    self.config.document_class(
-                        id=document_state.id,
-                        name=document_state.name,
-                        metadata=document_state.metadata_,
-                    )
-                    for document_state in chat_state.document_states
-                ],
-                source_storage=self._queue.load_component(chat_state.source_storage),
-                assistant=self._queue.load_component(chat_state.assistant),
-                messages=[
-                    Message(
-                        id=message_state.id,
-                        content=message_state.content,
-                        role=message_state.role,
-                        sources=[
-                            ReconstructedSource(
-                                id=source_state.id,
-                                document_id=source_state.document_id,
-                                document_name=source_state.document_state.name,
-                                location=source_state.location,
-                            )
-                            for source_state in message_state.source_states
-                        ],
-                    )
-                    for message_state in chat_state.message_states
-                ],
-                **chat_state.params,
-            )
-            for chat_state in self._state.get_chats(user=user)
-        ]
-        self._chats.update({(user, chat.id): chat for chat in chats})
-        return chats
-
-    def _get_chat(self, *, user: str, id: RagnaId):
-        key = (user, id)
-
-        chat = self._chats.get(key)
-        if chat is not None:
-            return chat
-
-        self._get_chats(user=user)
-
-        chat = self._chats.get(key)
-        if chat is not None:
-            return chat
-
-        raise RagnaException(
-            "Chat not found",
-            user=user,
-            id=id,
-            http_status_code=404,
-            detail=RagnaException.EVENT,
-        )
-
 
 class Chat:
     def __init__(
         self,
         *,
-        rag: Rag,
-        user: str,
-        id: RagnaId,
+        queue: Queue,
         name: Optional[str] = None,
-        documents,
+        documents: list[Document],
         source_storage: Type[SourceStorage],
         assistant: Type[Assistant],
         messages: Optional[list[Message]] = None,
-        **params,
+        **params: Any,
     ):
-        self._rag = rag
-        self._state = self._rag._state
-        self._user = user
-
-        self.id = id
+        self._queue = queue
         self.name = name or f"{datetime.datetime.now():%c}"
+
         self.documents = documents
         self.source_storage = source_storage
         self.assistant = assistant
@@ -232,7 +117,6 @@ class Chat:
             )
 
         await self._enqueue(self.source_storage, "store", self.documents)
-        self._state.start_chat(user=self._user, id=self.id)
         self._started = True
 
         welcome = Message(
@@ -240,14 +124,12 @@ class Chat:
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
-        self._append_message(welcome)
+        self.messages.append(welcome)
 
         return self
 
     async def close(self):
-        self._state.close_chat(id=self.id, user=self._user)
         self._closed = True
-
         return self
 
     async def answer(self, prompt: str):
@@ -267,7 +149,7 @@ class Chat:
             )
 
         prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
-        self._append_message(prompt)
+        self.messages.append(prompt)
 
         sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
         content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
@@ -278,16 +160,8 @@ class Chat:
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
-        self._append_message(answer)
+        self.messages.append(answer)
         return answer
-
-    def _append_message(self, message: Message):
-        self.messages.append(message)
-        self._state.add_message(
-            message,
-            user=self._user,
-            chat_id=self.id,
-        )
 
     class _SpecialChatParams(BaseModel):
         user: str
@@ -350,7 +224,7 @@ class Chat:
 
     async def _enqueue(self, component, action, *args):
         try:
-            return await self._rag._queue.enqueue(
+            return await self._queue.enqueue(
                 component, action, args, self._unpacked_params[(component, action)]
             )
         except RagnaException as exc:

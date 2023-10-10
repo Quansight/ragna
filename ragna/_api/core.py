@@ -7,9 +7,9 @@ from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 
 import ragna
 
-from ragna.core import Chat, LocalDocument, RagnaException, RagnaId
+from ragna.core import Chat, LocalDocument, Rag, RagnaException, RagnaId
 
-from . import schemas
+from . import database, schemas
 
 
 def process_ragna_exception(afn):
@@ -33,7 +33,9 @@ def process_ragna_exception(afn):
     return wrapper
 
 
-def api(rag):
+def api(config):
+    rag = Rag(config)
+
     app = FastAPI()
 
     @app.get("/health")
@@ -55,20 +57,32 @@ def api(rag):
             assistants=list(rag.config.registered_assistant_classes),
         )
 
+    make_session = database.sessionmaker(config.database_url)
+
+    def get_session():
+        session = make_session()
+        try:
+            yield session
+        finally:
+            session.close()
+
+    SessionDependency = Annotated[database.Session, Depends(get_session)]
+
     @app.get("/document")
     @process_ragna_exception
     async def get_document_upload_info(
         user: UserDependency,
+        session: SessionDependency,
         name: str,
     ) -> schemas.DocumentUploadInfo:
         id = RagnaId.make()
-        url, data, metadata = await rag.config.document_class.get_upload_info(
-            config=rag.config, user=user, id=id, name=name
+        url, data, metadata = await config.document_class.get_upload_info(
+            config=config, user=user, id=id, name=name
         )
-        rag._add_document(user=user, id=id, name=name, metadata=metadata)
-        return schemas.DocumentUploadInfo(
-            url=url, data=data, document=schemas.Document(id=id, name=name)
+        document = database.add_document(
+            session, user=user, id=id, name=name, metadata=metadata
         )
+        return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
     @app.post("/document")
     @process_ragna_exception
@@ -84,7 +98,7 @@ def api(rag):
         user, id = rag.config.document_class._decode_upload_token(
             token, secret=rag.config.upload_token_secret
         )
-        document = rag._get_document(user=user, id=id)
+        document = database.get_document(make_session(), user=user, id=id)
 
         document.path.parent.mkdir(parents=True, exist_ok=True)
         async with aiofiles.open(document.path, "wb") as document_file:
@@ -98,16 +112,26 @@ def api(rag):
     async def create_chat(
         *, user: UserDependency, chat_metadata: schemas.ChatMetadataCreate
     ) -> schemas.Chat:
-        return schemas.Chat.from_core_chat(
-            await rag.new_chat(
-                user=user,
-                name=chat_metadata.name,
-                documents=chat_metadata.document_ids,
-                source_storage=chat_metadata.source_storage,
-                assistant=chat_metadata.assistant,
-                **chat_metadata.params,
+        documents = []
+        for id in chat_metadata.document_ids:
+            orm_document = database.get_document(db, user=user, id=id)
+            documents.append(
+                rag.config.document_class(
+                    id=id, name=orm_document.name, metadata=orm_document.metadata_
+                )
             )
+
+        chat = await rag.new_chat(
+            name=chat_metadata.name,
+            documents=documents,
+            source_storage=chat_metadata.source_storage,
+            assistant=chat_metadata.assistant,
+            **chat_metadata.params,
         )
+
+        orm_chat = database.add_chat(db, chat, user=user, id=RagnaId.make())
+
+        return schemas.Chat.model_validate(orm_chat)
 
     @app.get("/chats")
     @process_ragna_exception

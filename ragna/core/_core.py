@@ -21,6 +21,7 @@ class RagnaException(Exception):
         return ", ".join([self.event, *[f"{k}={v}" for k, v in self.extra.items()]])
 
 
+# FIXME: maybe this can move to api?
 class RagnaId(uuid_.UUID):
     @classmethod
     def from_uuid(cls, uuid: uuid_.UUID) -> RagnaId:

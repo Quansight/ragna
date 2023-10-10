@@ -25,7 +25,7 @@ class Base(DeclarativeBase):
 # FIXME: Do we actually need this table? If we are sure that a user is unique and has to
 #  be authenticated from the API layer, it seems having an extra mapping here is not
 #  needed?
-class UserState(Base):
+class User(Base):
     __tablename__ = "users"
 
     id = Column(Id, primary_key=True)
@@ -40,7 +40,7 @@ document_chat_state_association_table = Table(
 )
 
 
-class DocumentState(Base):
+class Document(Base):
     __tablename__ = "documents"
 
     id = Column(Id, primary_key=True)
@@ -60,7 +60,7 @@ class DocumentState(Base):
     )
 
 
-class ChatState(Base):
+class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(Id, primary_key=True)
@@ -87,7 +87,7 @@ source_message_state_association_table = Table(
 )
 
 
-class SourceState(Base):
+class Source(Base):
     __tablename__ = "sources"
 
     id = Column(Id, primary_key=True)
@@ -104,7 +104,7 @@ class SourceState(Base):
     )
 
 
-class MessageState(Base):
+class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Id, primary_key=True)

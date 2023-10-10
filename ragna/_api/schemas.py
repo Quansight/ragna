@@ -14,13 +14,6 @@ class Document(BaseModel):
     id: ragna.core.RagnaId
     name: str
 
-    @classmethod
-    def from_core_document(cls, document: ragna.core.Document) -> Document:
-        return cls(
-            id=document.id,
-            name=document.name,
-        )
-
 
 class DocumentUploadInfo(BaseModel):
     url: HttpUrl
