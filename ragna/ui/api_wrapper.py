@@ -39,11 +39,11 @@ class ApiWrapper:
 
     def answer(self, chat_id, prompt):
         requests.post(
-            f"{self.api_url}/chat/{chat_id}/start",
+            f"{self.api_url}/chats/{chat_id}/start",
             params={"user": self.user},
         )
         raw_result = requests.post(
-            f"{self.api_url}/chat/{chat_id}/answer",
+            f"{self.api_url}/chats/{chat_id}/answer",
             params={"user": self.user, "prompt": prompt},
         )
 
