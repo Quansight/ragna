@@ -22,7 +22,7 @@ class LanceDBSourceStorage(SourceStorage):
             # FIXME: re-add this after https://github.com/apache/arrow/issues/38167 is
             #  resolved.
             # PackageRequirement("pyarrow"),
-            PackageRequirement("sentence_transformers"),
+            PackageRequirement("sentence-transformers"),
         ]
 
     def __init__(self, config):
