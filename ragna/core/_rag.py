@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import itertools
 from collections import defaultdict
-from typing import Any, Optional, Sequence, Type, TypeVar, Union
+from typing import Any, Optional, Sequence, Type, Union
 
 from pydantic import BaseModel, create_model, Extra
 
@@ -15,8 +15,6 @@ from ._core import RagnaException, RagnaId
 from ._document import Document
 from ._queue import Queue
 from ._source_storage import SourceStorage
-
-T = TypeVar("T", bound=RagComponent)
 
 
 class Rag:

@@ -32,8 +32,8 @@ class User(Base):
     name = Column(types.String)
 
 
-document_chat_state_association_table = Table(
-    "document_chat_state_association_table",
+document_chat_association_table = Table(
+    "document_chat_association_table",
     Base.metadata,
     Column("document_id", ForeignKey("documents.id"), primary_key=True),
     Column("chat_id", ForeignKey("chats.id"), primary_key=True),
@@ -49,14 +49,14 @@ class Document(Base):
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
     # metadata without the underscore is reserved by SQLAlchemy
     metadata_ = Column(types.JSON)
-    chat_states = relationship(
-        "ChatState",
-        secondary=document_chat_state_association_table,
-        back_populates="document_states",
+    chats = relationship(
+        "Chat",
+        secondary=document_chat_association_table,
+        back_populates="documents",
     )
-    source_states = relationship(
-        "SourceState",
-        back_populates="document_state",
+    sources = relationship(
+        "Source",
+        back_populates="document",
     )
 
 
@@ -66,21 +66,21 @@ class Chat(Base):
     id = Column(Id, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
-    document_states = relationship(
-        "DocumentState",
-        secondary=document_chat_state_association_table,
-        back_populates="chat_states",
+    documents = relationship(
+        "Document",
+        secondary=document_chat_association_table,
+        back_populates="chats",
     )
     source_storage = Column(types.String)
     assistant = Column(types.String)
     params = Column(types.JSON)
-    message_states = relationship("MessageState")
+    messages = relationship("Message")
     started = Column(types.Boolean)
     closed = Column(types.Boolean)
 
 
-source_message_state_association_table = Table(
-    "source_message_state_association_table",
+source_message_association_table = Table(
+    "source_message_association_table",
     Base.metadata,
     Column("source_id", ForeignKey("sources.id"), primary_key=True),
     Column("message_id", ForeignKey("messages.id"), primary_key=True),
@@ -93,14 +93,14 @@ class Source(Base):
     id = Column(Id, primary_key=True)
 
     document_id = Column(ForeignKey("documents.id"))
-    document_state = relationship("DocumentState", back_populates="source_states")
+    document = relationship("Document", back_populates="sources")
 
     location = Column(types.String)
 
-    message_states = relationship(
-        "MessageState",
-        secondary=source_message_state_association_table,
-        back_populates="source_states",
+    messages = relationship(
+        "Message",
+        secondary=source_message_association_table,
+        back_populates="sources",
     )
 
 
@@ -112,9 +112,9 @@ class Message(Base):
     content = Column(types.String)
     role = Column(types.Enum(MessageRole))
     source_id = Column(ForeignKey("sources.id"))
-    source_states = relationship(
-        "SourceState",
-        secondary=source_message_state_association_table,
-        back_populates="message_states",
+    sources = relationship(
+        "Source",
+        secondary=source_message_association_table,
+        back_populates="messages",
     )
     timestamp = Column(types.DateTime)

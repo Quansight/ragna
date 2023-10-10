@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import Any, Type
+from typing import Any, Callable
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker as _sessionmaker
@@ -11,136 +11,175 @@ from ragna.core import Message, RagnaException, RagnaId
 from . import orm, schemas
 
 
-def sessionmaker(database_url: str) -> Type[Session]:
-    engine = create_engine(database_url, connect_args={"check_same_thread": False})
+def get_sessionmaker(database_url: str) -> Callable[[], Session]:
+    engine = create_engine(database_url)
     orm.Base.metadata.create_all(bind=engine)
     return _sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-# We should take and return schemas only
-
-
 @functools.lru_cache(maxsize=1024)
-def _get_user_id(self, user: str):
-    user_state = self._session.execute(
-        select(UserState).where(UserState.name == user)
+def _get_user_id(session: Session, username: str) -> RagnaId:
+    user = session.execute(
+        select(orm.User).where(orm.User.name == username)
     ).scalar_one_or_none()
-    if user_state is not None:
-        return user_state.id
 
-    user_state = UserState(id=RagnaId.make(), name=user)
-    self._session.add(user_state)
-    self._session.commit()
-    return user_state.id
+    if user is None:
+        # Add a new user if the current username is not registered yet. Since this is
+        # behind the authentication layer, we don't need any extra security here.
+        user = orm.User(id=RagnaId.make(), name=username)
+        session.add(user)
+        session.commit()
+
+    return user.id
 
 
 def add_document(
-    session, *, user: str, id: RagnaId, name: str, metadata: dict[str, Any]
-):
-    document = orm.Document(
-        id=id,
-        user_id=_get_user_id(user),
-        name=name,
-        metadata_=metadata,
+    session: Session, *, user: str, document: schemas.Document, metadata: dict[str, Any]
+) -> None:
+    session.add(
+        orm.Document(
+            id=document.id,
+            user_id=_get_user_id(session, user),
+            name=document.name,
+            metadata_=metadata,
+        )
     )
-    session.add(document)
     session.commit()
 
-    return schemas.Document.model_validate(document)
+
+def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
+    return schemas.Document(id=document.id, name=document.name)
 
 
 @functools.lru_cache(maxsize=1024)
-def get_document(self, user: str, id: RagnaId) -> DocumentState:
-    return self._session.execute(
-        select(DocumentState).where(
-            (DocumentState.user_id == self._get_user_id(user))
-            & (DocumentState.id == id)
+def get_document(
+    session: Session, *, user: str, id: RagnaId
+) -> tuple[schemas.Document, dict[str, Any]]:
+    document = session.execute(
+        select(orm.Document).where(
+            (orm.Document.user_id == _get_user_id(session, user))
+            & (orm.Document.id == id)
         )
     ).scalar_one_or_none()
+    return _orm_to_schema_document(document), document.metadata
 
 
-def get_chats(self, user: str):
-    # FIXME: Add filters for started and closed here
-    return (
-        self._session.execute(
-            select(ChatState).where(ChatState.user_id == self._get_user_id(user))
-        )
+def add_chat(session: Session, *, user: str, chat: schemas.Chat):
+    document_ids = {document.id for document in chat.metadata.documents}
+    documents = (
+        session.execute(select(orm.Document).where(orm.Document.id.in_(document_ids)))
         .scalars()
         .all()
     )
-
-
-def add_chat(
-    self,
-    *,
-    user: str,
-    id: RagnaId,
-    name: str,
-    document_ids: list[RagnaId],
-    source_storage: str,
-    assistant: str,
-    params,
-) -> ChatState:
-    document_states = (
-        self._session.execute(
-            select(DocumentState).where(DocumentState.id.in_(document_ids))
-        )
-        .scalars()
-        .all()
-    )
-    if len(document_states) != len(document_ids):
+    if len(documents) != len(document_ids):
         raise RagnaException(
-            set(document_ids) - {document.id for document in document_states}
+            set(document_ids) - {document.id for document in documents}
         )
-    chat = ChatState(
-        id=id,
-        user_id=self._get_user_id(user),
-        name=name,
-        document_states=document_states,
-        source_storage=source_storage,
-        assistant=assistant,
-        params=params,
-        started=False,
-        closed=False,
+    session.add(
+        orm.Chat(
+            id=chat.id,
+            user_id=_get_user_id(session, user),
+            name=chat.metadata.name,
+            document_states=documents,
+            source_storage=chat.metadata.source_storage,
+            assistant=chat.metadata.assistant,
+            params=chat.metadata.params,
+            started=chat.started,
+            closed=chat.started,
+        )
     )
-    self._session.add(chat)
-    self._session.commit()
+    session.commit()
+
+
+def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
+    documents = [
+        schemas.Document(id=document.id, name=document.name)
+        for document in chat.documents
+    ]
+    messages = [
+        schemas.Message(
+            id=message.id,
+            role=message.role,
+            content=message.content,
+            sources=[
+                schemas.Source(
+                    id=source.id,
+                    document=_orm_to_schema_document(source.document),
+                    location=source.location,
+                )
+                for source in message.sources
+            ],
+            timestamp=message.timestamp,
+        )
+        for message in chat.messages
+    ]
+    return schemas.Chat(
+        id=chat.id,
+        metadata=schemas.ChatMetadata(
+            name=chat.name,
+            documents=documents,
+            source_storage=chat.source_storage,
+            assistant=chat.assistant,
+            params=chat.params,
+        ),
+        messages=messages,
+        started=chat.started,
+        closed=chat.closed,
+    )
+
+
+def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
+    return [
+        _orm_to_schema_chat(chat)
+        for chat in session.execute(
+            select(orm.Chat).where(orm.Chat.user_id == _get_user_id(session, user))
+        )
+        .scalars()
+        .all()
+    ]
+
+
+def _get_orm_chat(session: Session, *, user: str, id: RagnaId) -> orm.Chat:
+    chat = session.execute(
+        select(orm.Chat).where(
+            (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
+        )
+    ).scalar_one_or_none()
+    if chat is None:
+        raise RagnaException()
     return chat
 
 
-def get_chat(self, *, user: str, id: RagnaId):
-    chat_state = self._session.execute(
-        select(ChatState).where(
-            (ChatState.id == id) & (ChatState.user_id == self._get_user_id(user))
-        )
-    ).scalar_one_or_none()
-    if chat_state is None:
-        raise RagnaException()
-    return chat_state
+def get_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
+    return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id))
 
 
-def start_chat(self, *, user: str, id: RagnaId):
-    chat_state = self.get_chat(user=user, id=id)
-    chat_state.started = True
-    self._session.commit()
+def start_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
+    chat = _get_orm_chat(session, user=user, id=id)
+    chat.started = True
+    session.commit()
+    session.refresh(chat)
+    return _orm_to_schema_chat(chat)
 
 
-def close_chat(self, *, user: str, id: RagnaId):
-    chat_state = self.get_chat(user=user, id=id)
-    chat_state.closed = True
-    self._session.commit()
+def close_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
+    chat = _get_orm_chat(session, user=user, id=id)
+    chat.closed = True
+    session.commit()
+    session.refresh(chat)
+    return _orm_to_schema_chat(chat)
 
 
 def add_message(
-    self,
+    session: Session,
     message: Message,
     *,
     user: str,
     chat_id: RagnaId,
 ):
-    chat_state = self._session.execute(
-        select(ChatState).where(
-            (ChatState.user_id == self._get_user_id(user)) & (ChatState.id == chat_id)
+    chat_state = session.execute(
+        select(orm.Chat).where(
+            (orm.Chat.user_id == _get_user_id(session, user)) & (orm.Chat.id == chat_id)
         )
     ).scalar_one_or_none()
     if chat_state is None:
@@ -149,9 +188,7 @@ def add_message(
     if message.sources is not None:
         sources = {s.id: s for s in message.sources}
         source_states = list(
-            self._session.execute(
-                select(SourceState).where(SourceState.id.in_(sources.keys()))
-            )
+            session.execute(select(orm.Source).where(orm.Source.id.in_(sources.keys())))
             .scalars()
             .all()
         )
@@ -159,18 +196,18 @@ def add_message(
         if missing_source_ids:
             for id in missing_source_ids:
                 source = sources[id]
-                source_state = SourceState(
+                source_state = orm.Source(
                     id=RagnaId.make(),
                     document_id=source.document_id,
                     document_state=self.get_document(user=user, id=source.document_id),
                     location=source.location,
                 )
-                self._session.add(source_state)
+                session.add(source_state)
                 source_states.append(source_state)
     else:
         source_states = []
 
-    message_state = MessageState(
+    message_state = orm.Message(
         id=message.id,
         chat_id=chat_state.id,
         content=message.content,
@@ -178,8 +215,8 @@ def add_message(
         source_states=source_states,
         timestamp=message.timestamp,
     )
-    self._session.add(message_state)
+    session.add(message_state)
 
     chat_state.message_states.append(message_state)
 
-    self._session.commit()
+    session.commit()

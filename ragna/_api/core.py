@@ -1,13 +1,13 @@
 import functools
 from typing import Annotated
-from uuid import UUID
 
 import aiofiles
 from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 
 import ragna
+import ragna.core
 
-from ragna.core import Chat, LocalDocument, Rag, RagnaException, RagnaId
+from ragna.core import Rag, RagnaException, RagnaId
 
 from . import database, schemas
 
@@ -38,7 +38,7 @@ def api(config):
 
     app = FastAPI()
 
-    @app.get("/health")
+    @app.get("/")
     @process_ragna_exception
     async def health() -> str:
         return ragna.__version__
@@ -57,7 +57,7 @@ def api(config):
             assistants=list(rag.config.registered_assistant_classes),
         )
 
-    make_session = database.sessionmaker(config.database_url)
+    make_session = database.get_sessionmaker(config.database_url)
 
     def get_session():
         session = make_session()
@@ -71,104 +71,110 @@ def api(config):
     @app.get("/document")
     @process_ragna_exception
     async def get_document_upload_info(
-        user: UserDependency,
         session: SessionDependency,
+        user: UserDependency,
         name: str,
     ) -> schemas.DocumentUploadInfo:
-        id = RagnaId.make()
+        document = schemas.Document(id=RagnaId.make(), name=name)
         url, data, metadata = await config.document_class.get_upload_info(
-            config=config, user=user, id=id, name=name
+            config=config, user=user, id=document.id, name=document.name
         )
-        document = database.add_document(
-            session, user=user, id=id, name=name, metadata=metadata
-        )
+        database.add_document(session, user=user, document=document, metadata=metadata)
         return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
     @app.post("/document")
     @process_ragna_exception
     async def upload_document(
-        token: Annotated[str, Form()], file: UploadFile
+        session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.document_class, LocalDocument):
+        if not issubclass(rag.config.document_class, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
 
-        user, id = rag.config.document_class._decode_upload_token(
+        user, id = ragna.core.LocalDocument._decode_upload_token(
             token, secret=rag.config.upload_token_secret
         )
-        document = database.get_document(make_session(), user=user, id=id)
+        document, metadata = database.get_document(session, user=user, id=id)
 
-        document.path.parent.mkdir(parents=True, exist_ok=True)
-        async with aiofiles.open(document.path, "wb") as document_file:
+        core_document = ragna.core.LocalDocument(
+            id=document.id, name=document.name, metadata=metadata
+        )
+        core_document.path.parent.mkdir(parents=True, exist_ok=True)
+        async with aiofiles.open(core_document.path, "wb") as document_file:
             while content := await file.read(1024):
                 await document_file.write(content)
 
-        return schemas.Document(id=id, name=document.name)
+        return document
 
     @app.post("/chats")
     @process_ragna_exception
     async def create_chat(
-        *, user: UserDependency, chat_metadata: schemas.ChatMetadataCreate
+        session: SessionDependency,
+        user: UserDependency,
+        chat_metadata: schemas.ChatMetadataCreate,
     ) -> schemas.Chat:
         documents = []
+        core_documents = []
         for id in chat_metadata.document_ids:
-            orm_document = database.get_document(db, user=user, id=id)
-            documents.append(
-                rag.config.document_class(
-                    id=id, name=orm_document.name, metadata=orm_document.metadata_
-                )
+            document, metadata = database.get_document(session, user=user, id=id)
+            documents.append(document)
+            core_documents.append(
+                rag.config.document_class(id=id, name=document.name, metadata=metadata)
             )
 
-        chat = await rag.new_chat(
+        core_chat = await rag.new_chat(
             name=chat_metadata.name,
-            documents=documents,
+            documents=core_documents,
             source_storage=chat_metadata.source_storage,
             assistant=chat_metadata.assistant,
             **chat_metadata.params,
         )
 
-        orm_chat = database.add_chat(db, chat, user=user, id=RagnaId.make())
-
-        return schemas.Chat.model_validate(orm_chat)
+        chat = schemas.Chat.from_core_chat(core_chat)
+        database.add_chat(session, user=user, chat=chat)
+        return chat
 
     @app.get("/chats")
     @process_ragna_exception
-    async def get_chats(user: UserDependency) -> list[schemas.Chat]:
-        return [schemas.Chat.from_core_chat(chat) for chat in rag._get_chats(user=user)]
-
-    async def _get_id(id: UUID) -> RagnaId:
-        return RagnaId.from_uuid(id)
-
-    IdDependency = Annotated[RagnaId, Depends(_get_id)]
-
-    async def _get_chat(*, user: UserDependency, id: IdDependency) -> Chat:
-        return rag._get_chat(user=user, id=id)
-
-    ChatDependency = Annotated[Chat, Depends(_get_chat, use_cache=False)]
+    async def get_chats(
+        session: SessionDependency, user: UserDependency
+    ) -> list[schemas.Chat]:
+        return database.get_chats(session, user=user)
 
     @app.get("/chats/{id}")
     @process_ragna_exception
-    async def get_chat(chat: ChatDependency) -> schemas.Chat:
-        return schemas.Chat.from_core_chat(chat)
+    async def get_chat(
+        session: SessionDependency, user: UserDependency, id: RagnaId
+    ) -> schemas.Chat:
+        return database.get_chat(session, user=user, id=id)
 
-    @app.post("/chats/{id}/start")
+    @app.put("/chats/{id}/start")
     @process_ragna_exception
-    async def start_chat(chat: ChatDependency) -> schemas.Chat:
-        return schemas.Chat.from_core_chat(await chat.start())
+    async def start_chat(
+        session: SessionDependency, user: UserDependency, id: RagnaId
+    ) -> schemas.Chat:
+        return database.start_chat(session, user=user, id=id)
 
-    @app.post("/chats/{id}/close")
+    @app.put("/chats/{id}/close")
     @process_ragna_exception
-    async def close_chat(chat: ChatDependency) -> schemas.Chat:
-        return schemas.Chat.from_core_chat(await chat.close())
+    async def close_chat(
+        session: SessionDependency, user: UserDependency, id: RagnaId
+    ) -> schemas.Chat:
+        return database.start_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/answer")
     @process_ragna_exception
-    async def answer(chat: ChatDependency, prompt: str) -> schemas.AnswerOutput:
+    async def answer(
+        session: SessionDependency, user: UserDependency, id: RagnaId, prompt: str
+    ) -> schemas.AnswerOutput:
+        # we need to add the prompt as well as the output message
+
+        core_chat = database.get_chat(session, user=user, id=id).to_core_chat(rag)
         return schemas.AnswerOutput(
-            message=schemas.Message.from_core_message(await chat.answer(prompt)),
-            chat=schemas.Chat.from_core_chat(chat),
+            message=schemas.Message.from_core_message(await core_chat.answer(prompt)),
+            chat=schemas.Chat.from_core_chat(core_chat),
         )
 
     return app
