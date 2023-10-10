@@ -88,6 +88,7 @@ class MainPage(param.Parameterized):
             collapsed_sidebar=True,
             # main_layout=None
             raw_css=[ui.APP_RAW],
+            css_files=["https://rsms.me/", "https://rsms.me/inter/inter.css"],
         )
 
         template.modal.objects = [

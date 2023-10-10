@@ -16,6 +16,11 @@ MODAL_MAX_HEIGHT = 300
 
 
 APP_RAW = """
+
+* {
+    font-family: 'Inter', sans-serif;
+}
+
 .main {
     padding: 0px !important;
 
