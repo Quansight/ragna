@@ -78,8 +78,8 @@ class ChatMetadata(ChatMetadataBase):
         return cls(
             name=chat.name,
             documents=[Document.from_core_document(d) for d in chat.documents],
-            source_storage=str(chat.source_storage),
-            assistant=str(chat.assistant),
+            source_storage=chat.source_storage.display_name(),
+            assistant=chat.assistant.display_name(),
             params=chat.params,
         )
 

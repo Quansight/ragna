@@ -43,8 +43,8 @@ class Rag:
         **params,
     ):
         documents = self._parse_documents(documents)
-        source_storage = self._queue.load_component(source_storage)
-        assistant = self._queue.load_component(assistant)
+        source_storage = self._queue.parse_component(source_storage, load=True)
+        assistant = self._queue.parse_component(assistant, load=True)
 
         return Chat(
             queue=self._queue,
