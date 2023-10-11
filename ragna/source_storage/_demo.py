@@ -17,7 +17,6 @@ class RagnaDemoSourceStorage(SourceStorage):
     def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
         self._storage[chat_id] = [
             {
-                "document_id": str(document.id),
                 "document_name": document.name,
                 "location": f"page {page.number}"
                 if (page := next(document.extract_pages())).number

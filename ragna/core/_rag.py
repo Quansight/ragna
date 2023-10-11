@@ -66,6 +66,9 @@ class Chat:
         )
         self.assistant = self._rag._queue.parse_component(assistant, load=True)
 
+        special_params = self._SpecialChatParams().dict()
+        special_params.update(params)
+        params = special_params
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
@@ -125,7 +128,6 @@ class Chat:
                     "Document not available",
                     document=document,
                     http_status_code=404,
-                    http_detail=f"Document with ID {document.id} not available.",
                 )
 
             documents_.append(document)
@@ -160,24 +162,18 @@ class Chat:
         raw_field_definitions = defaultdict(list)
         for model_cls in models:
             for name, field in model_cls.__fields__.items():
-                raw_field_definitions[name].append(
-                    (field.type_, ... if field.required else field.default)
-                )
+                raw_field_definitions[name].append((field.type_, field.required))
 
         field_definitions = {}
         for name, definitions in raw_field_definitions.items():
-            if len(definitions) == 1:
-                field_definitions[name] = definitions[0]
-                continue
-
-            types, defaults = zip(*definitions)
+            types, requireds = zip(*definitions)
 
             types = set(types)
             if len(types) > 1:
                 raise RagnaException(f"Mismatching types for field {name}: {types}")
             type_ = types.pop()
 
-            default = ... if any(default is ... for default in defaults) else None
+            default = ... if any(requireds) else None
 
             field_definitions[name] = (type_, default)
 
@@ -188,7 +184,7 @@ class Chat:
 
     async def _enqueue(self, component, action, *args):
         try:
-            return await self._queue.enqueue(
+            return await self._rag._queue.enqueue(
                 component, action, args, self._unpacked_params[(component, action)]
             )
         except RagnaException as exc:
@@ -199,3 +195,6 @@ class Chat:
     async def __aenter__(self):
         await self.prepare()
         return self
+
+    async def __aexit__(self, *exc_info):
+        pass

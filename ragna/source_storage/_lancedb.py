@@ -30,7 +30,6 @@ class LanceDBSourceStorage(SourceStorage):
         self._model = SentenceTransformer("paraphrase-albert-small-v2")
         self._schema = pa.schema(
             [
-                pa.field("document_id", pa.string()),
                 pa.field("document_name", pa.string()),
                 pa.field("page_numbers", pa.string()),
                 pa.field("text", pa.string()),
@@ -67,7 +66,6 @@ class LanceDBSourceStorage(SourceStorage):
                 table.add(
                     [
                         {
-                            "document_id": str(document.id),
                             "document_name": document.name,
                             "page_numbers": page_numbers_to_str(chunk.page_numbers),
                             "text": chunk.text,
@@ -98,7 +96,10 @@ class LanceDBSourceStorage(SourceStorage):
                 (
                     Source(
                         document_name=result["document_name"],
-                        location=result["page_numbers"],
+                        # For some reason adding an empty string during store() results
+                        # in this field being None. Thus, we need to parse it back here.
+                        # TODO: See if there is a configuration option for this
+                        location=result["page_numbers"] or "",
                         content=result["text"],
                         num_tokens=result["num_tokens"],
                     )
