@@ -3,7 +3,8 @@ from datetime import datetime
 
 import emoji
 
-import requests
+# import requests
+import httpx
 
 
 # The goal is this class is to provide ready-to-use functions to interact with the API
@@ -11,10 +12,11 @@ class ApiWrapper:
     def __init__(self, api_url, user):
         self.api_url = api_url
         self.user = user
+        self.client = httpx.Client()
 
     def get_chats(self):
         # Make a GET request to the API endpoint
-        response = requests.get(self.api_url + "/chats?user=" + self.user)
+        response = self.client.get(f"{self.api_url}/chats", params={"user": self.user})
 
         if response.status_code == 200:
             json_data = response.json()
@@ -38,20 +40,23 @@ class ApiWrapper:
             )
 
     def answer(self, chat_id, prompt):
-        requests.post(
+        self.client.post(
             f"{self.api_url}/chats/{chat_id}/start",
             params={"user": self.user},
         )
-        raw_result = requests.post(
+        raw_result = self.client.post(
             f"{self.api_url}/chats/{chat_id}/answer",
             params={"user": self.user, "prompt": prompt},
         )
 
         return raw_result.json()["message"]["content"]
 
-    def get_components(self):
-        response = requests.get(self.api_url + "/components?user=" + self.user)
-        return response.json()
+    async def get_components_async(self):
+        async with httpx.AsyncClient() as async_client:
+            response = await async_client.get(
+                self.api_url + "/components?user=" + self.user
+            )
+            return response.json()
 
     def replace_emoji_shortcodes_with_emoji(self, markdown_string):
         # Define a regular expression pattern to find emoji shortcodes

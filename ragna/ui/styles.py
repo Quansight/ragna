@@ -13,6 +13,7 @@ MAIN_COLOR = "#10BBE5"
 # set modal height (in x heights)
 MODAL_MIN_HEIGHT = 70
 MODAL_MAX_HEIGHT = 300
+MODAL_WIDTH = 800
 
 
 APP_RAW = """
@@ -46,4 +47,17 @@ div.card-margin {
 div#content {
     height: calc(100vh);
 }
+
+/* Fix the size of the modal */
+#pn-Modal {
+    --dialog-width: 800px !important;
+    --dialog-height:500px !important; 
+}
+
+/* Hide the default close button of the modal */
+.pn-modal-close {
+    display: none !important;
+}
+
+
 """

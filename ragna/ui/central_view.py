@@ -2,7 +2,7 @@ import panel as pn
 import param
 
 
-pn.widgets.ChatEntry._stylesheets = pn.widgets.ChatEntry._stylesheets + [
+chat_entry_stylesheets = [
     """ :host .right, :host .center, :host .chat-entry {
                             width:100% !important;
                     }
@@ -29,7 +29,25 @@ pn.widgets.ChatEntry._stylesheets = pn.widgets.ChatEntry._stylesheets + [
                         border: 1px solid rgb(234, 234, 234);
                     }
                 """,
+    """
+                    :host .avatar {
+                        margin-top:0px;
+                    }
+                """,
 ]
+pn.widgets.ChatEntry._stylesheets = (
+    pn.widgets.ChatEntry._stylesheets + chat_entry_stylesheets
+)
+
+
+def chat_entry_value_renderer(txt, role):
+    return pn.pane.Markdown(
+        txt,
+        css_classes=["chat-entry-user" if role == "user" else "chat-entry-ragna"],
+        stylesheets=[
+            " \n                    table {\n                        margin-top:10px;\n                        margin-bottom:10px;\n                        \n                    }\n                "
+        ],
+    )
 
 
 def build_chat_entry(role, txt, timestamp=None):
@@ -38,23 +56,7 @@ def build_chat_entry(role, txt, timestamp=None):
         # user="User" if m["role"] == "user" else "Ragna (Chat GPT 3.5)",
         # actually looking better with empty user name than show_user=False
         # show_user=False,
-        renderers=[
-            lambda txt: pn.pane.Markdown(
-                txt,
-                css_classes=[
-                    "chat-entry-user" if role == "user" else "chat-entry-ragna"
-                ],
-                stylesheets=[
-                    """ 
-                    table {
-                        margin-top:10px;
-                        margin-bottom:10px;
-                        
-                    }
-                """
-                ],
-            )
-        ],
+        renderers=[lambda txt: chat_entry_value_renderer(txt, role=role)],
         css_classes=[
             "chat-entry",
             "chat-entry-user" if role == "user" else "chat-entry-ragna",

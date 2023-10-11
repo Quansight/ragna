@@ -6,7 +6,8 @@ MODAL_HACK = f"""
 document.getElementById("pn-Modal").style.setProperty(
     "--dialog-height",
     "{MODAL_MIN_HEIGHT}ex",
-      "important")
+      "important");
+
 """
 
 TOGGLE_CARD = f"""

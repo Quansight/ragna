@@ -4,6 +4,7 @@ import panel as pn
 import param
 
 import ragna.ui.js as js
+import ragna.ui.styles as ui
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -15,14 +16,18 @@ def get_default_chat_name(timezone_offset=None):
 
 
 class ModalConfiguration(pn.viewable.Viewer):
-    chat_configs = param.List()
     chat_name = param.String()
     start_button_callback = param.Callable()
     cancel_button_callback = param.Callable()
     #
+    source_storage_name = param.Selector()
+    assistant_name = param.Selector()
 
-    def __init__(self, **params):
+    def __init__(self, api_wrapper, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
+
+        self.api_wrapper = api_wrapper
+
         # TODO: sort out documents within this class
 
         self.document_uploader = pn.widgets.FileInput(
@@ -62,6 +67,29 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
+    async def model_section(self):
+        components = await self.api_wrapper.get_components_async()
+
+        self.param.assistant_name.objects = components["assistants"]
+        self.param.source_storage_name.objects = components["source_storages"]
+
+        if len(components["assistants"]) > 0:
+            self.assistant_name = components["assistants"][0]
+
+        if len(components["source_storages"]) > 0:
+            self.source_storage_name = components["source_storages"][0]
+
+        return pn.Row(
+            pn.Column(
+                pn.pane.HTML("<b>Model</b>"),
+                pn.widgets.Select.from_param(self.param.assistant_name, name=""),
+            ),
+            pn.Column(
+                pn.pane.HTML("<b>Source storage</b>"),
+                pn.widgets.Select.from_param(self.param.source_storage_name, name=""),
+            ),
+        )
+
     def __panel__(self):
         def divider():
             return pn.layout.Divider(styles={"padding": "0em 2em 0em 2em"})
@@ -69,7 +97,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         return pn.Column(
             pn.pane.HTML(
                 f"""<h2>Start a new chat</h2>
-                         Setup the configurations for your new chat.<br />
+                         Let's set up the configurations for your new chat !<br />
                          <script>{js.MODAL_HACK}</script>
                          """,
             ),
@@ -84,12 +112,12 @@ class ModalConfiguration(pn.viewable.Viewer):
                 show_name=False,
             ),
             divider(),
-            *self.chat_configs,
+            self.model_section,
             divider(),
             self.upload_files_label,
             self.upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
-            min_width=800,
+            min_width=ui.MODAL_WIDTH,
             sizing_mode="stretch_both",
             height_policy="max",
         )

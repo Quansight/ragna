@@ -5,10 +5,7 @@ import ragna.ui.js as js
 
 import ragna.ui.styles as ui
 from ragna.ui.central_view import CentralView
-
-from ragna.ui.chat_config import ChatConfig
 from ragna.ui.left_sidebar import LeftSidebar
-
 from ragna.ui.modal import ModalConfiguration
 from ragna.ui.right_sidebar import RightSidebar
 
@@ -20,21 +17,24 @@ class MainPage(param.Parameterized):
         super().__init__()
         self.api_wrapper = api_wrapper
 
+        self.modal = None
         self.central_view = None
         self.left_sidebar = None
         self.right_sidebar = None
 
     # Modal and callbacks
     def open_modal(self, template):
-        self.modal = ModalConfiguration(
-            chat_configs=[],  # self.chat_configs,
-            start_button_callback=lambda event, template=template: self.on_click_start_conv_button(
-                event, template
-            ),
-            cancel_button_callback=lambda event, template=template: self.on_click_cancel_button(
-                event, template
-            ),
-        )
+        if self.modal is None:
+            self.modal = ModalConfiguration(
+                api_wrapper=self.api_wrapper,
+                start_button_callback=lambda event, template=template: self.on_click_start_conv_button(
+                    event, template
+                ),
+                cancel_button_callback=lambda event, template=template: self.on_click_cancel_button(
+                    event, template
+                ),
+            )
+
         template.modal.objects[0].objects = [self.modal]
         template.open_modal()
 
@@ -65,17 +65,6 @@ class MainPage(param.Parameterized):
             {"current_chat_id": "current_chat_id"},
             on_error=lambda x: print(f"error sync on {x}"),
         )
-
-        # TODO : retrieve this from the API
-        print(self.api_wrapper.get_components())
-        self.chat_configs = [
-            ChatConfig(
-                # components=self.components,
-                source_storage_names=["source", "source2"],
-                llm_names=["gpt"],
-                extra={"some config": "value", "other_config": 42},
-            )
-        ]
 
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
