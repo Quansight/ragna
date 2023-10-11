@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import datetime
-from uuid import UUID
+import uuid
 
-from pydantic import BaseModel, HttpUrl, validator
-
-import ragna
+from pydantic import BaseModel, Field, HttpUrl
 
 import ragna.core
 
 
+class Components(BaseModel):
+    source_storages: list[str]
+    assistants: list[str]
+
+
 class Document(BaseModel):
-    id: ragna.core.RagnaId
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
 
 
@@ -21,97 +24,37 @@ class DocumentUploadInfo(BaseModel):
     document: Document
 
 
+# two reasons not to subclass
+# 1. we use the Document model rather than split on core
+# 2. core includes actual document content that we don't want to leak
 class Source(BaseModel):
-    id: ragna.core.RagnaId
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     document: Document
     location: str
 
-    @classmethod
-    def from_core_source(cls, core_source: ragna.core.Source) -> Source:
-        return cls(
-            id=core_source.id,
-            document=Document(
-                id=core_source.document_id, name=core_source.document_name
-            ),
-            location=core_source.location,
-        )
+
+class Message(ragna.core.Message):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    timestamp: datetime.datetime = Field(
+        default_factory=datetime.datetime.now(tz=datetime.timezone.utc)
+    )
 
 
-class Message(BaseModel):
-    id: ragna.core.RagnaId
-    role: ragna.core.MessageRole
-    content: str
-    sources: list[Source]
-    timestamp: datetime.datetime
-
-    @classmethod
-    def from_core_message(cls, core_message: ragna.core.Message) -> Message:
-        return cls(
-            id=core_message.id,
-            role=core_message.role,
-            content=core_message.content,
-            sources=[Source.from_core_source(s) for s in core_message.sources],
-            timestamp=core_message.timestamp,
-        )
-
-
-class ChatMetadataBase(BaseModel):
+class ChatMetadata(BaseModel):
     name: str
     source_storage: str
     assistant: str
     params: dict
-
-
-class ChatMetadataCreate(ChatMetadataBase):
-    # For some reason list[RagnaId] does not work and will get parsed into list[UUID].
-    # Thus, we use a validator below to do the conversion.
-    document_ids: list[ragna.core.RagnaId]
-
-    @validator("document_ids")
-    def _uuid_to_ragna_id(cls, document_ids: list[UUID]) -> list[ragna.core.RagnaId]:
-        return [ragna.core.RagnaId.from_uuid(u) for u in document_ids]
-
-
-class ChatMetadata(ChatMetadataBase):
     documents: list[Document]
-
-    @classmethod
-    def from_core_chat(cls, core_chat: ragna.core.Chat) -> ChatMetadata:
-        return cls(
-            name=core_chat.name,
-            documents=[Document.from_core_document(d) for d in core_chat.documents],
-            source_storage=core_chat.source_storage.display_name(),
-            assistant=core_chat.assistant.display_name(),
-            params=core_chat.params,
-        )
 
 
 class Chat(BaseModel):
-    id: ragna.core.RagnaId
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     metadata: ChatMetadata
-    messages: list[Message]
-    started: bool
-    closed: bool
-
-    @classmethod
-    def from_core_chat(cls, core_chat: ragna.core.Chat) -> Chat:
-        return cls(
-            id=core_chat.id,
-            metadata=ChatMetadata.from_core_chat(core_chat),
-            messages=[Message.from_core_message(m) for m in core_chat.messages],
-            started=core_chat._started,
-            closed=core_chat._closed,
-        )
-
-    def to_core_chat(self, rag: ragna.core.Rag) -> ragna.core.Chat:
-        pass
+    messages: list[Message] = Field(default_factory=list)
+    prepared: bool = False
 
 
-class AnswerOutput(BaseModel):
+class MessageOutput(BaseModel):
     message: Message
     chat: Chat
-
-
-class Components(BaseModel):
-    source_storages: list[str]
-    assistants: list[str]

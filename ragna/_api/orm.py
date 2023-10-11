@@ -1,21 +1,7 @@
 from sqlalchemy import Column, ForeignKey, Table, types
 from sqlalchemy.orm import DeclarativeBase, relationship
 
-from ragna.core import MessageRole, RagnaId
-
-
-class Id(types.TypeDecorator):
-    impl = types.Uuid
-
-    cache_ok = True
-
-    def process_bind_param(self, value, dialect):
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return None
-        return RagnaId.from_uuid(value)
+from ragna.core import MessageRole
 
 
 class Base(DeclarativeBase):
@@ -28,7 +14,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Id, primary_key=True)
+    id = Column(types.UUID, primary_key=True)
     name = Column(types.String)
 
 
@@ -43,7 +29,7 @@ document_chat_association_table = Table(
 class Document(Base):
     __tablename__ = "documents"
 
-    id = Column(Id, primary_key=True)
+    id = Column(types.UUID, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
@@ -63,7 +49,7 @@ class Document(Base):
 class Chat(Base):
     __tablename__ = "chats"
 
-    id = Column(Id, primary_key=True)
+    id = Column(types.UUID, primary_key=True)
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
     documents = relationship(
@@ -75,8 +61,7 @@ class Chat(Base):
     assistant = Column(types.String)
     params = Column(types.JSON)
     messages = relationship("Message")
-    started = Column(types.Boolean)
-    closed = Column(types.Boolean)
+    prepared = Column(types.Boolean)
 
 
 source_message_association_table = Table(
@@ -90,7 +75,7 @@ source_message_association_table = Table(
 class Source(Base):
     __tablename__ = "sources"
 
-    id = Column(Id, primary_key=True)
+    id = Column(types.UUID, primary_key=True)
 
     document_id = Column(ForeignKey("documents.id"))
     document = relationship("Document", back_populates="sources")
@@ -107,7 +92,7 @@ class Source(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(Id, primary_key=True)
+    id = Column(types.UUID, primary_key=True)
     chat_id = Column(ForeignKey("chats.id"))
     content = Column(types.String)
     role = Column(types.Enum(MessageRole))
@@ -117,4 +102,4 @@ class Message(Base):
         secondary=source_message_association_table,
         back_populates="messages",
     )
-    timestamp = Column(types.DateTime)
+    timestamp = Column(types.DATETIME)

@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import functools
+
+import uuid
 from typing import Any, Callable
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker as _sessionmaker
 
-from ragna.core import Message, RagnaException, RagnaId
+from ragna.core import RagnaException
 
 from . import orm, schemas
 
@@ -18,7 +20,7 @@ def get_sessionmaker(database_url: str) -> Callable[[], Session]:
 
 
 @functools.lru_cache(maxsize=1024)
-def _get_user_id(session: Session, username: str) -> RagnaId:
+def _get_user_id(session: Session, username: str) -> uuid.UUID:
     user = session.execute(
         select(orm.User).where(orm.User.name == username)
     ).scalar_one_or_none()
@@ -26,7 +28,7 @@ def _get_user_id(session: Session, username: str) -> RagnaId:
     if user is None:
         # Add a new user if the current username is not registered yet. Since this is
         # behind the authentication layer, we don't need any extra security here.
-        user = orm.User(id=RagnaId.make(), name=username)
+        user = orm.User(id=uuid.uuid4(), name=username)
         session.add(user)
         session.commit()
 
@@ -53,7 +55,7 @@ def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
 
 @functools.lru_cache(maxsize=1024)
 def get_document(
-    session: Session, *, user: str, id: RagnaId
+    session: Session, *, user: str, id: uuid.UUID
 ) -> tuple[schemas.Document, dict[str, Any]]:
     document = session.execute(
         select(orm.Document).where(
@@ -84,8 +86,7 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat):
             source_storage=chat.metadata.source_storage,
             assistant=chat.metadata.assistant,
             params=chat.metadata.params,
-            started=chat.started,
-            closed=chat.started,
+            prepared=chat.prepared,
         )
     )
     session.commit()
@@ -123,8 +124,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             params=chat.params,
         ),
         messages=messages,
-        started=chat.started,
-        closed=chat.closed,
+        prepared=chat.prepared,
     )
 
 
@@ -139,7 +139,7 @@ def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
     ]
 
 
-def _get_orm_chat(session: Session, *, user: str, id: RagnaId) -> orm.Chat:
+def _get_orm_chat(session: Session, *, user: str, id: uuid.UUID) -> orm.Chat:
     chat = session.execute(
         select(orm.Chat).where(
             (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
@@ -150,73 +150,59 @@ def _get_orm_chat(session: Session, *, user: str, id: RagnaId) -> orm.Chat:
     return chat
 
 
-def get_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
+def get_chat(session: Session, *, user: str, id: uuid.UUID) -> schemas.Chat:
     return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id))
 
 
-def start_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
-    chat = _get_orm_chat(session, user=user, id=id)
-    chat.started = True
-    session.commit()
-    session.refresh(chat)
-    return _orm_to_schema_chat(chat)
-
-
-def close_chat(session: Session, *, user: str, id: RagnaId) -> schemas.Chat:
-    chat = _get_orm_chat(session, user=user, id=id)
-    chat.closed = True
-    session.commit()
-    session.refresh(chat)
-    return _orm_to_schema_chat(chat)
-
-
-def add_message(
-    session: Session,
-    message: Message,
-    *,
-    user: str,
-    chat_id: RagnaId,
-):
-    chat_state = session.execute(
-        select(orm.Chat).where(
-            (orm.Chat.user_id == _get_user_id(session, user)) & (orm.Chat.id == chat_id)
-        )
+def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Source:
+    orm_source = session.execute(
+        select(orm.Source).where(orm.Source.id == source.id)
     ).scalar_one_or_none()
-    if chat_state is None:
-        raise RagnaException
 
-    if message.sources is not None:
-        sources = {s.id: s for s in message.sources}
-        source_states = list(
-            session.execute(select(orm.Source).where(orm.Source.id.in_(sources.keys())))
-            .scalars()
-            .all()
+    if orm_source is None:
+        orm_source = orm.Source(
+            id=source.id,
+            document_id=source.document.id,
+            location=source.location,
         )
-        missing_source_ids = sources.keys() - {state.id for state in source_states}
-        if missing_source_ids:
-            for id in missing_source_ids:
-                source = sources[id]
-                source_state = orm.Source(
-                    id=RagnaId.make(),
-                    document_id=source.document_id,
-                    document_state=self.get_document(user=user, id=source.document_id),
-                    location=source.location,
-                )
-                session.add(source_state)
-                source_states.append(source_state)
-    else:
-        source_states = []
+        session.add(orm_source)
+        session.commit()
+        session.refresh(orm_source)
 
-    message_state = orm.Message(
-        id=message.id,
-        chat_id=chat_state.id,
-        content=message.content,
-        role=message.role,
-        source_states=source_states,
-        timestamp=message.timestamp,
-    )
-    session.add(message_state)
+    return orm_source
 
-    chat_state.message_states.append(message_state)
 
-    session.commit()
+def _schema_to_orm_message(
+    session: Session, chat_id: uuid.UUID, message: schemas.Message
+) -> orm.Message:
+    orm_message = session.execute(
+        select(orm.Message).where(orm.Message.id == message.id)
+    ).scalar_one_or_none()
+
+    if orm_message is None:
+        orm_message = orm.Message(
+            id=message.id,
+            chat_id=chat_id,
+            content=message.content,
+            role=message.role,
+            sources=[
+                _schema_to_orm_source(session, source=source)
+                for source in message.sources
+            ],
+            timestamp=message.timestamp,
+        )
+        session.add(orm_message)
+        session.commit()
+        session.refresh(orm_message)
+
+    return orm_message
+
+
+def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
+    orm_chat = _get_orm_chat(session, user=user, id=chat.id)
+
+    orm_chat.prepared = chat.prepared
+    orm_chat.messages = [
+        _schema_to_orm_message(session, chat_id=chat.id, message=message)
+        for message in chat.messages
+    ]

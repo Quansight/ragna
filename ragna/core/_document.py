@@ -3,10 +3,11 @@ from __future__ import annotations
 import abc
 import dataclasses
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Iterator, Optional, TYPE_CHECKING
 
-from ._core import RagnaException, RagnaId
+from ._core import RagnaException
 from ._requirement import PackageRequirement, Requirement, RequirementMixin
 
 if TYPE_CHECKING:
@@ -17,12 +18,10 @@ class Document(abc.ABC):
     def __init__(
         self,
         *,
-        id: Optional[RagnaId] = None,
         name: str,
         metadata: dict[str, Any],
         page_extractor: Optional[PageExtractor] = None,
     ):
-        self.id = id
         self.name = name
         self.metadata = metadata
 
@@ -84,7 +83,7 @@ class LocalDocument(Document):
 
     @classmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: RagnaId, name: str
+        cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("PyJWT").is_available():
             raise RagnaException()
@@ -107,7 +106,7 @@ class LocalDocument(Document):
         return url, data, metadata
 
     @classmethod
-    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, RagnaId]:
+    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, uuid.UUID]:
         import jwt
 
         try:
@@ -120,7 +119,7 @@ class LocalDocument(Document):
             raise RagnaException(
                 "Token expired", http_status_code=401, http_detail=RagnaException.EVENT
             )
-        return payload["user"], RagnaId(payload["id"])
+        return payload["user"], uuid.UUID(payload["id"])
 
     @property
     def path(self) -> Path:

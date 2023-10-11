@@ -1,7 +1,8 @@
 import textwrap
+import uuid
 from typing import Any
 
-from ragna.core import Document, RagnaId, Source, SourceStorage
+from ragna.core import Document, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -11,9 +12,9 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def __init__(self, config):
         super().__init__(config)
-        self._storage: dict[RagnaId, Any] = {}
+        self._storage: dict[uuid.UUID, Any] = {}
 
-    def store(self, documents: list[Document], *, chat_id: RagnaId) -> None:
+    def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
         self._storage[chat_id] = [
             {
                 "document_id": str(document.id),
@@ -27,11 +28,9 @@ class RagnaDemoSourceStorage(SourceStorage):
             for document in documents
         ]
 
-    def retrieve(self, prompt: str, *, chat_id: RagnaId) -> list[Source]:
+    def retrieve(self, prompt: str, *, chat_id: uuid.UUID) -> list[Source]:
         return [
             Source(
-                id=RagnaId.make(),
-                document_id=RagnaId(source["document_id"]),
                 document_name=source["document_name"],
                 location=source["location"],
                 content=source["content"],

@@ -1,4 +1,5 @@
 import functools
+import uuid
 from typing import Annotated
 
 import aiofiles
@@ -7,7 +8,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 import ragna
 import ragna.core
 
-from ragna.core import Rag, RagnaException, RagnaId
+from ragna.core import Rag, RagnaException
 
 from . import database, schemas
 
@@ -75,7 +76,7 @@ def api(config):
         user: UserDependency,
         name: str,
     ) -> schemas.DocumentUploadInfo:
-        document = schemas.Document(id=RagnaId.make(), name=name)
+        document = schemas.Document(name=name)
         url, data, metadata = await config.document_class.get_upload_info(
             config=config, user=user, id=document.id, name=document.name
         )
@@ -108,31 +109,46 @@ def api(config):
 
         return document
 
+    def schema_to_core_chat(
+        session, *, user: str, chat: schemas.Chat
+    ) -> ragna.core.Chat:
+        documents = []
+        for document in chat.metadata.documents:
+            _, metadata = database.get_document(session, user=user, id=document.id)
+            documents.append(
+                rag.config.document_class(
+                    id=document.id, name=document.name, metadata=metadata
+                )
+            )
+
+        core_chat = rag.chat(
+            documents=documents,
+            source_storage=chat.metadata.source_storage,
+            assitant=chat.metadata.assistant,
+            user=user,
+            chat_id=chat.id,
+            chat_name=chat.metadata.name,
+            **chat.metadata.params,
+        )
+        # FIXME
+        core_chat.messages = []
+        core_chat._prepared = chat.prepared
+
+        return core_chat
+
     @app.post("/chats")
     @process_ragna_exception
     async def create_chat(
         session: SessionDependency,
         user: UserDependency,
-        chat_metadata: schemas.ChatMetadataCreate,
+        chat_metadata: schemas.ChatMetadata,
     ) -> schemas.Chat:
-        documents = []
-        core_documents = []
-        for id in chat_metadata.document_ids:
-            document, metadata = database.get_document(session, user=user, id=id)
-            documents.append(document)
-            core_documents.append(
-                rag.config.document_class(id=id, name=document.name, metadata=metadata)
-            )
+        chat = schemas.Chat(metadata=chat_metadata)
 
-        core_chat = await rag.new_chat(
-            name=chat_metadata.name,
-            documents=core_documents,
-            source_storage=chat_metadata.source_storage,
-            assistant=chat_metadata.assistant,
-            **chat_metadata.params,
-        )
+        # Although we don't need the actual object here, we use this to validate the
+        # documents and metadata
+        schema_to_core_chat(session, user=user, chat=chat)
 
-        chat = schemas.Chat.from_core_chat(core_chat)
         database.add_chat(session, user=user, chat=chat)
         return chat
 
@@ -146,35 +162,42 @@ def api(config):
     @app.get("/chats/{id}")
     @process_ragna_exception
     async def get_chat(
-        session: SessionDependency, user: UserDependency, id: RagnaId
+        session: SessionDependency, user: UserDependency, id: schemas.ID
     ) -> schemas.Chat:
         return database.get_chat(session, user=user, id=id)
 
-    @app.put("/chats/{id}/start")
+    @app.put("/chats/{id}/prepare")
     @process_ragna_exception
-    async def start_chat(
-        session: SessionDependency, user: UserDependency, id: RagnaId
-    ) -> schemas.Chat:
-        return database.start_chat(session, user=user, id=id)
+    async def prepare_chat(
+        session: SessionDependency, user: UserDependency, id: uuid.UUID
+    ) -> schemas.MessageOutput:
+        chat = database.get_chat(session, user=user, id=id)
 
-    @app.put("/chats/{id}/close")
-    @process_ragna_exception
-    async def close_chat(
-        session: SessionDependency, user: UserDependency, id: RagnaId
-    ) -> schemas.Chat:
-        return database.start_chat(session, user=user, id=id)
+        core_chat = schema_to_core_chat(session, user=user, chat=chat)
+        welcome = await core_chat.prepare()
+        chat.prepared = True
+        chat.messages.append(schemas.Message.parse_obj(welcome))
+
+        database.update_chat(session, user=user, chat=chat)
+
+        return schemas.MessageOutput(message=answer, chat=chat)
 
     @app.post("/chats/{id}/answer")
     @process_ragna_exception
     async def answer(
-        session: SessionDependency, user: UserDependency, id: RagnaId, prompt: str
-    ) -> schemas.AnswerOutput:
-        # we need to add the prompt as well as the output message
-
-        core_chat = database.get_chat(session, user=user, id=id).to_core_chat(rag)
-        return schemas.AnswerOutput(
-            message=schemas.Message.from_core_message(await core_chat.answer(prompt)),
-            chat=schemas.Chat.from_core_chat(core_chat),
+        session: SessionDependency, user: UserDependency, id: uuid.UUID, prompt: str
+    ) -> schemas.MessageOutput:
+        chat = database.get_chat(session, user=user, id=id)
+        chat.messages.append(
+            schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
         )
+
+        core_chat = schema_to_core_chat(session, user=user, chat=chat)
+        answer = await core_chat.answer(prompt)
+        chat.messages.append(schemas.Message.parse_obj(answer))
+
+        database.update_chat(session, user=user, chat=chat)
+
+        return schemas.MessageOutput(message=answer, chat=chat)
 
     return app

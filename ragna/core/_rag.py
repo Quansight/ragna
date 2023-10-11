@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import datetime
-import itertools
-from collections import defaultdict
-from typing import Any, Optional, Sequence, Type, Union
 
-from pydantic import BaseModel, create_model, Extra
+import itertools
+import os
+import uuid
+from collections import defaultdict
+from typing import Any, Iterable, Optional, Type, Union
+
+from pydantic import BaseModel, create_model, Extra, Field
 
 from ._assistant import Assistant, Message, MessageRole
 
-from ._component import RagComponent
 from ._config import Config
-from ._core import RagnaException, RagnaId
+from ._core import RagnaException
 from ._document import Document
 from ._queue import Queue
 from ._source_storage import SourceStorage
@@ -29,35 +31,94 @@ class Rag:
 
         self._queue = Queue(self.config, load_components=load_components)
 
-        self._chats: dict[(str, str), Chat] = {}
-
-    async def new_chat(
+    def chat(
         self,
-        *,
-        name: Optional[str] = None,
-        documents: Sequence[Any],
-        source_storage: Union[Type[RagComponent], RagComponent, str],
-        assistant: Union[Type[RagComponent], RagComponent, str],
-        **params,
+        documents: Iterable[Any],
+        source_storage: Union[Type[SourceStorage], SourceStorage, str],
+        assistant: Union[Type[Assistant], Assistant, str],
+        **params: Any,
     ):
-        documents = self._parse_documents(documents)
-        source_storage = self._queue.parse_component(source_storage, load=True)
-        assistant = self._queue.parse_component(assistant, load=True)
-
         return Chat(
-            queue=self._queue,
-            name=name,
+            self,
             documents=documents,
             source_storage=source_storage,
             assistant=assistant,
             **params,
         )
 
-    def _parse_documents(self, documents: Sequence[Any]) -> list[Document]:
+
+class Chat:
+    def __init__(
+        self,
+        rag: Rag,
+        *,
+        documents: Iterable[Any],
+        source_storage: Union[Type[SourceStorage], SourceStorage, str],
+        assistant: Union[Type[Assistant], Assistant, str],
+        **params: Any,
+    ):
+        self._rag = rag
+
+        self.documents = self._parse_documents(documents)
+        # FIXME: doesn't this load on the main thread???
+        self.source_storage = self._rag._queue.parse_component(
+            source_storage, load=True
+        )
+        self.assistant = self._rag._queue.parse_component(assistant, load=True)
+
+        self.params = params
+        self._unpacked_params = self._unpack_chat_params(params)
+
+        self._prepared = False
+        self._messages = []
+
+    async def prepare(self):
+        if self._prepared:
+            raise RagnaException(
+                "Chat is already prepared",
+                chat=self,
+                http_status_code=400,
+                detail=RagnaException.EVENT,
+            )
+
+        await self._enqueue(self.source_storage, "store", self.documents)
+        self._prepared = True
+
+        welcome = Message(
+            content="How can I help you with the documents?",
+            role=MessageRole.SYSTEM,
+        )
+        self._messages.append(welcome)
+        return welcome
+
+    async def answer(self, prompt: str):
+        if not self._prepared:
+            raise RagnaException(
+                "Chat is not prepared",
+                chat=self,
+                http_status_code=400,
+                detail=RagnaException.EVENT,
+            )
+
+        prompt = Message(content=prompt, role=MessageRole.USER)
+        self._messages.append(prompt)
+
+        sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
+        content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
+
+        answer = Message(
+            content=content,
+            role=MessageRole.ASSISTANT,
+            sources=sources,
+        )
+        self._messages.append(answer)
+        return answer
+
+    def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self.config.document_class(document)
+                document = self._rag.config.document_class(document)
 
             if not document.is_available():
                 raise RagnaException(
@@ -70,101 +131,12 @@ class Rag:
             documents_.append(document)
         return documents_
 
-
-class Chat:
-    def __init__(
-        self,
-        *,
-        queue: Queue,
-        name: Optional[str] = None,
-        documents: list[Document],
-        source_storage: Type[SourceStorage],
-        assistant: Type[Assistant],
-        messages: Optional[list[Message]] = None,
-        **params: Any,
-    ):
-        self._queue = queue
-        self.name = name or f"{datetime.datetime.now():%c}"
-
-        self.documents = documents
-        self.source_storage = source_storage
-        self.assistant = assistant
-
-        self.params = params
-        self._unpacked_params = self._unpack_chat_params(params)
-
-        self.messages = messages or []
-
-        self._started = False
-        self._closed = False
-
-    async def start(self):
-        if self._started:
-            raise RagnaException(
-                "Chat is already started",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-        elif self._closed:
-            raise RagnaException(
-                "Chat is closed and cannot be restarted",
-                chat=self,
-                http_status_code=400,
-                http_detail=RagnaException.EVENT,
-            )
-
-        await self._enqueue(self.source_storage, "store", self.documents)
-        self._started = True
-
-        welcome = Message(
-            id=RagnaId.make(),
-            content="How can I help you with the documents?",
-            role=MessageRole.SYSTEM,
-        )
-        self.messages.append(welcome)
-
-        return self
-
-    async def close(self):
-        self._closed = True
-        return self
-
-    async def answer(self, prompt: str):
-        if not self._started:
-            raise RagnaException(
-                "Chat is not started",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-        elif self._closed:
-            raise RagnaException(
-                "Chat is closed",
-                chat=self,
-                http_status_code=400,
-                http_detail=RagnaException.EVENT,
-            )
-
-        prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
-        self.messages.append(prompt)
-
-        sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
-        content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
-
-        answer = Message(
-            id=RagnaId.make(),
-            content=content,
-            role=MessageRole.ASSISTANT,
-            sources=sources,
-        )
-        self.messages.append(answer)
-        return answer
-
     class _SpecialChatParams(BaseModel):
-        user: str
-        chat_id: RagnaId
-        chat_name: str
+        user: str = Field(default_factory=os.getlogin)
+        chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+        chat_name: str = Field(
+            default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+        )
 
     def _unpack_chat_params(self, params):
         source_storage_models = self.source_storage._models()
@@ -176,13 +148,7 @@ class Chat:
             *assistant_models.values(),
         )
 
-        chat_model = ChatModel(
-            user=self._user,
-            chat_id=self.id,
-            chat_name=self.name,
-            **params,
-        )
-        chat_params = chat_model.dict(exclude_none=True)
+        chat_params = ChatModel(**params).dict(exclude_none=True)
         return {
             component_and_action: model(**chat_params).dict()
             for component_and_action, model in itertools.chain(
@@ -231,8 +197,5 @@ class Chat:
             raise exc
 
     async def __aenter__(self):
-        await self.start()
+        await self.prepare()
         return self
-
-    async def __aexit__(self, *_):
-        await self.close()

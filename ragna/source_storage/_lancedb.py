@@ -1,12 +1,6 @@
-from ragna.core import (
-    Document,
-    PackageRequirement,
-    RagnaId,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+import uuid
 
+from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
@@ -57,7 +51,7 @@ class LanceDBSourceStorage(SourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
@@ -87,7 +81,7 @@ class LanceDBSourceStorage(SourceStorage):
         self,
         prompt: str,
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
@@ -103,8 +97,6 @@ class LanceDBSourceStorage(SourceStorage):
             take_sources_up_to_max_tokens(
                 (
                     Source(
-                        id=RagnaId.make(),
-                        document_id=RagnaId(result["document_id"]),
                         document_name=result["document_name"],
                         location=result["page_numbers"],
                         content=result["text"],

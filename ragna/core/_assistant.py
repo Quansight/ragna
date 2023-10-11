@@ -1,11 +1,10 @@
 import abc
-import datetime
+
 import enum
 
-from typing import Optional
+from pydantic import BaseModel, Field
 
 from ._component import RagComponent
-from ._core import RagnaId
 from ._source_storage import Source
 
 
@@ -15,22 +14,12 @@ class MessageRole(enum.Enum):
     ASSISTANT = "assistant"
 
 
-class Message:
-    def __init__(
-        self,
-        *,
-        id: RagnaId,
-        content: str,
-        role: MessageRole,
-        sources: Optional[list[Source]] = None,
-    ):
-        self.id = id
-        self.content = content
-        self.role = role
-        self.sources = sources or []
-        self.timestamp = datetime.datetime.utcnow()
+class Message(BaseModel):
+    content: str
+    role: MessageRole
+    sources: list[Source] = Field(default_factory=list)
 
-    def __repr__(self):
+    def __str__(self):
         return self.content
 
 
