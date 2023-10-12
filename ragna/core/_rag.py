@@ -33,6 +33,7 @@ class Rag:
 
     def chat(
         self,
+        *,
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage, str],
         assistant: Union[Type[Assistant], Assistant, str],
@@ -60,11 +61,8 @@ class Chat:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
-        # FIXME: doesn't this load on the main thread???
-        self.source_storage = self._rag._queue.parse_component(
-            source_storage, load=True
-        )
-        self.assistant = self._rag._queue.parse_component(assistant, load=True)
+        self.source_storage = self._rag._queue.parse_component(source_storage)
+        self.assistant = self._rag._queue.parse_component(assistant)
 
         special_params = self._SpecialChatParams().dict()
         special_params.update(params)
@@ -106,15 +104,19 @@ class Chat:
         prompt = Message(content=prompt, role=MessageRole.USER)
         self._messages.append(prompt)
 
-        sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
-        content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
+        sources = await self._enqueue(
+            self.source_storage, "retrieve", self.documents, prompt.content
+        )
 
         answer = Message(
-            content=content,
+            content=await self._enqueue(
+                self.assistant, "answer", prompt.content, sources
+            ),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
         self._messages.append(answer)
+
         return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:

@@ -98,7 +98,7 @@ def _yes_or_no(condition):
 
 
 @app.command(help="Start Ragna API")
-def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
+def api(*, config: ConfigAnnotated = "ragna.demo_config"):
     required_packages = [
         package
         for package in ["fastapi", "uvicorn"]
@@ -119,7 +119,7 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 @app.command(help="Start Ragna worker(s)")
 def worker(
     *,
-    config: ConfigAnnotated = "ragna.builtin_config",
+    config: ConfigAnnotated = "ragna.demo_config",
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
     queue = Queue(config, load_components=True)

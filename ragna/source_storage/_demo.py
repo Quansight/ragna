@@ -16,24 +16,19 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
         self._storage[chat_id] = [
-            {
-                "document_name": document.name,
-                "location": f"page {page.number}"
+            Source(
+                id=str(uuid.uuid4()),
+                document=document,
+                location=f"page {page.number}"
                 if (page := next(document.extract_pages())).number
                 else "",
-                "content": (content := textwrap.shorten(page.text, width=100)),
-                "num_tokens": len(content.split()),
-            }
+                content=(content := textwrap.shorten(page.text, width=100)),
+                num_tokens=len(content.split()),
+            )
             for document in documents
         ]
 
-    def retrieve(self, prompt: str, *, chat_id: uuid.UUID) -> list[Source]:
-        return [
-            Source(
-                document_name=source["document_name"],
-                location=source["location"],
-                content=source["content"],
-                num_tokens=source["num_tokens"],
-            )
-            for source in self._storage[chat_id]
-        ]
+    def retrieve(
+        self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
+    ) -> list[Source]:
+        return self._storage[chat_id]

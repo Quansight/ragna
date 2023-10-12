@@ -17,6 +17,13 @@ class Document(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
 
+    @classmethod
+    def from_core(cls, document: ragna.core.Document) -> Document:
+        return cls(
+            id=document.id,
+            name=document.name,
+        )
+
 
 class DocumentUploadInfo(BaseModel):
     url: HttpUrl
@@ -24,20 +31,37 @@ class DocumentUploadInfo(BaseModel):
     document: Document
 
 
-# two reasons not to subclass
-# 1. we use the Document model rather than split on core
-# 2. core includes actual document content that we don't want to leak
 class Source(BaseModel):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    # See orm.Source on why this is not a UUID
+    id: str
     document: Document
     location: str
 
+    @classmethod
+    def from_core(cls, source: ragna.core.Source) -> Source:
+        return cls(
+            id=source.id,
+            document=Document.from_core(source.document),
+            location=source.location,
+        )
 
-class Message(ragna.core.Message):
+
+class Message(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    content: str
+    role: ragna.core.MessageRole
+    sources: list[Source] = Field(default_factory=list)
     timestamp: datetime.datetime = Field(
-        default_factory=datetime.datetime.now(tz=datetime.timezone.utc)
+        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
     )
+
+    @classmethod
+    def from_core(cls, message: ragna.core.Message) -> Message:
+        return cls(
+            content=message.content,
+            role=message.role,
+            sources=[Source.from_core(source) for source in message.sources],
+        )
 
 
 class ChatMetadata(BaseModel):

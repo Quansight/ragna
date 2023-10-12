@@ -42,8 +42,6 @@ class Queue:
         self._config = config
         self._huey = self._load_huey(config.queue_database_url)
 
-        if load_components is None:
-            load_components = isinstance(self._huey, huey.MemoryHuey)
         for component in itertools.chain(
             config.registered_source_storage_classes.values(),
             config.registered_assistant_classes.values(),
@@ -86,8 +84,11 @@ class Queue:
         self,
         component: Union[Type[T], T, str],
         *,
-        load: bool = False,
+        load: Optional[bool] = None,
     ) -> Type[T]:
+        if load is None:
+            load = isinstance(self._huey, huey.MemoryHuey)
+
         if isinstance(component, type) and issubclass(component, RagComponent):
             cls = component
             instance = None

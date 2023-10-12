@@ -14,7 +14,7 @@ from . import orm, schemas
 
 
 def get_sessionmaker(database_url: str) -> Callable[[], Session]:
-    engine = create_engine(database_url)
+    engine = create_engine(database_url, connect_args=dict(check_same_thread=False))
     orm.Base.metadata.create_all(bind=engine)
     return _sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -63,7 +63,7 @@ def get_document(
             & (orm.Document.id == id)
         )
     ).scalar_one_or_none()
-    return _orm_to_schema_document(document), document.metadata
+    return _orm_to_schema_document(document), document.metadata_
 
 
 def add_chat(session: Session, *, user: str, chat: schemas.Chat):
@@ -82,7 +82,7 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat):
             id=chat.id,
             user_id=_get_user_id(session, user),
             name=chat.metadata.name,
-            document_states=documents,
+            documents=documents,
             source_storage=chat.metadata.source_storage,
             assistant=chat.metadata.assistant,
             params=chat.metadata.params,
@@ -178,7 +178,6 @@ def _schema_to_orm_message(
     orm_message = session.execute(
         select(orm.Message).where(orm.Message.id == message.id)
     ).scalar_one_or_none()
-
     if orm_message is None:
         orm_message = orm.Message(
             id=message.id,
@@ -206,3 +205,11 @@ def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
         _schema_to_orm_message(session, chat_id=chat.id, message=message)
         for message in chat.messages
     ]
+
+    session.commit()
+
+
+def delete_chat(session: Session, user: str, id: uuid.UUID) -> None:
+    orm_chat = _get_orm_chat(session, user=user, id=id)
+    session.delete(orm_chat)
+    session.commit()

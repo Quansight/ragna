@@ -18,10 +18,12 @@ class Document(abc.ABC):
     def __init__(
         self,
         *,
+        id: Optional[uuid.UUID] = None,
         name: str,
         metadata: dict[str, Any],
         page_extractor: Optional[PageExtractor] = None,
     ):
+        self.id = id or uuid.uuid4()
         self.name = name
         self.metadata = metadata
 
@@ -36,7 +38,7 @@ class Document(abc.ABC):
     @classmethod
     @abc.abstractmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: str, name: str
+        cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         pass
 

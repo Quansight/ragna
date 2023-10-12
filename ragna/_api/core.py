@@ -58,7 +58,7 @@ def api(config):
             assistants=list(rag.config.registered_assistant_classes),
         )
 
-    make_session = database.get_sessionmaker(config.database_url)
+    make_session = database.get_sessionmaker(config.state_database_url)
 
     def get_session():
         session = make_session()
@@ -112,25 +112,30 @@ def api(config):
     def schema_to_core_chat(
         session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
-        documents = []
-        for document in chat.metadata.documents:
-            _, metadata = database.get_document(session, user=user, id=document.id)
-            documents.append(
-                rag.config.document_class(
-                    id=document.id, name=document.name, metadata=metadata
-                )
-            )
-
         core_chat = rag.chat(
-            documents=documents,
+            documents=[
+                rag.config.document_class(
+                    id=document.id,
+                    name=document.name,
+                    metadata=database.get_document(
+                        session,
+                        user=user,
+                        id=document.id,
+                    )[0],
+                )
+                for document in chat.metadata.documents
+            ],
             source_storage=chat.metadata.source_storage,
-            assitant=chat.metadata.assistant,
+            assistant=chat.metadata.assistant,
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,
             **chat.metadata.params,
         )
-        # FIXME
+        # FIXME: We need to reconstruct the previous messages here. Right now this is
+        #  not needed, because the chat itself never accesses past messages. However,
+        #  if we implement a chat history feature, i.e. passing past messages to
+        #  the assistant, this becomes crucial.
         core_chat.messages = []
         core_chat._prepared = chat.prepared
 
@@ -145,8 +150,8 @@ def api(config):
     ) -> schemas.Chat:
         chat = schemas.Chat(metadata=chat_metadata)
 
-        # Although we don't need the actual object here, we use this to validate the
-        # documents and metadata
+        # Although we don't need the actual ragna.core.Chat object here,
+        # we use it to validate the documents and metadata.
         schema_to_core_chat(session, user=user, chat=chat)
 
         database.add_chat(session, user=user, chat=chat)
@@ -162,11 +167,11 @@ def api(config):
     @app.get("/chats/{id}")
     @process_ragna_exception
     async def get_chat(
-        session: SessionDependency, user: UserDependency, id: schemas.ID
+        session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> schemas.Chat:
         return database.get_chat(session, user=user, id=id)
 
-    @app.put("/chats/{id}/prepare")
+    @app.post("/chats/{id}/prepare")
     @process_ragna_exception
     async def prepare_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
@@ -174,13 +179,13 @@ def api(config):
         chat = database.get_chat(session, user=user, id=id)
 
         core_chat = schema_to_core_chat(session, user=user, chat=chat)
-        welcome = await core_chat.prepare()
+        welcome = schemas.Message.from_core(await core_chat.prepare())
         chat.prepared = True
-        chat.messages.append(schemas.Message.parse_obj(welcome))
+        chat.messages.append(welcome)
 
         database.update_chat(session, user=user, chat=chat)
 
-        return schemas.MessageOutput(message=answer, chat=chat)
+        return schemas.MessageOutput(message=welcome, chat=chat)
 
     @app.post("/chats/{id}/answer")
     @process_ragna_exception
@@ -193,11 +198,19 @@ def api(config):
         )
 
         core_chat = schema_to_core_chat(session, user=user, chat=chat)
-        answer = await core_chat.answer(prompt)
-        chat.messages.append(schemas.Message.parse_obj(answer))
+
+        answer = schemas.Message.from_core(await core_chat.answer(prompt))
+        chat.messages.append(answer)
 
         database.update_chat(session, user=user, chat=chat)
 
         return schemas.MessageOutput(message=answer, chat=chat)
+
+    @app.delete("/chats/{id}")
+    @process_ragna_exception
+    async def delete_chat(
+        session: SessionDependency, user: UserDependency, id: uuid.UUID
+    ) -> None:
+        database.delete_chat(session, user=user, id=id)
 
     return app

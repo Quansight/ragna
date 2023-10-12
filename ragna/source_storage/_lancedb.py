@@ -30,7 +30,8 @@ class LanceDBSourceStorage(SourceStorage):
         self._model = SentenceTransformer("paraphrase-albert-small-v2")
         self._schema = pa.schema(
             [
-                pa.field("document_name", pa.string()),
+                pa.field("id", pa.string()),
+                pa.field("document_id", pa.string()),
                 pa.field("page_numbers", pa.string()),
                 pa.field("text", pa.string()),
                 pa.field(
@@ -66,7 +67,8 @@ class LanceDBSourceStorage(SourceStorage):
                 table.add(
                     [
                         {
-                            "document_name": document.name,
+                            "id": str(uuid.uuid4()),
+                            "document_id": str(document.id),
                             "page_numbers": page_numbers_to_str(chunk.page_numbers),
                             "text": chunk.text,
                             self._VECTOR_COLUMN_NAME: self._model.encode(chunk.text),
@@ -77,6 +79,7 @@ class LanceDBSourceStorage(SourceStorage):
 
     def retrieve(
         self,
+        documents: list[Document],
         prompt: str,
         *,
         chat_id: uuid.UUID,
@@ -89,13 +92,19 @@ class LanceDBSourceStorage(SourceStorage):
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
         limit = int(num_tokens * 2 / chunk_size)
-        results = table.search().limit(limit).to_arrow()
+        results = (
+            table.search(vector_column_name=self._VECTOR_COLUMN_NAME)
+            .limit(limit)
+            .to_arrow()
+        )
 
+        document_map = {str(document.id): document for document in documents}
         return list(
             take_sources_up_to_max_tokens(
                 (
                     Source(
-                        document_name=result["document_name"],
+                        id=result["id"],
+                        document=document_map[result["document_id"]],
                         # For some reason adding an empty string during store() results
                         # in this field being None. Thus, we need to parse it back here.
                         # TODO: See if there is a configuration option for this

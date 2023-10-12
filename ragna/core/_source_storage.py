@@ -1,5 +1,5 @@
 import abc
-from typing import Protocol, Sequence
+from typing import Optional, Protocol, Sequence
 
 from pydantic import BaseModel
 
@@ -17,10 +17,14 @@ class Tokenizer(Protocol):
 
 
 class Source(BaseModel):
-    document_name: str
+    class Config:
+        arbitrary_types_allowed = True
+
+    id: str
+    document: Document
     location: str
-    content: str
-    num_tokens: int
+    content: Optional[str]
+    num_tokens: Optional[int]
 
 
 class SourceStorage(RagComponent, abc.ABC):
@@ -31,5 +35,5 @@ class SourceStorage(RagComponent, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def retrieve(self, prompt: str) -> list[Source]:
+    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
         ...
