@@ -121,7 +121,7 @@ def api(config):
                         session,
                         user=user,
                         id=document.id,
-                    )[0],
+                    )[1],
                 )
                 for document in chat.metadata.documents
             ],
