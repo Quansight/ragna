@@ -13,6 +13,8 @@ from ._orm import Base, ChatState, DocumentState, MessageState, SourceState, Use
 
 class State:
     def __init__(self, url: str):
+        if url == "memory":
+            url = "sqlite://"
         self._engine = create_engine(url)
         Base.metadata.create_all(self._engine)
         self._session = Session(self._engine)

@@ -7,17 +7,21 @@ from typing import Any, Optional, Sequence, Type, TypeVar, Union
 
 from pydantic import BaseModel, create_model, Extra
 
-from ._assistant import Assistant, Message, MessageRole
-
-from ._component import RagComponent
+from ._components import (
+    Assistant,
+    Component,
+    Message,
+    MessageRole,
+    ReconstructedSource,
+    SourceStorage,
+)
 from ._config import Config
-from ._core import RagnaException, RagnaId
 from ._document import Document
 from ._queue import Queue
-from ._source_storage import ReconstructedSource, SourceStorage
 from ._state import State
+from ._utils import RagnaException, RagnaId
 
-T = TypeVar("T", bound=RagComponent)
+T = TypeVar("T", bound=Component)
 
 
 class Rag:
@@ -28,9 +32,8 @@ class Rag:
         load_components: Optional[bool] = None,
     ):
         self.config = config or Config()
-        self._logger = self.config.get_logger()
 
-        self._state = State(self.config.state_database_url)
+        self._state = State(self.config.rag.database_url)
         self._queue = Queue(self.config, load_components=load_components)
 
         self._chats: dict[(str, str), Chat] = {}
@@ -41,8 +44,8 @@ class Rag:
         user: str = "Ragna",
         name: Optional[str] = None,
         documents: Sequence[Any],
-        source_storage: Union[Type[RagComponent], RagComponent, str],
-        assistant: Union[Type[RagComponent], RagComponent, str],
+        source_storage: Union[Type[Component], Component, str],
+        assistant: Union[Type[Component], Component, str],
         **params,
     ):
         documents = self._parse_documents(documents, user=user)
@@ -79,7 +82,7 @@ class Rag:
                 document = self._get_document(id=document, user=user)
             else:
                 if not isinstance(document, Document):
-                    document = self.config.document_class(document)
+                    document = self.config.rag.document(document)
 
                 if document.id is None:
                     document.id = RagnaId.make()
@@ -269,6 +272,13 @@ class Chat:
 
         sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
         content = await self._enqueue(self.assistant, "answer", prompt.content, sources)
+
+        # FIXME:
+        # return (
+        #     "I'm sorry, but I'm having trouble helping you at this time. "
+        #     "Please retry later. "
+        #     "If this issue persists, please contact your administrator."
+        # )
 
         answer = Message(
             id=RagnaId.make(),

@@ -8,7 +8,7 @@ import tomlkit
 import tomlkit.items
 
 from packaging.requirements import Requirement
-from ragna.core import Assistant, SourceStorage
+from ragna.core import Assistant, DocumentHandler, SourceStorage
 
 HERE = Path(__file__).parent
 PYPROJECT_TOML = HERE / ".." / "pyproject.toml"
@@ -36,8 +36,9 @@ def extract_manual_optional_dependencies():
 def extract_optional_dependencies():
     optional_dependencies = defaultdict(list)
     for module, cls in [
-        (ragna.source_storage, SourceStorage),
-        (ragna.assistant, Assistant),
+        (ragna.document_handlers, DocumentHandler),
+        (ragna.source_storages, SourceStorage),
+        (ragna.assistants, Assistant),
     ]:
         for obj in module.__dict__.values():
             if not (isinstance(obj, type) and issubclass(obj, cls)):

@@ -1,27 +1,31 @@
-from ._core import RagnaException, RagnaId  # usort: skip
-
-from ._config import Config
-from ._queue import task_config
-from ._requirement import (
+from ._utils import (
+    RagnaException,
+    RagnaId,
     EnvVarRequirement,
     PackageRequirement,
     Requirement,
 )  # usort: skip
 
-from ._document import Document, LocalDocument, Page, PageExtractor
-from ._source_storage import ReconstructedSource, Source, SourceStorage, Tokenizer
-from ._assistant import Assistant, Message, MessageRole  # usort: skip
+from ._document import Document, LocalDocument  # usort: skip
 
-from ._rag import Chat, Rag  # usort: skip
+from ._components import (
+    Assistant,
+    DocumentHandler,
+    Message,
+    MessageRole,
+    ReconstructedSource,
+    Source,
+    SourceStorage,
+    Page,
+)  # usort: skip
+
+from ._config import RagConfig, Config, ApiConfig, UiConfig  # usort: skip
+
+from ._queue import task_config
+from ._rag import Chat, Rag
 
 
-def _fix_module():
-    for name, obj in globals().items():
-        if name.startswith("_"):
-            continue
+from ragna._utils import _fix_module  # usort: skip
 
-        obj.__module__ = __package__
-
-
-_fix_module()
+_fix_module(globals())
 del _fix_module

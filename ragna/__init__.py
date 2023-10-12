@@ -8,36 +8,30 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import assistant, core, source_storage
+from . import assistants, core, document_handlers, source_storages, utils
 
 from .core import Config, Rag
 
 
-def demo_config():
-    demo_config = Config()
-    demo_config.register_component(source_storage.RagnaDemoSourceStorage)
-    demo_config.register_component(assistant.RagnaDemoAssistant)
-    return demo_config
-
-
-demo_config = demo_config()
-
-
 def builtin_config():
-    from ragna.core import Assistant, SourceStorage
+    from ragna.core import Assistant, DocumentHandler, RagConfig, SourceStorage
 
-    builtin_config = Config()
-    builtin_config.state_database_url = (
-        f"sqlite:///{builtin_config.local_cache_root}/ragna.db"
+    def get_available_components(module, cls):
+        return [
+            f"{obj.__module__}.{obj.__qualname__}"
+            for obj in module.__dict__.values()
+            if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available()
+        ]
+
+    config = Config()
+    config.rag = RagConfig(
+        database_url=f"sqlite:///{config.rag.local_cache_root}/ragna.db",
+        queue_url=config.rag.local_cache_root / "queue",
+        document_handlers=get_available_components(document_handlers, DocumentHandler),
+        source_storages=get_available_components(source_storages, SourceStorage),
+        assistants=get_available_components(assistants, Assistant),
     )
-    builtin_config.queue_database_url = str(builtin_config.local_cache_root / "queue")
-
-    for module, cls in [(source_storage, SourceStorage), (assistant, Assistant)]:
-        for obj in module.__dict__.values():
-            if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available():
-                builtin_config.register_component(obj)
-
-    return builtin_config
+    return config
 
 
 builtin_config = builtin_config()

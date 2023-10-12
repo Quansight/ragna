@@ -10,7 +10,6 @@ dependencies:
     - python-dotenv
     - boto3
     - pytest >=6
-    - tomlkit
     - mypy
     - pre-commit
     # documentation

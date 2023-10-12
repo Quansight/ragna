@@ -1,10 +1,10 @@
 import os
 from typing import Any
 
-from ragna.assistant import RagnaDemoAssistant
+from ragna.assistants import RagnaDemoAssistant
 
 from ragna.core import Config, Document, PackageRequirement, RagnaException
-from ragna.source_storage import RagnaDemoSourceStorage
+from ragna.source_storages import RagnaDemoSourceStorage
 
 
 class S3Document(Document):

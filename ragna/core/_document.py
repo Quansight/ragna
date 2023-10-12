@@ -1,38 +1,30 @@
 from __future__ import annotations
 
 import abc
-import dataclasses
 import time
 from pathlib import Path
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
-from ._core import RagnaException, RagnaId
-from ._requirement import PackageRequirement, Requirement, RequirementMixin
+from ._utils import PackageRequirement, RagnaException, RagnaId, RequirementsMixin
 
 if TYPE_CHECKING:
+    from ._components import DocumentHandler
     from ._config import Config
 
 
-class Document(abc.ABC):
+class Document(RequirementsMixin, abc.ABC):
     def __init__(
         self,
         *,
         id: Optional[RagnaId] = None,
         name: str,
         metadata: dict[str, Any],
-        page_extractor: Optional[PageExtractor] = None,
+        handler: DocumentHandler,
     ):
         self.id = id
         self.name = name
         self.metadata = metadata
-
-        if page_extractor is None:
-            try:
-                # FIXME:
-                page_extractor = BUILTIN_PAGE_EXTRACTORS[Path(name).suffix]()
-            except KeyError:
-                raise RagnaException()
-        self.page_extractor = page_extractor
+        self.handler = handler
 
     @classmethod
     @abc.abstractmethod
@@ -42,7 +34,7 @@ class Document(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def is_available(self) -> bool:
+    def is_readable(self) -> bool:
         ...
 
     @abc.abstractmethod
@@ -50,11 +42,10 @@ class Document(abc.ABC):
         ...
 
     def extract_pages(self):
-        yield from self.page_extractor.extract_pages(
-            name=self.name, content=self.read()
-        )
+        yield from self.handler.extract_pages(name=self.name, content=self.read())
 
 
+# FIXME: see if the S3 document is well handled
 class LocalDocument(Document):
     def __init__(
         self,
@@ -69,15 +60,17 @@ class LocalDocument(Document):
         metadata_path = metadata.get("path")
 
         if path is None and metadata_path is None:
-            raise RagnaException()
+            raise RagnaException(
+                "Path was neither passed directly or as part of the metadata"
+            )
         elif path is not None and metadata_path is not None:
-            raise RagnaException()
-        elif metadata_path is not None:
-            path = metadata_path
-        else:
+            raise RagnaException("Path was passed directly and as part of the metadata")
+        elif path is not None:
             metadata["path"] = str(path)
+
         if name is None:
-            name = Path(path).name
+            name = Path(metadata["path"]).name
+
         super().__init__(name=name, metadata=metadata, **kwargs)
 
     _JWT_ALGORITHM = "HS256"
@@ -87,7 +80,10 @@ class LocalDocument(Document):
         cls, *, config: Config, user: str, id: RagnaId, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("PyJWT").is_available():
-            raise RagnaException()
+            raise RagnaException(
+                "The package PyJWT is required to generate upload token, "
+                "but is not available."
+            )
 
         import jwt
 
@@ -99,6 +95,7 @@ class LocalDocument(Document):
                     "id": str(id),
                     "exp": time.time() + config.upload_token_ttl,
                 },
+                # FIXME: no
                 key=config.upload_token_secret,
                 algorithm=cls._JWT_ALGORITHM,
             )
@@ -126,53 +123,9 @@ class LocalDocument(Document):
     def path(self) -> Path:
         return Path(self.metadata["path"])
 
-    def is_available(self) -> bool:
+    def is_readable(self) -> bool:
         return self.path.exists()
 
     def read(self) -> bytes:
         with open(self.path, "rb") as stream:
             return stream.read()
-
-
-@dataclasses.dataclass
-class Page:
-    text: str
-    number: Optional[int] = None
-
-
-class PageExtractor(RequirementMixin, abc.ABC):
-    @abc.abstractmethod
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
-        ...
-
-
-class PageExtractors(dict):
-    def register(self, suffix: str):
-        def decorator(cls):
-            self[suffix] = cls
-            return cls
-
-        return decorator
-
-
-BUILTIN_PAGE_EXTRACTORS = PageExtractors()
-
-
-@BUILTIN_PAGE_EXTRACTORS.register(".txt")
-class TxtPageExtractor(PageExtractor):
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
-        yield Page(text=content.decode())
-
-
-@BUILTIN_PAGE_EXTRACTORS.register(".pdf")
-class PdfPageExtractor(PageExtractor):
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("pymupdf")]
-
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
-        import fitz
-
-        with fitz.Document(stream=content, filetype=Path(name).suffix) as document:
-            for number, page in enumerate(document, 1):
-                yield Page(text=page.get_text(sort=True), number=number)

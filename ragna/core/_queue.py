@@ -6,11 +6,10 @@ import huey.api
 import huey.utils
 from huey.contrib.asyncio import aget_result
 
-from ._component import RagComponent
+from ._components import Component
 from ._config import Config
 
-from ._core import RagnaException
-from ._requirement import PackageRequirement
+from ._utils import PackageRequirement, RagnaException
 
 
 def task_config(retries: int = 0, retry_delay: int = 0):
@@ -21,7 +20,7 @@ def task_config(retries: int = 0, retry_delay: int = 0):
     return decorator
 
 
-_COMPONENTS: dict[Type[RagComponent], RagComponent] = {}
+_COMPONENTS: dict[Type[Component], Component] = {}
 
 
 def execute(component, fn, args, kwargs):
@@ -37,7 +36,7 @@ class _Task(huey.api.Task):
 class Queue:
     def __init__(self, config: Config, *, load_components: Optional[bool]):
         self._config = config
-        self._huey = self._load_huey(config.queue_database_url)
+        self._huey = self._load_huey(config.rag.queue_url)
 
         if load_components is None:
             load_components = isinstance(self._huey, huey.MemoryHuey)
@@ -81,12 +80,12 @@ class Queue:
         return _huey
 
     def load_component(
-        self, component: Union[Type[RagComponent], RagComponent, str]
-    ) -> Type[RagComponent]:
-        if isinstance(component, type) and issubclass(component, RagComponent):
+        self, component: Union[Type[Component], Component, str]
+    ) -> Type[Component]:
+        if isinstance(component, type) and issubclass(component, Component):
             cls = component
             instance = None
-        elif isinstance(component, RagComponent):
+        elif isinstance(component, Component):
             cls = type(component)
             instance = component
         elif isinstance(component, str):

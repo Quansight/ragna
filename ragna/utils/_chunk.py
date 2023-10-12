@@ -1,11 +1,19 @@
 import dataclasses
 
 from collections import deque
-from typing import Deque, Iterable, Iterator, Optional, TypeVar
+from typing import Deque, Iterable, Iterator, Optional, Protocol, Sequence, TypeVar
 
-from ragna.core import Page, Tokenizer
+from ragna.core import Page
 
 T = TypeVar("T")
+
+
+class Tokenizer(Protocol):
+    def encode(self, text: str) -> list[int]:
+        ...
+
+    def decode(self, tokens: Sequence[int]) -> str:
+        ...
 
 
 # The function is adapted from more_itertools.windowed to allow a ragged last window

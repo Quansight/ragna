@@ -35,8 +35,8 @@ def main():
         json={
             "name": "Test chat",
             "document_ids": document_ids[:2],
-            "source_storage": "Ragna/DemoSourceStorage",
-            "assistant": "Ragna/DemoAssistant",
+            "source_storages": "Ragna/DemoSourceStorage",
+            "assistants": "Ragna/DemoAssistant",
         },
     ).json()
     client.post(
@@ -56,8 +56,8 @@ def main():
         json={
             "name": f"Chat {datetime.datetime.now():%x %X}",
             "document_ids": document_ids[2:4],
-            "source_storage": "Ragna/DemoSourceStorage",
-            "assistant": "Ragna/DemoAssistant",
+            "source_storages": "Ragna/DemoSourceStorage",
+            "assistants": "Ragna/DemoAssistant",
         },
     ).json()
     client.post(
@@ -78,8 +78,8 @@ def main():
         json={
             "name": "Really long chat name that likely needs to be truncated somehow. If you can read this, truncating failed :boom:",
             "document_ids": [document_ids[i] for i in [0, 2, 4]],
-            "source_storage": "Ragna/DemoSourceStorage",
-            "assistant": "Ragna/DemoAssistant",
+            "source_storages": "Ragna/DemoSourceStorage",
+            "assistants": "Ragna/DemoAssistant",
         },
     ).json()
     client.post(

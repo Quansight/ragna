@@ -1,16 +1,14 @@
-import itertools
-import logging
 from collections import defaultdict
+from pathlib import Path
 
 from typing import Annotated, Optional, Type
-from urllib.parse import urlsplit
 
+import tomlkit
 import typer
 
 import ragna
 
-from ragna.core import Config, EnvVarRequirement, PackageRequirement, Rag, Requirement
-from ragna.core._queue import Queue
+from ragna.core import Config, Requirement
 
 app = typer.Typer(
     name="ragna",
@@ -39,42 +37,62 @@ def _main(
     pass
 
 
-ConfigAnnotated = Annotated[
-    Config,
-    typer.Option("--config", "-c", metavar="", parser=Config.load_from_source),
+ConfigPath = Annotated[
+    Optional[Path],
+    typer.Option("--config", "-c"),
 ]
 
 
 @app.command(help="List requirements")
-def ls(*, config: ConfigAnnotated = "ragna.builtin_config"):
-    if not PackageRequirement("rich").is_available():
-        print("Please install rich")
-        raise typer.Exit(1)
+def config(*, path: ConfigPath = None, force: bool = False):
+    if path is None:
+        path = Path.cwd() / "ragna.toml"
 
-    import rich
-    from rich.table import Table
+    if path.exists() and not force:
+        raise Exception
 
-    table = Table(
-        "",
-        "name",
-        "environment variables",
-        "packages",
-        show_lines=True,
-    )
+    with open(path, "w") as file:
+        file.write(tomlkit.dumps(Config().model_dump(mode="json")))
 
-    for name, cls in itertools.chain(
-        config.registered_source_storage_classes.items(),
-        config.registered_assistant_classes.items(),
-    ):
-        requirements = _split_requirements(cls.requirements())
-        table.add_row(
-            _yes_or_no(cls.is_available()),
-            name,
-            _format_requirements(requirements[EnvVarRequirement]),
-            _format_requirements(requirements[PackageRequirement]),
-        )
+    # config = json.loads(Config().model_dump_json())
+    # confg = Config().model_dump()
+    # # FIXME: handle secrets either plain or not at all
+    #
+    # a = tomlkit.dumps(confg)
+    # print(a)
+    #
+    # # a = tomlkit.TOMLDocument.fromkeys(list(config.keys()), list(config.values()))
+    #
+    # print(tomlkit.dumps(a))
 
-    rich.print(table)
+    # if not PackageRequirement("rich").is_available():
+    #     print("Please install rich")
+    #     raise typer.Exit(1)
+    #
+    # import rich
+    # from rich.table import Table
+    #
+    # table = Table(
+    #     "",
+    #     "name",
+    #     "environment variables",
+    #     "packages",
+    #     show_lines=True,
+    # )
+    #
+    # for name, cls in itertools.chain(
+    #     config.registered_source_storage_classes.items(),
+    #     config.registered_assistant_classes.items(),
+    # ):
+    #     requirements = _split_requirements(cls.requirements())
+    #     table.add_row(
+    #         _yes_or_no(cls.is_available()),
+    #         name,
+    #         _format_requirements(requirements[EnvVarRequirement]),
+    #         _format_requirements(requirements[PackageRequirement]),
+    #     )
+    #
+    # rich.print(table)
 
 
 def _split_requirements(
@@ -97,36 +115,37 @@ def _yes_or_no(condition):
     return ":white_check_mark:" if condition else ":x:"
 
 
-@app.command(help="Start Ragna API")
-def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
-    required_packages = [
-        package
-        for package in ["fastapi", "uvicorn"]
-        if not PackageRequirement(package).is_available()
-    ]
-    if required_packages:
-        print(f"Please install {', '.join(required_packages)}")
-        raise typer.Exit(1)
-
-    import uvicorn
-
-    from ragna._api import api
-
-    rag = Rag(config=config)
-
-    components = urlsplit(config.ragna_api_url)
-    uvicorn.run(api(rag), host=components.hostname, port=components.port)
-
-
-@app.command(help="Start Ragna worker(s)")
-def worker(
-    *,
-    config: ConfigAnnotated = "ragna.builtin_config",
-    num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
-):
-    queue = Queue(config, load_components=True)
-    worker = queue.create_worker(num_workers)
-
-    # FIXME: we need to configure this properly
-    logging.basicConfig(level=logging.INFO)
-    worker.run()
+# FIXME
+# @app.command(help="Start Ragna API")
+# def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
+#     required_packages = [
+#         package
+#         for package in ["fastapi", "uvicorn"]
+#         if not PackageRequirement(package).is_available()
+#     ]
+#     if required_packages:
+#         print(f"Please install {', '.join(required_packages)}")
+#         raise typer.Exit(1)
+#
+#     import uvicorn
+#
+#     from ragna._api import api
+#
+#     rag = Rag(config=config)
+#
+#     components = urlsplit(config.ragna_api_url)
+#     uvicorn.run(api(rag), host=components.hostname, port=components.port)
+#
+#
+# @app.command(help="Start Ragna worker(s)")
+# def worker(
+#     *,
+#     config: ConfigAnnotated = "ragna.builtin_config",
+#     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
+# ):
+#     queue = Queue(config, load_components=True)
+#     worker = queue.create_worker(num_workers)
+#
+#     # FIXME: we need to configure this properly
+#     logging.basicConfig(level=logging.INFO)
+#     worker.run()
