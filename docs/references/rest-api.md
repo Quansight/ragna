@@ -15,7 +15,7 @@ Presented using Swagger UI, ref: https://swagger.io/tools/swagger-ui/
 <!-- https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/ -->
 <script>
 const ui = SwaggerUIBundle({
-  url: '/assets/openapi.json',
+  url: '/references/openapi.json',
   dom_id: '#swagger-ui',
   presets: [
     SwaggerUIBundle.presets.apis,

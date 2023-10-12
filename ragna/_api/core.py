@@ -34,12 +34,12 @@ def process_ragna_exception(afn):
 
 
 def api(rag):
-    app = FastAPI()
+    app = FastAPI(title="ragna", version=ragna.__version__)
 
     @app.get("/health")
     @process_ragna_exception
     async def health() -> str:
-        return ragna.__version__
+        return app.version
 
     async def _authorize_user(user: str) -> str:
         # FIXME: implement auth here
