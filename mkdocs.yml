@@ -19,3 +19,6 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+
+hooks:
+  - docs/hooks/cli.py
