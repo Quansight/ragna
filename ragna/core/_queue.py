@@ -21,11 +21,12 @@ def task_config(retries: int = 0, retry_delay: int = 0):
     return decorator
 
 
-_COMPONENTS: dict[Type[RagComponent], RagComponent] = {}
+_COMPONENTS: dict[Type[RagComponent], Optional[RagComponent]] = {}
 
 
 def execute(component, fn, args, kwargs):
     self = _COMPONENTS[component]
+    assert self is not None
     return fn(self, *args, **kwargs)
 
 
@@ -41,12 +42,11 @@ class Queue:
 
         if load_components is None:
             load_components = isinstance(self._huey, huey.MemoryHuey)
-        if load_components:
-            for component in itertools.chain(
-                config.registered_source_storage_classes.values(),
-                config.registered_assistant_classes.values(),
-            ):
-                self.load_component(component)
+        for component in itertools.chain(
+            config.registered_source_storage_classes.values(),
+            config.registered_assistant_classes.values(),
+        ):
+            self.parse_component(component, load=load_components)
 
     def _load_huey(self, url: Optional[str]):
         # FIXME: we need to store_none=True here. SourceStorage.store returns None and
@@ -80,8 +80,11 @@ class Queue:
 
         return _huey
 
-    def load_component(
-        self, component: Union[Type[RagComponent], RagComponent, str]
+    def parse_component(
+        self,
+        component: Union[Type[RagComponent], RagComponent, str],
+        *,
+        load: bool = False,
     ) -> Type[RagComponent]:
         if isinstance(component, type) and issubclass(component, RagComponent):
             cls = component
@@ -98,10 +101,13 @@ class Queue:
                 raise RagnaException("Unknown component", component=component)
             instance = None
 
-        if cls in _COMPONENTS:
+        if instance is None:
+            instance = _COMPONENTS.get(cls)
+
+        if instance is not None:
             return cls
 
-        if instance is None:
+        if load:
             if not cls.is_available():
                 raise RagnaException("Component not available", name=cls.display_name())
 

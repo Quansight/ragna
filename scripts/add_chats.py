@@ -18,7 +18,7 @@ def main():
     for i in range(5):
         name = f"document{i}.txt"
         document_info = client.get(
-            f"{url}/document/new", params={"user": user, "name": name}
+            f"{url}/document", params={"user": user, "name": name}
         ).json()
         client.post(
             document_info["url"],
@@ -30,68 +30,71 @@ def main():
     ## chat 1
 
     chat = client.post(
-        f"{url}/chat/new",
+        f"{url}/chats",
         params={"user": user},
         json={
             "name": "Test chat",
             "document_ids": document_ids[:2],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
+            "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chat/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/start",
         params={"user": user},
     )
     client.post(
-        f"{url}/chat/{chat['id']}/answer",
+        f"{url}/chats/{chat['id']}/answer",
         params={"user": user, "prompt": "Hello!"},
     )
 
     ## chat 2
 
     chat = client.post(
-        f"{url}/chat/new",
+        f"{url}/chats",
         params={"user": user},
         json={
             "name": f"Chat {datetime.datetime.now():%x %X}",
             "document_ids": document_ids[2:4],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
+            "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chat/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/start",
         params={"user": user},
     )
     for _ in range(3):
         client.post(
-            f"{url}/chat/{chat['id']}/answer",
+            f"{url}/chats/{chat['id']}/answer",
             params={"user": user, "prompt": "What is Ragna? Please, I need to know!"},
         )
 
     ## chat 3
 
     chat = client.post(
-        f"{url}/chat/new",
+        f"{url}/chats",
         params={"user": user},
         json={
             "name": "Really long chat name that likely needs to be truncated somehow. If you can read this, truncating failed :boom:",
             "document_ids": [document_ids[i] for i in [0, 2, 4]],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
+            "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chat/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/start",
         params={"user": user},
     )
     client.post(
-        f"{url}/chat/{chat['id']}/answer",
+        f"{url}/chats/{chat['id']}/answer",
         params={"user": user, "prompt": "Hello!"},
     )
     client.post(
-        f"{url}/chat/{chat['id']}/answer",
+        f"{url}/chats/{chat['id']}/answer",
         params={
             "user": user,
             "prompt": "Ok, in that case show me some pretty markdown!",

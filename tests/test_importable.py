@@ -13,10 +13,12 @@ def main():
         else:
             path = path.with_suffix("")
 
-        if path.name.startswith("_"):
+        path = path.relative_to(PROJECT_ROOT)
+
+        if any(part.startswith("_") for part in path.parts):
             continue
 
-        name = path.relative_to(PROJECT_ROOT).as_posix().replace("/", ".")
+        name = path.as_posix().replace("/", ".")
 
         try:
             importlib.import_module(name)

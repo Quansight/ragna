@@ -47,8 +47,8 @@ class Rag:
     ):
         """Create a new [ragna.core.Chat][] object from the given configuration."""
         documents = self._parse_documents(documents, user=user)
-        source_storage = self._queue.load_component(source_storage)
-        assistant = self._queue.load_component(assistant)
+        source_storage = self._queue.parse_component(source_storage, load=True)
+        assistant = self._queue.parse_component(assistant, load=True)
 
         chat = Chat(
             rag=self,
@@ -73,9 +73,11 @@ class Rag:
 
         return chat
 
-    def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
+    def _parse_documents(
+        self, documents: Sequence[Any], *, user: str
+    ) -> list[Document]:
         documents_ = []
-        for document in document:
+        for document in documents:
             if isinstance(document, RagnaId):
                 document = self._get_document(id=document, user=user)
             else:
@@ -134,8 +136,8 @@ class Rag:
                     )
                     for document_state in chat_state.document_states
                 ],
-                source_storage=self._queue.load_component(chat_state.source_storage),
-                assistant=self._queue.load_component(chat_state.assistant),
+                source_storage=self._queue.parse_component(chat_state.source_storage),
+                assistant=self._queue.parse_component(chat_state.assistant),
                 messages=[
                     Message(
                         id=message_state.id,
