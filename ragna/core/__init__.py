@@ -25,7 +25,7 @@ from ._queue import task_config
 from ._rag import Chat, Rag
 
 
-from ragna._utils import _fix_module  # usort: skip
+from ragna._utils import fix_module  # usort: skip
 
-_fix_module(globals())
-del _fix_module
+fix_module(globals())
+del fix_module

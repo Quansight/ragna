@@ -1,6 +1,6 @@
-from ragna.core import Source
+from ragna.core import RagnaException, Source
 
-from ._api import ApiAssistant, ApiException
+from ._api import ApiAssistant
 
 
 class OpenaiApiAssistant(ApiAssistant):
@@ -51,7 +51,7 @@ class OpenaiApiAssistant(ApiAssistant):
             },
         )
         if response.is_error:
-            raise ApiException(
+            raise RagnaException(
                 status_code=response.status_code, response=response.json()
             )
         return response.json()["choices"][0]["message"]["content"]
