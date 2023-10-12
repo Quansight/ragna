@@ -19,9 +19,10 @@ pn.config.browser_info = True
 HERE = Path(__file__).parent
 # CSS = HERE / "css"
 IMGS = HERE / "imgs"
+RES = HERE / "resources"
 
 
-class RagnaUI(param.Parameterized):
+class App(param.Parameterized):
     def __init__(self, url="localhost", port=5007, api_url="localhost:31476"):
         super().__init__()
         self.url = url
@@ -57,5 +58,5 @@ class RagnaUI(param.Parameterized):
             autoreload=True,
             profiler="pyinstrument",
             allow_websocket_origin=[self.url, f"{self.url}:{self.port}"],
-            static_dirs={"imgs": str(IMGS)},  # "css": str(CSS),
+            static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
         )

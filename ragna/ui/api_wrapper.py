@@ -58,6 +58,15 @@ class ApiWrapper:
             )
             return response.json()
 
+    # Upload and related functions
+    def upload_endpoints(self):
+        return {
+            "informations_endpoint": f"{self.api_url}/document",
+            "upload_endpoint": f"{self.api_url}/document",
+        }
+
+    # Helpers
+
     def replace_emoji_shortcodes_with_emoji(self, markdown_string):
         # Define a regular expression pattern to find emoji shortcodes
         shortcode_pattern = r":\w+:"

@@ -30,10 +30,35 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         # TODO: sort out documents within this class
 
-        self.document_uploader = pn.widgets.FileInput(
-            # accept=",".join(get_supported_suffixes()),
-            accept=".pdf,.txt",
-            multiple=True,
+        # self.document_uploader = pn.widgets.FileInput(
+        #     # accept=",".join(get_supported_suffixes()),
+        #     accept=".pdf,.txt",
+        #     multiple=True,
+        # )
+
+        upload_endpoints = self.api_wrapper.upload_endpoints()
+
+        informations_endpoint = upload_endpoints["informations_endpoint"]
+        upload_endpoint = upload_endpoints["upload_endpoint"]
+
+        # <script type="text/javascript" src="/resources/upload.js"></script>
+
+        self.document_uploader = pn.pane.HTML(
+            f"""
+                    
+                    <script>
+                                              
+                        var scr = document.createElement("script");
+                        scr.src = "/resources/upload.js" + "?ts=" + new Date().getTime();
+                        document.getElementsByTagName("head")[0].appendChild(scr);
+                                                                        
+                    </script>
+                    <div>
+                        <label>Select file to upload</label>
+                            <input type="file" id="fileUpload" multiple="multiple"> 
+                    </div>
+                    <button onclick="upload('{self.api_wrapper.user}', '{informations_endpoint}', '{upload_endpoint}')">Upload</button>
+                     """
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call

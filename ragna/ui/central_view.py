@@ -8,7 +8,7 @@ chat_entry_stylesheets = [
                     }
                 """,
     """
-                    :host div.bk-panel-models-layout-Column { 
+                    :host div.bk-panel-models-layout-Column:not(.left) { 
                             width:100% !important;
                     }
                 """,

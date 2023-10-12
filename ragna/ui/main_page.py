@@ -117,6 +117,8 @@ class MainPage(param.Parameterized):
 
         template.main.append(main_page)
 
+        template.header.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
+
         """I haven't found a better way to open the modal when the pages load,
         than simulating a click on the "New chat" button.
         - calling self.template.open_modal() doesn't work
@@ -126,8 +128,7 @@ class MainPage(param.Parameterized):
         """
         new_chat_button_name = "New Chat"
         pn.pane.HTML(
-            js.SHADOWROOT_INDEXING
-            + """
+            """
                          <script>   let buttons = $$$('button.bk-btn-primary');
                                     buttons.forEach(function(btn){
                                         if ( btn.innerText.trim() == '{new_chat_btn_name}' ){

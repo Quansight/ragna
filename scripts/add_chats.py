@@ -8,7 +8,7 @@ import httpx
 def main():
     client = httpx.Client()
     url = "http://127.0.0.1:31476"
-    user = "Ragna"
+    user = "User"
 
     assert client.get(f"{url}/health").is_success
 
@@ -66,10 +66,13 @@ def main():
         f"{url}/chats/{chat['id']}/start",
         params={"user": user},
     )
-    for _ in range(3):
+    for i in range(3):
         client.post(
             f"{url}/chats/{chat['id']}/answer",
-            params={"user": user, "prompt": "What is Ragna? Please, I need to know!"},
+            params={
+                "user": user,
+                "prompt": f"What is Ragna? Please, I need to know! ({i})",
+            },
         )
 
     ## chat 3
