@@ -39,6 +39,7 @@ class Rag:
         assistant: Union[Type[Assistant], Assistant, str],
         **params: Any,
     ):
+        """Create a new [ragna.core.Chat][]."""
         return Chat(
             self,
             documents=documents,
@@ -49,6 +50,30 @@ class Rag:
 
 
 class Chat:
+    """
+    !!! note
+
+        This object is usually not instantiated manually, but rather through
+        [ragna.core.Rag.chat][].
+
+    A chat needs to be [`prepare`][ragna.core.Chat.prepare]d before prompts can be
+    [`answer`][ragna.core.Chat.answer]ed.
+
+    Can be used as context manager to automatically invoke
+    [`prepare`][ragna.core.Chat.prepare]:
+
+    ```python
+    rag = Rag()
+
+    async with rag.chat(
+        documents=[path],
+        source_storage=ragna.core.RagnaDemoSourceStorage,
+        assistant=ragna.core.RagnaDemoAssistant,
+    ) as chat:
+        print(await chat.answer("What is Ragna?"))
+    ```
+    """
+
     def __init__(
         self,
         rag: Rag,
@@ -74,6 +99,15 @@ class Chat:
         self._messages = []
 
     async def prepare(self):
+        """Prepare the chat.
+
+        This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
+        source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
+
+        Raises:
+            ragna.core.RagnaException: If chat is already
+                [`prepare`][ragna.core.Chat.prepare]d.
+        """
         if self._prepared:
             raise RagnaException(
                 "Chat is already prepared",
@@ -93,6 +127,12 @@ class Chat:
         return welcome
 
     async def answer(self, prompt: str):
+        """Answer a prompt
+
+        Raises:
+            ragna.core.RagnaException: If chat is not
+                [`prepare`][ragna.core.Chat.prepare]d.
+        """
         if not self._prepared:
             raise RagnaException(
                 "Chat is not prepared",

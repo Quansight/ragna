@@ -32,6 +32,11 @@ class SourceStorage(RagComponent, abc.ABC):
 
     @abc.abstractmethod
     def store(self, documents: list[Document]) -> None:
+        """Store content of documents.
+
+        Args:
+            documents: Documents to store
+        """
         ...
 
     @abc.abstractmethod
