@@ -91,7 +91,7 @@ class LocalDocument(Document):
 
         import jwt
 
-        url = f"{config.ragna_api_url}/document/upload"
+        url = f"{config.ragna_api_url}/document"
         data = {
             "token": jwt.encode(
                 payload={
