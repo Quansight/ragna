@@ -45,9 +45,10 @@ class Rag:
         assistant: Union[Type[RagComponent], RagComponent, str],
         **params,
     ):
+        """Create a new [ragna.core.Chat][] object from the given configuration."""
         documents = self._parse_documents(documents, user=user)
-        source_storage = self._queue.load_component(source_storage)
-        assistant = self._queue.load_component(assistant)
+        source_storage = self._queue.parse_component(source_storage, load=True)
+        assistant = self._queue.parse_component(assistant, load=True)
 
         chat = Chat(
             rag=self,
@@ -72,9 +73,11 @@ class Rag:
 
         return chat
 
-    def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
+    def _parse_documents(
+        self, documents: Sequence[Any], *, user: str
+    ) -> list[Document]:
         documents_ = []
-        for document in document:
+        for document in documents:
             if isinstance(document, RagnaId):
                 document = self._get_document(id=document, user=user)
             else:
@@ -133,8 +136,8 @@ class Rag:
                     )
                     for document_state in chat_state.document_states
                 ],
-                source_storage=self._queue.load_component(chat_state.source_storage),
-                assistant=self._queue.load_component(chat_state.assistant),
+                source_storage=self._queue.parse_component(chat_state.source_storage),
+                assistant=self._queue.parse_component(chat_state.assistant),
                 messages=[
                     Message(
                         id=message_state.id,
@@ -182,6 +185,31 @@ class Rag:
 
 
 class Chat:
+    """
+    !!! note
+
+        This object is usually not instantiated manually, but rather through
+        [ragna.core.Rag.new_chat][].
+
+    A chat needs to be [`start`][ragna.core.Chat.start]ed before prompts can be
+    [`answer`][ragna.core.Chat.answer]ed. Optionally, it can be
+    [`close`][ragna.core.Chat.close]d to no longer accept new prompts.
+
+    Can be used as context manager to automatically invoke
+    [`start`][ragna.core.Chat.start] and [`close`][ragna.core.Chat.close]:
+
+    ```python
+    rag = Rag()
+
+    async with await rag.new_chat(
+        documents=[path],
+        source_storage=ragna.core.RagnaDemoSourceStorage,
+        assistant=ragna.core.RagnaDemoAssistant,
+    ) as chat:
+        print(await chat.answer("What is Ragna?"))
+    ```
+    """
+
     def __init__(
         self,
         *,
@@ -214,6 +242,16 @@ class Chat:
         self._closed = False
 
     async def start(self):
+        """Start the chat.
+
+        This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
+        source storage.
+
+        Raises:
+            ragna.core.RagnaException: If chat is already
+                [`start`][ragna.core.Chat.start]'ed.
+            ragna.core.RagnaException: If chat is [`close`][ragna.core.Chat.close]'ed.
+        """
         if self._started:
             raise RagnaException(
                 "Chat is already started",
@@ -243,12 +281,25 @@ class Chat:
         return self
 
     async def close(self):
+        """Close that chat.
+
+        After the chat is closed, new prompts will no longer be
+        [`answer`][ragna.core.Chat.answer]'ed.
+        """
         self._state.close_chat(id=self.id, user=self._user)
         self._closed = True
 
         return self
 
     async def answer(self, prompt: str):
+        """Answer a prompt
+
+        Raises:
+            ragna.core.RagnaException: If chat is not
+                [`start`][ragna.core.Chat.start]'ed.
+            ragna.core.RagnaException: If chat is [`close`][ragna.core.Chat.close]'ed.
+        """
+
         if not self._started:
             raise RagnaException(
                 "Chat is not started",
