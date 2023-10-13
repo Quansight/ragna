@@ -1,4 +1,6 @@
 import os
+
+import uuid
 from typing import Any
 
 from ragna.assistant import RagnaDemoAssistant
@@ -20,7 +22,7 @@ class S3Document(Document):
 
     @classmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: str, name: str
+        cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("boto3").is_available():
             raise RagnaException()

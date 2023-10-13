@@ -1,5 +1,5 @@
 import itertools
-from typing import Optional, Type, Union
+from typing import Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -8,7 +8,6 @@ from huey.contrib.asyncio import aget_result
 
 from ._component import RagComponent
 from ._config import Config
-
 from ._core import RagnaException
 from ._requirement import PackageRequirement
 
@@ -35,13 +34,14 @@ class _Task(huey.api.Task):
         return execute(*self.args)
 
 
+T = TypeVar("T", bound=RagComponent)
+
+
 class Queue:
     def __init__(self, config: Config, *, load_components: Optional[bool]):
         self._config = config
         self._huey = self._load_huey(config.queue_database_url)
 
-        if load_components is None:
-            load_components = isinstance(self._huey, huey.MemoryHuey)
         for component in itertools.chain(
             config.registered_source_storage_classes.values(),
             config.registered_assistant_classes.values(),
@@ -82,10 +82,13 @@ class Queue:
 
     def parse_component(
         self,
-        component: Union[Type[RagComponent], RagComponent, str],
+        component: Union[Type[T], T, str],
         *,
-        load: bool = False,
-    ) -> Type[RagComponent]:
+        load: Optional[bool] = None,
+    ) -> Type[T]:
+        if load is None:
+            load = isinstance(self._huey, huey.MemoryHuey)
+
         if isinstance(component, type) and issubclass(component, RagComponent):
             cls = component
             instance = None

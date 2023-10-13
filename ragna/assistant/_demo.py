@@ -34,7 +34,7 @@ class RagnaDemoAssistant(Assistant):
     def _default_answer(self, prompt: str, sources: list[Source]) -> str:
         sources_display = []
         for source in sources:
-            source_display = f"- {source.document_name}"
+            source_display = f"- {source.document.name}"
             if source.location:
                 source_display += f", {source.location}"
             source_display += f": {textwrap.shorten(source.content, width=100)}"
