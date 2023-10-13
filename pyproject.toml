@@ -45,23 +45,25 @@ ui = [
 #    "param",
     "httpx",
 ]
-# to update the two entries below, run scripts/update_optional_dependencies.py
-builtin-components = [
-    "chromadb>=0.4.13",
-    "httpx",
+# to update the entries below, run scripts/update_optional_dependencies.py
+builtin-document-handlers = [
     "pymupdf",
+]
+builtin-components = [
+    "chromadb>=0.4",
+    "httpx",
     "tiktoken",
 ]
 complete = [
-    "PyJWT",
-    "chromadb>=0.4.13",
+    "rich",
     "fastapi",
+    "PyJWT",
+    "python-multipart",
+    "uvicorn",
     "httpx",
     "pymupdf",
-    "python-multipart",
-    "rich",
+    "chromadb>=0.4",
     "tiktoken",
-    "uvicorn",
 ]
 
 [tool.setuptools_scm]
