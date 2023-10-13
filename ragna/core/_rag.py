@@ -142,7 +142,9 @@ class Chat:
         prompt = Message(content=prompt, role=MessageRole.USER)
         self._messages.append(prompt)
 
-        sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
+        sources = await self._enqueue(
+            self.source_storage, "retrieve", self.documents, prompt.content
+        )
         answer = Message(
             content=await self._enqueue(
                 self.assistant, "answer", prompt.content, sources
@@ -165,7 +167,7 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.document_class(document)
+                document = self._rag.config.rag.document(document)
 
             if not document.is_available():
                 raise RagnaException(
