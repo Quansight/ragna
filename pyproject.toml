@@ -18,7 +18,6 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "cloudpickle",
     "huey",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
@@ -35,6 +34,7 @@ console = [
     "rich",
 ]
 api = [
+    "aiofiles",
     "fastapi",
     "PyJWT",
     "python-multipart",
@@ -52,18 +52,23 @@ builtin-document-handlers = [
 builtin-components = [
     "chromadb>=0.4",
     "httpx",
+    "lancedb>=0.2",
+    "sentence-transformers",
     "tiktoken",
 ]
 complete = [
-    "rich",
-    "fastapi",
-    "PyJWT",
-    "python-multipart",
-    "uvicorn",
-    "httpx",
-    "pymupdf",
+    "aiofiles",
     "chromadb>=0.4",
+    "fastapi",
+    "httpx",
+    "lancedb>=0.2",
+    "PyJWT",
+    "pymupdf",
+    "python-multipart",
+    "rich",
+    "sentence-transformers",
     "tiktoken",
+    "uvicorn",
 ]
 
 [tool.setuptools_scm]

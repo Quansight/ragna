@@ -36,9 +36,9 @@ def make_optional_dependencies(manual, **automatic):
     optional_dependencies = {}
     for section, requirements in automatic.items():
         optional_dependencies[section.replace("_", "-")] = sorted(
-            complete[name] for name in requirements
+            (complete[name] for name in requirements), key=str.casefold
         )
-    optional_dependencies["complete"] = list(complete.values())
+    optional_dependencies["complete"] = sorted(complete.values(), key=str.casefold)
     return optional_dependencies
 
 
