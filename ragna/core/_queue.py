@@ -1,5 +1,5 @@
 import itertools
-from typing import Optional, Type, Union
+from typing import Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -34,13 +34,14 @@ class _Task(huey.api.Task):
         return execute(*self.args)
 
 
+T = TypeVar("T", bound=Component)
+
+
 class Queue:
     def __init__(self, config: Config, *, load_components: Optional[bool]):
         self._config = config
         self._huey = self._load_huey(config.rag.queue_url)
 
-        if load_components is None:
-            load_components = isinstance(self._huey, huey.MemoryHuey)
         for component in itertools.chain(
             config.rag.source_storages,
             config.rag.assistants,
@@ -80,11 +81,11 @@ class Queue:
         return _huey
 
     def parse_component(
-        self,
-        component: Union[Type[Component], Component, str],
-        *,
-        load: bool = False,
-    ) -> Type[Component]:
+        self, component: Union[Type[T], T, str], *, load: Optional[bool] = None
+    ) -> Type[T]:
+        if load is None:
+            load = isinstance(self._huey, huey.MemoryHuey)
+
         if isinstance(component, type) and issubclass(component, Component):
             cls = component
             instance = None

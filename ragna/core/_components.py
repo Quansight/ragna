@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import abc
-import datetime
 import enum
 import functools
 import inspect
-import uuid
 from typing import Optional
 
 import pydantic
@@ -13,7 +11,7 @@ import pydantic.utils
 
 from ._document import Document
 
-from ._utils import RagnaException, RequirementsMixin
+from ._utils import RequirementsMixin
 
 
 class Component(RequirementsMixin):
@@ -63,33 +61,14 @@ class Component(RequirementsMixin):
         return models
 
 
-class Source:
-    def __init__(
-        self,
-        *,
-        id: uuid.UUID,
-        document_id: uuid.UUID,
-        document_name: str,
-        location: str,
-        content: str,
-        num_tokens: int,
-    ):
-        self.id = id
-        self.document_id = document_id
-        self.document_name = document_name
-        self.location = location
-        self.content = content
-        self.num_tokens = num_tokens
+class Source(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
-
-class ReconstructedSource(Source):
-    def __init__(self, **kwargs):
-        if any(
-            kwargs.setdefault(param, None) is not None
-            for param in ["content", "num_tokens"]
-        ):
-            raise RagnaException
-        super().__init__(**kwargs)
+    id: str
+    document: Document
+    location: str
+    content: Optional[str]
+    num_tokens: Optional[int]
 
 
 class SourceStorage(Component, abc.ABC):
@@ -97,10 +76,15 @@ class SourceStorage(Component, abc.ABC):
 
     @abc.abstractmethod
     def store(self, documents: list[Document]) -> None:
+        """Store content of documents.
+
+        Args:
+            documents: Documents to store
+        """
         ...
 
     @abc.abstractmethod
-    def retrieve(self, prompt: str) -> list[Source]:
+    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
         ...
 
 
@@ -110,22 +94,12 @@ class MessageRole(enum.Enum):
     ASSISTANT = "assistants"
 
 
-class Message:
-    def __init__(
-        self,
-        *,
-        id: uuid.UUID,
-        content: str,
-        role: MessageRole,
-        sources: Optional[list[Source]] = None,
-    ):
-        self.id = id
-        self.content = content
-        self.role = role
-        self.sources = sources or []
-        self.timestamp = datetime.datetime.utcnow()
+class Message(pydantic.BaseModel):
+    content: str
+    role: MessageRole
+    sources: list[Source] = pydantic.Field(default_factory=list)
 
-    def __repr__(self):
+    def __str__(self):
         return self.content
 
 

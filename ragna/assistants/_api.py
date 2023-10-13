@@ -29,7 +29,8 @@ class ApiAssistant(Assistant):
         import httpx
 
         self._client = httpx.Client(
-            headers={"User-Agent": f"{ragna.__version__}/{self}"}
+            headers={"User-Agent": f"{ragna.__version__}/{self}"},
+            timeout=10,
         )
         self._num_retries = num_retries
         self._retry_delay = retry_delay

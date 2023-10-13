@@ -10,6 +10,7 @@ import ragna
 
 from ragna.core import Config, Requirement
 
+
 app = typer.Typer(
     name="ragna",
     invoke_without_command=True,

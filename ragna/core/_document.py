@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
 
+
 if TYPE_CHECKING:
     from ._config import Config
 
@@ -30,7 +31,7 @@ class Document(RequirementsMixin, abc.ABC):
     @classmethod
     @abc.abstractmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: str, name: str
+        cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         pass
 

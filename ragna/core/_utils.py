@@ -6,14 +6,7 @@ import importlib
 import importlib.metadata
 import os
 
-import uuid as uuid_
-
-from typing import Any
-
 import packaging.requirements
-from pydantic.annotated_handlers import GetCoreSchemaHandler
-
-from pydantic_core import core_schema, CoreSchema
 
 from ragna._compat import importlib_metadata_package_distributions
 
@@ -34,26 +27,6 @@ class RagnaException(Exception):
 
     def __str__(self):
         return ", ".join([self.event, *[f"{k}={v}" for k, v in self.extra.items()]])
-
-
-class RagnaId(uuid_.UUID):
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(str))
-
-    @classmethod
-    def from_uuid(cls, uuid: uuid_.UUID) -> RagnaId:
-        return cls(int=uuid.int)
-
-    @classmethod
-    def is_valid_str(cls):
-        pass
-
-    @staticmethod
-    def make():
-        return RagnaId.from_uuid(uuid_.uuid4())
 
 
 class Requirement(abc.ABC):
