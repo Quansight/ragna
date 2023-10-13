@@ -3,12 +3,11 @@ from __future__ import annotations
 import secrets
 
 from pathlib import Path
-from typing import Literal, Union
+from typing import Union
 
 import pydantic
 import tomlkit
-from pydantic import Field, ImportString
-from pydantic.functional_serializers import field_serializer
+from pydantic import Field, field_validator, ImportString
 
 from pydantic_settings import BaseSettings
 
@@ -45,8 +44,7 @@ class RagConfig(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_rag_"
 
-    database_url: Union[Literal["memory"], pydantic.AnyUrl] = "memory"
-    queue_url: Union[Literal["memory"], Path, pydantic.RedisDsn] = "memory"
+    queue_url: str = "memory"
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"
     source_storages: list[ImportString[type[SourceStorage]]] = [
@@ -61,32 +59,34 @@ class ApiConfig(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_api_"
 
-    # FIXME: use the validator, but keep the value as str
-    url: pydantic.HttpUrl = "http://127.0.0.1:31476"
-    upload_token_secret: pydantic.SecretStr = Field(
-        default_factory=lambda: secrets.token_urlsafe(64)
-    )
-    upload_token_ttl: int = 5 * 60
+    url: str = "http://127.0.0.1:31476"
+    database_url: str = "memory"
 
-    # FIXME: https://docs.pydantic.dev/latest/examples/secrets/#serialize-secretstr-and-secretbytes-as-plain-text
-    @field_serializer("upload_token_secret", when_used="json")
-    def dump_secret(self, v):
-        return v.get_secret_value()
+    upload_token_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(64))
+    upload_token_ttl: int = 5 * 60
 
 
 class UiConfig(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_ui_"
 
-    url: pydantic.HttpUrl = "http://127.0.0.1:31476"
+    url: str = "http://127.0.0.1:31477"
 
 
 class Config(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_"
 
-    # FIXME: validate this to be a writeable directory or create it if it doesn't exist
-    local_cache_root: Path = "~/.cache/ragna"
+    local_cache_root: Path = Field(
+        default_factory=lambda: Path.home() / ".cache" / "ragna"
+    )
+
+    @field_validator("local_cache_root")
+    @classmethod
+    def _resolve_and_make_path(cls, path: Path) -> Path:
+        path = path.expanduser().resolve()
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     rag: RagConfig = Field(default_factory=RagConfig)
     api: ApiConfig = Field(default_factory=ApiConfig)
@@ -100,3 +100,11 @@ class Config(BaseSettings):
 
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
+
+    def to_file(self, path: Union[str, Path], *, force: bool = False):
+        path = Path(path).expanduser().resolve()
+        if path.is_file() and not force:
+            raise RagnaException
+
+        with open(path, "w") as file:
+            tomlkit.dump(self.model_dump(mode="json"), file)

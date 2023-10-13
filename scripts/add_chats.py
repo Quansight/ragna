@@ -34,11 +34,12 @@ def main():
         json={
             "name": "Test chat",
             "documents": documents[:2],
-            "source_storages": "Ragna/DemoSourceStorage",
-            "assistants": "Ragna/DemoAssistant",
+            "source_storage": "Ragna/DemoSourceStorage",
+            "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()
+
     client.post(
         f"{url}/chats/{chat['id']}/prepare",
         params={"user": user},
@@ -56,8 +57,8 @@ def main():
         json={
             "name": f"Chat {datetime.datetime.now():%x %X}",
             "documents": documents[2:4],
-            "source_storages": "Ragna/DemoSourceStorage",
-            "assistants": "Ragna/DemoAssistant",
+            "source_storage": "Ragna/DemoSourceStorage",
+            "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()
@@ -79,8 +80,8 @@ def main():
         json={
             "name": "Really long chat name that likely needs to be truncated somehow. If you can read this, truncating failed :boom:",
             "documents": [documents[i] for i in [0, 2, 4]],
-            "source_storages": "Ragna/DemoSourceStorage",
-            "assistants": "Ragna/DemoAssistant",
+            "source_storage": "Ragna/DemoSourceStorage",
+            "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()

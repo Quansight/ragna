@@ -76,16 +76,16 @@ class LocalDocument(Document):
 
         import jwt
 
-        url = f"{config.ragna_api_url}/document/upload"
+        url = f"{config.api.url}/document"
         data = {
             "token": jwt.encode(
                 payload={
                     "user": user,
                     "id": str(id),
-                    "exp": time.time() + config.upload_token_ttl,
+                    "exp": time.time() + config.api.upload_token_ttl,
                 },
                 # FIXME: no
-                key=config.upload_token_secret,
+                key=config.api.upload_token_secret,
                 algorithm=cls._JWT_ALGORITHM,
             )
         }

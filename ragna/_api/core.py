@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
 import ragna
 import ragna.core
 
-from ragna.core import Rag, RagnaException
+from ragna.core import Config, Rag, RagnaException
 
 from . import database, schemas
 
@@ -34,7 +34,7 @@ def process_ragna_exception(afn):
     return wrapper
 
 
-def api(config):
+def api(config: Config):
     rag = Rag(config)
 
     app = FastAPI()
@@ -54,11 +54,19 @@ def api(config):
     @process_ragna_exception
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
-            source_storages=list(rag.config.registered_source_storage_classes),
-            assistants=list(rag.config.registered_assistant_classes),
+            source_storages=[
+                source_storage.display_name()
+                for source_storage in config.rag.source_storages
+            ],
+            assistants=[
+                assistant.display_name() for assistant in config.rag.assistants
+            ],
         )
 
-    make_session = database.get_sessionmaker(config.state_database_url)
+    database_url = config.api.database_url
+    if database_url == "memory":
+        database_url = "sqlite://"
+    make_session = database.get_sessionmaker(database_url)
 
     def get_session():
         session = make_session()
@@ -77,7 +85,7 @@ def api(config):
         name: str,
     ) -> schemas.DocumentUploadInfo:
         document = schemas.Document(name=name)
-        url, data, metadata = await config.document_class.get_upload_info(
+        url, data, metadata = await config.rag.document.get_upload_info(
             config=config, user=user, id=document.id, name=document.name
         )
         database.add_document(session, user=user, document=document, metadata=metadata)
@@ -88,14 +96,14 @@ def api(config):
     async def upload_document(
         session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.document_class, ragna.core.LocalDocument):
+        if not issubclass(rag.config.rag.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
 
         user, id = ragna.core.LocalDocument._decode_upload_token(
-            token, secret=rag.config.upload_token_secret
+            token, secret=rag.config.api.upload_token_secret
         )
         document, metadata = database.get_document(session, user=user, id=id)
 
@@ -114,7 +122,7 @@ def api(config):
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                rag.config.document_class(
+                rag.config.rag.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
