@@ -47,7 +47,7 @@ def extract_manual():
         document = tomlkit.load(file)
 
     requirements = defaultdict(list)
-    for section in ["console", "api", "ui"]:
+    for section in ["api", "ui"]:
         for requirement_string in document["project"]["optional-dependencies"][section]:
             requirement = Requirement(requirement_string)
             requirements[requirement.name].append(requirement.specifier)

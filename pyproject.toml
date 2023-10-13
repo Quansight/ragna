@@ -23,6 +23,7 @@ dependencies = [
     "packaging",
     "pydantic>=2",
     "pydantic-settings",
+    "rich",
     "sqlalchemy>=2",
     "tomlkit",
     "typer",
@@ -30,9 +31,6 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-console = [
-    "rich",
-]
 api = [
     "aiofiles",
     "fastapi",
@@ -65,7 +63,6 @@ complete = [
     "PyJWT",
     "pymupdf",
     "python-multipart",
-    "rich",
     "sentence-transformers",
     "tiktoken",
     "uvicorn",
