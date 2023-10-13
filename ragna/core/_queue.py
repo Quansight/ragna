@@ -42,8 +42,7 @@ class Queue:
             load_components = isinstance(self._huey, huey.MemoryHuey)
         if load_components:
             for component in itertools.chain(
-                config.registered_source_storage_classes.values(),
-                config.registered_assistant_classes.values(),
+                config.rag.source_storages, config.rag.assistants
             ):
                 self.load_component(component)
 

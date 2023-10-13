@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import datetime
 import itertools
+import uuid
 from collections import defaultdict
 from typing import Any, Optional, Sequence, Type, TypeVar, Union
 
-from pydantic import BaseModel, create_model, Extra
+from pydantic import BaseModel, ConfigDict, create_model, Extra
 
 from ._components import (
     Assistant,
@@ -19,7 +20,7 @@ from ._config import Config
 from ._document import Document
 from ._queue import Queue
 from ._state import State
-from ._utils import RagnaException, RagnaId
+from ._utils import RagnaException
 
 T = TypeVar("T", bound=Component)
 
@@ -55,7 +56,7 @@ class Rag:
         chat = Chat(
             rag=self,
             user=user,
-            id=RagnaId.make(),
+            id=uuid.uuid4(),
             name=name,
             documents=documents,
             source_storage=source_storage,
@@ -78,14 +79,14 @@ class Rag:
     def _parse_documents(self, document: Sequence[Any], *, user: str) -> list[Document]:
         documents_ = []
         for document in document:
-            if isinstance(document, RagnaId):
+            if isinstance(document, uuid.UUID):
                 document = self._get_document(id=document, user=user)
             else:
                 if not isinstance(document, Document):
                     document = self.config.rag.document(document)
 
                 if document.id is None:
-                    document.id = RagnaId.make()
+                    document.id = uuid.uuid4()
                     self._add_document(
                         user=user,
                         id=document.id,
@@ -104,10 +105,10 @@ class Rag:
             documents_.append(document)
         return documents_
 
-    def _add_document(self, *, user: str, id: RagnaId, name: str, metadata):
+    def _add_document(self, *, user: str, id: uuid.UUID, name: str, metadata):
         self._state.add_document(user=user, id=id, name=name, metadata=metadata)
 
-    def _get_document(self, user: str, id: RagnaId):
+    def _get_document(self, user: str, id: uuid.UUID):
         state = self._state.get_document(user=user, id=id)
         if state is None:
             raise RagnaException(
@@ -162,7 +163,7 @@ class Rag:
         self._chats.update({(user, chat.id): chat for chat in chats})
         return chats
 
-    def _get_chat(self, *, user: str, id: RagnaId):
+    def _get_chat(self, *, user: str, id: uuid.UUID):
         key = (user, id)
 
         chat = self._chats.get(key)
@@ -190,7 +191,7 @@ class Chat:
         *,
         rag: Rag,
         user: str,
-        id: RagnaId,
+        id: uuid.UUID,
         name: Optional[str] = None,
         documents,
         source_storage: Type[SourceStorage],
@@ -237,7 +238,7 @@ class Chat:
         self._started = True
 
         welcome = Message(
-            id=RagnaId.make(),
+            id=uuid.uuid4(),
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
@@ -267,7 +268,7 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
 
-        prompt = Message(id=RagnaId.make(), content=prompt, role=MessageRole.USER)
+        prompt = Message(id=uuid.uuid4(), content=prompt, role=MessageRole.USER)
         self._append_message(prompt)
 
         sources = await self._enqueue(self.source_storage, "retrieve", prompt.content)
@@ -281,7 +282,7 @@ class Chat:
         # )
 
         answer = Message(
-            id=RagnaId.make(),
+            id=uuid.uuid4(),
             content=content,
             role=MessageRole.ASSISTANT,
             sources=sources,
@@ -297,12 +298,23 @@ class Chat:
             chat_id=self.id,
         )
 
+    import uuid
+
     class _SpecialChatParams(BaseModel):
         user: str
-        chat_id: RagnaId
+        chat_id: uuid.UUID
+        chat_name: str
+
+    class _SpecialChatParams2(BaseModel):
+        user: str
+        # pydantic  thinks this is a str???
+        chat_id: uuid.UUID
         chat_name: str
 
     def _unpack_chat_params(self, params):
+        self._SpecialChatParams(user=self._user, chat_id=self.id, chat_name=self.name)
+        self._SpecialChatParams2(user=self._user, chat_id=self.id, chat_name=self.name)
+
         source_storage_models = self.source_storage._models()
         assistant_models = self.assistant._models()
 
@@ -312,12 +324,18 @@ class Chat:
             *assistant_models.values(),
         )
 
-        chat_model = ChatModel(
-            user=self._user,
-            chat_id=self.id,
-            chat_name=self.name,
-            **params,
-        )
+        try:
+            chat_model = ChatModel(
+                user=self._user,
+                chat_id=self.id,
+                chat_name=self.name,
+                **params,
+            )
+        except:
+            self._SpecialChatParams(
+                user=self._user, chat_id=self.id, chat_name=self.name
+            )
+            raise
         chat_params = chat_model.dict(exclude_none=True)
         return {
             component_and_action: model(**chat_params).dict()
@@ -331,7 +349,10 @@ class Chat:
         for model_cls in models:
             for name, field in model_cls.__fields__.items():
                 raw_field_definitions[name].append(
-                    (field.type_, ... if field.required else field.default)
+                    (
+                        field.annotation,
+                        ... if field.is_required() else field.default,
+                    )
                 )
 
         field_definitions = {}
@@ -351,10 +372,9 @@ class Chat:
 
             field_definitions[name] = (type_, default)
 
-        class Config:
-            extra = Extra.forbid
-
-        return create_model(str(self), __config__=Config, **field_definitions)
+        return create_model(
+            str(self), __config__=ConfigDict(extra=Extra.forbid), **field_definitions
+        )
 
     async def _enqueue(self, component, action, *args):
         try:

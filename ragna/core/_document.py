@@ -2,29 +2,30 @@ from __future__ import annotations
 
 import abc
 import time
+import uuid
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Iterator, Optional, Type, TYPE_CHECKING, TypeVar
 
-from ._utils import PackageRequirement, RagnaException, RagnaId, RequirementsMixin
+from pydantic import BaseModel
+
+from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
 
 if TYPE_CHECKING:
-    from ._components import DocumentHandler
     from ._config import Config
 
 
 class Document(RequirementsMixin, abc.ABC):
-    def __init__(
-        self,
-        *,
-        id: Optional[RagnaId] = None,
-        name: str,
-        metadata: dict[str, Any],
-        handler: DocumentHandler,
-    ):
-        self.id = id
-        self.name = name
-        self.metadata = metadata
-        self.handler = handler
+    @staticmethod
+    def supported_suffixes() -> set[str]:
+        return set(DOCUMENT_HANDLERS.keys())
+
+    @staticmethod
+    def get_handler(name: str):
+        handler = DOCUMENT_HANDLERS.get(Path(name).suffix)
+        if handler is None:
+            raise RagnaException
+
+        return handler
 
     @classmethod
     @abc.abstractmethod
@@ -32,6 +33,19 @@ class Document(RequirementsMixin, abc.ABC):
         cls, *, config: Config, user: str, id: str, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         pass
+
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        name: str,
+        metadata: dict[str, Any],
+        handler: Optional[DocumentHandler] = None,
+    ):
+        self.id = id
+        self.name = name
+        self.metadata = metadata
+        self.handler = handler or self.get_handler(name)
 
     @abc.abstractmethod
     def is_readable(self) -> bool:
@@ -42,42 +56,16 @@ class Document(RequirementsMixin, abc.ABC):
         ...
 
     def extract_pages(self):
-        yield from self.handler.extract_pages(name=self.name, content=self.read())
+        yield from self.handler.extract_pages(self)
 
 
 # FIXME: see if the S3 document is well handled
 class LocalDocument(Document):
-    def __init__(
-        self,
-        path: Optional[str | Path] = None,
-        *,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
-        if metadata is None:
-            metadata = {}
-        metadata_path = metadata.get("path")
-
-        if path is None and metadata_path is None:
-            raise RagnaException(
-                "Path was neither passed directly or as part of the metadata"
-            )
-        elif path is not None and metadata_path is not None:
-            raise RagnaException("Path was passed directly and as part of the metadata")
-        elif path is not None:
-            metadata["path"] = str(path)
-
-        if name is None:
-            name = Path(metadata["path"]).name
-
-        super().__init__(name=name, metadata=metadata, **kwargs)
-
     _JWT_ALGORITHM = "HS256"
 
     @classmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: RagnaId, name: str
+        cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("PyJWT").is_available():
             raise RagnaException(
@@ -104,7 +92,7 @@ class LocalDocument(Document):
         return url, data, metadata
 
     @classmethod
-    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, RagnaId]:
+    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, uuid.UUID]:
         import jwt
 
         try:
@@ -117,7 +105,33 @@ class LocalDocument(Document):
             raise RagnaException(
                 "Token expired", http_status_code=401, http_detail=RagnaException.EVENT
             )
-        return payload["user"], RagnaId(payload["id"])
+        return payload["user"], uuid.UUID(payload["id"])
+
+    def __init__(
+        self,
+        path: Optional[str | Path] = None,
+        *,
+        name: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        **kwargs,
+    ):
+        if metadata is None:
+            metadata = {}
+        metadata_path = metadata.get("path")
+
+        if path is None and metadata_path is None:
+            raise RagnaException(
+                "Path was neither passed directly or as part of the metadata"
+            )
+        elif path is not None and metadata_path is not None:
+            raise RagnaException("Path was passed directly and as part of the metadata")
+        elif path is not None:
+            metadata["path"] = str(path)
+
+        if name is None:
+            name = Path(metadata["path"]).name
+
+        super().__init__(name=name, metadata=metadata, **kwargs)
 
     @property
     def path(self) -> Path:
@@ -129,3 +143,67 @@ class LocalDocument(Document):
     def read(self) -> bytes:
         with open(self.path, "rb") as stream:
             return stream.read()
+
+
+class Page(BaseModel):
+    text: str
+    number: Optional[int] = None
+
+
+class DocumentHandler(RequirementsMixin, abc.ABC):
+    @classmethod
+    @abc.abstractmethod
+    def supported_suffixes(cls) -> list[str]:
+        pass
+
+    @abc.abstractmethod
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        ...
+
+
+T = TypeVar("T", bound=DocumentHandler)
+
+
+class DocumentHandlerRegistry(dict):
+    def load_if_available(self, cls: Type[T]) -> Type[T]:
+        if cls.is_available():
+            instance = cls()
+            for suffix in cls.supported_suffixes():
+                self[suffix] = instance
+
+        return cls
+
+
+DOCUMENT_HANDLERS = DocumentHandlerRegistry()
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class TxtDocumentHandler(DocumentHandler):
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".txt"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        yield Page(text=document.read().decode())
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class PdfDocumentHandler(DocumentHandler):
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("pymupdf")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        # TODO: pymudpdf supports a lot more formats, while .pdf is by far the most
+        #  prominent. Should we expose the others here as well?
+        return [".pdf"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import fitz
+
+        with fitz.Document(
+            stream=document.read(), filetype=Path(document.name).suffix
+        ) as document:
+            for number, page in enumerate(document, 1):
+                yield Page(text=page.get_text(sort=True), number=number)

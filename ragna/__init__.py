@@ -8,13 +8,13 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import assistants, core, document_handlers, source_storages, utils
+from . import assistants, core, source_storages, utils
 
 from .core import Config, Rag
 
 
 def builtin_config():
-    from ragna.core import Assistant, DocumentHandler, RagConfig, SourceStorage
+    from ragna.core import Assistant, RagConfig, SourceStorage
 
     def get_available_components(module, cls):
         return [
@@ -25,9 +25,8 @@ def builtin_config():
 
     config = Config()
     config.rag = RagConfig(
-        database_url=f"sqlite:///{config.rag.local_cache_root}/ragna.db",
-        queue_url=config.rag.local_cache_root / "queue",
-        document_handlers=get_available_components(document_handlers, DocumentHandler),
+        database_url=f"sqlite:///{config.local_cache_root}/ragna.db",
+        queue_url=config.local_cache_root / "queue",
         source_storages=get_available_components(source_storages, SourceStorage),
         assistants=get_available_components(assistants, Assistant),
     )

@@ -12,15 +12,13 @@ from pydantic.functional_serializers import field_serializer
 
 from pydantic_settings import BaseSettings
 
-from ._components import Assistant, DocumentHandler, SourceStorage
+from ._components import Assistant, SourceStorage
 from ._document import Document
 
 from ._utils import RagnaException
 
 
 class ConfigBase:
-    env_prefix = "ragna_"
-
     @classmethod
     def customise_sources(
         cls,
@@ -47,15 +45,10 @@ class RagConfig(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_rag_"
 
-    # FIXME: validate this to be a writeable directory or create it if it doesn't exist
-    local_cache_root: Path = "~/.cache/ragna"
     database_url: Union[Literal["memory"], pydantic.AnyUrl] = "memory"
     queue_url: Union[Literal["memory"], Path, pydantic.RedisDsn] = "memory"
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"
-    document_handlers: list[ImportString[type[DocumentHandler]]] = [
-        "ragna.document_handlers.TxtDocumentHandler"
-    ]
     source_storages: list[ImportString[type[SourceStorage]]] = [
         "ragna.source_storages.RagnaDemoSourceStorage"
     ]
@@ -89,6 +82,12 @@ class UiConfig(BaseSettings):
 
 
 class Config(BaseSettings):
+    class Config(ConfigBase):
+        env_prefix = "ragna_"
+
+    # FIXME: validate this to be a writeable directory or create it if it doesn't exist
+    local_cache_root: Path = "~/.cache/ragna"
+
     rag: RagConfig = Field(default_factory=RagConfig)
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)

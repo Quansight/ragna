@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 import abc
-import dataclasses
 import datetime
 import enum
 import functools
 import inspect
-from typing import Iterator, Optional
+import uuid
+from typing import Optional
 
 import pydantic
 import pydantic.utils
 
 from ._document import Document
 
-from ._utils import RagnaException, RagnaId, RequirementsMixin
+from ._utils import RagnaException, RequirementsMixin
 
 
 class Component(RequirementsMixin):
@@ -63,29 +63,12 @@ class Component(RequirementsMixin):
         return models
 
 
-@dataclasses.dataclass
-class Page:
-    text: str
-    number: Optional[int] = None
-
-
-class DocumentHandler(Component, abc.ABC):
-    @classmethod
-    @abc.abstractmethod
-    def supported_documents(cls) -> list[str]:
-        pass
-
-    @abc.abstractmethod
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
-        ...
-
-
 class Source:
     def __init__(
         self,
         *,
-        id: RagnaId,
-        document_id: RagnaId,
+        id: uuid.UUID,
+        document_id: uuid.UUID,
         document_name: str,
         location: str,
         content: str,
@@ -131,7 +114,7 @@ class Message:
     def __init__(
         self,
         *,
-        id: RagnaId,
+        id: uuid.UUID,
         content: str,
         role: MessageRole,
         sources: Optional[list[Source]] = None,
