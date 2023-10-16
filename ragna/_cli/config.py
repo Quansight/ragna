@@ -49,8 +49,8 @@ def config_wizard() -> Config:
 
 def check_config(config: Config):
     for title, components in [
-        ("source storages", config.rag.source_storages),
-        ("assistants", config.rag.assistants),
+        ("source storages", config.core.source_storages),
+        ("assistants", config.core.assistants),
     ]:
         table = Table(
             "",

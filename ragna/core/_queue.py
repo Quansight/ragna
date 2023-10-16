@@ -40,11 +40,11 @@ T = TypeVar("T", bound=Component)
 class Queue:
     def __init__(self, config: Config, *, load_components: Optional[bool]):
         self._config = config
-        self._huey = self._load_huey(config.rag.queue_url)
+        self._huey = self._load_huey(config.core.queue_url)
 
         for component in itertools.chain(
-            config.rag.source_storages,
-            config.rag.assistants,
+            config.core.source_storages,
+            config.core.assistants,
         ):
             self.parse_component(component, load=load_components)
 

@@ -3,14 +3,14 @@ import uuid
 from typing import Annotated
 
 import aiofiles
-from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 
 import ragna
 import ragna.core
 
 from ragna.core import Config, Rag, RagnaException
 
-from . import database, schemas
+from . import _database as database, _schemas as schemas
 
 
 def process_ragna_exception(afn):
@@ -34,7 +34,7 @@ def process_ragna_exception(afn):
     return wrapper
 
 
-def api(config: Config):
+def app(config: Config):
     rag = Rag(config)
 
     app = FastAPI()
@@ -44,11 +44,13 @@ def api(config: Config):
     async def health() -> str:
         return ragna.__version__
 
-    async def _authorize_user(user: str) -> str:
-        # FIXME: implement auth here
-        return user
+    authentication = config.api.authentication()
 
-    UserDependency = Annotated[str, Depends(_authorize_user)]
+    @app.post("/token")
+    async def create_token(request: Request) -> str:
+        return await authentication.create_token(request)
+
+    UserDependency = Annotated[str, Depends(authentication.get_user)]
 
     @app.get("/components")
     @process_ragna_exception
@@ -56,10 +58,10 @@ def api(config: Config):
         return schemas.Components(
             source_storages=[
                 source_storage.display_name()
-                for source_storage in config.rag.source_storages
+                for source_storage in config.core.source_storages
             ],
             assistants=[
-                assistant.display_name() for assistant in config.rag.assistants
+                assistant.display_name() for assistant in config.core.assistants
             ],
         )
 
@@ -85,7 +87,7 @@ def api(config: Config):
         name: str,
     ) -> schemas.DocumentUploadInfo:
         document = schemas.Document(name=name)
-        url, data, metadata = await config.rag.document.get_upload_info(
+        url, data, metadata = await config.core.document.get_upload_info(
             config=config, user=user, id=document.id, name=document.name
         )
         database.add_document(session, user=user, document=document, metadata=metadata)
@@ -96,13 +98,13 @@ def api(config: Config):
     async def upload_document(
         session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.rag.document, ragna.core.LocalDocument):
+        if not issubclass(rag.config.core.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
 
-        user, id = ragna.core.LocalDocument._decode_upload_token(
+        user, id = ragna.core.LocalDocument.decode_upload_token(
             token, secret=rag.config.api.upload_token_secret
         )
         document, metadata = database.get_document(session, user=user, id=id)
@@ -122,7 +124,7 @@ def api(config: Config):
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                rag.config.rag.document(
+                rag.config.core.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(

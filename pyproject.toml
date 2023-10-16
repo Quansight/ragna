@@ -18,31 +18,24 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
+    "aiofiles",
+    "fastapi",
     "huey",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     "pydantic>=2",
     "pydantic-settings>=2",
+    "PyJWT",
+    "python-multipart",
     "rich",
+    "sqlalchemy>=2",
     "tomlkit",
     "typer",
+    "uvicorn",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-api = [
-    "aiofiles",
-    "fastapi",
-    "PyJWT",
-    "python-multipart",
-    "sqlalchemy>=2",
-    "uvicorn",
-]
-ui = [
-#    "panel ==1.3",
-#    "param",
-    "httpx",
-]
 # to update the entries below, run scripts/update_optional_dependencies.py
 builtin-document-handlers = [
     "pymupdf",
@@ -55,18 +48,12 @@ builtin-components = [
     "tiktoken",
 ]
 complete = [
-    "aiofiles",
     "chromadb>=0.4",
-    "fastapi",
     "httpx",
     "lancedb>=0.2",
-    "PyJWT",
     "pymupdf",
-    "python-multipart",
     "sentence-transformers",
-    "sqlalchemy>=2",
     "tiktoken",
-    "uvicorn",
 ]
 
 [tool.setuptools_scm]

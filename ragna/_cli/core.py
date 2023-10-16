@@ -137,7 +137,7 @@ def api(
         raise typer.Exit(1)
 
     if start_worker is None:
-        start_worker = config.rag.queue_url != "memory"
+        start_worker = config.core.queue_url != "memory"
     if start_worker:
         process = subprocess.Popen(
             [
@@ -156,11 +156,11 @@ def api(
 
     import uvicorn
 
-    from ragna._api import api
+    from ragna.api._core import app
 
     try:
         components = urlsplit(config.api.url)
-        uvicorn.run(api(config), host=components.hostname, port=components.port)
+        uvicorn.run(app(config), host=components.hostname, port=components.port)
     finally:
         if process is not None:
             process.kill()

@@ -1,24 +1,28 @@
 import datetime
 import json
+import os
 
 import httpx
 
 
 def main():
-    client = httpx.Client()
-    url = "http://127.0.0.1:31476"
-    user = "Ragna"
+    client = httpx.Client(base_url="http://127.0.0.1:31476")
 
-    assert client.get(f"{url}").is_success
+    assert client.get("/").is_success
 
-    ## documents
+    ## authentication
+
+    username = password = os.getlogin()
+    response = client.post("/token", data={"username": username, "password": password})
+    assert response.is_success
+    client.headers["Authorization"] = f"Bearer {response.json()}"
+
+    # ## documents
 
     documents = []
     for i in range(5):
         name = f"document{i}.txt"
-        document_info = client.get(
-            f"{url}/document", params={"user": user, "name": name}
-        ).json()
+        document_info = client.get("/document", params={"name": name}).json()
         client.post(
             document_info["url"],
             data=document_info["data"],
@@ -29,8 +33,7 @@ def main():
     ## chat 1
 
     chat = client.post(
-        f"{url}/chats",
-        params={"user": user},
+        "/chats",
         json={
             "name": "Test chat",
             "documents": documents[:2],
@@ -40,20 +43,13 @@ def main():
         },
     ).json()
 
-    client.post(
-        f"{url}/chats/{chat['id']}/prepare",
-        params={"user": user},
-    )
-    client.post(
-        f"{url}/chats/{chat['id']}/answer",
-        params={"user": user, "prompt": "Hello!"},
-    )
+    client.post(f"/chats/{chat['id']}/prepare")
+    client.post(f"/chats/{chat['id']}/answer", json={"prompt": "Hello!"})
 
     ## chat 2
 
     chat = client.post(
-        f"{url}/chats",
-        params={"user": user},
+        "/chats",
         json={
             "name": f"Chat {datetime.datetime.now():%x %X}",
             "documents": documents[2:4],
@@ -62,23 +58,22 @@ def main():
             "params": {},
         },
     ).json()
-    client.post(
-        f"{url}/chats/{chat['id']}/prepare",
-        params={"user": user},
-    )
+    client.post(f"/chats/{chat['id']}/prepare")
     for _ in range(3):
         client.post(
-            f"{url}/chats/{chat['id']}/answer",
-            params={"user": user, "prompt": "What is Ragna? Please, I need to know!"},
+            f"/chats/{chat['id']}/answer",
+            json={"prompt": "What is Ragna? Please, I need to know!"},
         )
 
     ## chat 3
 
     chat = client.post(
-        f"{url}/chats",
-        params={"user": user},
+        "/chats",
         json={
-            "name": "Really long chat name that likely needs to be truncated somehow. If you can read this, truncating failed :boom:",
+            "name": (
+                "Really long chat name that likely needs to be truncated somehow. "
+                "If you can read this, truncating failed :boom:"
+            ),
             "documents": [documents[i] for i in [0, 2, 4]],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
@@ -86,22 +81,15 @@ def main():
         },
     ).json()
     client.post(
-        f"{url}/chats/{chat['id']}/prepare",
-        params={"user": user},
+        f"/chats/{chat['id']}/prepare",
     )
+    client.post(f"/chats/{chat['id']}/answer", json={"prompt": "Hello!"})
     client.post(
-        f"{url}/chats/{chat['id']}/answer",
-        params={"user": user, "prompt": "Hello!"},
-    )
-    client.post(
-        f"{url}/chats/{chat['id']}/answer",
-        params={
-            "user": user,
-            "prompt": "Ok, in that case show me some pretty markdown!",
-        },
+        f"/chats/{chat['id']}/answer",
+        json={"prompt": "Ok, in that case show me some pretty markdown!"},
     )
 
-    response = client.get(f"{url}/chats", params={"user": user})
+    response = client.get("/chats")
     print(json.dumps(response.json()))
 
 

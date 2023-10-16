@@ -167,7 +167,7 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.rag.document(document)
+                document = self._rag.config.core.document(document)
 
             if not document.is_readable():
                 raise RagnaException(

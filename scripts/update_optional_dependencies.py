@@ -15,16 +15,15 @@ PYPROJECT_TOML = HERE / ".." / "pyproject.toml"
 
 def main():
     optional_dependencies = make_optional_dependencies(
-        extract_manual(),
-        builtin_document_handlers=extract_builtin_document_handlers(),
-        builtin_components=extract_builtin_components(),
+        builtin_document_handlers=extract_builtin_document_handler_requirements(),
+        builtin_components=extract_builtin_component_requirements(),
     )
     update_pyproject_toml(optional_dependencies)
 
 
-def make_optional_dependencies(manual, **automatic):
-    complete = defaultdict(list, manual)
-    for requirements in automatic.values():
+def make_optional_dependencies(**optional_requirements):
+    complete = defaultdict(list)
+    for requirements in optional_requirements.values():
         for name, specifiers in requirements.items():
             complete[name].extend(specifiers)
 
@@ -34,7 +33,7 @@ def make_optional_dependencies(manual, **automatic):
     }
 
     optional_dependencies = {}
-    for section, requirements in automatic.items():
+    for section, requirements in optional_requirements.items():
         optional_dependencies[section.replace("_", "-")] = sorted(
             (complete[name] for name in requirements), key=str.casefold
         )
@@ -42,20 +41,7 @@ def make_optional_dependencies(manual, **automatic):
     return optional_dependencies
 
 
-def extract_manual():
-    with open(PYPROJECT_TOML) as file:
-        document = tomlkit.load(file)
-
-    requirements = defaultdict(list)
-    for section in ["api", "ui"]:
-        for requirement_string in document["project"]["optional-dependencies"][section]:
-            requirement = Requirement(requirement_string)
-            requirements[requirement.name].append(requirement.specifier)
-
-    return dict(requirements)
-
-
-def extract_builtin_document_handlers():
+def extract_builtin_document_handler_requirements():
     requirements = defaultdict(list)
     for obj in ragna.core.__dict__.values():
         if (
@@ -66,7 +52,7 @@ def extract_builtin_document_handlers():
     return dict(requirements)
 
 
-def extract_builtin_components():
+def extract_builtin_component_requirements():
     requirements = defaultdict(list)
     for module, cls in [
         (ragna.source_storages, SourceStorage),

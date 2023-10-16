@@ -8,6 +8,6 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import assistants, core, source_storages, utils
+from . import api, assistants, core, source_storages, utils
 
 from .core import Config, Rag

@@ -10,6 +10,8 @@ from pydantic import Field, field_validator, ImportString
 
 from pydantic_settings import BaseSettings
 
+from ragna.api import Authentication
+
 from ._components import Assistant, SourceStorage
 from ._document import Document
 from ._utils import RagnaException
@@ -38,7 +40,7 @@ class ConfigBase:
         return env_settings, init_settings
 
 
-class RagConfig(BaseSettings):
+class CoreConfig(BaseSettings):
     class Config(ConfigBase):
         env_prefix = "ragna_rag_"
 
@@ -59,6 +61,10 @@ class ApiConfig(BaseSettings):
 
     url: str = "http://127.0.0.1:31476"
     database_url: str = "memory"
+
+    authentication: ImportString[
+        type[Authentication]
+    ] = "ragna.api.RagnaDemoAuthentication"
 
     upload_token_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32)[:32]
@@ -88,7 +94,7 @@ class Config(BaseSettings):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    rag: RagConfig = Field(default_factory=RagConfig)
+    core: CoreConfig = Field(default_factory=CoreConfig)
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 
@@ -127,11 +133,11 @@ class Config(BaseSettings):
 
         config = cls()
 
-        config.rag.queue_url = str(config.local_cache_root / "queue")
-        config.rag.source_storages = get_available_components(
+        config.core.queue_url = str(config.local_cache_root / "queue")
+        config.core.source_storages = get_available_components(
             source_storages, SourceStorage
         )
-        config.rag.assistants = get_available_components(assistants, Assistant)
+        config.core.assistants = get_available_components(assistants, Assistant)
 
         config.api.database_url = f"sqlite:///{config.local_cache_root}/ragna.db"
 

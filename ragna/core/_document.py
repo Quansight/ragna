@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Iterator, Optional, Type, TYPE_CHECKING, TypeVar
 
+import jwt
 from pydantic import BaseModel
 
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
@@ -60,7 +61,6 @@ class Document(RequirementsMixin, abc.ABC):
         yield from self.handler.extract_pages(self)
 
 
-# FIXME: see if the S3 document is well handled
 class LocalDocument(Document):
     _JWT_ALGORITHM = "HS256"
 
@@ -68,14 +68,6 @@ class LocalDocument(Document):
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
-        if not PackageRequirement("PyJWT").is_available():
-            raise RagnaException(
-                "The package PyJWT is required to generate upload token, "
-                "but is not available."
-            )
-
-        import jwt
-
         url = f"{config.api.url}/document"
         data = {
             "token": jwt.encode(
@@ -84,7 +76,6 @@ class LocalDocument(Document):
                     "id": str(id),
                     "exp": time.time() + config.api.upload_token_ttl,
                 },
-                # FIXME: no
                 key=config.api.upload_token_secret,
                 algorithm=cls._JWT_ALGORITHM,
             )
@@ -93,9 +84,7 @@ class LocalDocument(Document):
         return url, data, metadata
 
     @classmethod
-    def _decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, uuid.UUID]:
-        import jwt
-
+    def decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, uuid.UUID]:
         try:
             payload = jwt.decode(token, key=secret, algorithms=cls._JWT_ALGORITHM)
         except jwt.InvalidSignatureError:

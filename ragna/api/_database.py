@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker as _sessionmaker
 
 from ragna.core import RagnaException
 
-from . import orm, schemas
+from . import _orm as orm, _schemas as schemas
 
 
 def get_sessionmaker(database_url: str) -> Callable[[], Session]:

@@ -22,7 +22,7 @@ from ._components import (
     SourceStorage,
 )  # usort: skip
 
-from ._config import RagConfig, Config, ApiConfig, UiConfig  # usort: skip
+from ._config import CoreConfig, Config, ApiConfig, UiConfig  # usort: skip
 
 from ._queue import task_config
 from ._rag import Chat, Rag
