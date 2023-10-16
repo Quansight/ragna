@@ -2,14 +2,12 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-
 from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
 import typer
 
 import ragna
-
 from ragna.core import PackageRequirement
 from ragna.core._queue import Queue
 from .config import (
@@ -47,7 +45,7 @@ def _main(
     pass
 
 
-@app.command(help="Create or check Ragna configurations.")
+@app.command(help="Create or check configurations.")
 def config(
     *,
     output_path: Annotated[
@@ -90,19 +88,19 @@ def config(
         config = config_wizard()
 
     if check:
-        is_available = check_config()
+        is_available = check_config(config)
         raise typer.Exit(int(not is_available))
 
     config.to_file(output_path, force=force)
 
 
-@app.command(help="Start worker(s).")
+@app.command(help="Start workers.")
 def worker(
     *,
     config: ConfigOption = "builtin",
-    num_workers: Annotated[
+    num_threads: Annotated[
         int,
-        typer.Option("--num-workers", "-n", help="Number of worker threads to start."),
+        typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
 ):
     if config.queue_database_url == "memory":
@@ -110,7 +108,7 @@ def worker(
         raise typer.Exit(1)
 
     queue = Queue(config, load_components=True)
-    worker = queue.create_worker(num_workers)
+    worker = queue.create_worker(num_threads)
 
     # FIXME: we need to configure this properly
     logging.basicConfig(level=logging.INFO)
@@ -153,13 +151,6 @@ def api(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        # FIXME: this could easily result in deadlock in case the line in question never
-        #  comes up. We need a timeout here.
-        for line in process.stderr.readline():
-            if not isinstance(line, bytes):
-                continue
-            if b"Huey consumer started" in line:
-                break
     else:
         process = None
 

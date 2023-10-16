@@ -1,12 +1,12 @@
 from collections import defaultdict
-
 from typing import Annotated, Type
 
+import rich
 import typer
+from rich.table import Table
 
 import ragna
-
-from ragna.core import Config, Requirement
+from ragna.core import Config, EnvVarRequirement, PackageRequirement, Requirement
 
 
 def parse_config(value: str) -> Config:
@@ -29,7 +29,8 @@ COMMON_CONFIG_OPTION_KWARGS = dict(
         "Configuration to use. "
         "Can be path to a Ragna configuration file, 'demo', or 'builtin'.\n\n"
         "If 'demo', loads a minimal configuration without persistent state.\n\n"
-        "If 'builtin', loads a configuration with all available builtin components."
+        "If 'builtin', loads a configuration with all available builtin components, "
+        "but without extra infrastructure requirements."
     ),
 )
 ConfigOption = Annotated[
@@ -39,52 +40,37 @@ ConfigOption = Annotated[
 
 
 def config_wizard() -> Config:
-    print("Wizard is not there yet!")
+    print(
+        "Unfortunately, we over-promised here. There is no interactive wizard yet :( "
+        "Continuing with the deme configuration."
+    )
     return Config.demo()
 
 
-def check_config():
-    print("all good!")
-    # config = json.loads(Config().model_dump_json())
-    # confg = Config().model_dump()
-    # # FIXME: handle secrets either plain or not at all
-    #
-    # a = tomlkit.dumps(confg)
-    # print(a)
-    #
-    # # a = tomlkit.TOMLDocument.fromkeys(list(config.keys()), list(config.values()))
-    #
-    # print(tomlkit.dumps(a))
+def check_config(config: Config):
+    for title, components in [
+        ("source storages", config.rag.source_storages),
+        ("assistants", config.rag.assistants),
+    ]:
+        table = Table(
+            "",
+            "name",
+            "environment variables",
+            "packages",
+            show_lines=True,
+            title=title,
+        )
 
-    # if not PackageRequirement("rich").is_available():
-    #     print("Please install rich")
-    #     raise typer.Exit(1)
-    #
-    # import rich
-    # from rich.table import Table
-    #
-    # table = Table(
-    #     "",
-    #     "name",
-    #     "environment variables",
-    #     "packages",
-    #     show_lines=True,
-    # )
-    #
-    # for name, cls in itertools.chain(
-    #     config.registered_source_storage_classes.items(),
-    #     config.registered_assistant_classes.items(),
-    # ):
-    #     requirements = _split_requirements(cls.requirements())
-    #     table.add_row(
-    #         _yes_or_no(cls.is_available()),
-    #         name,
-    #         _format_requirements(requirements[EnvVarRequirement]),
-    #         _format_requirements(requirements[PackageRequirement]),
-    #     )
-    #
-    # rich.print(table)
-    pass
+        for component in components:
+            requirements = _split_requirements(component.requirements())
+            table.add_row(
+                _yes_or_no(component.is_available()),
+                component.display_name(),
+                _format_requirements(requirements[EnvVarRequirement]),
+                _format_requirements(requirements[PackageRequirement]),
+            )
+
+        rich.print(table)
 
 
 def _split_requirements(
@@ -98,7 +84,7 @@ def _split_requirements(
 
 def _format_requirements(requirements: list[Requirement]):
     if not requirements:
-        return "N/A"
+        return ""
 
     return "\n".join(f"{_yes_or_no(req.is_available())} {req}" for req in requirements)
 
