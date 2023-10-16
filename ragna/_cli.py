@@ -122,6 +122,10 @@ def worker(
     config: ConfigAnnotated = "ragna.demo_config",
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
+    if config.queue_database_url == "memory":
+        print(f"With {config.queue_database_url=} no worker is required!")
+        raise typer.Exit(1)
+
     queue = Queue(config, load_components=True)
     worker = queue.create_worker(num_workers)
 
