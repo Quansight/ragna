@@ -7,7 +7,7 @@ import uuid
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Type, TypeVar, Union
 
-from pydantic import BaseModel, ConfigDict, create_model, Extra, Field
+from pydantic import BaseModel, ConfigDict, create_model, Field
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 
@@ -196,9 +196,9 @@ class Chat:
             *assistant_models.values(),
         )
 
-        chat_params = ChatModel(**params).dict(exclude_none=True)
+        chat_params = ChatModel(**params).model_dump(exclude_none=True)
         return {
-            component_and_action: model(**chat_params).dict()
+            component_and_action: model(**chat_params).model_dump()
             for component_and_action, model in itertools.chain(
                 source_storage_models.items(), assistant_models.items()
             )
@@ -207,7 +207,7 @@ class Chat:
     def _merge_models(self, *models):
         raw_field_definitions = defaultdict(list)
         for model_cls in models:
-            for name, field in model_cls.__fields__.items():
+            for name, field in model_cls.model_fields.items():
                 raw_field_definitions[name].append(
                     (field.annotation, field.is_required())
                 )
@@ -226,7 +226,7 @@ class Chat:
             field_definitions[name] = (type_, default)
 
         return create_model(
-            str(self), __config__=ConfigDict(extra=Extra.forbid), **field_definitions
+            str(self), __config__=ConfigDict(extra="forbid"), **field_definitions
         )
 
     async def _enqueue(self, component, action, *args):
