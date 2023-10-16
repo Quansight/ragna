@@ -105,6 +105,10 @@ def worker(
         typer.Option("--num-workers", "-n", help="Number of worker threads to start."),
     ] = 1,
 ):
+    if config.queue_database_url == "memory":
+        print(f"With {config.queue_database_url=} no worker is required!")
+        raise typer.Exit(1)
+
     queue = Queue(config, load_components=True)
     worker = queue.create_worker(num_workers)
 
