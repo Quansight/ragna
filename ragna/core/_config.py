@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import secrets
-
 from pathlib import Path
 from typing import Union
 
@@ -13,7 +12,6 @@ from pydantic_settings import BaseSettings
 
 from ._components import Assistant, SourceStorage
 from ._document import Document
-
 from ._utils import RagnaException
 
 
