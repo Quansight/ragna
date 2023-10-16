@@ -21,11 +21,10 @@ class Authentication(abc.ABC):
 class RagnaDemoAuthentication(Authentication):
     def __init__(self):
         self._password = os.environ.get("AI_PROXY_DEMO_AUTHENTICATION_PASSWORD")
-        self._secret = os.environ.get(
-            "AI_PROXY_DEMO_AUTHENTICATION_SECRET", secrets.token_urlsafe(32)
-        )
 
+    _JWT_SECRET = secrets.token_urlsafe(32)
     _JWT_ALGORITHM = "HS256"
+
     _ONE_WEEK = 60 * 60 * 24 * 7
 
     async def create_token(self, request: Request) -> str:
@@ -34,17 +33,14 @@ class RagnaDemoAuthentication(Authentication):
             password = form.get("password")
 
         if username is None or password is None:
-            # FIXME: CHECK WHAT FASTAPI does
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        if (self._password is None and password != username) or (
-            self._password is not None and password != self._password
-        ):
+        if self._password is not None and password != self._password:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         return jwt.encode(
             payload={"user": username, "exp": time.time() + self._ONE_WEEK},
-            key=self._secret,
+            key=self._JWT_SECRET,
             algorithm=self._JWT_ALGORITHM,
         )
 
@@ -62,7 +58,7 @@ class RagnaDemoAuthentication(Authentication):
 
         try:
             payload = jwt.decode(
-                token, key=self._secret, algorithms=self._JWT_ALGORITHM
+                token, key=self._JWT_SECRET, algorithms=self._JWT_ALGORITHM
             )
         except (jwt.InvalidSignatureError, jwt.ExpiredSignatureError):
             raise unauthorized

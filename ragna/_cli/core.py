@@ -8,7 +8,6 @@ from urllib.parse import urlsplit
 import typer
 
 import ragna
-from ragna.core import PackageRequirement
 from ragna.core._queue import Queue
 from .config import (
     check_config,
@@ -127,15 +126,6 @@ def api(
         ),
     ] = None,
 ):
-    required_packages = [
-        package
-        for package in ["fastapi", "uvicorn"]
-        if not PackageRequirement(package).is_available()
-    ]
-    if required_packages:
-        print(f"Please install {', '.join(required_packages)}")
-        raise typer.Exit(1)
-
     if start_worker is None:
         start_worker = config.core.queue_url != "memory"
     if start_worker:
