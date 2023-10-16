@@ -11,9 +11,9 @@ from ragna.core import Config, Requirement
 
 def parse_config(value: str) -> Config:
     if value == "demo":
-        config = Config()
+        config = Config.demo()
     elif value == "builtin":
-        config = ragna.builtin_config()
+        config = Config.builtin()
     else:
         config = Config.from_file(value)
     config.__ragna_cli_value__ = value
@@ -39,8 +39,8 @@ ConfigOption = Annotated[
 
 
 def config_wizard() -> Config:
-    # FIXME
-    return Config()
+    print("Wizard is not there yet!")
+    return Config.demo()
 
 
 def check_config():

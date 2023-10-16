@@ -108,3 +108,31 @@ class Config(BaseSettings):
 
         with open(path, "w") as file:
             tomlkit.dump(self.model_dump(mode="json"), file)
+
+    @classmethod
+    def demo(cls):
+        return cls()
+
+    @classmethod
+    def builtin(cls):
+        from ragna import assistants, source_storages
+        from ragna.core import Assistant, SourceStorage
+
+        def get_available_components(module, cls):
+            return [
+                obj
+                for obj in module.__dict__.values()
+                if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available()
+            ]
+
+        config = cls()
+
+        config.rag.queue_url = str(config.local_cache_root / "queue")
+        config.rag.source_storages = get_available_components(
+            source_storages, SourceStorage
+        )
+        config.rag.assistants = get_available_components(assistants, Assistant)
+
+        config.api.database_url = f"sqlite:///{config.local_cache_root}/ragna.db"
+
+        return config
