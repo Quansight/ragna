@@ -154,7 +154,7 @@ class Chat:
         )
         self._messages.append(answer)
 
-        # FIXME:
+        # FIXME: add error handling
         # return (
         #     "I'm sorry, but I'm having trouble helping you at this time. "
         #     "Please retry later. "
@@ -169,9 +169,9 @@ class Chat:
             if not isinstance(document, Document):
                 document = self._rag.config.rag.document(document)
 
-            if not document.is_available():
+            if not document.is_readable():
                 raise RagnaException(
-                    "Document not available",
+                    "Document not readable",
                     document=document,
                     http_status_code=404,
                 )

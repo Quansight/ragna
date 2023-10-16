@@ -62,7 +62,9 @@ class ApiConfig(BaseSettings):
     url: str = "http://127.0.0.1:31476"
     database_url: str = "memory"
 
-    upload_token_secret: str = Field(default_factory=lambda: secrets.token_urlsafe(64))
+    upload_token_secret: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32)[:32]
+    )
     upload_token_ttl: int = 5 * 60
 
 
@@ -96,7 +98,7 @@ class Config(BaseSettings):
     def from_file(cls, path: Union[str, Path]) -> Config:
         path = Path(path).expanduser().resolve()
         if not path.is_file():
-            raise RagnaException
+            raise RagnaException(f"{path} does not exist.")
 
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
@@ -104,7 +106,7 @@ class Config(BaseSettings):
     def to_file(self, path: Union[str, Path], *, force: bool = False):
         path = Path(path).expanduser().resolve()
         if path.is_file() and not force:
-            raise RagnaException
+            raise RagnaException(f"{path} already exist.")
 
         with open(path, "w") as file:
             tomlkit.dump(self.model_dump(mode="json"), file)

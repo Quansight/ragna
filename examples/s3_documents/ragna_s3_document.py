@@ -1,15 +1,28 @@
 import os
-
 import uuid
 from typing import Any
 
-from ragna.assistants import RagnaDemoAssistant
-
-from ragna.core import Config, Document, PackageRequirement, RagnaException
-from ragna.source_storages import RagnaDemoSourceStorage
+from ragna.core import (
+    Config,
+    Document,
+    EnvVarRequirement,
+    PackageRequirement,
+    RagnaException,
+    Requirement,
+)
 
 
 class S3Document(Document):
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [
+            PackageRequirement("boto3"),
+            EnvVarRequirement("AWS_ACCESS_KEY_ID"),
+            EnvVarRequirement("AWS_SECRET_ACCESS_KEY"),
+            EnvVarRequirement("AWS_REGION"),
+            EnvVarRequirement("AWS_S3_BUCKET"),
+        ]
+
     @classmethod
     def _session(cls):
         import boto3
@@ -34,7 +47,7 @@ class S3Document(Document):
         response = s3.generate_presigned_post(
             Bucket=bucket,
             Key=str(id),
-            ExpiresIn=config.upload_token_ttl,
+            ExpiresIn=config.api.upload_token_ttl,
         )
 
         url = response["url"]
@@ -43,7 +56,7 @@ class S3Document(Document):
 
         return url, data, metadata
 
-    def is_available(self) -> bool:
+    def is_readable(self) -> bool:
         session = self._session()
         s3 = session.resource("s3")
 
@@ -63,11 +76,3 @@ class S3Document(Document):
         session = self._session()
         s3 = session.resource("s3")
         return s3.Object(self.metadata["bucket"], str(self.id)).get()["Body"].read()
-
-
-config = Config(
-    state_database_url="sqlite://",
-    document_class=S3Document,
-)
-config.register_component(RagnaDemoSourceStorage)
-config.register_component(RagnaDemoAssistant)
