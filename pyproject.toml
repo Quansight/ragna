@@ -22,9 +22,8 @@ dependencies = [
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     "pydantic>=2",
-    "pydantic-settings",
+    "pydantic-settings>=2",
     "rich",
-    "sqlalchemy>=2",
     "tomlkit",
     "typer",
 ]
@@ -36,6 +35,7 @@ api = [
     "fastapi",
     "PyJWT",
     "python-multipart",
+    "sqlalchemy>=2",
     "uvicorn",
 ]
 ui = [
@@ -64,6 +64,7 @@ complete = [
     "pymupdf",
     "python-multipart",
     "sentence-transformers",
+    "sqlalchemy>=2",
     "tiktoken",
     "uvicorn",
 ]
