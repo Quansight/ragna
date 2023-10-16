@@ -1,21 +1,24 @@
 from __future__ import annotations
 
 import datetime
-from uuid import UUID
+import uuid
 
-from pydantic import BaseModel, HttpUrl, validator
-
-import ragna
+from pydantic import BaseModel, Field, HttpUrl
 
 import ragna.core
 
 
+class Components(BaseModel):
+    source_storages: list[str]
+    assistants: list[str]
+
+
 class Document(BaseModel):
-    id: ragna.core.RagnaId
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
 
     @classmethod
-    def from_core_document(cls, document: ragna.core.Document) -> Document:
+    def from_core(cls, document: ragna.core.Document) -> Document:
         return cls(
             id=document.id,
             name=document.name,
@@ -29,91 +32,53 @@ class DocumentUploadInfo(BaseModel):
 
 
 class Source(BaseModel):
-    id: ragna.core.RagnaId
+    # See orm.Source on why this is not a UUID
+    id: str
     document: Document
     location: str
 
     @classmethod
-    def from_core_source(cls, source: ragna.core.Source) -> Source:
+    def from_core(cls, source: ragna.core.Source) -> Source:
         return cls(
             id=source.id,
-            document=Document(id=source.document_id, name=source.document_name),
+            document=Document.from_core(source.document),
             location=source.location,
         )
 
 
 class Message(BaseModel):
-    id: ragna.core.RagnaId
-    role: ragna.core.MessageRole
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     content: str
-    sources: list[Source]
-    timestamp: datetime.datetime
+    role: ragna.core.MessageRole
+    sources: list[Source] = Field(default_factory=list)
+    timestamp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
+    )
 
     @classmethod
-    def from_core_message(cls, message: ragna.core.Message) -> Message:
+    def from_core(cls, message: ragna.core.Message) -> Message:
         return cls(
-            id=message.id,
-            role=message.role,
             content=message.content,
-            sources=[Source.from_core_source(s) for s in message.sources],
-            timestamp=message.timestamp,
+            role=message.role,
+            sources=[Source.from_core(source) for source in message.sources],
         )
 
 
-class ChatMetadataBase(BaseModel):
+class ChatMetadata(BaseModel):
     name: str
     source_storage: str
     assistant: str
     params: dict
-
-
-class ChatMetadataCreate(ChatMetadataBase):
-    # For some reason list[RagnaId] does not work and will get parsed into list[UUID].
-    # Thus, we use a validator below to do the conversion.
-    document_ids: list[UUID]
-
-    @validator("document_ids")
-    def uuid_to_ragna_id(cls, document_ids: list[UUID]) -> list[ragna.core.RagnaId]:
-        return [ragna.core.RagnaId.from_uuid(u) for u in document_ids]
-
-
-class ChatMetadata(ChatMetadataBase):
     documents: list[Document]
-
-    @classmethod
-    def from_core_chat(cls, chat: ragna.core.Chat) -> ChatMetadata:
-        return cls(
-            name=chat.name,
-            documents=[Document.from_core_document(d) for d in chat.documents],
-            source_storage=chat.source_storage.display_name(),
-            assistant=chat.assistant.display_name(),
-            params=chat.params,
-        )
 
 
 class Chat(BaseModel):
-    id: ragna.core.RagnaId
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
     metadata: ChatMetadata
-    messages: list[Message]
-    started: bool
-    closed: bool
-
-    @classmethod
-    def from_core_chat(cls, chat: ragna.core.Chat) -> Chat:
-        return cls(
-            id=chat.id,
-            metadata=ChatMetadata.from_core_chat(chat),
-            messages=[Message.from_core_message(m) for m in chat.messages],
-            started=chat._started,
-            closed=chat._closed,
-        )
+    messages: list[Message] = Field(default_factory=list)
+    prepared: bool = False
 
 
-class AnswerOutput(BaseModel):
+class MessageOutput(BaseModel):
     message: Message
     chat: Chat
-
-
-class Components(BaseModel):
-    source_storages: list[str]
-    assistants: list[str]

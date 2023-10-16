@@ -1,6 +1,5 @@
 import datetime
-
-from pprint import pprint
+import json
 
 import httpx
 
@@ -10,11 +9,11 @@ def main():
     url = "http://127.0.0.1:31476"
     user = "User"
 
-    assert client.get(f"{url}/health").is_success
+    assert client.get(f"{url}").is_success
 
     ## documents
 
-    document_ids = []
+    documents = []
     for i in range(5):
         name = f"document{i}.txt"
         document_info = client.get(
@@ -25,7 +24,7 @@ def main():
             data=document_info["data"],
             files={"file": f"Content of {name}".encode()},
         )
-        document_ids.append(document_info["document"]["id"])
+        documents.append(document_info["document"])
 
     ## chat 1
 
@@ -34,14 +33,14 @@ def main():
         params={"user": user},
         json={
             "name": "Test chat",
-            "document_ids": document_ids[:2],
+            "documents": documents[:2],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chats/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/prepare",
         params={"user": user},
     )
     client.post(
@@ -56,14 +55,14 @@ def main():
         params={"user": user},
         json={
             "name": f"Chat {datetime.datetime.now():%x %X}",
-            "document_ids": document_ids[2:4],
+            "documents": documents[2:4],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chats/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/prepare",
         params={"user": user},
     )
     for i in range(3):
@@ -82,14 +81,14 @@ def main():
         params={"user": user},
         json={
             "name": "Really long chat name that likely needs to be truncated somehow. If you can read this, truncating failed :boom:",
-            "document_ids": [document_ids[i] for i in [0, 2, 4]],
+            "documents": [documents[i] for i in [0, 2, 4]],
             "source_storage": "Ragna/DemoSourceStorage",
             "assistant": "Ragna/DemoAssistant",
             "params": {},
         },
     ).json()
     client.post(
-        f"{url}/chats/{chat['id']}/start",
+        f"{url}/chats/{chat['id']}/prepare",
         params={"user": user},
     )
     client.post(
@@ -104,8 +103,8 @@ def main():
         },
     )
 
-    chats = client.get(f"{url}/chats", params={"user": user}).json()
-    pprint(chats)
+    response = client.get(f"{url}/chats", params={"user": user})
+    print(json.dumps(response.json()))
 
 
 if __name__ == "__main__":

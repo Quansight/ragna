@@ -23,4 +23,4 @@ dependencies:
     - git+https://github.com/holoviz/panel@chat_components
     - mkdocs
     - mkdocs-material
-    - mkdocstrings
+    - mkdocstrings[python]

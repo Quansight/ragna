@@ -1,12 +1,6 @@
-from ragna.core import (
-    Document,
-    PackageRequirement,
-    RagnaId,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+import uuid
 
+from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
@@ -45,7 +39,7 @@ class ChromaSourceStorage(SourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
@@ -63,11 +57,11 @@ class ChromaSourceStorage(SourceStorage):
                 chunk_overlap=chunk_overlap,
                 tokenizer=self._tokenizer,
             ):
-                ids.append(str(document.id))
+                ids.append(str(uuid.uuid4()))
                 texts.append(chunk.text)
                 metadatas.append(
                     {
-                        "document_name": document.name,
+                        "document_id": str(document.id),
                         "page_numbers": page_numbers_to_str(chunk.page_numbers),
                         "num_tokens": chunk.num_tokens,
                     }
@@ -77,9 +71,10 @@ class ChromaSourceStorage(SourceStorage):
 
     def retrieve(
         self,
+        documents: list[Document],
         prompt: str,
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
@@ -120,13 +115,13 @@ class ChromaSourceStorage(SourceStorage):
         #  2. Whatever threshold we use is very much dependent on the encoding method
         #  Thus, we likely need to have a callable parameter for this class
 
+        document_map = {str(document.id): document for document in documents}
         return list(
             take_sources_up_to_max_tokens(
                 (
                     Source(
-                        id=RagnaId.make(),
-                        document_id=RagnaId(result["ids"]),
-                        document_name=result["metadatas"]["document_name"],
+                        id=result["ids"],
+                        document=document_map[result["metadatas"]["document_id"]],
                         location=result["metadatas"]["page_numbers"],
                         content=result["documents"],
                         num_tokens=result["metadatas"]["num_tokens"],
