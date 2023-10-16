@@ -49,6 +49,7 @@ builtin-components = [
     "chromadb>=0.4",
     "httpx",
     "lancedb>=0.2",
+    "pyarrow",
     "sentence-transformers",
     "tiktoken",
 ]
@@ -59,6 +60,7 @@ complete = [
     "fastapi",
     "httpx",
     "lancedb>=0.2",
+    "pyarrow",
     "python-multipart",
     "rich",
     "sentence-transformers",
