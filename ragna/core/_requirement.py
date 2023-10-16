@@ -20,8 +20,9 @@ class Requirement(abc.ABC):
 
 
 class PackageRequirement(Requirement):
-    def __init__(self, requirement_string: str):
+    def __init__(self, requirement_string: str, *, exclude_modules=()):
         self._requirement = packaging.requirements.Requirement(requirement_string)
+        self._exclude_modules = set(exclude_modules)
 
     @functools.cache
     def is_available(self) -> bool:
@@ -37,6 +38,7 @@ class PackageRequirement(Requirement):
             module_name
             for module_name, distribution_names in importlib_metadata_package_distributions().items()
             if distribution.name in distribution_names
+            and module_name not in self._exclude_modules
         }:
             try:
                 importlib.import_module(module_name)

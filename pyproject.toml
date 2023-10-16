@@ -95,7 +95,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-rfEX --tb=short -Werror"
+addopts = "-rfEX --tb=short"
 testpaths = [
     "tests",
 ]

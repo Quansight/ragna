@@ -169,7 +169,13 @@ class TxtPageExtractor(PageExtractor):
 class PdfPageExtractor(PageExtractor):
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("pymupdf")]
+        return [
+            PackageRequirement(
+                "pymupdf",
+                # See https://github.com/Quansight/ragna/issues/75
+                exclude_modules="fitz_new",
+            )
+        ]
 
     def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
         import fitz
