@@ -51,7 +51,7 @@ runs:
         git checkout -- environment.yml
 
     - name: Install redis-server if necessary
-      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != Windows)
+      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
       shell: bash -el {0}
       run: mamba install --yes --channel conda-forge redis-server
 
