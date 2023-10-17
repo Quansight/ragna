@@ -49,11 +49,11 @@ runs:
         cat environment.yml
         mamba env update --file environment.yml
         git checkout -- environment.yml
-        if [[ ${{ runner.os }} != Windows ]]; then
-          echo "Installing redis-server on ${{ runner.os }}"
-          mamba install --yes --channel conda-forge redis-server
-          echo "redis-server located at $(which redis-server)"
-        fi
+
+    - name: Install redis-server if necessary
+      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != Windows)
+      shell: bash -el {0}
+      run: mamba install --yes --channel conda-forge redis-server
 
     - name: Install ragna
       shell: bash -el {0}
