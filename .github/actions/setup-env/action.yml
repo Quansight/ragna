@@ -47,10 +47,10 @@ runs:
       run: |
         sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
         cat environment.yml
-        mamba env update --file environment.yml
+        mamba env update --quiet --file environment.yml
         git checkout -- environment.yml
-        echo ${{ os.runner }}
-        if [[ ${os.runner} != Windows ]]; then
+        echo ${{ runner.os }}
+        if [[ ${{ runner.os }} != Windows ]]; then
           mamba install --quiet --yes --channel conda-forge redis-server
         fi
 
