@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
+import getpass
 import itertools
 import os
 import uuid
@@ -10,7 +12,6 @@ from typing import Any, Iterable, Optional, Type, TypeVar, Union
 from pydantic import BaseModel, ConfigDict, create_model, Field
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
-
 from ._config import Config
 from ._document import Document
 from ._queue import Queue
@@ -48,10 +49,11 @@ class Rag:
 
 
 def _default_user():
-    try:
+    with contextlib.suppress(Exception):
+        return getpass.getuser()
+    with contextlib.suppress(Exception):
         return os.getlogin()
-    except Exception:
-        return "Ragna"
+    return "Ragna"
 
 
 class _SpecialChatParams(BaseModel):
