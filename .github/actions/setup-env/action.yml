@@ -20,9 +20,9 @@ runs:
         miniforge-version: latest
         activate-environment: ragna-dev
 
-    - name: Display conda info
-      shell: bash
-      run: conda info
+#    - name: Display conda info
+#      shell: bash
+#      run: conda info
 
     - name: Set cache date
       id: cache-key
