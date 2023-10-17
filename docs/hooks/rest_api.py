@@ -5,14 +5,14 @@ from fastapi.openapi.utils import get_openapi
 from mkdocs.config.defaults import MkDocsConfig
 
 from ragna._api import api
-from ragna.core import Rag
+from ragna.core import Config
 
 HERE = Path(__file__).parent
 DOCS_ROOT = HERE.parent
 
 
 def on_pre_build(config: MkDocsConfig) -> None:
-    app = api(Rag(load_components=False))
+    app = api(Config())
     openapi_json = get_openapi(
         title=app.title,
         version=app.version,
