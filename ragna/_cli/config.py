@@ -1,12 +1,24 @@
 from collections import defaultdict
+from pathlib import Path
 from typing import Annotated, Type
+
+import emoji
+
+import questionary
 
 import rich
 import typer
 from rich.table import Table
 
 import ragna
-from ragna.core import Config, EnvVarRequirement, PackageRequirement, Requirement
+from ragna.core import (
+    Assistant,
+    Config,
+    EnvVarRequirement,
+    PackageRequirement,
+    Requirement,
+    SourceStorage,
+)
 
 
 def parse_config(value: str) -> Config:
@@ -39,12 +51,302 @@ ConfigOption = Annotated[
 ]
 
 
-def config_wizard() -> Config:
-    print(
-        "Unfortunately, we over-promised here. There is no interactive wizard yet :( "
-        "Continuing with the deme configuration."
+def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
+    rich.print("\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n")
+
+    intent = questionary.select(
+        "Which of the following statements describes best what you want to do?",
+        choices=[
+            questionary.Choice(
+                "I want to try Ragna "
+                "without worrying about any additional dependencies or setup.",
+                value="demo",
+            ),
+            questionary.Choice(
+                "I want to try Ragna and its builtin components.",
+                value="builtin",
+            ),
+            questionary.Choice(
+                "I want to customize the most common parameters.",
+                value="common",
+            ),
+            questionary.Choice(
+                "I want to customize everything.",
+                value="custom",
+            ),
+        ],
+    ).unsafe_ask()
+
+    config = {
+        "demo": _wizard_demo,
+        "builtin": _wizard_builtin,
+        "common": _wizard_common,
+        "custom": _wizard_custom,
+    }[intent]()
+
+    if output_path.exists() and not force:
+        output_path, force = _handle_output_path(output_path=output_path, force=force)
+
+    return config, output_path, force
+
+
+def _print_special_config(name):
+    rich.print(
+        f"For this use case the {name} configuration is the perfect fit!\n"
+        f"Hint for the future: the demo configuration can also be accessed by passing "
+        f"--config {name} to ragna commands without the need for an actual "
+        f"configuration file."
     )
+
+
+def _wizard_demo() -> Config:
+    _print_special_config("demo")
     return Config.demo()
+
+
+def _config_wizard_builtin() -> Config:
+    # don't just create the builtin configuration here, but ask if that is what the user wants
+    # if yes, hint at the fact that this doesn't need a configuration file
+    # if no, go thorugh all components (including document handlers) and let the user select the ones that they want
+    # only in the next step go through all selected options and check availability
+    # ask user
+    pass
+
+
+def _config_wizard_common() -> Config:
+    # call the builtin wizard
+    # and additionally ask for
+    # cache root
+    # api / ui url
+    pass
+
+
+def _config_wizard_custom() -> Config:
+    # full custom is not really a good use case for this wizard
+    #  refer to documentation
+    # ask user if they want to go through the common options as baseline
+    pass
+
+
+def _wizard_builtin(*, hint_builtin=True) -> Config:
+    config = Config.builtin()
+
+    if questionary.confirm(
+        "Do you only want to include components which requirements are already met?",
+        default=False,
+    ).unsafe_ask():
+        if hint_builtin:
+            _print_special_config("builtin")
+        return config
+
+    config.rag.source_storages = _select_components(
+        "source storages", ragna.source_storages, SourceStorage
+    )
+    config.rag.assistants = _select_components(
+        "assistants", ragna.assistants, Assistant
+    )
+
+    return config
+
+
+def _select_components(title, module, base_cls):
+    selected_components = questionary.checkbox(
+        (
+            f"ragna has the following {title} builtin. "
+            f"Please select the ones you are interested in. "
+            f"If the requirements of a selected component ore not met, "
+            f"you'll be given more details in a follow-up question."
+        ),
+        choices=[
+            questionary.Choice(
+                component.display_name(),
+                value=component,
+                checked=component.is_available(),
+            )
+            for component in [
+                obj
+                for obj in module.__dict__.values()
+                if isinstance(obj, type)
+                and issubclass(obj, base_cls)
+                and obj is not base_cls
+            ]
+        ],
+    ).unsafe_ask()
+
+    for component in [
+        component for component in selected_components if not component.is_available()
+    ]:
+        question = [
+            (
+                f"The component {component.display_name()} "
+                f"has the following requirements that are currently not fully met:"
+            ),
+            "",
+        ]
+
+        requirements = _split_requirements(component.requirements())
+        for title, requirement_type in [
+            ("Installed packages:", PackageRequirement),
+            ("Environment variables:", EnvVarRequirement),
+        ]:
+            if requirement_type in requirements:
+                question.extend(
+                    [
+                        title,
+                        "",
+                        _format_requirements(requirements[requirement_type]),
+                        "",
+                    ]
+                )
+
+        question.append(
+            f"Are you able to meet these requirements in the future and "
+            f"thus want to include {component.display_name()} in the configuration?"
+        )
+
+        if not questionary.confirm("\n".join(question)).unsafe_ask():
+            selected_components.remove(component)
+
+    return selected_components
+
+
+def _wizard_common() -> Config:
+    config = _wizard_builtin(hint_builtin=False)
+
+    config.local_cache_root = Path(
+        questionary.path(
+            "Where should local files be stored?", default=str(config.local_cache_root)
+        ).unsafe_ask()
+    )
+
+    config.rag.queue_url = _select_queue_url(config)
+
+    config.api.url = questionary.text(
+        "At what URL do you want the ragna REST API to be served?",
+        default=config.api.url,
+    ).unsafe_ask()
+
+    if questionary.confirm(
+        "Do you want to use a SQL database to persist the chats between runs?",
+        default=True,
+    ).unsafe_ask():
+        config.api.database_url = questionary.text(
+            "What is the URL of the database?",
+            default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
+        ).unsafe_ask()
+    else:
+        config.api.database_url = "memory"
+
+    config.ui.url = questionary.text(
+        "At what URL do you want the ragna web UI to be served?",
+        default=config.ui.url,
+    ).unsafe_ask()
+
+    return config
+
+
+def _select_queue_url(config):
+    queue = questionary.select(
+        (
+            "Ragna internally uses a task queue to perform the RAG workflow. "
+            "What kind of queue do you want to use?"
+        ),
+        # FIXME: include the descriptions as actual descriptions rather than as part
+        #  of the title as soon as https://github.com/tmbo/questionary/issues/269 is
+        #  resolved.
+        choices=[
+            questionary.Choice(
+                (
+                    "memory: Everything runs sequentially on the main thread "
+                    "as if there were no task queue."
+                ),
+                value="memory",
+            ),
+            questionary.Choice(
+                (
+                    "file system: The local file system is used to build the queue. "
+                    "Starting a ragna worker is required. "
+                    "Requires the worker to be run on the same machine as the main "
+                    "thread."
+                ),
+                value="file_system",
+            ),
+            questionary.Choice(
+                (
+                    "redis: Redis is used as queue. Starting a ragna worker is "
+                    "required."
+                ),
+                value="redis",
+            ),
+        ],
+    ).unsafe_ask()
+
+    if queue == "memory":
+        return "memory"
+    elif queue == "file_system":
+        return questionary.path(
+            "Where do you want to store the queue files?",
+            default=str(config.local_cache_root / "queue"),
+        ).unsafe_ask()
+    elif queue == "redis":
+        return questionary.text(
+            "What is the URL of the Redis instance?",
+            default="redis://127.0.0.1:6379",
+        ).unsafe_ask()
+
+
+def _wizard_custom() -> Config:
+    if questionary.confirm(
+        (
+            "Customizing everything is certainly a valid use case. "
+            "However, due to the many available options, "
+            "this is not feasible in an interactive wizard. "
+            "Please have a look at the documentation instead. "
+            "Do you want to create a configuration by customizing the most common "
+            "parameters in order to have a basis for the full customization?"
+        ),
+        default=True,
+    ).unsafe_ask():
+        return _wizard_common()
+    else:
+        raise typer.Abort()
+
+
+def _handle_output_path(*, output_path, force):
+    action = questionary.select(
+        (
+            f"The output path {output_path} already exists "
+            f"and you didn't pass the --force flag to overwrite it. "
+            f"What do you want to do?"
+        ),
+        choices=[
+            questionary.Choice("Overwrite the existing file.", value="overwrite"),
+            questionary.Choice("Select a new output path.", value="new"),
+        ],
+    ).unsafe_ask()
+
+    if action == "overwrite":
+        force = True
+    elif action == "new":
+        while True:
+            output_path = (
+                Path(
+                    questionary.path(
+                        "Please provide a different output path "
+                        "to write the generated config to:",
+                        default=str(output_path),
+                    ).unsafe_ask()
+                )
+                .expanduser()
+                .resolve()
+            )
+
+            if not output_path.exists():
+                break
+
+            rich.print(f"The output path {output_path} already exists.")
+
+    return output_path, force
 
 
 def check_config(config: Config):
@@ -90,4 +392,4 @@ def _format_requirements(requirements: list[Requirement]):
 
 
 def _yes_or_no(condition):
-    return ":white_check_mark:" if condition else ":x:"
+    return emoji.emojize(":check_mark_button:" if condition else ":cross_mark:")

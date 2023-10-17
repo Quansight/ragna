@@ -18,12 +18,14 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
+    "emoji",
     "huey",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     "pydantic>=2",
     "pydantic-settings>=2",
     "redis",
+    "questionary",
     "rich",
     "tomlkit",
     "typer",
