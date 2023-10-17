@@ -1,8 +1,9 @@
 import contextlib
-import signal
+import functools
 import socket
 import subprocess
 import sys
+import threading
 
 
 @contextlib.contextmanager
@@ -23,35 +24,37 @@ def background_subprocess(
             sys.stderr.flush()
 
 
-@contextlib.contextmanager
 def timeout_after(seconds=5, *, message=None):
-    if not hasattr(signal, "SIGALRM"):
-        raise RuntimeError(
-            "Timeout is implemented using signal.SIGALRM, "
-            "but the current platform doesn't support it. "
-        )
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            msg = f"Timeout after {seconds:.1f} seconds"
+            if message is not None:
+                msg = f"{msg}: {message}"
 
-    __tracebackhide__ = True
+            result = TimeoutError(msg)
 
-    class InternalTimeoutError(Exception):
-        pass
+            def target():
+                nonlocal result
+                try:
+                    result = fn(*args, **kwargs)
+                except Exception as exc:
+                    result = exc
 
-    def handler(signum, frame):
-        __tracebackhide__ = True
-        raise InternalTimeoutError
+            thread = threading.Thread(target=target)
+            thread.daemon = True
 
-    signal.signal(signal.SIGALRM, handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    except InternalTimeoutError:
-        msg = f"Timeout after {seconds:.1f} seconds"
-        if message is not None:
-            msg = f"{msg}: {message}"
-        raise TimeoutError(msg) from None
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+            thread.start()
+            thread.join(seconds)
+
+            if isinstance(result, Exception):
+                raise result
+
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 def get_available_port():

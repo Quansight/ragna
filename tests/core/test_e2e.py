@@ -33,8 +33,11 @@ class TestSmoke:
         with open(document_path, "w"):
             pass
 
-        with timeout_after():
-            answer = asyncio.run(self.main(config, [document_path]))
+        @timeout_after()
+        def main():
+            return asyncio.run(self.main(config, [document_path]))
+
+        answer = main()
 
         assert isinstance(answer, ragna.core.Message)
         assert answer.role is ragna.core.MessageRole.ASSISTANT
@@ -53,7 +56,9 @@ class TestSmoke:
         with background_subprocess(
             [sys.executable, "-m", "ragna", "worker", "--config", str(config_path)]
         ) as process:
-            with timeout_after(message="Unable to start worker"):
+
+            @timeout_after(message="Unable to start worker")
+            def wait_for_worker():
                 # This seems quite brittle, but I didn't find a better way to check
                 # whether the worker is ready. We are checking the logged messages until
                 # we see the "ready" message.
@@ -61,7 +66,9 @@ class TestSmoke:
                     sys.stderr.buffer.write(line)
                     if b"Huey consumer started" in line:
                         sys.stderr.flush()
-                        break
+                        return
+
+            wait_for_worker()
             yield
 
     @pytest.mark.parametrize("scheme", ["", "file://"])
@@ -85,14 +92,16 @@ class TestSmoke:
         with background_subprocess([redis_server_executable, "--port", str(port)]):
             connection = redis.Redis.from_url(url)
 
-            with timeout_after(message=f"Unable to establish connection to {url}"):
+            @timeout_after(message=f"Unable to establish connection to {url}")
+            def wait_for_redis_server(poll=0.1):
                 while True:
                     with contextlib.suppress(redis.ConnectionError):
                         if connection.ping():
-                            break
+                            return
 
-                    time.sleep(0.1)
+                    time.sleep(poll)
 
+            wait_for_redis_server()
             yield url
 
     # TODO: Find a way to redis with TLS connections, i.e. the rediss:// scheme
