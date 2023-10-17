@@ -32,7 +32,15 @@ jobs:
 
 
   unit:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+
+    runs-on: ${{ matrix.os }}
+
     defaults:
       run:
         shell: bash -el {0}
