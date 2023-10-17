@@ -9,7 +9,7 @@ import typer
 
 import ragna
 
-from ragna.core import Config, EnvVarRequirement, PackageRequirement, Rag, Requirement
+from ragna.core import Config, EnvVarRequirement, PackageRequirement, Requirement
 from ragna.core._queue import Queue
 
 app = typer.Typer(
@@ -98,7 +98,7 @@ def _yes_or_no(condition):
 
 
 @app.command(help="Start Ragna API")
-def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
+def api(*, config: ConfigAnnotated = "ragna.demo_config"):
     required_packages = [
         package
         for package in ["fastapi", "uvicorn"]
@@ -112,18 +112,20 @@ def api(*, config: ConfigAnnotated = "ragna.builtin_config"):
 
     from ragna._api import api
 
-    rag = Rag(config=config)
-
     components = urlsplit(config.ragna_api_url)
-    uvicorn.run(api(rag), host=components.hostname, port=components.port)
+    uvicorn.run(api(config), host=components.hostname, port=components.port)
 
 
 @app.command(help="Start Ragna worker(s)")
 def worker(
     *,
-    config: ConfigAnnotated = "ragna.builtin_config",
+    config: ConfigAnnotated = "ragna.demo_config",
     num_workers: Annotated[int, typer.Option("--num-workers", "-n")] = 1,
 ):
+    if config.queue_database_url == "memory":
+        print(f"With {config.queue_database_url=} no worker is required!")
+        raise typer.Exit(1)
+
     queue = Queue(config, load_components=True)
     worker = queue.create_worker(num_workers)
 

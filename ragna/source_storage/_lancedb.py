@@ -1,12 +1,6 @@
-from ragna.core import (
-    Document,
-    PackageRequirement,
-    RagnaId,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+import uuid
 
+from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
@@ -19,9 +13,11 @@ class LanceDBSourceStorage(SourceStorage):
     def requirements(cls) -> list[Requirement]:
         return [
             PackageRequirement("lancedb>=0.2"),
-            # FIXME: re-add this after https://github.com/apache/arrow/issues/38167 is
-            #  resolved.
-            # PackageRequirement("pyarrow"),
+            PackageRequirement(
+                "pyarrow",
+                # See https://github.com/apache/arrow/issues/38167
+                exclude_modules=["__dummy__"],
+            ),
             PackageRequirement("sentence-transformers"),
         ]
 
@@ -36,8 +32,8 @@ class LanceDBSourceStorage(SourceStorage):
         self._model = SentenceTransformer("paraphrase-albert-small-v2")
         self._schema = pa.schema(
             [
+                pa.field("id", pa.string()),
                 pa.field("document_id", pa.string()),
-                pa.field("document_name", pa.string()),
                 pa.field("page_numbers", pa.string()),
                 pa.field("text", pa.string()),
                 pa.field(
@@ -57,7 +53,7 @@ class LanceDBSourceStorage(SourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
@@ -73,8 +69,8 @@ class LanceDBSourceStorage(SourceStorage):
                 table.add(
                     [
                         {
+                            "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
-                            "document_name": document.name,
                             "page_numbers": page_numbers_to_str(chunk.page_numbers),
                             "text": chunk.text,
                             self._VECTOR_COLUMN_NAME: self._model.encode(chunk.text),
@@ -85,9 +81,10 @@ class LanceDBSourceStorage(SourceStorage):
 
     def retrieve(
         self,
+        documents: list[Document],
         prompt: str,
         *,
-        chat_id: RagnaId,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
@@ -97,16 +94,23 @@ class LanceDBSourceStorage(SourceStorage):
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
         limit = int(num_tokens * 2 / chunk_size)
-        results = table.search().limit(limit).to_arrow()
+        results = (
+            table.search(vector_column_name=self._VECTOR_COLUMN_NAME)
+            .limit(limit)
+            .to_arrow()
+        )
 
+        document_map = {str(document.id): document for document in documents}
         return list(
             take_sources_up_to_max_tokens(
                 (
                     Source(
-                        id=RagnaId.make(),
-                        document_id=RagnaId(result["document_id"]),
-                        document_name=result["document_name"],
-                        location=result["page_numbers"],
+                        id=result["id"],
+                        document=document_map[result["document_id"]],
+                        # For some reason adding an empty string during store() results
+                        # in this field being None. Thus, we need to parse it back here.
+                        # TODO: See if there is a configuration option for this
+                        location=result["page_numbers"] or "",
                         content=result["text"],
                         num_tokens=result["num_tokens"],
                     )
