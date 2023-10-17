@@ -8,7 +8,6 @@ dependencies:
   #  - redis-server
   - pip
   - pip:
-    - redis
     - jupyter
     - python-dotenv
     - boto3
