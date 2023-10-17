@@ -3,6 +3,8 @@ channels:
   - conda-forge
 dependencies:
   - python =3.9
+  # FIXME: This is not available on Windows
+  #  Can we somehow mark this as "don't try to install on Windows?"
   - redis-server
   - pip
   - pip:
