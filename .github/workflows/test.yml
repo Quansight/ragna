@@ -56,10 +56,11 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Run unit tests
+        id: tests
         run: pytest --junit-xml=test-results.xml --durations=25
 
       - name: Surface failing tests
-        if: always()
+        if: steps.tests.outcome != 'success'
         uses: pmeier/pytest-results-action@v0.3.0
         with:
           path: test-results.xml
