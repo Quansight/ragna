@@ -76,7 +76,7 @@ class TestSmoke:
     def test_file_system_queue(self, tmp_path, scheme):
         config = Config(
             local_cache_root=tmp_path,
-            rag=dict(queue_url=f"{scheme}{tmp_path / 'queue'}"),
+            rag=dict(queue_url=f"{scheme}{(tmp_path / 'queue').as_posix()}"),
         )
 
         with self.worker(config=config):
