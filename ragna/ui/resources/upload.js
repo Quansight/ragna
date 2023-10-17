@@ -1,16 +1,30 @@
 
-function upload(user, informationsEndpoint, uploadEndpoint) {
-                        
-    var files = $$$("input#fileUpload")[0].files;
+
+function upload(files, user, informationsEndpoint, uploadEndpoint, final_callback) {
     
-    Array.from(files).forEach(file => {
+    var uploaded_documents = [] 
+
+    Array.from(files).map(file => {
 
         getUploadInformations(file, user, informationsEndpoint).then(
+
                 function(uploadInformations) { 
-                        uploadFile(file, uploadInformations, uploadEndpoint)
+                        
+                        uploadFile(file, uploadInformations, uploadEndpoint).then(
+                                function(response){
+                                        
+                                        uploaded_documents.push(response)
+                                        if (uploaded_documents.length == files.length) {
+                                            final_callback(uploaded_documents);
+                                        }
+                                    
+                                }
+                        )
                 }
         );
-    });
+        
+    })
+    
     
 }
  
@@ -50,7 +64,7 @@ async function uploadFile(file, uploadInformations, uploadEndpoint) {
         body: body
     }
 
-    const response = fetch(uploadEndpoint, payload)
+    const response = fetch(uploadEndpoint, payload).then((response) => response.json())
     
     return response
     
