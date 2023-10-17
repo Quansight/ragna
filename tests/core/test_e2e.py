@@ -84,6 +84,9 @@ class TestSmoke:
 
     @contextlib.contextmanager
     def redis_server(self, scheme="redis://"):
+        if platform.system() == "Windows":
+            pytest.skip("redis-server is not available for Windows")
+
         port = get_available_port()
         url = f"{scheme}127.0.0.1:{port}"
         redis_server_executable = shutil.which("redis-server")
@@ -105,10 +108,6 @@ class TestSmoke:
             wait_for_redis_server()
             yield url
 
-    @pytest.mark.skipif(
-        platform.system() == "Windows",
-        reason="redis-server is not available for Windows",
-    )
     # TODO: Find a way to redis with TLS connections, i.e. the rediss:// scheme
     @pytest.mark.parametrize("scheme", ["redis://"])
     def test_redis_queue(self, tmp_path, scheme):

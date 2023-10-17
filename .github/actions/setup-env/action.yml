@@ -49,6 +49,9 @@ runs:
         cat environment.yml
         mamba env update --file environment.yml
         git checkout -- environment.yml
+        if [[ ${os.runner} != Windows ]]; then
+          mamba install --quiet --yes --channel conda-forge redis-server
+        fi
 
     - name: Install ragna
       shell: bash -el {0}
