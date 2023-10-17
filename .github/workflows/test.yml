@@ -47,7 +47,7 @@ jobs:
         uses: ./.github/actions/setup-env
 
       - name: Run unit tests
-        run: pytest --junit-xml=test-results.xml --durations=25 tests/unit
+        run: pytest --junit-xml=test-results.xml --durations=25
 
       - name: Surface failing tests
         if: always()
