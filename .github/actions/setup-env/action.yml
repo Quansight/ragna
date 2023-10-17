@@ -47,11 +47,11 @@ runs:
       run: |
         sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
         cat environment.yml
-        mamba env update --quiet --file environment.yml
+        mamba env update --file environment.yml
         git checkout -- environment.yml
         if [[ ${{ runner.os }} != Windows ]]; then
           echo "Installing redis-server on ${{ runner.os }}"
-          mamba install --quiet --yes --channel conda-forge redis-server
+          mamba install --yes --channel conda-forge redis-server
         fi
 
     - name: Install ragna
