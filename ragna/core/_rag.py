@@ -47,6 +47,21 @@ class Rag:
         )
 
 
+def _default_user():
+    try:
+        return os.getlogin()
+    except Exception:
+        return "Ragna"
+
+
+class _SpecialChatParams(BaseModel):
+    user: str = Field(default_factory=_default_user)
+    chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    chat_name: str = Field(
+        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+    )
+
+
 class Chat:
     """
     !!! note
@@ -87,7 +102,7 @@ class Chat:
         self.source_storage = self._rag._queue.parse_component(source_storage)
         self.assistant = self._rag._queue.parse_component(assistant)
 
-        special_params = self._SpecialChatParams().model_dump()
+        special_params = _SpecialChatParams().model_dump()
         special_params.update(params)
         params = special_params
         self.params = params
@@ -179,19 +194,12 @@ class Chat:
             documents_.append(document)
         return documents_
 
-    class _SpecialChatParams(BaseModel):
-        user: str = Field(default_factory=os.getlogin)
-        chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-        chat_name: str = Field(
-            default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
-        )
-
     def _unpack_chat_params(self, params):
         source_storage_models = self.source_storage._models()
         assistant_models = self.assistant._models()
 
         ChatModel = self._merge_models(
-            self._SpecialChatParams,
+            _SpecialChatParams,
             *source_storage_models.values(),
             *assistant_models.values(),
         )
