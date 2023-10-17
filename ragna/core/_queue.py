@@ -1,4 +1,6 @@
 import itertools
+import platform
+import re
 from typing import Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
@@ -6,11 +8,11 @@ import huey.api
 import huey.constants
 import huey.contrib.asyncio
 import huey.utils
+import redis
 
 from ._components import Component
 from ._config import Config
-
-from ._utils import PackageRequirement, RagnaException
+from ._utils import RagnaException
 
 
 def task_config(retries: int = 0, retry_delay: int = 0):
@@ -56,6 +58,10 @@ class Queue:
         common_kwargs = dict(name="ragna", store_none=True)
         if url == "memory":
             _huey = huey.MemoryHuey(immediate=True, **common_kwargs)
+        elif platform.system() == "Windows" and re.match(r"\w:\\", url):
+            # This special cases absolute paths on Windows, e.g. C:\Users\...,
+            # since they don't play well with urlsplit below
+            _huey = huey.FileHuey(path=url, use_thread_lock=True, **common_kwargs)
         else:
             components = urlsplit(url)
             if components.scheme in {"", "file"}:
@@ -63,10 +69,6 @@ class Queue:
                     path=components.path, use_thread_lock=True, **common_kwargs
                 )
             elif components.scheme in {"redis", "rediss"}:
-                if not PackageRequirement("redis").is_available():
-                    raise RagnaException("redis not installed")
-                import redis
-
                 _huey = huey.RedisHuey(url=url, **common_kwargs)
                 try:
                     _huey.storage.conn.ping()

@@ -15,11 +15,6 @@ from ragna.source_storages import RagnaDemoSourceStorage
 
 from tests.utils import background_subprocess, get_available_port, timeout_after
 
-needs_forking = pytest.mark.skipif(
-    platform.system() == "Windows",
-    reason="Windows does not support forking the main thread.",
-)
-
 
 class TestSmoke:
     async def main(self, config, documents):
@@ -30,14 +25,14 @@ class TestSmoke:
             assistant=RagnaDemoAssistant,
         )
         async with chat:
-            return await chat.answer("?!")
+            return await chat.answer("?")
 
     def check(self, *, config, root):
         document_root = root / "documents"
         document_root.mkdir()
         document_path = document_root / "test.txt"
-        with open(document_path, "w"):
-            pass
+        with open(document_path, "w") as file:
+            file.write("!\n")
 
         @timeout_after()
         def main():
@@ -80,12 +75,11 @@ class TestSmoke:
             wait_for_worker()
             yield
 
-    @needs_forking
     @pytest.mark.parametrize("scheme", ["", "file://"])
     def test_file_system_queue(self, tmp_path, scheme):
         config = Config(
             local_cache_root=tmp_path,
-            rag=dict(queue_url=f"{scheme}{(tmp_path / 'queue').as_posix()}"),
+            rag=dict(queue_url=f"{scheme}{tmp_path / 'queue'}"),
         )
 
         with self.worker(config=config):
@@ -94,7 +88,7 @@ class TestSmoke:
     @contextlib.contextmanager
     def redis_server(self, scheme="redis://"):
         if platform.system() == "Windows":
-            raise RuntimeError("redis-server is not available for Windows")
+            raise RuntimeError("redis-server is not available for Windows.")
 
         port = get_available_port()
         url = f"{scheme}127.0.0.1:{port}"
@@ -117,7 +111,10 @@ class TestSmoke:
             wait_for_redis_server()
             yield url
 
-    @needs_forking
+    @pytest.mark.skipif(
+        platform.system() == "Windows",
+        reason="redis-server is not available for Windows.",
+    )
     # TODO: Find a way to redis with TLS connections, i.e. the rediss:// scheme
     @pytest.mark.parametrize("scheme", ["redis://"])
     def test_redis_queue(self, tmp_path, scheme):

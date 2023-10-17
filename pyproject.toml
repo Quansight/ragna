@@ -23,6 +23,7 @@ dependencies = [
     "packaging",
     "pydantic>=2",
     "pydantic-settings>=2",
+    "redis",
     "rich",
     "tomlkit",
     "typer",
