@@ -49,7 +49,6 @@ runs:
         cat environment.yml
         mamba env update --quiet --file environment.yml
         git checkout -- environment.yml
-        echo ${{ runner.os }}
         if [[ ${{ runner.os }} != Windows ]]; then
           mamba install --quiet --yes --channel conda-forge redis-server
         fi
@@ -57,9 +56,11 @@ runs:
     - name: Install ragna
       shell: bash -el {0}
       run: |
-        PROJECT_PATH="${PWD}"
-        if [[ ${{ inputs.optional-dependencies }} == "true" ]]; then
-          PROJECT_PATH="${PROJECT_PATH}[complete]"
+        if [[ ${{ inputs.optional-dependencies }} == true ]]
+        then
+          PROJECT_PATH='.[complete]'
+        else
+          PROJECT_PATH='.'
         fi
         pip install --editable "${PROJECT_PATH}"
 
