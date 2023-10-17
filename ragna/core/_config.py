@@ -125,14 +125,16 @@ class Config(BaseSettings):
                 if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available()
             ]
 
-        config = cls()
+        config = cls(
+            rag=dict(
+                source_storages=get_available_components(
+                    source_storages, SourceStorage
+                ),
+                assistants=get_available_components(assistants, Assistant),
+            )
+        )
 
         config.rag.queue_url = str(config.local_cache_root / "queue")
-        config.rag.source_storages = get_available_components(
-            source_storages, SourceStorage
-        )
-        config.rag.assistants = get_available_components(assistants, Assistant)
-
         config.api.database_url = f"sqlite:///{config.local_cache_root}/ragna.db"
 
         return config
