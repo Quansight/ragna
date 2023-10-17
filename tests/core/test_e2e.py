@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import shutil
-import subprocess
 import sys
 import time
 
@@ -13,18 +12,19 @@ from ragna import Config, Rag
 from ragna.assistants import RagnaDemoAssistant
 from ragna.source_storages import RagnaDemoSourceStorage
 
-from tests.utils import get_available_port, timeout_after
+from tests.utils import background_subprocess, get_available_port, timeout_after
 
 
 class TestSmoke:
     async def main(self, config, documents):
         rag = Rag(config)
-        async with rag.chat(
+        chat = rag.chat(
             documents=documents,
             source_storage=RagnaDemoSourceStorage,
             assistant=RagnaDemoAssistant,
-        ) as chat:
-            return await chat.answer("What is Ragna?")
+        )
+        async with chat:
+            return await chat.answer("?!")
 
     def check(self, *, config, root):
         document_root = root / "documents"
@@ -50,24 +50,25 @@ class TestSmoke:
         config_path = config.local_cache_root / "ragna.toml"
         config.to_file(config_path)
 
-        process = subprocess.Popen(
-            [sys.executable, "-m", "ragna", "worker", "--config", str(config_path)],
-            stderr=subprocess.PIPE,
-        )
-        try:
+        with background_subprocess(
+            [sys.executable, "-m", "ragna", "worker", "--config", str(config_path)]
+        ) as process:
             with timeout_after(message="Unable to start worker"):
+                # This seems quite brittle, but I didn't find a better way to check
+                # whether the worker is ready. We are checking the logged messages until
+                # we see the "ready" message.
                 for line in process.stderr:
+                    sys.stderr.buffer.write(line)
                     if b"Huey consumer started" in line:
+                        sys.stderr.flush()
                         break
             yield
-        finally:
-            process.kill()
-            process.communicate()
 
-    def test_file_system_queue(self, tmp_path):
+    @pytest.mark.parametrize("scheme", ["", "file://"])
+    def test_file_system_queue(self, tmp_path, scheme):
         config = Config(
             local_cache_root=tmp_path,
-            rag=ragna.core.RagConfig(queue_url=str(tmp_path / "queue")),
+            rag=ragna.core.RagConfig(queue_url=f"{scheme}{tmp_path / 'queue'}"),
         )
 
         with self.worker(config=config):
@@ -80,26 +81,21 @@ class TestSmoke:
         redis_server_executable = shutil.which("redis-server")
         if redis_server_executable is None:
             raise RuntimeError("Unable to find redis-server executable")
-        process = subprocess.Popen(
-            [redis_server_executable, "--port", str(port)],
-        )
 
-        try:
+        with background_subprocess([redis_server_executable, "--port", str(port)]):
             connection = redis.Redis.from_url(url)
 
-            with timeout_after():
+            with timeout_after(message=f"Unable to establish connection to {url}"):
                 while True:
                     with contextlib.suppress(redis.ConnectionError):
                         if connection.ping():
                             break
 
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
             yield url
-        finally:
-            process.kill()
-            process.communicate()
 
+    # TODO: Find a way to redis with TLS connections, i.e. the rediss:// scheme
     @pytest.mark.parametrize("scheme", ["redis://"])
     def test_redis_queue(self, tmp_path, scheme):
         with self.redis_server(scheme) as queue_url:

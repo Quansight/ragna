@@ -3,8 +3,9 @@ from typing import Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
+import huey.constants
+import huey.contrib.asyncio
 import huey.utils
-from huey.contrib.asyncio import aget_result
 
 from ._components import Component
 from ._config import Config
@@ -58,7 +59,9 @@ class Queue:
         else:
             components = urlsplit(url)
             if components.scheme in {"", "file"}:
-                _huey = huey.FileHuey(path=components.path, **common_kwargs)
+                _huey = huey.FileHuey(
+                    path=components.path, use_thread_lock=True, **common_kwargs
+                )
             elif components.scheme in {"redis", "rediss"}:
                 if not PackageRequirement("redis").is_available():
                     raise RagnaException("redis not installed")
@@ -124,10 +127,12 @@ class Queue:
             **getattr(fn, "__ragna_task_config__", dict()),
         )
         result = self._huey.enqueue(task)
-        output = await aget_result(result)
+        output = await huey.contrib.asyncio.aget_result(result)
         if isinstance(output, huey.utils.Error):
             raise RagnaException("Task failed", **output.metadata)
         return output
 
     def create_worker(self, num_workers: int = 1):
-        return self._huey.create_consumer(workers=num_workers)
+        return self._huey.create_consumer(
+            workers=num_workers, worker_type=huey.constants.WORKER_THREAD
+        )
