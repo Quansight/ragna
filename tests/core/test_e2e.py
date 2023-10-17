@@ -51,9 +51,6 @@ class TestSmoke:
 
     @contextlib.contextmanager
     def worker(self, *, config):
-        if platform.system() == "Windows":
-            raise RuntimeError("Windows does not support forking the main thread.")
-
         config_path = config.local_cache_root / "ragna.toml"
         config.to_file(config_path)
 
