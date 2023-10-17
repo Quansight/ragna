@@ -52,6 +52,7 @@ runs:
         if [[ ${{ runner.os }} != Windows ]]; then
           echo "Installing redis-server on ${{ runner.os }}"
           mamba install --yes --channel conda-forge redis-server
+          echo "redis-server located at $(which redis-server)"
         fi
 
     - name: Install ragna
