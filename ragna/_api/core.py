@@ -42,7 +42,7 @@ def api(config):
     @app.get("/")
     @process_ragna_exception
     async def health() -> str:
-        return ragna.__version__
+        return app.version
 
     async def _authorize_user(user: str) -> str:
         # FIXME: implement auth here
