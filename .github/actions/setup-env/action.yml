@@ -50,6 +50,7 @@ runs:
         mamba env update --quiet --file environment.yml
         git checkout -- environment.yml
         if [[ ${{ runner.os }} != Windows ]]; then
+          echo "Installing redis-server on ${{ runner.os }}"
           mamba install --quiet --yes --channel conda-forge redis-server
         fi
 
