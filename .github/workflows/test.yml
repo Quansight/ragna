@@ -30,8 +30,7 @@ jobs:
       - name: Check if all public packages are importable
         run: python tests/test_importable.py
 
-
-  unit:
+  pytest:
     strategy:
       matrix:
         os:
