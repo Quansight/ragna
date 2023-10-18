@@ -47,7 +47,7 @@ class TestSmoke:
         }
 
     def test_memory_queue(self, tmp_path):
-        self.check(config=Config(rag=dict(queue_url="memory")), root=tmp_path)
+        self.check(config=Config(core=dict(queue_url="memory")), root=tmp_path)
 
     @contextlib.contextmanager
     def worker(self, *, config):
@@ -76,7 +76,7 @@ class TestSmoke:
     def test_file_system_queue(self, tmp_path, scheme):
         config = Config(
             local_cache_root=tmp_path,
-            rag=dict(queue_url=f"{scheme}{tmp_path / 'queue'}"),
+            core=dict(queue_url=f"{scheme}{tmp_path / 'queue'}"),
         )
 
         with self.worker(config=config):
@@ -116,7 +116,7 @@ class TestSmoke:
     @pytest.mark.parametrize("scheme", ["redis://"])
     def test_redis_queue(self, tmp_path, scheme):
         with self.redis_server(scheme) as queue_url:
-            config = Config(local_cache_root=tmp_path, rag=dict(queue_url=queue_url))
+            config = Config(local_cache_root=tmp_path, core=dict(queue_url=queue_url))
 
             with self.worker(config=config):
                 self.check(config=config, root=tmp_path)

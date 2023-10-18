@@ -239,7 +239,7 @@ class Chat:
             field_definitions[name] = (type_, default)
 
         return create_model(
-            self.params["chat_id"],
+            str(self.params["chat_id"]),
             __config__=ConfigDict(extra="forbid"),
             **field_definitions,
         )
