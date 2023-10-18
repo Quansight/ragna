@@ -91,7 +91,7 @@ class SourceStorage(Component, abc.ABC):
 class MessageRole(enum.Enum):
     SYSTEM = "system"
     USER = "user"
-    ASSISTANT = "assistants"
+    ASSISTANT = "assistant"
 
 
 class Message(pydantic.BaseModel):
