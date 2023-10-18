@@ -4,18 +4,16 @@ from ragna.core import Document, PackageRequirement, Requirement, Source, Source
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
-class LanceDBSourceStorage(SourceStorage):
-    @classmethod
-    def display_name(cls) -> str:
-        return "LanceDB"
-
+class LanceDB(SourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
             PackageRequirement("lancedb>=0.2"),
-            # FIXME: re-add this after https://github.com/apache/arrow/issues/38167 is
-            #  resolved.
-            # PackageRequirement("pyarrow"),
+            PackageRequirement(
+                "pyarrow",
+                # See https://github.com/apache/arrow/issues/38167
+                exclude_modules=["__dummy__"],
+            ),
             PackageRequirement("sentence-transformers"),
         ]
 

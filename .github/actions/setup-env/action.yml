@@ -21,7 +21,7 @@ runs:
         activate-environment: ragna-dev
 
     - name: Display conda info
-      shell: bash
+      shell: bash -el {0}
       run: conda info
 
     - name: Set cache date
@@ -50,12 +50,19 @@ runs:
         mamba env update --file environment.yml
         git checkout -- environment.yml
 
+    - name: Install redis-server if necessary
+      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
+      shell: bash -el {0}
+      run: mamba install --yes --channel conda-forge redis-server
+
     - name: Install ragna
       shell: bash -el {0}
       run: |
-        PROJECT_PATH="${PWD}"
-        if [[ ${{ inputs.optional-dependencies }} == "true" ]]; then
-          PROJECT_PATH="${PROJECT_PATH}[complete]"
+        if [[ ${{ inputs.optional-dependencies }} == true ]]
+        then
+          PROJECT_PATH='.[complete]'
+        else
+          PROJECT_PATH='.'
         fi
         pip install --editable "${PROJECT_PATH}"
 

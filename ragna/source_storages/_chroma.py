@@ -4,11 +4,7 @@ from ragna.core import Document, PackageRequirement, Requirement, Source, Source
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
-class ChromaSourceStorage(SourceStorage):
-    @classmethod
-    def display_name(cls) -> str:
-        return "Chroma"
-
+class Chroma(SourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [

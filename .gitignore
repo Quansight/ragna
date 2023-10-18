@@ -1,6 +1,5 @@
+ragna.toml
 ragna/_version.py
-
-.chroma
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

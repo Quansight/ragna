@@ -1,39 +1,32 @@
 from __future__ import annotations
 
 import abc
-import dataclasses
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Iterator, Optional, Type, TYPE_CHECKING, TypeVar
 
-from ._core import RagnaException
-from ._requirement import PackageRequirement, Requirement, RequirementMixin
+from pydantic import BaseModel
+
+from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
+
 
 if TYPE_CHECKING:
     from ._config import Config
 
 
-class Document(abc.ABC):
-    def __init__(
-        self,
-        *,
-        id: Optional[uuid.UUID] = None,
-        name: str,
-        metadata: dict[str, Any],
-        page_extractor: Optional[PageExtractor] = None,
-    ):
-        self.id = id or uuid.uuid4()
-        self.name = name
-        self.metadata = metadata
+class Document(RequirementsMixin, abc.ABC):
+    @staticmethod
+    def supported_suffixes() -> set[str]:
+        return set(DOCUMENT_HANDLERS.keys())
 
-        if page_extractor is None:
-            try:
-                # FIXME:
-                page_extractor = BUILTIN_PAGE_EXTRACTORS[Path(name).suffix]()
-            except KeyError:
-                raise RagnaException()
-        self.page_extractor = page_extractor
+    @staticmethod
+    def get_handler(name: str):
+        handler = DOCUMENT_HANDLERS.get(Path(name).suffix)
+        if handler is None:
+            raise RagnaException
+
+        return handler
 
     @classmethod
     @abc.abstractmethod
@@ -42,8 +35,21 @@ class Document(abc.ABC):
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         pass
 
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        name: str,
+        metadata: dict[str, Any],
+        handler: Optional[DocumentHandler] = None,
+    ):
+        self.id = id
+        self.name = name
+        self.metadata = metadata
+        self.handler = handler or self.get_handler(name)
+
     @abc.abstractmethod
-    def is_available(self) -> bool:
+    def is_readable(self) -> bool:
         ...
 
     @abc.abstractmethod
@@ -51,36 +57,11 @@ class Document(abc.ABC):
         ...
 
     def extract_pages(self):
-        yield from self.page_extractor.extract_pages(
-            name=self.name, content=self.read()
-        )
+        yield from self.handler.extract_pages(self)
 
 
+# FIXME: see if the S3 document is well handled
 class LocalDocument(Document):
-    def __init__(
-        self,
-        path: Optional[str | Path] = None,
-        *,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
-        if metadata is None:
-            metadata = {}
-        metadata_path = metadata.get("path")
-
-        if path is None and metadata_path is None:
-            raise RagnaException()
-        elif path is not None and metadata_path is not None:
-            raise RagnaException()
-        elif metadata_path is not None:
-            path = metadata_path
-        else:
-            metadata["path"] = str(path)
-        if name is None:
-            name = Path(path).name
-        super().__init__(name=name, metadata=metadata, **kwargs)
-
     _JWT_ALGORITHM = "HS256"
 
     @classmethod
@@ -88,19 +69,23 @@ class LocalDocument(Document):
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         if not PackageRequirement("PyJWT").is_available():
-            raise RagnaException()
+            raise RagnaException(
+                "The package PyJWT is required to generate upload token, "
+                "but is not available."
+            )
 
         import jwt
 
-        url = f"{config.ragna_api_url}/document"
+        url = f"{config.api.url}/document"
         data = {
             "token": jwt.encode(
                 payload={
                     "user": user,
                     "id": str(id),
-                    "exp": time.time() + config.upload_token_ttl,
+                    "exp": time.time() + config.api.upload_token_ttl,
                 },
-                key=config.upload_token_secret,
+                # FIXME: no
+                key=config.api.upload_token_secret,
                 algorithm=cls._JWT_ALGORITHM,
             )
         }
@@ -123,11 +108,37 @@ class LocalDocument(Document):
             )
         return payload["user"], uuid.UUID(payload["id"])
 
+    def __init__(
+        self,
+        path: Optional[str | Path] = None,
+        *,
+        name: Optional[str] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        **kwargs,
+    ):
+        if metadata is None:
+            metadata = {}
+        metadata_path = metadata.get("path")
+
+        if path is None and metadata_path is None:
+            raise RagnaException(
+                "Path was neither passed directly or as part of the metadata"
+            )
+        elif path is not None and metadata_path is not None:
+            raise RagnaException("Path was passed directly and as part of the metadata")
+        elif path is not None:
+            metadata["path"] = str(path)
+
+        if name is None:
+            name = Path(metadata["path"]).name
+
+        super().__init__(name=name, metadata=metadata, **kwargs)
+
     @property
     def path(self) -> Path:
         return Path(self.metadata["path"])
 
-    def is_available(self) -> bool:
+    def is_readable(self) -> bool:
         return self.path.exists()
 
     def read(self) -> bytes:
@@ -135,45 +146,71 @@ class LocalDocument(Document):
             return stream.read()
 
 
-@dataclasses.dataclass
-class Page:
+class Page(BaseModel):
     text: str
     number: Optional[int] = None
 
 
-class PageExtractor(RequirementMixin, abc.ABC):
+class DocumentHandler(RequirementsMixin, abc.ABC):
+    @classmethod
     @abc.abstractmethod
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
+    def supported_suffixes(cls) -> list[str]:
+        pass
+
+    @abc.abstractmethod
+    def extract_pages(self, document: Document) -> Iterator[Page]:
         ...
 
 
-class PageExtractors(dict):
-    def register(self, suffix: str):
-        def decorator(cls):
-            self[suffix] = cls
-            return cls
-
-        return decorator
+T = TypeVar("T", bound=DocumentHandler)
 
 
-BUILTIN_PAGE_EXTRACTORS = PageExtractors()
+class DocumentHandlerRegistry(dict):
+    def load_if_available(self, cls: Type[T]) -> Type[T]:
+        if cls.is_available():
+            instance = cls()
+            for suffix in cls.supported_suffixes():
+                self[suffix] = instance
+
+        return cls
 
 
-@BUILTIN_PAGE_EXTRACTORS.register(".txt")
-class TxtPageExtractor(PageExtractor):
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
-        yield Page(text=content.decode())
+DOCUMENT_HANDLERS = DocumentHandlerRegistry()
 
 
-@BUILTIN_PAGE_EXTRACTORS.register(".pdf")
-class PdfPageExtractor(PageExtractor):
+@DOCUMENT_HANDLERS.load_if_available
+class TxtDocumentHandler(DocumentHandler):
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".txt"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        yield Page(text=document.read().decode())
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class PdfDocumentHandler(DocumentHandler):
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("pymupdf")]
+        return [
+            PackageRequirement(
+                "pymupdf",
+                # See https://github.com/Quansight/ragna/issues/75
+                exclude_modules=["fitz_new"],
+            )
+        ]
 
-    def extract_pages(self, name: str, content: bytes) -> Iterator[Page]:
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        # TODO: pymudpdf supports a lot more formats, while .pdf is by far the most
+        #  prominent. Should we expose the others here as well?
+        return [".pdf"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
         import fitz
 
-        with fitz.Document(stream=content, filetype=Path(name).suffix) as document:
+        with fitz.Document(
+            stream=document.read(), filetype=Path(document.name).suffix
+        ) as document:
             for number, page in enumerate(document, 1):
                 yield Page(text=page.get_text(sort=True), number=number)

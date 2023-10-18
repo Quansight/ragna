@@ -7,3 +7,6 @@
 
 * Setup: [docs/community/contribute.md](docs/community/contribute.md)
 * Quickstart: [docs/get-started.md](docs/get-started.md#minimal-example)
+
+# TODO
+- rename state to database and maybe remove the object?

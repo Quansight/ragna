@@ -19,24 +19,25 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "huey",
-    "importlib_metadata >=4.6; python_version < '3.10'",
+    "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
-    "pydantic <2",
-    "sqlalchemy >=2",
-    "structlog",
+    "pydantic>=2",
+    "pydantic-settings>=2",
+    "redis",
+    "rich",
+    "tomlkit",
     "typer",
 ]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-console = [
-    "rich",
-]
 api = [
     "aiofiles",
+    "emoji",
     "fastapi",
     "PyJWT",
     "python-multipart",
+    "sqlalchemy>=2",
     "uvicorn",
 ]
 ui = [
@@ -44,29 +45,34 @@ ui = [
 #    "param",
     "httpx",
 ]
-# to update the two entries below, run scripts/update_optional_dependencies.py
+# to update the entries below, run scripts/update_optional_dependencies.py
+builtin-document-handlers = [
+    "pymupdf",
+]
 builtin-components = [
     "chromadb>=0.4",
     "httpx",
     "lancedb>=0.2",
+    "pyarrow",
     "sentence-transformers",
     "tiktoken",
 ]
 complete = [
-    "PyJWT",
     "aiofiles",
     "chromadb>=0.4",
+    "emoji",
     "fastapi",
     "httpx",
     "lancedb>=0.2",
+    "pyarrow",
+    "PyJWT",
+    "pymupdf",
     "python-multipart",
-    "rich",
     "sentence-transformers",
+    "sqlalchemy>=2",
     "tiktoken",
     "uvicorn",
 ]
-
-
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
@@ -95,9 +101,14 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-rfEX --tb=short -Werror"
+addopts = "-rsfEX --tb=short"
 testpaths = [
     "tests",
+]
+filterwarnings = [
+    "error",
+    # FIXME: find a way to use the BaseSettings from pydantic-settings with ConfigDict
+    "ignore:Support for class-based `config` is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
 ]
 xfail_strict = true
 

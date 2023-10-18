@@ -1,9 +1,9 @@
-from ragna.core import Source
+from ragna.core import RagnaException, Source
 
-from ._api import ApiException, AssistantApi
+from ._api import ApiAssistant
 
 
-class OpenaiAssistantApi(AssistantApi):
+class OpenaiApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int
@@ -19,7 +19,7 @@ class OpenaiAssistantApi(AssistantApi):
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
         instruction = (
-            "You are an helpful assistant that answers user questions given the context below. "
+            "You are an helpful assistants that answers user questions given the context below. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
             "Only use the sources below to generate the answer."
         )
@@ -51,19 +51,19 @@ class OpenaiAssistantApi(AssistantApi):
             },
         )
         if response.is_error:
-            raise ApiException(
+            raise RagnaException(
                 status_code=response.status_code, response=response.json()
             )
         return response.json()["choices"][0]["message"]["content"]
 
 
-class OpenaiGpt35Turbo16kAssistant(OpenaiAssistantApi):
+class Gpt35Turbo16k(OpenaiApiAssistant):
     # https://platform.openai.com/docs/models/gpt-3-5
     _MODEL = "gpt-3.5-turbo-16k"
     _CONTEXT_SIZE = 16_384
 
 
-class OpenaiGpt4Assistant(OpenaiAssistantApi):
+class Gpt4(OpenaiApiAssistant):
     # https://platform.openai.com/docs/models/gpt-4
     _MODEL = "gpt-4"
     _CONTEXT_SIZE = 8_192
