@@ -1,7 +1,6 @@
 import contextlib
 
 import httpx
-
 import pytest
 
 from ragna import Config

@@ -89,12 +89,11 @@ def redis_server(scheme="redis://"):
             while True:
                 with contextlib.suppress(redis.ConnectionError):
                     if connection.ping():
-                        return
+                        return url
 
                 time.sleep(poll)
 
-        wait_for_redis_server()
-        yield url
+        yield wait_for_redis_server()
 
 
 skip_redis_on_windows = pytest.mark.skipif(
@@ -124,8 +123,7 @@ def ragna_worker(config):
                     sys.stderr.flush()
                     return
 
-        wait_for_worker()
-        yield
+        yield wait_for_worker()
 
 
 @contextlib.contextmanager
@@ -140,17 +138,16 @@ def ragna_api(config, *, start_worker=None):
         cmd.append(f"--{'' if start_worker else 'no-'}start-worker")
 
     with background_subprocess(cmd):
-        url = config.api.url
 
         @timeout_after(10, message="Unable to start ragna api")
         def wait_for_ragna_api(poll=0.1):
+            url = config.api.url
             while True:
                 with contextlib.suppress(httpx.ConnectError):
                     response = httpx.get(url)
                     if response.is_success:
-                        return
+                        return url
 
                 time.sleep(poll)
 
-        wait_for_ragna_api()
-        yield url
+        yield wait_for_ragna_api()
