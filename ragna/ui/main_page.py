@@ -41,6 +41,9 @@ class MainPage(param.Parameterized):
     def on_click_start_conv_button(self, event, template):
         print("on_click_start_conv_button")
 
+        self.left_sidebar.refresh()
+        template.close_modal()
+
     def on_click_cancel_button(self, event, template):
         print("on_click_cancel_button")
         template.close_modal()
@@ -110,6 +113,14 @@ class MainPage(param.Parameterized):
                                     background-color: rgb(248, 248, 248);
                                     height: 100%;
                                     width: 100%;
+                                }
+
+                                /* Enforces the width of the LeftSidebarn 
+                                which is the "first of type" with this class 
+                                (first object in the row) */
+                                .bk-panel-models-layout-Column:first-of-type {
+                                    min-width: 220px;
+                                    width: 15%;     
                                 }
                         """
             ],

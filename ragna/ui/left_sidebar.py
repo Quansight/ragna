@@ -1,7 +1,10 @@
 import panel as pn
+import param
 
 
 class LeftSidebar(pn.viewable.Viewer):
+    refresh_counter = param.Integer(default=0)
+
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
 
@@ -51,6 +54,10 @@ class LeftSidebar(pn.viewable.Viewer):
             ],
         )
 
+    def refresh(self):
+        self.refresh_counter += 1
+
+    @pn.depends("refresh_counter")
     def __panel__(self):
         chats = self.api_wrapper.get_chats()
 
@@ -61,6 +68,7 @@ class LeftSidebar(pn.viewable.Viewer):
         except Exception:
             pass
 
+        self.chat_buttons = []
         for chat in chats:
             button = pn.widgets.Button(
                 name=chat["metadata"]["name"], button_style="outline"
@@ -164,8 +172,7 @@ class LeftSidebar(pn.viewable.Viewer):
                             background-color: white;
                             overflow-x: hidden;
                             height: 100%;
-                            min-width: 220px;
-                            width: 15%;
+                            width:100%;
                             border-right: 1px solid #EEEEEE;
                         }
                 """

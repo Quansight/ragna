@@ -31,11 +31,10 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
-        informations_endpoint = upload_endpoints["informations_endpoint"]
-        upload_endpoint = upload_endpoints["upload_endpoint"]
-
         self.document_uploader = FileUploader(
-            self.api_wrapper.user, informations_endpoint, upload_endpoint
+            self.api_wrapper.user,
+            upload_endpoints["informations_endpoint"],
+            upload_endpoints["upload_endpoint"],
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
@@ -72,8 +71,28 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.got_timezone = False
 
     def did_click_on_start_chat_button(self, event):
+        self.upload_row.append(self.spinner_upload)
+        self.start_chat_button.disabled = True
+
         def did_finish_upload(uploaded_documents):
+            # at this point, the UI has uploaded the files to the API.
+            # We can now start the chat
             print("did finish upload", uploaded_documents)
+
+            start_chat_result = self.api_wrapper.start_and_prepare(
+                name=self.chat_name,
+                documents=uploaded_documents,
+                source_storage=self.source_storage_name,
+                assistant=self.assistant_name,
+            )
+
+            print("start_chat_result", start_chat_result)
+
+            self.upload_row.remove(self.spinner_upload)
+            self.start_chat_button.disabled = False
+
+            if self.start_button_callback is not None:
+                self.start_button_callback(event)
 
         self.document_uploader.perform_upload(event, did_finish_upload)
 

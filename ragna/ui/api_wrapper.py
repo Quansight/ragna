@@ -65,6 +65,30 @@ class ApiWrapper:
             "upload_endpoint": f"{self.api_url}/document",
         }
 
+    def start_chat(self, name, documents, source_storage, assistant, params={}):
+        response = self.client.post(
+            self.api_url + "/chats",
+            params={"user": self.user},
+            json={
+                "name": name,
+                "documents": documents,
+                "source_storage": source_storage,
+                "assistant": assistant,
+                "params": params,
+            },
+        )
+        return response.json()
+
+    def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
+        chat = self.start_chat(name, documents, source_storage, assistant, params)
+
+        result = self.client.post(
+            self.api_url + f"/chats/{chat['id']}/prepare",
+            params={"user": self.user},
+        )
+
+        return result.json()
+
     # Helpers
 
     def replace_emoji_shortcodes_with_emoji(self, markdown_string):
