@@ -139,7 +139,7 @@ def ragna_api(config, *, start_worker=None):
 
     with background_subprocess(cmd):
 
-        @timeout_after(10, message="Unable to start ragna api")
+        @timeout_after(20, message="Unable to start ragna api")
         def wait_for_ragna_api(poll=0.1):
             url = config.api.url
             while True:
