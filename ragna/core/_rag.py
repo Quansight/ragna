@@ -1,22 +1,23 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
-
+import getpass
 import itertools
 import os
 import uuid
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Iterable, Optional, Type, TypeVar, Union
 
-from pydantic import BaseModel, create_model, Extra, Field
+from pydantic import BaseModel, ConfigDict, create_model, Field
 
-from ._assistant import Assistant, Message, MessageRole
-
+from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._config import Config
-from ._core import RagnaException
 from ._document import Document
 from ._queue import Queue
-from ._source_storage import SourceStorage
+from ._utils import RagnaException
+
+T = TypeVar("T", bound=Component)
 
 
 class Rag:
@@ -27,8 +28,6 @@ class Rag:
         load_components: Optional[bool] = None,
     ):
         self.config = config or Config()
-        self._logger = self.config.get_logger()
-
         self._queue = Queue(self.config, load_components=load_components)
 
     def chat(
@@ -47,6 +46,22 @@ class Rag:
             assistant=assistant,
             **params,
         )
+
+
+def _default_user():
+    with contextlib.suppress(Exception):
+        return getpass.getuser()
+    with contextlib.suppress(Exception):
+        return os.getlogin()
+    return "Ragna"
+
+
+class _SpecialChatParams(BaseModel):
+    user: str = Field(default_factory=_default_user)
+    chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    chat_name: str = Field(
+        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+    )
 
 
 class Chat:
@@ -89,7 +104,7 @@ class Chat:
         self.source_storage = self._rag._queue.parse_component(source_storage)
         self.assistant = self._rag._queue.parse_component(assistant)
 
-        special_params = self._SpecialChatParams().dict()
+        special_params = _SpecialChatParams().model_dump()
         special_params.update(params)
         params = special_params
         self.params = params
@@ -147,7 +162,6 @@ class Chat:
         sources = await self._enqueue(
             self.source_storage, "retrieve", self.documents, prompt.content
         )
-
         answer = Message(
             content=await self._enqueue(
                 self.assistant, "answer", prompt.content, sources
@@ -157,17 +171,24 @@ class Chat:
         )
         self._messages.append(answer)
 
+        # FIXME: add error handling
+        # return (
+        #     "I'm sorry, but I'm having trouble helping you at this time. "
+        #     "Please retry later. "
+        #     "If this issue persists, please contact your administrator."
+        # )
+
         return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.document_class(document)
+                document = self._rag.config.rag.document(document)
 
-            if not document.is_available():
+            if not document.is_readable():
                 raise RagnaException(
-                    "Document not available",
+                    "Document not readable",
                     document=document,
                     http_status_code=404,
                 )
@@ -175,26 +196,19 @@ class Chat:
             documents_.append(document)
         return documents_
 
-    class _SpecialChatParams(BaseModel):
-        user: str = Field(default_factory=os.getlogin)
-        chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-        chat_name: str = Field(
-            default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
-        )
-
     def _unpack_chat_params(self, params):
         source_storage_models = self.source_storage._models()
         assistant_models = self.assistant._models()
 
         ChatModel = self._merge_models(
-            self._SpecialChatParams,
+            _SpecialChatParams,
             *source_storage_models.values(),
             *assistant_models.values(),
         )
 
-        chat_params = ChatModel(**params).dict(exclude_none=True)
+        chat_params = ChatModel(**params).model_dump(exclude_none=True)
         return {
-            component_and_action: model(**chat_params).dict()
+            component_and_action: model(**chat_params).model_dump()
             for component_and_action, model in itertools.chain(
                 source_storage_models.items(), assistant_models.items()
             )
@@ -203,8 +217,10 @@ class Chat:
     def _merge_models(self, *models):
         raw_field_definitions = defaultdict(list)
         for model_cls in models:
-            for name, field in model_cls.__fields__.items():
-                raw_field_definitions[name].append((field.type_, field.required))
+            for name, field in model_cls.model_fields.items():
+                raw_field_definitions[name].append(
+                    (field.annotation, field.is_required())
+                )
 
         field_definitions = {}
         for name, definitions in raw_field_definitions.items():
@@ -219,10 +235,9 @@ class Chat:
 
             field_definitions[name] = (type_, default)
 
-        class Config:
-            extra = Extra.forbid
-
-        return create_model(str(self), __config__=Config, **field_definitions)
+        return create_model(
+            str(self), __config__=ConfigDict(extra="forbid"), **field_definitions
+        )
 
     async def _enqueue(self, component, action, *args):
         try:

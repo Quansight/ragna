@@ -1,0 +1,16 @@
+local_cache_root = "/home/philip/.cache/ragna"
+
+[rag]
+queue_url = "memory"
+document = "ragna_s3_document.S3Document"
+source_storages = ["ragna.source_storages.RagnaDemoSourceStorage"]
+assistants = ["ragna.assistants.RagnaDemoAssistant"]
+
+[api]
+url = "http://127.0.0.1:31476"
+database_url = "memory"
+upload_token_secret = "-34DVeiUKh1CiZLpz0io3c5ZniUIQKlQ"
+upload_token_ttl = 300
+
+[ui]
+url = "http://127.0.0.1:31477"

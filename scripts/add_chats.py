@@ -39,6 +39,7 @@ def main():
             "params": {},
         },
     ).json()
+
     client.post(
         f"{url}/chats/{chat['id']}/prepare",
         params={"user": user},

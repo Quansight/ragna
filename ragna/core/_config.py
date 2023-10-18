@@ -1,136 +1,138 @@
 from __future__ import annotations
 
-import dataclasses
-import importlib.util
-import inspect
-import logging
 import secrets
-import sys
 from pathlib import Path
-from typing import Type
+from typing import Union
 
-import structlog
+import pydantic
+import tomlkit
+from pydantic import Field, field_validator, ImportString
 
-from ._assistant import Assistant
-from ._component import RagComponent
-from ._core import RagnaException
-from ._document import Document, LocalDocument
-from ._source_storage import SourceStorage
+from pydantic_settings import BaseSettings
+
+from ._components import Assistant, SourceStorage
+from ._document import Document
+from ._utils import RagnaException
 
 
-@dataclasses.dataclass
-class Config:
-    local_cache_root: Path = Path.home() / ".cache" / "ragna"
+class ConfigBase:
+    @classmethod
+    def customise_sources(
+        cls,
+        init_settings: pydantic.env_settings.SettingsSourceCallable,
+        env_settings: pydantic.env_settings.SettingsSourceCallable,
+        file_secret_settings: pydantic.env_settings.SettingsSourceCallable,
+    ) -> tuple[pydantic.env_settings.SettingsSourceCallable, ...]:
+        # This order is needed to prioritize values from environment variables over
+        # values from a configuration file. However, since the config instantiation from
+        # a config file goes through the regular constructor of the Python object, we
+        # are also implicitly prioritizing environment variables over values passed
+        # explicitly passed to the constructor. For example, if the environment variable
+        # 'RAGNA_RAG_DATABASE_URL' is set, any values passed to
+        # `RagnaConfig(rag=RagConfig(database_url=...))` is ignored.
+        # TODO: Find a way to achieve the following priorities:
+        #  1. Explicitly passed to Python object
+        #  2. Environment variable
+        #  3. Configuration file
+        #  4. Default
+        return env_settings, init_settings
 
-    state_database_url: str = "sqlite://"
-    queue_database_url: str = "memory"
-    ragna_api_url: str = "http://127.0.0.1:31476"
-    ragna_ui_url: str = "http://127.0.0.1:31477"
 
-    document_class: Type[Document] = LocalDocument
-    upload_token_secret: str = dataclasses.field(default_factory=secrets.token_hex)
-    upload_token_ttl: int = 30
+class RagConfig(BaseSettings):
+    class Config(ConfigBase):
+        env_prefix = "ragna_rag_"
 
-    registered_source_storage_classes: dict[
-        str, Type[SourceStorage]
-    ] = dataclasses.field(default_factory=dict)
-    registered_assistant_classes: dict[str, Type[Assistant]] = dataclasses.field(
-        default_factory=dict
+    queue_url: str = "memory"
+
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"
+    source_storages: list[ImportString[type[SourceStorage]]] = [
+        "ragna.source_storages.RagnaDemoSourceStorage"
+    ]
+    assistants: list[ImportString[type[Assistant]]] = [
+        "ragna.assistants.RagnaDemoAssistant"
+    ]
+
+
+class ApiConfig(BaseSettings):
+    class Config(ConfigBase):
+        env_prefix = "ragna_api_"
+
+    url: str = "http://127.0.0.1:31476"
+    database_url: str = "memory"
+
+    upload_token_secret: str = Field(
+        default_factory=lambda: secrets.token_urlsafe(32)[:32]
+    )
+    upload_token_ttl: int = 5 * 60
+
+
+class UiConfig(BaseSettings):
+    class Config(ConfigBase):
+        env_prefix = "ragna_ui_"
+
+    url: str = "http://127.0.0.1:31477"
+
+
+class Config(BaseSettings):
+    class Config(ConfigBase):
+        env_prefix = "ragna_"
+
+    local_cache_root: Path = Field(
+        default_factory=lambda: Path.home() / ".cache" / "ragna"
     )
 
-    def __post_init__(self):
-        self.local_cache_root = self._parse_local_cache_root(self.local_cache_root)
-
-    def _parse_local_cache_root(self, path):
-        if not isinstance(path, Path):
-            path = Path(path)
+    @field_validator("local_cache_root")
+    @classmethod
+    def _resolve_and_make_path(cls, path: Path) -> Path:
         path = path.expanduser().resolve()
-
-        # FIXME: refactor this
-        if path.exists():
-            if not path.is_dir():
-                raise RagnaException()
-            elif not self._is_writable(path):
-                raise RagnaException
-        else:
-            try:
-                path.mkdir(parents=True)
-            except Exception:
-                raise RagnaException from None
-
+        path.mkdir(parents=True, exist_ok=True)
         return path
 
-    def _is_writable(self, path):
-        # FIXME: implement this
-        return True
+    rag: RagConfig = Field(default_factory=RagConfig)
+    api: ApiConfig = Field(default_factory=ApiConfig)
+    ui: UiConfig = Field(default_factory=UiConfig)
 
-    @staticmethod
-    def load_from_source(source: str) -> Config:
-        name = None
-        parts = source.split("::")
-        if len(parts) == 2:
-            source, name = parts
-        elif len(parts) != 1:
-            raise RagnaException
+    @classmethod
+    def from_file(cls, path: Union[str, Path]) -> Config:
+        path = Path(path).expanduser().resolve()
+        if not path.is_file():
+            raise RagnaException(f"{path} does not exist.")
 
-        path = Path(source).expanduser().resolve()
-        if path.exists():
-            spec = importlib.util.spec_from_file_location(path.name, path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-        else:
-            try:
-                module = importlib.import_module(source)
-            except ModuleNotFoundError:
-                source, name = source.rsplit(".", 1)
-                module = importlib.import_module(source)
+        with open(path) as file:
+            return cls.model_validate(tomlkit.load(file).unwrap())
 
-        return getattr(module, name or "config")
+    def to_file(self, path: Union[str, Path], *, force: bool = False):
+        path = Path(path).expanduser().resolve()
+        if path.is_file() and not force:
+            raise RagnaException(f"{path} already exist.")
 
-    def register_component(self, cls):
-        if not (
-            isinstance(cls, type)
-            and issubclass(cls, RagComponent)
-            and not inspect.isabstract(cls)
-        ):
-            raise RagnaException()
-        if issubclass(cls, SourceStorage):
-            registry = self.registered_source_storage_classes
-        elif issubclass(cls, Assistant):
-            registry = self.registered_assistant_classes
-        else:
-            raise RagnaException
+        with open(path, "w") as file:
+            tomlkit.dump(self.model_dump(mode="json"), file)
 
-        registry[cls.display_name()] = cls
+    @classmethod
+    def demo(cls):
+        return cls()
 
-        return cls
+    @classmethod
+    def builtin(cls):
+        from ragna import assistants, source_storages
+        from ragna.core import Assistant, SourceStorage
 
-    def get_logger(self, **initial_values):
-        human_readable = sys.stderr.isatty()
+        def get_available_components(module, cls):
+            return [
+                obj
+                for obj in module.__dict__.values()
+                if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available()
+            ]
 
-        processors = [
-            structlog.processors.TimeStamper(fmt="iso", utc=True),
-            structlog.processors.add_log_level,
-        ]
-        if human_readable:
-            processors.extend(
-                [
-                    structlog.processors.ExceptionPrettyPrinter(),
-                    structlog.dev.ConsoleRenderer(),
-                ]
-            )
-        else:
-            processors.extend(
-                [
-                    structlog.processors.dict_tracebacks,
-                    structlog.processors.JSONRenderer(),
-                ]
-            )
+        config = cls()
 
-        return structlog.wrap_logger(
-            logger=structlog.PrintLogger(),
-            cache_logger_on_first_use=True,
-            wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-            processors=processors,
-            **initial_values,
+        config.rag.queue_url = str(config.local_cache_root / "queue")
+        config.rag.source_storages = get_available_components(
+            source_storages, SourceStorage
         )
+        config.rag.assistants = get_available_components(assistants, Assistant)
+
+        config.api.database_url = f"sqlite:///{config.local_cache_root}/ragna.db"
+
+        return config

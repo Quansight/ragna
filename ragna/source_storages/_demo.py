@@ -1,6 +1,5 @@
 import textwrap
 import uuid
-from typing import Any
 
 from ragna.core import Document, Source, SourceStorage
 
@@ -12,7 +11,7 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def __init__(self, config):
         super().__init__(config)
-        self._storage: dict[uuid.UUID, Any] = {}
+        self._storage: dict[uuid.UUID, list[Source]] = {}
 
     def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
         self._storage[chat_id] = [

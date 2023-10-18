@@ -3,14 +3,15 @@ channels:
   - conda-forge
 dependencies:
   - python =3.9
-  - redis-server
+  # FIXME: This is not available on Windows. We need to document this as part of the
+  #  dev installation
+  #  - redis-server
   - pip
   - pip:
     - jupyter
     - python-dotenv
     - boto3
     - pytest >=6
-    - tomlkit
     - mypy
     - pre-commit
     # documentation
