@@ -1,6 +1,9 @@
 import contextlib
 import io
+import unittest.mock
 from pathlib import Path
+
+import typer.rich_utils
 
 from mkdocs.config.defaults import MkDocsConfig
 
@@ -25,11 +28,12 @@ def get_doc(command):
 
 
 def get_help(command):
-    with contextlib.suppress(SystemExit), contextlib.redirect_stdout(
-        io.StringIO()
-    ) as stdout:
-        app(([command] if command else []) + ["--help"])
+    with unittest.mock.patch.object(typer.rich_utils, "MAX_WIDTH", 80):
+        with contextlib.suppress(SystemExit), contextlib.redirect_stdout(
+            io.StringIO()
+        ) as stdout:
+            app(([command] if command else []) + ["--help"], prog_name="ragna")
 
-    lines = stdout.getvalue().strip().splitlines()
-    lines[0] = lines[0].replace(Path(__file__).name, "ragna")
-    return "\n".join(line.strip() for line in lines)
+        return "\n".join(
+            line.strip() for line in stdout.getvalue().strip().splitlines()
+        )

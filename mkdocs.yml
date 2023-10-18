@@ -22,3 +22,4 @@ plugins:
 
 hooks:
   - docs/hooks/cli.py
+  - docs/hooks/rest_api.py
