@@ -9,9 +9,11 @@ class LanceDB(SourceStorage):
     def requirements(cls) -> list[Requirement]:
         return [
             PackageRequirement("lancedb>=0.2"),
-            # FIXME: re-add this after https://github.com/apache/arrow/issues/38167 is
-            #  resolved.
-            # PackageRequirement("pyarrow"),
+            PackageRequirement(
+                "pyarrow",
+                # See https://github.com/apache/arrow/issues/38167
+                exclude_modules=["__dummy__"],
+            ),
             PackageRequirement("sentence-transformers"),
         ]
 

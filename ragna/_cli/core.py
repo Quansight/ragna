@@ -6,8 +6,10 @@ from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
 import typer
+import uvicorn
 
 import ragna
+from ragna.api._core import app as api_app
 from ragna.core._queue import Queue
 from .config import (
     check_config,
@@ -102,8 +104,8 @@ def worker(
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
 ):
-    if config.queue_database_url == "memory":
-        print(f"With {config.queue_database_url=} no worker is required!")
+    if config.core.queue_url == "memory":
+        print(f"With {config.core.queue_url=} no worker is required!")
         raise typer.Exit(1)
 
     queue = Queue(config, load_components=True)
@@ -128,6 +130,7 @@ def api(
 ):
     if start_worker is None:
         start_worker = config.core.queue_url != "memory"
+
     if start_worker:
         process = subprocess.Popen(
             [
@@ -144,13 +147,9 @@ def api(
     else:
         process = None
 
-    import uvicorn
-
-    from ragna.api._core import app
-
     try:
         components = urlsplit(config.api.url)
-        uvicorn.run(app(config), host=components.hostname, port=components.port)
+        uvicorn.run(api_app(config), host=components.hostname, port=components.port)
     finally:
         if process is not None:
             process.kill()

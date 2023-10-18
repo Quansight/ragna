@@ -27,6 +27,7 @@ dependencies = [
     "pydantic-settings>=2",
     "PyJWT",
     "python-multipart",
+    "redis",
     "rich",
     "sqlalchemy>=2",
     "tomlkit",
@@ -36,21 +37,12 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-# to update the entries below, run scripts/update_optional_dependencies.py
-builtin-document-handlers = [
-    "pymupdf",
-]
-builtin-components = [
-    "chromadb>=0.4",
+# to update the array below, run scripts/update_optional_dependencies.py
+builtin = [
+    "chromadb>=0.4.13",
     "httpx",
     "lancedb>=0.2",
-    "sentence-transformers",
-    "tiktoken",
-]
-complete = [
-    "chromadb>=0.4",
-    "httpx",
-    "lancedb>=0.2",
+    "pyarrow",
     "pymupdf",
     "sentence-transformers",
     "tiktoken",
@@ -83,7 +75,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-rfEX --tb=short"
+addopts = "-rsfEX --tb=short"
 testpaths = [
     "tests",
 ]

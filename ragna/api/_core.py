@@ -37,7 +37,7 @@ def process_ragna_exception(afn):
 def app(config: Config):
     rag = Rag(config)
 
-    app = FastAPI()
+    app = FastAPI(title="ragna", version=ragna.__version__)
 
     @app.get("/")
     @process_ragna_exception

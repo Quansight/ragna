@@ -61,6 +61,7 @@ class Document(RequirementsMixin, abc.ABC):
         yield from self.handler.extract_pages(self)
 
 
+# FIXME: see if the S3 document is well handled
 class LocalDocument(Document):
     _JWT_ALGORITHM = "HS256"
 
@@ -181,7 +182,13 @@ class TxtDocumentHandler(DocumentHandler):
 class PdfDocumentHandler(DocumentHandler):
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("pymupdf")]
+        return [
+            PackageRequirement(
+                "pymupdf",
+                # See https://github.com/Quansight/ragna/issues/75
+                exclude_modules=["fitz_new"],
+            )
+        ]
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:

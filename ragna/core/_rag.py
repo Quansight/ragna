@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
+
+import getpass
+
 import itertools
 import os
 import uuid
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Type, TypeVar, Union
 
-from pydantic import BaseModel, ConfigDict, create_model, Extra, Field
+from pydantic import BaseModel, ConfigDict, create_model, Field
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
-
 from ._config import Config
 from ._document import Document
 from ._queue import Queue
@@ -45,6 +48,22 @@ class Rag:
             assistant=assistant,
             **params,
         )
+
+
+def _default_user():
+    with contextlib.suppress(Exception):
+        return getpass.getuser()
+    with contextlib.suppress(Exception):
+        return os.getlogin()
+    return "Ragna"
+
+
+class _SpecialChatParams(BaseModel):
+    user: str = Field(default_factory=_default_user)
+    chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    chat_name: str = Field(
+        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+    )
 
 
 class Chat:
@@ -87,7 +106,8 @@ class Chat:
         self.source_storage = self._rag._queue.parse_component(source_storage)
         self.assistant = self._rag._queue.parse_component(assistant)
 
-        special_params = self._SpecialChatParams().model_dump()
+        special_params = _SpecialChatParams().model_dump()
+
         special_params.update(params)
         params = special_params
         self.params = params
@@ -179,26 +199,19 @@ class Chat:
             documents_.append(document)
         return documents_
 
-    class _SpecialChatParams(BaseModel):
-        user: str = Field(default_factory=os.getlogin)
-        chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-        chat_name: str = Field(
-            default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
-        )
-
     def _unpack_chat_params(self, params):
         source_storage_models = self.source_storage._models()
         assistant_models = self.assistant._models()
 
         ChatModel = self._merge_models(
-            self._SpecialChatParams,
+            _SpecialChatParams,
             *source_storage_models.values(),
             *assistant_models.values(),
         )
 
-        chat_params = ChatModel(**params).dict(exclude_none=True)
+        chat_params = ChatModel(**params).model_dump(exclude_none=True)
         return {
-            component_and_action: model(**chat_params).dict()
+            component_and_action: model(**chat_params).model_dump()
             for component_and_action, model in itertools.chain(
                 source_storage_models.items(), assistant_models.items()
             )
@@ -207,7 +220,7 @@ class Chat:
     def _merge_models(self, *models):
         raw_field_definitions = defaultdict(list)
         for model_cls in models:
-            for name, field in model_cls.__fields__.items():
+            for name, field in model_cls.model_fields.items():
                 raw_field_definitions[name].append(
                     (field.annotation, field.is_required())
                 )
@@ -226,7 +239,9 @@ class Chat:
             field_definitions[name] = (type_, default)
 
         return create_model(
-            str(self), __config__=ConfigDict(extra=Extra.forbid), **field_definitions
+            self.params["chat_id"],
+            __config__=ConfigDict(extra="forbid"),
+            **field_definitions,
         )
 
     async def _enqueue(self, component, action, *args):

@@ -30,9 +30,24 @@ jobs:
       - name: Check if all public packages are importable
         run: python tests/test_importable.py
 
+  pytest:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+        python-version: ["3.9"]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.11"
 
-  unit:
-    runs-on: ubuntu-latest
+      fail-fast: false
+
+    runs-on: ${{ matrix.os }}
+
     defaults:
       run:
         shell: bash -el {0}
@@ -45,12 +60,15 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Run unit tests
-        run: pytest --junit-xml=test-results.xml --durations=25 tests/unit
+        id: tests
+        run: pytest --junit-xml=test-results.xml --durations=25
 
       - name: Surface failing tests
-        if: always()
+        if: steps.tests.outcome != 'success'
         uses: pmeier/pytest-results-action@v0.3.0
         with:
           path: test-results.xml

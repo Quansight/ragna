@@ -8,7 +8,7 @@ class Chroma(SourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            PackageRequirement("chromadb >=0.4"),
+            PackageRequirement("chromadb>=0.4.13"),
             PackageRequirement("tiktoken"),
         ]
 
