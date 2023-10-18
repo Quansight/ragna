@@ -48,7 +48,7 @@ class Rag:
         )
 
 
-def _default_user():
+def default_user():
     with contextlib.suppress(Exception):
         return getpass.getuser()
     with contextlib.suppress(Exception):
@@ -57,7 +57,7 @@ def _default_user():
 
 
 class _SpecialChatParams(BaseModel):
-    user: str = Field(default_factory=_default_user)
+    user: str = Field(default_factory=default_user)
     chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     chat_name: str = Field(
         default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
