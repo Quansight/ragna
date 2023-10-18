@@ -23,6 +23,7 @@ dependencies = [
     "packaging",
     "pydantic>=2",
     "pydantic-settings>=2",
+    "redis",
     "rich",
     "tomlkit",
     "typer",
@@ -98,7 +99,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-rfEX --tb=short"
+addopts = "-rsfEX --tb=short"
 testpaths = [
     "tests",
 ]
