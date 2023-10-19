@@ -2,7 +2,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Annotated, Type
 
-import emoji
 import questionary
 import rich
 import typer
@@ -48,13 +47,17 @@ ConfigOption = Annotated[
     typer.Option(*COMMON_CONFIG_OPTION_ARGS, **COMMON_CONFIG_OPTION_KWARGS),
 ]
 
+# This adds a newline before every question to unclutter the output
+QMARK = "\n?"
+
 
 def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
     # FIXME: add link to the config documentation when it is available
     rich.print(
         "\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n"
         "I'll help you create a configuration file to use with ragna.\n"
-        "Due to the large amount of options, I unfortunately can't cover everything. "
+        "Due to the large amount of parameters, "
+        "I unfortunately can't cover everything. "
         "If you want to customize everything, "
         "you can have a look at the documentation instead."
     )
@@ -76,6 +79,7 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
                 value="common",
             ),
         ],
+        qmark=QMARK,
     ).unsafe_ask()
 
     config = {
@@ -87,7 +91,10 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
     if output_path.exists() and not force:
         output_path, force = _handle_output_path(output_path=output_path, force=force)
 
-    rich.print(f"Writing generated config to {output_path}.")
+    rich.print(
+        f"\nAnd with that we are done :tada: "
+        f"I'm writing the configuration file to {output_path}."
+    )
 
     return config, output_path, force
 
@@ -113,13 +120,18 @@ def _wizard_builtin(*, hint_builtin=True) -> Config:
         "How do you want to select the components?",
         choices=[
             questionary.Choice(
-                "I want to use all components for which the requirements are met.",
+                (
+                    "I want to use all builtin components "
+                    "for which the requirements are met."
+                ),
                 value="builtin",
             ),
             questionary.Choice(
-                "I want to manually select the components I want to use", value="custom"
+                "I want to manually select the builtin components I want to use.",
+                value="custom",
             ),
         ],
+        qmark=QMARK,
     ).unsafe_ask()
 
     if intent == "builtin":
@@ -159,18 +171,16 @@ def _select_components(title, module, base_cls):
                 and obj is not base_cls
             ]
         ],
+        qmark=QMARK,
     ).unsafe_ask()
 
     for component in [
         component for component in selected_components if not component.is_available()
     ]:
-        question = [
-            (
-                f"The component {component.display_name()} "
-                f"has the following requirements that are currently not fully met:"
-            ),
-            "",
-        ]
+        rich.print(
+            f"The component {component.display_name()} "
+            f"has the following requirements that are currently not fully met:\n"
+        )
 
         requirements = _split_requirements(component.requirements())
         for title, requirement_type in [
@@ -178,21 +188,16 @@ def _select_components(title, module, base_cls):
             ("Environment variables:", EnvVarRequirement),
         ]:
             if requirement_type in requirements:
-                question.extend(
-                    [
-                        title,
-                        "",
-                        _format_requirements(requirements[requirement_type]),
-                        "",
-                    ]
-                )
+                rich.print(f"{title}\n")
+                rich.print(f"{_format_requirements(requirements[requirement_type])}\n")
 
-        question.append(
-            f"Are you able to meet these requirements in the future and "
-            f"thus want to include {component.display_name()} in the configuration?"
-        )
-
-        if not questionary.confirm("\n".join(question)).unsafe_ask():
+        if not questionary.confirm(
+            (
+                f"Are you able to meet these requirements in the future and "
+                f"thus want to include {component.display_name()} in the configuration?"
+            ),
+            qmark=QMARK,
+        ).unsafe_ask():
             selected_components.remove(component)
 
     return selected_components
@@ -203,7 +208,9 @@ def _wizard_common() -> Config:
 
     config.local_cache_root = Path(
         questionary.path(
-            "Where should local files be stored?", default=str(config.local_cache_root)
+            "Where should local files be stored?",
+            default=str(config.local_cache_root),
+            qmark=QMARK,
         ).unsafe_ask()
     )
 
@@ -212,15 +219,18 @@ def _wizard_common() -> Config:
     config.api.url = questionary.text(
         "At what URL do you want the ragna REST API to be served?",
         default=config.api.url,
+        qmark=QMARK,
     ).unsafe_ask()
 
     if questionary.confirm(
         "Do you want to use a SQL database to persist the chats between runs?",
         default=True,
+        qmark=QMARK,
     ).unsafe_ask():
         config.api.database_url = questionary.text(
             "What is the URL of the database?",
             default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
+            qmark=QMARK,
         ).unsafe_ask()
     else:
         config.api.database_url = "memory"
@@ -228,6 +238,7 @@ def _wizard_common() -> Config:
     config.ui.url = questionary.text(
         "At what URL do you want the ragna web UI to be served?",
         default=config.ui.url,
+        qmark=QMARK,
     ).unsafe_ask()
 
     return config
@@ -267,6 +278,7 @@ def _select_queue_url(config):
                 value="redis",
             ),
         ],
+        qmark=QMARK,
     ).unsafe_ask()
 
     if queue == "memory":
@@ -275,25 +287,28 @@ def _select_queue_url(config):
         return questionary.path(
             "Where do you want to store the queue files?",
             default=str(config.local_cache_root / "queue"),
+            qmark=QMARK,
         ).unsafe_ask()
     elif queue == "redis":
         return questionary.text(
             "What is the URL of the Redis instance?",
             default="redis://127.0.0.1:6379",
+            qmark=QMARK,
         ).unsafe_ask()
 
 
 def _handle_output_path(*, output_path, force):
+    rich.print(
+        f"The output path {output_path} already exists "
+        f"and you didn't pass the --force flag to overwrite it. "
+    )
     action = questionary.select(
-        (
-            f"The output path {output_path} already exists "
-            f"and you didn't pass the --force flag to overwrite it. "
-            f"What do you want to do?"
-        ),
+        "What do you want to do?",
         choices=[
             questionary.Choice("Overwrite the existing file.", value="overwrite"),
             questionary.Choice("Select a new output path.", value="new"),
         ],
+        qmark=QMARK,
     ).unsafe_ask()
 
     if action == "overwrite":
@@ -306,6 +321,7 @@ def _handle_output_path(*, output_path, force):
                         "Please provide a different output path "
                         "to write the generated config to:",
                         default=str(output_path),
+                        qmark=QMARK,
                     ).unsafe_ask()
                 )
                 .expanduser()
@@ -363,4 +379,4 @@ def _format_requirements(requirements: list[Requirement]):
 
 
 def _yes_or_no(condition):
-    return emoji.emojize(":check_mark_button:" if condition else ":cross_mark:")
+    return ":white_check_mark:" if condition else ":x:"
