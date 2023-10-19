@@ -49,9 +49,6 @@ def main():
         allowed_origins.append("127.0.0.1")
         allowed_origins.append(f"127.0.0.1:{port}")
 
-    breakpoint()
-    print(allowed_origins)
-
     ragna_ui = RagnaUI(
         url=url.split("//")[-1],
         port=int(port),
