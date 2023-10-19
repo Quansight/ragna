@@ -10,8 +10,7 @@ from pydantic import Field, field_validator, ImportString
 
 from pydantic_settings import BaseSettings
 
-from ragna.api import Authentication
-
+from ._authentication import Authentication
 from ._components import Assistant, SourceStorage
 from ._document import Document
 from ._utils import RagnaException
@@ -64,7 +63,7 @@ class ApiConfig(BaseSettings):
 
     authentication: ImportString[
         type[Authentication]
-    ] = "ragna.api.RagnaDemoAuthentication"
+    ] = "ragna.core.RagnaDemoAuthentication"
 
     upload_token_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32)[:32]

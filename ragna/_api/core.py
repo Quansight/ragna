@@ -1,50 +1,50 @@
-import functools
 import uuid
 from typing import Annotated
 
 import aiofiles
+
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
 
 from ragna.core import Config, Rag, RagnaException
 
-from . import _database as database, _schemas as schemas
+from . import database, schemas
 
 
-def process_ragna_exception(afn):
-    @functools.wraps(afn)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await afn(*args, **kwargs)
-        except RagnaException as exc:
-            if exc.http_detail is RagnaException.EVENT:
-                detail = exc.event
-            elif exc.http_detail is RagnaException.MESSAGE:
-                detail = str(exc)
-            else:
-                detail = exc.http_detail
-            raise HTTPException(
-                status_code=exc.http_status_code, detail=detail
-            ) from None
-        except Exception:
-            raise
-
-    return wrapper
-
-
-def app(config: Config):
+def app(config: Config, *, no_authentication=False):
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
 
+    @app.exception_handler(RagnaException)
+    async def ragna_exception_handler(
+        request: Request, exc: RagnaException
+    ) -> JSONResponse:
+        if exc.http_detail is RagnaException.EVENT:
+            detail = exc.event
+        elif exc.http_detail is RagnaException.MESSAGE:
+            detail = str(exc)
+        else:
+            detail = exc.http_detail
+        return JSONResponse(
+            status_code=exc.http_status_code,
+            content={"error": {"message": detail}},
+        )
+
     @app.get("/")
-    @process_ragna_exception
-    async def health() -> str:
+    async def version() -> str:
         return ragna.__version__
 
     authentication = config.api.authentication()
+
+    # async def _authorize_user(
+    #     x_user: Annotated[str, Header(default_factory=default_user)]
+    # ) -> str:
+    #     # FIXME: implement auth here
+    #     return x_user
 
     @app.post("/token")
     async def create_token(request: Request) -> str:
@@ -53,7 +53,6 @@ def app(config: Config):
     UserDependency = Annotated[str, Depends(authentication.get_user)]
 
     @app.get("/components")
-    @process_ragna_exception
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
             source_storages=[
@@ -80,7 +79,6 @@ def app(config: Config):
     SessionDependency = Annotated[database.Session, Depends(get_session)]
 
     @app.get("/document")
-    @process_ragna_exception
     async def get_document_upload_info(
         session: SessionDependency,
         user: UserDependency,
@@ -94,7 +92,6 @@ def app(config: Config):
         return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
     @app.post("/document")
-    @process_ragna_exception
     async def upload_document(
         session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
@@ -152,7 +149,6 @@ def app(config: Config):
         return core_chat
 
     @app.post("/chats")
-    @process_ragna_exception
     async def create_chat(
         session: SessionDependency,
         user: UserDependency,
@@ -168,21 +164,18 @@ def app(config: Config):
         return chat
 
     @app.get("/chats")
-    @process_ragna_exception
     async def get_chats(
         session: SessionDependency, user: UserDependency
     ) -> list[schemas.Chat]:
         return database.get_chats(session, user=user)
 
     @app.get("/chats/{id}")
-    @process_ragna_exception
     async def get_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> schemas.Chat:
         return database.get_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/prepare")
-    @process_ragna_exception
     async def prepare_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> schemas.MessageOutput:
@@ -198,7 +191,6 @@ def app(config: Config):
         return schemas.MessageOutput(message=welcome, chat=chat)
 
     @app.post("/chats/{id}/answer")
-    @process_ragna_exception
     async def answer(
         session: SessionDependency, user: UserDependency, id: uuid.UUID, prompt: str
     ) -> schemas.MessageOutput:
@@ -217,7 +209,6 @@ def app(config: Config):
         return schemas.MessageOutput(message=answer, chat=chat)
 
     @app.delete("/chats/{id}")
-    @process_ragna_exception
     async def delete_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> None:

@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import contextlib
 import datetime
-
-import getpass
-
 import itertools
-import os
 import uuid
 from collections import defaultdict
 from typing import Any, Iterable, Optional, Type, TypeVar, Union
@@ -17,7 +12,7 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._config import Config
 from ._document import Document
 from ._queue import Queue
-from ._utils import RagnaException
+from ._utils import default_user, RagnaException
 
 T = TypeVar("T", bound=Component)
 
@@ -50,16 +45,8 @@ class Rag:
         )
 
 
-def _default_user():
-    with contextlib.suppress(Exception):
-        return getpass.getuser()
-    with contextlib.suppress(Exception):
-        return os.getlogin()
-    return "Ragna"
-
-
 class _SpecialChatParams(BaseModel):
-    user: str = Field(default_factory=_default_user)
+    user: str = Field(default_factory=default_user)
     chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     chat_name: str = Field(
         default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"

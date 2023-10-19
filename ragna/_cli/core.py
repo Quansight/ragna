@@ -9,7 +9,7 @@ import typer
 import uvicorn
 
 import ragna
-from ragna.api._core import app as api_app
+from ragna._api import app as api_app
 from ragna.core._queue import Queue
 from .config import (
     check_config,

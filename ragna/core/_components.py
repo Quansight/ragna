@@ -10,7 +10,6 @@ import pydantic
 import pydantic.utils
 
 from ._document import Document
-
 from ._utils import RequirementsMixin
 
 
@@ -91,7 +90,7 @@ class SourceStorage(Component, abc.ABC):
 class MessageRole(enum.Enum):
     SYSTEM = "system"
     USER = "user"
-    ASSISTANT = "assistants"
+    ASSISTANT = "assistant"
 
 
 class Message(pydantic.BaseModel):
