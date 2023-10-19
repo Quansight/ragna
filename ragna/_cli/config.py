@@ -50,7 +50,14 @@ ConfigOption = Annotated[
 
 
 def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
-    rich.print("\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n")
+    # FIXME: add link to the config documentation when it is available
+    rich.print(
+        "\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n"
+        "I'll help you create a configuration file to use with ragna.\n"
+        "Due to the large amount of options, I unfortunately can't cover everything. "
+        "If you want to customize everything, "
+        "you can have a look at the documentation instead."
+    )
 
     intent = questionary.select(
         "Which of the following statements describes best what you want to do?",
@@ -68,10 +75,6 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
                 "I want to customize the most common parameters.",
                 value="common",
             ),
-            questionary.Choice(
-                "I want to customize everything.",
-                value="custom",
-            ),
         ],
     ).unsafe_ask()
 
@@ -79,11 +82,12 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
         "demo": _wizard_demo,
         "builtin": _wizard_builtin,
         "common": _wizard_common,
-        "custom": _wizard_custom,
     }[intent]()
 
     if output_path.exists() and not force:
         output_path, force = _handle_output_path(output_path=output_path, force=force)
+
+    rich.print(f"Writing generated config to {output_path}.")
 
     return config, output_path, force
 
@@ -137,9 +141,9 @@ def _select_components(title, module, base_cls):
     selected_components = questionary.checkbox(
         (
             f"ragna has the following {title} builtin. "
-            f"Please select the ones you are interested in. "
-            f"If the requirements of a selected component ore not met, "
-            f"you'll be given more details in a follow-up question."
+            f"Choose the he ones you want to use. "
+            f"If the requirements of a selected component are not met, "
+            f"I'll ask for confirmation later."
         ),
         choices=[
             questionary.Choice(
@@ -277,23 +281,6 @@ def _select_queue_url(config):
             "What is the URL of the Redis instance?",
             default="redis://127.0.0.1:6379",
         ).unsafe_ask()
-
-
-def _wizard_custom() -> Config:
-    if questionary.confirm(
-        (
-            "Customizing everything is certainly a valid use case. "
-            "However, due to the many available options, "
-            "this is not feasible in an interactive wizard. "
-            "Please have a look at the documentation instead. "
-            "Do you want to create a configuration by customizing the most common "
-            "parameters in order to have a basis for the full customization?"
-        ),
-        default=True,
-    ).unsafe_ask():
-        return _wizard_common()
-    else:
-        raise typer.Abort()
 
 
 def _handle_output_path(*, output_path, force):
