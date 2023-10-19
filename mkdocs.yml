@@ -21,5 +21,6 @@ plugins:
             show_bases: false
 
 hooks:
+  - docs/hooks/gitignore.py
   - docs/hooks/cli.py
   - docs/hooks/rest_api.py
