@@ -2,37 +2,43 @@
 title: Welcome!
 ---
 
-# Ragna
+# RAGNA
 
-Ragna is an open source Retrieval Augmented Generation (RAG) orchestration framework. It is designed to have an easy API for quick experimentation, and the tools to build production-ready application with Large Language Models (LLMs).
+<!--TODO: Add logo -->
 
-[Get started](./get-started.md){ .md-button }
+Ragna is an open source RAG orchestration framework.
 
-## Key Features
+With an intuitive API for quick experimentation and built-in tools for creating production-ready application, you can quickly quickly Large Language Models (LLMs) for your work.
 
-<!-- Switch to Card grid when it's available openly.
+[Get started](get-started.md){ .md-button }
+
+## Key features
+
+<!-- TODO: Switch to Card grid when it's available in the OSS version.
 Ref: https://squidfunk.github.io/mkdocs-material/reference/grids/#using-card-grids -->
 
-### Python API
+### Python API designed for experimentation  :fontawesome-solid-flask:{ .icon }
 
-Explore and test different LLMs for your needs using Python and Jupyter Notebooks.
+Explore and test different LLMs quickly in Python.
 
-[Learn more ->](#)
-
-
-### Web application
-
-Intutive UI for uploading documents, selecting models, and chat interface.
-
-[Learn more ->](#)
+[Learn more →](tutorials/python-api.md)
 
 
-### REST API
+### Web UI for chat interface  :fontawesome-solid-window-maximize:{ .icon }
 
-Transform experiments into web apps.
+Select and configure LLMs, upload documents, and chat with the LLM with a web application. Use it out-of-the-box or as a reference to build custom web applications.
 
-[Learn more ->](#)
+[Learn more →](tutorials/rest-api.md)
 
-### Rooted in OSS
 
-Developed under the permissive BSD 3-Clause License.
+### REST API to build web apps :fontawesome-solid-bolt:{ .icon }
+
+Create custom RAG-based web applications for your particular needs.
+
+[Learn more →](tutorials/web-app.md)
+
+### Free and Open Source in ethos :fontawesome-solid-heart:{ .icon }
+
+Ragna is developed and distributed under the permissive BSD 3-Clause License for open source software.
+
+[Join the community →](community/contribute.md)

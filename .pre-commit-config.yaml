@@ -4,6 +4,7 @@ repos:
     hooks:
       - id: check-toml
       - id: check-yaml
+        args: [ --unsafe ] # required for parsing pymdownx.emoji in mkdocs.yml
       - id: mixed-line-ending
         args: [ --fix=lf ]
         exclude: docs/make.bat

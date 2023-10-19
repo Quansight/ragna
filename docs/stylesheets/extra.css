@@ -1,4 +1,10 @@
+/* TODO: Update based on new brand guidelines */
+
 :root {
-    --md-primary-fg-color:        #CF5E43;
-    --md-accent-fg-color:         #CF5E43;
+    --md-primary-fg-color:#CF5E43;
+    --md-accent-fg-color: #CF5E43;
   }
+
+.icon {
+  color: #CF5E43;
+}

@@ -25,7 +25,7 @@ And, launch a new notebook.
 
 ## Step 1: Setup RAG configuration
 
-The first step is to setup the configuration for components like the storage, api, assistant, and more. You can set this using a `config.toml` file, learn more in the [how-to guide for setting configuration](/how-tos/set-configuration).
+The first step is to setup the configuration for components like the storage, api, assistant, and more. You can set this using a `config.toml` file, learn more in the [how-to guide for setting configuration](../how-tos/set-configuration.md).
 
 For this minimal tutorial on basics, start with the default configuration:
 
