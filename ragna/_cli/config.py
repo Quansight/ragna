@@ -3,9 +3,7 @@ from pathlib import Path
 from typing import Annotated, Type
 
 import emoji
-
 import questionary
-
 import rich
 import typer
 from rich.table import Table
@@ -102,30 +100,6 @@ def _print_special_config(name):
 def _wizard_demo() -> Config:
     _print_special_config("demo")
     return Config.demo()
-
-
-def _config_wizard_builtin() -> Config:
-    # don't just create the builtin configuration here, but ask if that is what the user wants
-    # if yes, hint at the fact that this doesn't need a configuration file
-    # if no, go thorugh all components (including document handlers) and let the user select the ones that they want
-    # only in the next step go through all selected options and check availability
-    # ask user
-    pass
-
-
-def _config_wizard_common() -> Config:
-    # call the builtin wizard
-    # and additionally ask for
-    # cache root
-    # api / ui url
-    pass
-
-
-def _config_wizard_custom() -> Config:
-    # full custom is not really a good use case for this wizard
-    #  refer to documentation
-    # ask user if they want to go through the common options as baseline
-    pass
 
 
 def _wizard_builtin(*, hint_builtin=True) -> Config:
