@@ -105,10 +105,20 @@ def _wizard_demo() -> Config:
 def _wizard_builtin(*, hint_builtin=True) -> Config:
     config = Config.builtin()
 
-    if questionary.confirm(
-        "Do you only want to include components which requirements are already met?",
-        default=False,
-    ).unsafe_ask():
+    intent = questionary.select(
+        "How do you want to select the components?",
+        choices=[
+            questionary.Choice(
+                "I want to use all components for which the requirements are met.",
+                value="builtin",
+            ),
+            questionary.Choice(
+                "I want to manually select the components I want to use", value="custom"
+            ),
+        ],
+    ).unsafe_ask()
+
+    if intent == "builtin":
         if hint_builtin:
             _print_special_config("builtin")
         return config
