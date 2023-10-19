@@ -36,19 +36,21 @@ def process_ragna_exception(afn):
 
 
 def _get_cors_origins(config):
-    origins = [config.api.url]
+    origins = []
 
-    components = urlsplit(config.api.url)
+    for url in [config.api.url, config.ui.url]:
+        origins.append(url)
+        components = urlsplit(url)
 
-    def replace_hostname(hostname):
-        return components._replace(netloc=f"{hostname}:{components.port}")
+        def replace_hostname(hostname):
+            return components._replace(netloc=f"{hostname}:{components.port}")
 
-    # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
-    # don't need to worry about it.
-    if components.hostname == "127.0.0.1":
-        origins.append(urlunsplit(replace_hostname("localhost")))
-    elif components.hostname == "localhost":
-        origins.append(urlunsplit(replace_hostname("127.0.0.1")))
+        # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
+        # don't need to worry about it.
+        if components.hostname == "127.0.0.1":
+            origins.append(urlunsplit(replace_hostname("localhost")))
+        elif components.hostname == "localhost":
+            origins.append(urlunsplit(replace_hostname("127.0.0.1")))
 
     return origins
 
