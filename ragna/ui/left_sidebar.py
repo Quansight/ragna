@@ -15,18 +15,19 @@ class LeftSidebar(pn.viewable.Viewer):
         self.chat_buttons = []
 
     def trigger_on_click_new_chat(self, event):
-        print("on click new chat")
         if self.on_click_new_chat is not None:
             self.on_click_new_chat(event)
 
     def on_click_chat_wrapper(self, event, chat):
+        # update the UI, unselect all buttons ...
         for button in self.chat_buttons:
             if "selected" in button.css_classes:
                 button.css_classes = []
 
-        # event.obj.css_classes.append("selected")
+        # ... and select the one that was clicked
         event.obj.css_classes = ["selected"]
 
+        # call the actual callback
         if self.on_click_chat is not None:
             self.on_click_chat(chat)
 
@@ -61,12 +62,8 @@ class LeftSidebar(pn.viewable.Viewer):
     def __panel__(self):
         chats = self.api_wrapper.get_chats()
 
-        current_chat_button = None
-
-        try:
-            print(pn.state.session_args.get("current_chat_id")[0])
-        except Exception:
-            pass
+        # current_chat_button = None
+        current_chat = None
 
         self.chat_buttons = []
         for chat in chats:
@@ -111,7 +108,9 @@ class LeftSidebar(pn.viewable.Viewer):
                 if chat["id"] == pn.state.session_args.get("current_chat_id")[0].decode(
                     "utf-8"
                 ):
-                    current_chat_button = button
+                    # current_chat_button = button
+                    current_chat = chat
+                    button.css_classes = ["selected"]
             except Exception:
                 pass
 
@@ -161,9 +160,6 @@ class LeftSidebar(pn.viewable.Viewer):
             + [pn.layout.VSpacer(), pn.pane.HTML("version: 1.0"), self.footer()]
         )
 
-        if len(chats) > 0:
-            self.on_click_chat(chats[0])
-
         result = pn.Column(
             *objects,
             stylesheets=[
@@ -179,7 +175,11 @@ class LeftSidebar(pn.viewable.Viewer):
             ],
         )
 
-        if current_chat_button is not None:
-            current_chat_button.clicks = 1
+        # if current_chat_button is not None:
+        #     current_chat_button.clicks = 1
+        if current_chat is not None:
+            self.on_click_chat(current_chat)
+        elif len(chats) > 0:
+            self.on_click_chat(chats[0])
 
         return result

@@ -3,7 +3,6 @@ from datetime import datetime
 
 import emoji
 
-# import requests
 import httpx
 
 
@@ -67,7 +66,7 @@ class ApiWrapper:
 
     def start_chat(self, name, documents, source_storage, assistant, params={}):
         response = self.client.post(
-            self.api_url + "/chats",
+            f"{self.api_url}/chats",
             params={"user": self.user},
             json={
                 "name": name,
@@ -82,12 +81,12 @@ class ApiWrapper:
     def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
         chat = self.start_chat(name, documents, source_storage, assistant, params)
 
-        result = self.client.post(
-            self.api_url + f"/chats/{chat['id']}/prepare",
+        _ = self.client.post(
+            f"{self.api_url}/chats/{chat['id']}/prepare",
             params={"user": self.user},
         )
 
-        return result.json()
+        return chat["id"]
 
     # Helpers
 

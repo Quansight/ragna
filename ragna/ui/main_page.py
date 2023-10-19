@@ -27,8 +27,8 @@ class MainPage(param.Parameterized):
         if self.modal is None:
             self.modal = ModalConfiguration(
                 api_wrapper=self.api_wrapper,
-                start_button_callback=lambda event, template=template: self.on_click_start_conv_button(
-                    event, template
+                new_chat_ready_callback=lambda new_chat_id, template=template: self.open_new_chat(
+                    new_chat_id, template
                 ),
                 cancel_button_callback=lambda event, template=template: self.on_click_cancel_button(
                     event, template
@@ -38,14 +38,14 @@ class MainPage(param.Parameterized):
         template.modal.objects[0].objects = [self.modal]
         template.open_modal()
 
-    def on_click_start_conv_button(self, event, template):
-        print("on_click_start_conv_button")
-
+    def open_new_chat(self, new_chat_id, template):
+        # called after creating a new chat.
+        self.current_chat_id = new_chat_id
         self.left_sidebar.refresh()
+
         template.close_modal()
 
     def on_click_cancel_button(self, event, template):
-        print("on_click_cancel_button")
         template.close_modal()
 
     # Left sidebar callbacks
@@ -55,11 +55,6 @@ class MainPage(param.Parameterized):
 
     # Right sidebar callbacks
     def show_right_sidebar(self, content):
-        print("show_right_sidebar")
-        # self.right_sidebar.visible = True
-
-        # the right sidebar is basically just a column
-        # self.right_sidebar.objects = [content]
         self.right_sidebar.show()
 
     def page(self):

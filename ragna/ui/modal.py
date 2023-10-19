@@ -18,7 +18,7 @@ def get_default_chat_name(timezone_offset=None):
 
 class ModalConfiguration(pn.viewable.Viewer):
     chat_name = param.String()
-    start_button_callback = param.Callable()
+    new_chat_ready_callback = param.Callable()
     cancel_button_callback = param.Callable()
     #
     source_storage_name = param.Selector()
@@ -46,7 +46,6 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.start_chat_button = pn.widgets.Button(
             name="Start Conversation", button_type="primary", min_width=375
         )
-        # self.start_chat_button.on_click(self.start_button_callback)
         self.start_chat_button.on_click(self.did_click_on_start_chat_button)
 
         self.upload_files_label = pn.pane.HTML("<b>Upload files</b> (required)")
@@ -74,27 +73,27 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.upload_row.append(self.spinner_upload)
         self.start_chat_button.disabled = True
 
-        def did_finish_upload(uploaded_documents):
-            # at this point, the UI has uploaded the files to the API.
-            # We can now start the chat
-            print("did finish upload", uploaded_documents)
+        self.document_uploader.perform_upload(event, self.did_finish_upload)
 
-            start_chat_result = self.api_wrapper.start_and_prepare(
-                name=self.chat_name,
-                documents=uploaded_documents,
-                source_storage=self.source_storage_name,
-                assistant=self.assistant_name,
-            )
+    def did_finish_upload(self, uploaded_documents):
+        # at this point, the UI has uploaded the files to the API.
+        # We can now start the chat
+        print("did finish upload", uploaded_documents)
 
-            print("start_chat_result", start_chat_result)
+        new_chat_id = self.api_wrapper.start_and_prepare(
+            name=self.chat_name,
+            documents=uploaded_documents,
+            source_storage=self.source_storage_name,
+            assistant=self.assistant_name,
+        )
 
-            self.upload_row.remove(self.spinner_upload)
-            self.start_chat_button.disabled = False
+        print("new_chat_id", new_chat_id)
 
-            if self.start_button_callback is not None:
-                self.start_button_callback(event)
+        self.upload_row.remove(self.spinner_upload)
+        self.start_chat_button.disabled = False
 
-        self.document_uploader.perform_upload(event, did_finish_upload)
+        if self.new_chat_ready_callback is not None:
+            self.new_chat_ready_callback(new_chat_id)
 
     async def model_section(self):
         components = await self.api_wrapper.get_components_async()

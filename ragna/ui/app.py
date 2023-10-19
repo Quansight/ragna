@@ -23,11 +23,19 @@ RES = HERE / "resources"
 
 
 class App(param.Parameterized):
-    def __init__(self, url="localhost", port=5007, api_url="localhost:31476"):
+    def __init__(
+        self,
+        url="localhost",
+        port=5007,
+        api_url="localhost:31476",
+        allowed_origins=None,
+    ):
         super().__init__()
         self.url = url
         self.port = port
         self.api_url = api_url
+
+        self.allowed_origins = allowed_origins or [self.url, f"{self.url}:{self.port}"]
 
         # TODO : build the Api Wrapper after we have the user's name,
         # and replace the default "User" here
@@ -57,6 +65,6 @@ class App(param.Parameterized):
             keep_alive=30 * 1000,  # 30s
             autoreload=True,
             profiler="pyinstrument",
-            allow_websocket_origin=[self.url, f"{self.url}:{self.port}"],
+            allow_websocket_origin=self.allowed_origins,
             static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
         )
