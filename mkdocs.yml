@@ -18,6 +18,9 @@ theme:
     - navigation.top
     - navigation.footer
     - content.code.copy
+    - search
+    - search.suggest
+    - search.highlight
 
 markdown_extensions:
   - admonition

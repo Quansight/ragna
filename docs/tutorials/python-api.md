@@ -90,8 +90,17 @@ That's all the setup, you can now use Ragna to create a chat app.
 ### Create a `Rag` object with your configuration
 
 ```py
+from ragna.core import Rag
+
 rag =  Rag(config)
 ```
+
+!!! note
+
+    Setting the default configuration is not required.
+    If you create the instance with no configuration: `rag = Rag()`,
+    the default configuration is applied by default.
+    This tutorial includes setting config because it's an important component of Ragna.
 
 ### Start an async chat
 
