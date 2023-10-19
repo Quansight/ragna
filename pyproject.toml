@@ -95,7 +95,8 @@ ignore = ["E501"]
 [tool.ruff.per-file-ignores]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
-
+# The examples often have imports below the top of the file to follow the narrative
+"docs/examples/**/*.py" = ["E402"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

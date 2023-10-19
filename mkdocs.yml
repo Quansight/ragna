@@ -1,4 +1,5 @@
 site_name: Ragna
+
 theme:
   name: material
   features:
@@ -8,6 +9,10 @@ markdown_extensions:
   - admonition
   - codehilite
   - pymdownx.superfences
+
+# FIXME: This only shows the examples
+nav:
+  - Examples: generated/gallery
 
 plugins:
   - search
@@ -19,6 +24,10 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+  - gallery:
+      examples_dirs: docs/examples
+      gallery_dirs: docs/generated/gallery
+      filename_pattern: /example_
 
 hooks:
   - docs/hooks/cli.py
