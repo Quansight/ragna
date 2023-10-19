@@ -1,14 +1,14 @@
-# Ragna
-
-<p>
-    <img src="docs/brand-assets/Ragna-logo-lockup-vertical.png" width=50%>
+<p align="center">
+    <img src="docs/brand-assets/Ragna-logo-lockup-vertical.png" width=30%>
 </p>
 
-A RAG Orchestration framework.
+<hr>
 
 > **Note**
 > This project is in active development,
 > check back after 26th October for updates!
+
+A RAG orchestration framework. ⛵️
 
 ## Local development
 
