@@ -42,7 +42,7 @@ ConfigOption = Annotated[
 def config_wizard() -> Config:
     print(
         "Unfortunately, we over-promised here. There is no interactive wizard yet :( "
-        "Continuing with the deme configuration."
+        "Continuing with the demo configuration."
     )
     return Config.demo()
 
