@@ -7,12 +7,7 @@ DOCS_ROOT = HERE.parent
 
 with open(DOCS_ROOT / ".gitignore") as file:
     GITIGNORE = pathspec.PathSpec.from_lines(
-        pathspec.patterns.GitWildMatchPattern,
-        (
-            line
-            for line in file
-            if not (len((line_ := line.strip())) == 0 or line_.startswith("#"))
-        ),
+        pathspec.patterns.GitWildMatchPattern, file
     )
 
 
