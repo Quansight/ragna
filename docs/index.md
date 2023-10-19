@@ -1,16 +1,38 @@
 ---
-title: Welcome
+title: Welcome!
 ---
 
 # Ragna
 
-A toolkit for building RAG-based LLM applications, it provides:
+Ragna is an open source Retrieval Augmented Generation (RAG) orchestration framework. It is designed to have an easy API for quick experimentation, and the tools to build production-ready application with Large Language Models (LLMs).
 
-* **Python API** for RAG orchestration
-* **REST API** for building web applications
-* **Ready-to-use web application** with UI for uploading documents, selecting models, and chat interface.
+[Get started](./get-started.md){ .md-button }
 
-<!-- TODO:
-- Update description
-- Link to relevant sections of the docs
--->
+## Key Features
+
+<!-- Switch to Card grid when it's available openly.
+Ref: https://squidfunk.github.io/mkdocs-material/reference/grids/#using-card-grids -->
+
+### Python API
+
+Explore and test different LLMs for your needs using Python and Jupyter Notebooks.
+
+[Learn more ->](#)
+
+
+### Web application
+
+Intutive UI for uploading documents, selecting models, and chat interface.
+
+[Learn more ->](#)
+
+
+### REST API
+
+Transform experiments into web apps.
+
+[Learn more ->](#)
+
+### Rooted in OSS
+
+Developed under the permissive BSD 3-Clause License.

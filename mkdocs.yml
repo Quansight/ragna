@@ -1,13 +1,31 @@
 site_name: Ragna
+repo_url: https://github.com/Quansight/ragna
+copyright: Copyright &copy; 2023 Ragna Development Team at Quansight LLC
+extra:
+  social:
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/ragna/
 theme:
   name: material
+  palette:
+    primary: custom
+    accent: custom
+  font:
+    text: Roboto
   features:
     - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
 
 markdown_extensions:
   - admonition
   - codehilite
   - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - footnotes
 
 plugins:
   - search
@@ -23,3 +41,27 @@ plugins:
 hooks:
   - docs/hooks/cli.py
   - docs/hooks/rest_api.py
+
+extra_css:
+  - stylesheets/extra.css
+
+# Explicit navigation
+nav:
+- 'index.md'
+- 'get-started.md'
+- Tutorials:
+  - 'tutorials/python-api.md'
+  - 'tutorials/rest-api.md'
+  - 'tutorials/web-app.md'
+- How-to:
+  - 'how-tos/set-configuration.md'
+- Explanations:
+  - 'explanations/understand-rag.md'
+- Community:
+  - 'community/contribute.md'
+  - 'community/brand.md'
+- References:
+  - 'references/python-api.md'
+  - 'references/rest-api.md'
+  - 'references/cli.md'
+  - 'references/changelog.md'

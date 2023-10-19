@@ -8,5 +8,6 @@
 * Setup: [docs/community/contribute.md](docs/community/contribute.md)
 * Quickstart: [docs/get-started.md](docs/get-started.md#minimal-example)
 
-# TODO
-- rename state to database and maybe remove the object?
+## Code of Conduct
+
+This repository is governed by the [Quansight Repository Code of Conduct](https://github.com/Quansight/.github/blob/master/CODE_OF_CONDUCT.md).
