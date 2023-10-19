@@ -35,8 +35,8 @@ chat_entry_stylesheets = [
                     }
                 """,
 ]
-pn.widgets.ChatEntry._stylesheets = (
-    pn.widgets.ChatEntry._stylesheets + chat_entry_stylesheets
+pn.chat.ChatMessage._stylesheets = (
+    pn.chat.ChatMessage._stylesheets + chat_entry_stylesheets
 )
 
 
@@ -51,8 +51,8 @@ def chat_entry_value_renderer(txt, role):
 
 
 def build_chat_entry(role, txt, timestamp=None):
-    chat_entry = pn.widgets.ChatEntry(
-        value=txt,
+    chat_entry = pn.chat.ChatMessage(
+        object=txt,
         # user="User" if m["role"] == "user" else "Ragna (Chat GPT 3.5)",
         # actually looking better with empty user name than show_user=False
         # show_user=False,
@@ -95,7 +95,7 @@ class CentralView(pn.viewable.Viewer):
         self.current_chat = chat
 
     async def chat_callback(
-        self, contents: str, user: str, instance: pn.widgets.ChatInterface
+        self, contents: str, user: str, instance: pn.chat.ChatInterface
     ):
         # message = f"Echoing {user}: {contents}"
         # return message
@@ -169,43 +169,44 @@ class CentralView(pn.viewable.Viewer):
     def chat_interface(self):
         chat_entries = self.get_chat_entries()
 
-        chat_interface = pn.widgets.ChatInterface(
+        chat_interface = pn.chat.ChatInterface(
             callback=self.chat_callback,
             callback_user="Ragna",
             show_rerun=False,
             show_undo=False,
             show_clear=False,
             show_button_name=False,
-            value=chat_entries,
+            # objects=chat_entries,
             view_latest=True,
             sizing_mode="stretch_width",
             renderers=[lambda txt: pn.pane.Markdown(txt)],
-            entry_params={"show_reaction_icons": False, "show_user": False},
-            stylesheets=[
-                """
-                    :host {  
-                    /*background-color:pink;*/
-                    margin-left: 18% !important;
-                    /*margin-right: 18% !important;*/
-                    min-width:45%;
-                    border: none !important;
-                    height:100%;
-                    margin-bottom: 20px; 
-                    }
-
-                    :host .chat-feed-log {
-                        padding-right:18% !important;
-                    }
-
-                    :host .chat-interface-input-container {
-                        margin-right: 19%;
-                        margin-left:2%;
-                    }
-
-                    """,
-            ],
+            # entry_params={"show_reaction_icons": False, "show_user": False},
+            message_params={"show_reaction_icons": False, "show_user": False},
+            stylesheets=["""  """],
         )
 
+        chat_interface._card.stylesheets += [
+            """ 
+                                             
+                                            :host { 
+                                                border:none !important;
+                                            }
+
+                                            .chat-feed-log {  
+                                                margin-right: 18%;
+                                                margin-left: 18% ;
+                                                padding-top:25px !important;
+                                            }
+                                             
+                                            .chat-interface-input-container {
+                                                margin-left:19%;
+                                                margin-right:20%;
+                                            }
+
+                                            """
+        ]
+
+        chat_interface.objects = chat_entries
         # Trick to make the chat start from the bottom :
         #  - move the spacer first, and not last
         # chat_interface._composite.objects =  (
@@ -327,8 +328,6 @@ class CentralView(pn.viewable.Viewer):
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
-                                            /*background-color: orange;*/
-                                            /*background-color: #FCFCFC;*/
                                             background-color: white;
                                             
                                             height:100%;
