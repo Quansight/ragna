@@ -57,16 +57,16 @@ nav:
 - 'install.md'
 - Tutorials:
   - 'tutorials/python-api.md'
-  - 'tutorials/rest-api.md'
-  - 'tutorials/web-app.md'
+  # - 'tutorials/rest-api.md'
+  # - 'tutorials/web-app.md'
 - How-to:
   - 'how-tos/set-configuration.md'
-- Explanations:
-  - 'explanations/understand-rag.md'
+# - Explanations:
+#   - 'explanations/understand-rag.md'
 - Community:
   - 'community/contribute.md'
-  - 'community/brand.md'
-  - 'community/roadmap.md'
+  # - 'community/brand.md'
+  # - 'community/roadmap.md'
 - References:
   - 'references/python-api.md'
   - 'references/rest-api.md'
