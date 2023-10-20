@@ -26,3 +26,6 @@ plugins:
 
 watch:
   - scripts/docs_gen_files.py
+
+hooks:
+  - debug_dirty.py
