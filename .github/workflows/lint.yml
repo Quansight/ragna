@@ -26,7 +26,7 @@ jobs:
           python scripts/update_optional_dependencies.py
           git diff --exit-code
 
-  pre-commit:
+  format:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,5 +53,30 @@ jobs:
       - name: Setup lint utilities
         run: pre-commit install-hooks
 
-      - name: Run pre-commit
+      - name: Run format checks
         run: pre-commit run --all-files --show-diff-on-failure --color=always
+
+  types:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          optional-dependencies: "false"
+
+      - name: Install third-party types
+        run: |
+          mypy --install-types --non-interactive
+          pip install sqlalchemy-stubs
+
+      - name: Run type checks
+        run: mypy

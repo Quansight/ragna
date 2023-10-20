@@ -12,7 +12,7 @@ dependencies:
     - python-dotenv
     - boto3
     - pytest >=6
-    - mypy
+    - mypy =1.6
     - pre-commit
     # documentation
     - mkdocs
