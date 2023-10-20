@@ -169,7 +169,7 @@ def api(
         components = urlsplit(config.api.url)
         if components.hostname is None or components.port is None:
             # TODO: make this part of the config validation
-            print(f"Unable to extract hostname and port from {config.api.url}.")
+            rich.print(f"Unable to extract hostname and port from {config.api.url}.")
             raise typer.Exit(1)
 
         uvicorn.run(
