@@ -60,4 +60,9 @@ div#content {
 }
 
 
+/* Hide the fullscreen button of the template */ 
+span.fullscreen-button {
+    display:none;
+}
+
 """

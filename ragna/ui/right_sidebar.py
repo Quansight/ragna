@@ -5,9 +5,6 @@ import param
 class RightSidebar(pn.viewable.Viewer):
     content = param.List(default=[])
 
-    def _create_view(self):
-        return self.__panel__()
-
     def __init__(self, **params):
         super().__init__(**params)
 
@@ -15,7 +12,7 @@ class RightSidebar(pn.viewable.Viewer):
         self.close_button = None
 
     def show(self):
-        print("show")
+        print("show", len(self.content))
         self.main_column.css_classes = ["visible_sidebar"]
         # self.close_button.visible = True
 
@@ -24,6 +21,9 @@ class RightSidebar(pn.viewable.Viewer):
         # self.close_button.visible = False
 
     @pn.depends("content")
+    def content_layout(self):
+        return pn.Column(*self.content)
+
     def __panel__(self):
         self.close_button = pn.widgets.Button(
             icon="x",
@@ -44,7 +44,6 @@ class RightSidebar(pn.viewable.Viewer):
 
         self.main_column = pn.Column(
             self.close_button,
-            *self.content,
             pn.pane.Markdown(
                 "## Source Info",
                 stylesheets=[
@@ -56,6 +55,7 @@ class RightSidebar(pn.viewable.Viewer):
                                                            } """
                 ],
             ),
+            self.content_layout,
             stylesheets=[
                 """   
                                 :host { 

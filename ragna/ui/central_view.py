@@ -1,6 +1,7 @@
 import panel as pn
 import param
 
+# TODO : move all the CSS rules in a dedicated file
 
 chat_entry_stylesheets = [
     """ :host .right, :host .center, :host .chat-entry {
@@ -52,14 +53,25 @@ pn.chat.ChatMessage._stylesheets = (
     pn.chat.ChatMessage._stylesheets + chat_entry_stylesheets
 )
 
+markdown_table_stylesheet = """
+
+            /* Better rendering of the markdown tables */
+            table { 
+                margin-top:10px;
+                margin-bottom:10px;
+            }
+            """
+
 
 def chat_entry_value_renderer(txt, role):
+    markdown_css_classes = []
+    if role is not None:
+        markdown_css_classes = [
+            "chat-entry-user" if role == "user" else "chat-entry-ragna"
+        ]
+
     return pn.pane.Markdown(
-        txt,
-        css_classes=["chat-entry-user" if role == "user" else "chat-entry-ragna"],
-        stylesheets=[
-            " \n                    table {\n                        margin-top:10px;\n                        margin-bottom:10px;\n                        \n                    }\n                "
-        ],
+        txt, css_classes=markdown_css_classes, stylesheets=[markdown_table_stylesheet]
     )
 
 
@@ -75,9 +87,10 @@ def build_chat_entry(role, txt, timestamp=None):
             "chat-entry-user" if role == "user" else "chat-entry-ragna",
         ],
         avatar="👤" if role == "user" else "🤖",
-        timestamp=timestamp,
+        # timestamp=timestamp,
+        show_timestamp=False,
         show_reaction_icons=False,
-        show_copy_icon=True,
+        show_copy_icon=False,
         show_user=False,
     )
 
@@ -110,50 +123,11 @@ class CentralView(pn.viewable.Viewer):
     async def chat_callback(
         self, contents: str, user: str, instance: pn.chat.ChatInterface
     ):
-        # message = f"Echoing {user}: {contents}"
-        # return message
-        print(user, contents)
-
         yield {
             "user": "Ragna",
             "avatar": "🤖",
             "value": self.api_wrapper.answer(self.current_chat["id"], contents),
         }
-
-        #
-        # yield build_chat_entry("Ragna", self.api_wrapper.answer(self.current_chat["id"], contents))
-
-        print("yielded")
-        return
-
-        if user == "User":
-            pass
-        else:
-            self.api_wrapper.answer(self.current_chat["id"], contents)
-
-        yield pn.widgets.ChatEntry(
-            value=contents,
-            user="",
-            renderers=[
-                lambda txt: pn.pane.Markdown(
-                    txt,
-                    css_classes=[
-                        "chat-entry-user" if user == "user" else "chat-entry-ragna"
-                    ],
-                )
-            ],
-            css_classes=[
-                "chat-entry",
-                "chat-entry-user" if user == "User" else "chat-entry-ragna",
-            ],
-            avatar="👤" if user == "User" else "🤖",
-            # timestamp=m["timestamp"],
-            show_reaction_icons=False,
-            # show_user=False,
-        )
-
-        if user != "User":
-            instance.respond()
 
     def get_chat_entries(self):
         chat_entries = []
@@ -161,27 +135,12 @@ class CentralView(pn.viewable.Viewer):
         if self.current_chat is not None:
             for m in self.current_chat["messages"]:
                 chat_entry = build_chat_entry(m["role"], m["content"], m["timestamp"])
-
-                # Works, but ugly code
-                # chat_entry._composite[1].stylesheets = list(chat_entry._composite[1].stylesheets) + [
-                #         """ :host div.center {
-                #                 width: 100%;
-                #             }
-                #             :host {
-                #                 /*background-color:red !important;*/
-                #             }
-                #         """.strip(),
-                # ]
-                # chat_entry._composite[1][1][0].stylesheets += [ """ :host, :host .message {width:calc(100% - 10px);}""" ]
-
                 chat_entries.append(chat_entry)
 
         return chat_entries
 
     @pn.depends("current_chat")
     def chat_interface(self):
-        chat_entries = self.get_chat_entries()
-
         chat_interface = pn.chat.ChatInterface(
             callback=self.chat_callback,
             callback_user="Ragna",
@@ -189,18 +148,36 @@ class CentralView(pn.viewable.Viewer):
             show_undo=False,
             show_clear=False,
             show_button_name=False,
-            # objects=chat_entries,
             view_latest=True,
             sizing_mode="stretch_width",
-            renderers=[lambda txt: pn.pane.Markdown(txt)],
-            # entry_params={"show_reaction_icons": False, "show_user": False},
+            auto_send_types=[],
+            widgets=[
+                pn.widgets.TextInput(
+                    placeholder="Ask Ragna...",
+                    stylesheets=[
+                        """:host input[type="text"] { 
+                                                                border:none !important;
+                                                                box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
+                                                                padding: 10px 10px 10px 15px;
+                                                            }
+                                                        
+                                                            :host input[type="text"]:focus { 
+                                                                box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
+                                                            }
+
+                                                         """
+                    ],
+                )
+            ],
+            renderers=[lambda txt: chat_entry_value_renderer(txt, role=None)],
             message_params={
                 "show_reaction_icons": False,
                 "show_user": False,
                 "show_copy_icon": False,
+                "show_timestamp": False,
                 "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
             },
-            stylesheets=["""  """],
+            stylesheets=[""" :host { background-color:red; }  """],
         )
 
         chat_interface._card.stylesheets += [
@@ -211,20 +188,23 @@ class CentralView(pn.viewable.Viewer):
                                             }
 
                                             .chat-feed-log {  
-                                                margin-right: 18%;
+                                                padding-right: 18%;
                                                 margin-left: 18% ;
                                                 padding-top:25px !important;
+                                                
                                             }
                                              
                                             .chat-interface-input-container {
                                                 margin-left:19%;
                                                 margin-right:20%;
+                                                margin-bottom: 20px;
                                             }
+
 
                                             """
         ]
 
-        chat_interface.objects = chat_entries
+        chat_interface.objects = self.get_chat_entries()
         # Trick to make the chat start from the bottom :
         #  - move the spacer first, and not last
         # chat_interface._composite.objects =  (
@@ -239,6 +219,20 @@ class CentralView(pn.viewable.Viewer):
         #             height: unset; max-height: 90%; }
         #     """
         # )
+
+        """
+        This is a trick to change the CSS classes of the chat entries after they have been created.
+
+        We set the css classes to "chat-entry" and "chat-entry-user" or "chat-entry-ragna" depending on the role/the user.
+        That's easy to do when building the list of existing messages, but for the new messages coming up from the AI, 
+        there is no way to test on the role of the renderers callables.
+
+        So here, we watch for the `objects` param of chat_interface. 
+        When it changes, 
+            we iterate over all the messages,
+            detect the ones without the right css classes,
+            and update it.
+        """
 
         def messages_changed(event):
             for msg in chat_interface.objects:
@@ -261,36 +255,11 @@ class CentralView(pn.viewable.Viewer):
                         ]
                     )
                     msg.param.trigger("object")
-
                     # msg.param.update(avatar="👤" if msg.user == "User" else "🤖")
-
-                    # msg.param.update(**{"show_copy_icon":True,
-                    #                     "show_reaction_icons":True,
-                    #                     "show_user":True,
-                    #                     }
-                    #                 )
-                    # msg.show_user = True
-                    # breakpoint()
 
         chat_interface.param.watch(
             messages_changed,
             ["objects"],
-            what="value",
-            onlychanged=True,
-            queued=True,
-            precedence=0,
-        )
-
-        def changed_placeholder(event):
-            print("changed_placeholder")
-
-        chat_interface.param.watch(
-            changed_placeholder,
-            ["_placeholder"],
-            what="value",
-            onlychanged=True,
-            queued=True,
-            precedence=0,
         )
 
         return chat_interface
@@ -393,9 +362,29 @@ class CentralView(pn.viewable.Viewer):
         )
 
     def __panel__(self):
+        """
+        The ChatInterface.view_latest option doesn't seem to work.
+        So to scroll to the latest message, we use some JS trick.
+
+        There might be a more elegant solution than running this after a timeout of 200ms,
+        but without it, the $$$ function isn't available yet.
+        And even if I add the $$$ here, the fix itself doesn't work and the chat doesn't scroll
+        to the bottom.
+        """
+
+        scroll_to_latest_fix = pn.pane.HTML(
+            """<script type="text/javascript">
+                            setTimeout(() => {
+                                    var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
+                                    chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
+                            }, 200);
+                         </script>"""
+        )
+
         result = pn.Column(
             self.header,
             self.chat_interface,
+            scroll_to_latest_fix,
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 

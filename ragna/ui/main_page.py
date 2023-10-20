@@ -55,6 +55,8 @@ class MainPage(param.Parameterized):
 
     # Right sidebar callbacks
     def show_right_sidebar(self, content):
+        self.right_sidebar.content = [content]
+        self.right_sidebar.param.trigger("content")
         self.right_sidebar.show()
 
     def page(self):
