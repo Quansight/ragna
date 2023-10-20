@@ -45,10 +45,10 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment.yml
-        cat environment.yml
-        mamba env update --file environment.yml
-        git checkout -- environment.yml
+        sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
+        cat environment-dev.yml
+        mamba env update --file environment-dev.yml
+        git checkout -- environment-dev.yml
 
     - name: Install redis-server if necessary
       if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
