@@ -29,6 +29,7 @@ dependencies = [
     "PyJWT",
     "python-multipart",
     "redis",
+    "questionary",
     "rich",
     "sqlalchemy>=2",
     "tomlkit",
