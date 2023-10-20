@@ -27,7 +27,7 @@ app = typer.Typer(
 )
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
         print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
         raise typer.Exit()
@@ -41,7 +41,7 @@ def _main(
             "--version", callback=version_callback, help="Show version and exit."
         ),
     ] = None
-):
+) -> None:
     pass
 
 
@@ -83,7 +83,7 @@ def config(
             "-f", "--force", help="Overwrite an existing file at <OUTPUT_PATH>."
         ),
     ] = False,
-):
+) -> None:
     if config is None:
         config = config_wizard()
 
@@ -102,7 +102,7 @@ def worker(
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
-):
+) -> None:
     if config.rag.queue_url == "memory":
         print(f"With {config.rag.queue_url=} no worker is required!")
         raise typer.Exit(1)
@@ -126,7 +126,7 @@ def api(
             show_default="Start if a non-memory queue is configured.",
         ),
     ] = None,
-):
+) -> None:
     required_packages = [
         package
         for package in ["fastapi", "uvicorn"]

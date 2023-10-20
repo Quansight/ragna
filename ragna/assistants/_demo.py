@@ -7,7 +7,7 @@ from ragna.core import Assistant, Source
 
 class RagnaDemoAssistant(Assistant):
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
 
     @property

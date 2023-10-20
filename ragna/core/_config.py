@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import secrets
 from pathlib import Path
-from typing import Union
+from types import ModuleType
+from typing import Type, Union
 
 import tomlkit
 from pydantic import Field, field_validator, ImportString
@@ -121,8 +122,11 @@ class Config(BaseSettings):
     def builtin(cls) -> ragna.Config:
         from ragna import assistants, source_storages
         from ragna.core import Assistant, SourceStorage
+        from ragna.core._components import Component
 
-        def get_available_components(module, cls):
+        def get_available_components(
+            module: ModuleType, cls: Type[Component]
+        ) -> list[Type]:
             return [
                 obj
                 for obj in module.__dict__.values()

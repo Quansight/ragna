@@ -66,7 +66,7 @@ def get_document(
     return _orm_to_schema_document(document), document.metadata_
 
 
-def add_chat(session: Session, *, user: str, chat: schemas.Chat):
+def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
     document_ids = {document.id for document in chat.metadata.documents}
     documents = (
         session.execute(select(orm.Document).where(orm.Document.id.in_(document_ids)))
@@ -75,7 +75,7 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat):
     )
     if len(documents) != len(document_ids):
         raise RagnaException(
-            set(document_ids) - {document.id for document in documents}
+            str(set(document_ids) - {document.id for document in documents})
         )
     session.add(
         orm.Chat(
@@ -211,5 +211,5 @@ def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
 
 def delete_chat(session: Session, user: str, id: uuid.UUID) -> None:
     orm_chat = _get_orm_chat(session, user=user, id=id)
-    session.delete(orm_chat)
+    session.delete(orm_chat)  # type: ignore[no-untyped-call]
     session.commit()

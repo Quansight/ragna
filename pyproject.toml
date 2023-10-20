@@ -117,6 +117,10 @@ files = "ragna"
 show_error_codes = true
 pretty = true
 
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
 allow_redefinition = true
 no_implicit_optional = true
 

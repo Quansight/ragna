@@ -5,12 +5,16 @@ import enum
 import functools
 import inspect
 
+from typing import Type, TYPE_CHECKING
+
 import pydantic
 import pydantic.utils
 
 from ._document import Document
-
 from ._utils import RequirementsMixin
+
+if TYPE_CHECKING:
+    from ._config import Config
 
 
 class Component(RequirementsMixin):
@@ -18,7 +22,7 @@ class Component(RequirementsMixin):
     def display_name(cls) -> str:
         return cls.__name__
 
-    def __init__(self, config) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
 
     def __repr__(self) -> str:
@@ -30,9 +34,9 @@ class Component(RequirementsMixin):
 
     @classmethod
     @functools.cache
-    def _models(cls):
+    def _models(cls) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
         protocol_cls, protocol_methods = next(
-            (cls_, cls_.__ragna_protocol_methods__)
+            (cls_, cls_.__ragna_protocol_methods__)  # type: ignore[attr-defined]
             for cls_ in cls.__mro__
             if "__ragna_protocol_methods__" in cls_.__dict__
         )
@@ -45,7 +49,7 @@ class Component(RequirementsMixin):
             ).parameters
             extra_param_names = concrete_params.keys() - protocol_params.keys()
 
-            models[(cls, method_name)] = pydantic.create_model(
+            models[(cls, method_name)] = pydantic.create_model(  # type: ignore[call-overload]
                 f"{cls.__name__}.{method_name}",
                 **{
                     (param := concrete_params[param_name]).name: (
@@ -98,7 +102,7 @@ class Message(pydantic.BaseModel):
     role: MessageRole
     sources: list[Source] = pydantic.Field(default_factory=list)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.content
 
 

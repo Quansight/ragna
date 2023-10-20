@@ -1,5 +1,5 @@
 import itertools
-from typing import Iterable, Iterator, Optional
+from typing import cast, Iterable, Iterator, Optional
 
 from ragna._compat import itertools_pairwise
 
@@ -17,6 +17,8 @@ def page_numbers_to_str(page_numbers: Optional[list[int]]) -> str:
     for current_page_number, next_page_number in itertools_pairwise(
         itertools.chain(sorted(page_numbers), [None])
     ):
+        current_page_number = cast(int, current_page_number)
+
         range_int.append(current_page_number)
         if next_page_number is None or next_page_number > current_page_number + 1:
             ranges_str.append(

@@ -1,7 +1,7 @@
 import itertools
 import platform
 import re
-from typing import cast, Optional, Type, TypeVar, Union
+from typing import Any, Callable, cast, Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -15,9 +15,13 @@ from ._config import Config
 from ._utils import RagnaException
 
 
-def task_config(retries: int = 0, retry_delay: int = 0):
-    def decorator(fn):
-        fn.__ragna_task_config__ = dict(retries=retries, retry_delay=retry_delay)
+def task_config(
+    retries: int = 0, retry_delay: int = 0
+) -> Callable[[Callable], Callable]:
+    def decorator(fn: Callable) -> Callable:
+        fn.__ragna_task_config__ = (  # type: ignore[attr-defined]
+            dict(retries=retries, retry_delay=retry_delay)
+        )
         return fn
 
     return decorator
@@ -25,15 +29,22 @@ def task_config(retries: int = 0, retry_delay: int = 0):
 
 _COMPONENTS: dict[Type[Component], Optional[Component]] = {}
 
+R = TypeVar("R")
 
-def execute(component, fn, args, kwargs):
+
+def execute(
+    component: Type[Component],
+    fn: Callable[..., R],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> R:
     self = _COMPONENTS[component]
     assert self is not None
     return fn(self, *args, **kwargs)
 
 
 class _Task(huey.api.Task):
-    def execute(self):
+    def execute(self) -> Any:
         return execute(*self.args)
 
 
@@ -41,7 +52,7 @@ T = TypeVar("T", bound=Component)
 
 
 class Queue:
-    def __init__(self, config: Config, *, load_components: Optional[bool]):
+    def __init__(self, config: Config, *, load_components: Optional[bool]) -> None:
         self._config = config
         self._huey = self._load_huey(config.rag.queue_url)
 
@@ -122,7 +133,13 @@ class Queue:
 
         return cls
 
-    async def enqueue(self, component, action, args, kwargs):
+    async def enqueue(
+        self,
+        component: Type[Component],
+        action: str,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:
         fn = getattr(component, action)
         task = _Task(
             args=(component, fn, args, kwargs),
@@ -134,7 +151,7 @@ class Queue:
             raise RagnaException("Task failed", **output.metadata)
         return output
 
-    def create_worker(self, num_workers: int = 1):
+    def create_worker(self, num_workers: int = 1) -> huey.api.Consumer:
         return self._huey.create_consumer(
             workers=num_workers, worker_type=huey.constants.WORKER_THREAD
         )

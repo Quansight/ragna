@@ -6,7 +6,7 @@ from ragna.core import Config, Document, Source, SourceStorage
 
 class RagnaDemoSourceStorage(SourceStorage):
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return "Ragna/DemoSourceStorage"
 
     def __init__(self, config: Config) -> None:

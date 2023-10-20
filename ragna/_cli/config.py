@@ -50,7 +50,9 @@ def config_wizard() -> Config:
     return Config.demo()
 
 
-def check_config(config: Config):
+def check_config(config: Config) -> bool:
+    fully_available = True
+
     for title, components in [
         ("source storages", config.rag.source_storages),
         ("assistants", config.rag.assistants),
@@ -70,15 +72,20 @@ def check_config(config: Config):
         )
 
         for component in components:
+            is_available = component.is_available()
+            fully_available &= is_available
+
             requirements = _split_requirements(component.requirements())
             table.add_row(
-                _yes_or_no(component.is_available()),
+                _yes_or_no(is_available),
                 component.display_name(),
                 _format_requirements(requirements[EnvVarRequirement]),
                 _format_requirements(requirements[PackageRequirement]),
             )
 
         rich.print(table)
+
+    return fully_available
 
 
 def _split_requirements(
@@ -90,12 +97,12 @@ def _split_requirements(
     return split_reqs
 
 
-def _format_requirements(requirements: list[Requirement]):
+def _format_requirements(requirements: list[Requirement]) -> str:
     if not requirements:
         return ""
 
     return "\n".join(f"{_yes_or_no(req.is_available())} {req}" for req in requirements)
 
 
-def _yes_or_no(condition):
+def _yes_or_no(condition: bool) -> str:
     return ":white_check_mark:" if condition else ":x:"

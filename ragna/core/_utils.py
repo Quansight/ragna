@@ -1,31 +1,43 @@
 from __future__ import annotations
 
 import abc
+import enum
 import functools
 import importlib
 import importlib.metadata
 import os
+from typing import Any, Collection, Union
 
 import packaging.requirements
 
 from ragna._compat import importlib_metadata_package_distributions
 
 
+class RagnaExceptionHttpDetail(enum.Enum):
+    EVENT = enum.auto()
+    MESSAGE = enum.auto()
+
+
 class RagnaException(Exception):
     # The values below are sentinels to be used with the http_detail field.
-    # This tells the API to use the event as detail
-    EVENT = object()
-    # This tells the API to use the error message as detail
-    MESSAGE = object()
+    # They tells the API to use the event as detail in the returned error message
+    EVENT = RagnaExceptionHttpDetail.EVENT
+    MESSAGE = RagnaExceptionHttpDetail.MESSAGE
 
-    def __init__(self, event="", http_status_code=500, http_detail=None, **extra):
+    def __init__(
+        self,
         # FIXME: remove default value for event
+        event: str = "",
+        http_status_code: int = 500,
+        http_detail: Union[str, RagnaExceptionHttpDetail] = "",
+        **extra: Any,
+    ) -> None:
         self.event = event
         self.http_status_code = http_status_code
         self.http_detail = http_detail
         self.extra = extra
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ", ".join([self.event, *[f"{k}={v}" for k, v in self.extra.items()]])
 
 
@@ -50,7 +62,9 @@ class RequirementsMixin:
 
 
 class PackageRequirement(Requirement):
-    def __init__(self, requirement_string: str, *, exclude_modules=()):
+    def __init__(
+        self, requirement_string: str, *, exclude_modules: Collection[str] = ()
+    ) -> None:
         self._requirement = packaging.requirements.Requirement(requirement_string)
         self._exclude_modules = set(exclude_modules)
 
@@ -77,17 +91,17 @@ class PackageRequirement(Requirement):
 
         return True
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self._requirement)
 
 
 class EnvVarRequirement(Requirement):
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self._name = name
 
     @functools.cache
     def is_available(self) -> bool:
         return self._name in os.environ
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._name
