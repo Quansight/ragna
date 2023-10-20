@@ -7,7 +7,6 @@ from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
-
 from ragna.core import Config, Rag, RagnaException
 from ragna.core._rag import default_user
 

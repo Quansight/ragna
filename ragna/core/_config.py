@@ -7,7 +7,6 @@ from typing import Type, Union
 
 import tomlkit
 from pydantic import Field, field_validator, ImportString
-
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 import ragna

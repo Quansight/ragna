@@ -4,7 +4,6 @@ import abc
 import enum
 import functools
 import inspect
-
 from typing import Type, TYPE_CHECKING
 
 import pydantic

@@ -2,7 +2,6 @@ import abc
 import os
 
 import ragna
-
 from ragna.core import (
     Assistant,
     Config,

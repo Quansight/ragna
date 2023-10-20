@@ -2,7 +2,6 @@ import itertools
 from typing import cast, Iterable, Iterator, Optional
 
 from ragna._compat import itertools_pairwise
-
 from ragna.core import Source
 
 

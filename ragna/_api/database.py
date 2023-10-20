@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-
 import uuid
 from typing import Any, Callable, cast, Optional
 
