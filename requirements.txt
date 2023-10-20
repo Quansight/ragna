@@ -1,0 +1,13 @@
+####
+# This file os also used by Netlify to build the documentation
+####
+jupyter
+python-dotenv
+boto3
+pytest >=6
+mypy
+pre-commit
+# documentation
+mkdocs
+mkdocs-material
+mkdocstrings[python]

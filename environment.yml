@@ -1,4 +1,4 @@
-name: ragna-dev
+name: ragna-test
 channels:
   - conda-forge
 dependencies:
@@ -8,13 +8,4 @@ dependencies:
   #  - redis-server
   - pip
   - pip:
-    - jupyter
-    - python-dotenv
-    - boto3
-    - pytest >=6
-    - mypy
-    - pre-commit
-    # documentation
-    - mkdocs
-    - mkdocs-material
-    - mkdocstrings[python]
+    - -r requirements.txt
