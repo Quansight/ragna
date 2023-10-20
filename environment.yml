@@ -1,4 +1,4 @@
-name: ragna-test
+name: ragna-dev
 channels:
   - conda-forge
 dependencies:
