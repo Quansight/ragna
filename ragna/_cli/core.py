@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
+import rich
+
 import typer
 
 import ragna
@@ -29,7 +31,7 @@ app = typer.Typer(
 
 def version_callback(value: bool):
     if value:
-        print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
+        rich.print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
         raise typer.Exit()
 
 
@@ -85,7 +87,12 @@ def config(
     ] = False,
 ):
     if config is None:
-        config = config_wizard()
+        if check:
+            rich.print(
+                "--check makes no sense without passing a config with -c / --config"
+            )
+            raise typer.Exit(1)
+        config, output_path, force = config_wizard(output_path=output_path, force=force)
 
     if check:
         is_available = check_config(config)
@@ -104,7 +111,7 @@ def worker(
     ] = 1,
 ):
     if config.rag.queue_url == "memory":
-        print(f"With {config.rag.queue_url=} no worker is required!")
+        rich.print(f"With {config.rag.queue_url=} no worker is required!")
         raise typer.Exit(1)
 
     queue = Queue(config, load_components=True)
