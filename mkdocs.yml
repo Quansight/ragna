@@ -19,7 +19,9 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+  - gen-files:
+      scripts:
+        - scripts/docs_gen_files.py
 
-hooks:
-  - docs/hooks/cli.py
-  - docs/hooks/rest_api.py
+watch:
+  - scripts/docs_gen_files.py
