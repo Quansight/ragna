@@ -73,8 +73,8 @@ jobs:
 
       - name: Install third-party types
         run: |
-          mypy --install-types --non-interactive
           pip install sqlalchemy-stubs
+          mypy --install-types --non-interactive
 
       - name: Run type checks
         run: mypy
