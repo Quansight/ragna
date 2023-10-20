@@ -23,5 +23,7 @@ const ui = SwaggerUIBundle({
     SwaggerUIBundle.SwaggerUIStandalonePreset
   ],
   layout: "BaseLayout",
+  tryItOutEnabled: false,
+  supportedSubmitMethods: [],
 });
 </script>
