@@ -3,14 +3,7 @@ import os
 
 import ragna
 
-from ragna.core import (
-    Assistant,
-    EnvVarRequirement,
-    PackageRequirement,
-    Requirement,
-    Source,
-    task_config,
-)
+from ragna.core import Assistant, EnvVarRequirement, Requirement, Source, task_config
 
 
 class ApiAssistant(Assistant):
@@ -18,10 +11,7 @@ class ApiAssistant(Assistant):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [
-            PackageRequirement("httpx"),
-            EnvVarRequirement(cls._API_KEY_ENV_VAR),
-        ]
+        return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
     def __init__(self, config, *, num_retries: int = 2, retry_delay: float = 1.0):
         super().__init__(config)
