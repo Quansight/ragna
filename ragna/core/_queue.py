@@ -1,7 +1,7 @@
 import itertools
 import platform
 import re
-from typing import Optional, Type, TypeVar, Union
+from typing import cast, Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -23,7 +23,7 @@ def task_config(retries: int = 0, retry_delay: int = 0):
     return decorator
 
 
-_COMPONENTS: dict[Type[Component], Component] = {}
+_COMPONENTS: dict[Type[Component], Optional[Component]] = {}
 
 
 def execute(component, fn, args, kwargs):
@@ -51,7 +51,7 @@ class Queue:
         ):
             self.parse_component(component, load=load_components)
 
-    def _load_huey(self, url: Optional[str]):
+    def _load_huey(self, url: str) -> huey.Huey:
         # FIXME: we need to store_none=True here. SourceStorage.store returns None and
         #  if we wouldn't store it, waiting for a result is timing out. Maybe there is a
         #  better way to do this?
@@ -95,19 +95,19 @@ class Queue:
             cls = component
             instance = None
         elif isinstance(component, Component):
-            cls = type(component)
+            cls = cast(Type[T], type(component))
             instance = component
         elif isinstance(component, str):
             try:
-                cls = next(
-                    cls for cls in _COMPONENTS if cls.display_name() == component
+                cls = cast(
+                    Type[T],
+                    next(cls for cls in _COMPONENTS if cls.display_name() == component),
                 )
             except StopIteration:
                 raise RagnaException("Unknown component", component=component)
             instance = None
 
-        if instance is None:
-            instance = _COMPONENTS.get(cls)
+        instance = _COMPONENTS.setdefault(cls, instance)
 
         if instance is not None:
             return cls

@@ -60,7 +60,7 @@ def config(
         ),
     ],
     config: Annotated[
-        ragna.Config,
+        Optional[ragna.Config],
         typer.Option(
             *COMMON_CONFIG_OPTION_ARGS,
             **COMMON_CONFIG_OPTION_KWARGS,
@@ -97,7 +97,7 @@ def config(
 @app.command(help="Start workers.")
 def worker(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     num_threads: Annotated[
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
@@ -118,9 +118,9 @@ def worker(
 @app.command(help="Start the REST API.")
 def api(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     start_worker: Annotated[
-        bool,
+        Optional[bool],
         typer.Option(
             help="Start a ragna worker alongside the REST API in a subprocess.",
             show_default="Start if a non-memory queue is configured.",
@@ -146,7 +146,7 @@ def api(
                 "ragna",
                 "worker",
                 "--config",
-                config.__ragna_cli_value__,
+                config.__ragna_cli_value__,  # type: ignore[attr-defined]
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -160,7 +160,14 @@ def api(
 
     try:
         components = urlsplit(config.api.url)
-        uvicorn.run(api(config), host=components.hostname, port=components.port)
+        if components.hostname is None or components.port is None:
+            # TODO: make this part of the config validation
+            print(f"Unable to extract hostname and port from {config.api.url}.")
+            raise typer.Exit(1)
+
+        uvicorn.run(
+            api(config), host=components.hostname, port=components.port or 31476
+        )
     finally:
         if process is not None:
             process.kill()

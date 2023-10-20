@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import uuid
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field
 
 import ragna.core
 
@@ -26,7 +26,7 @@ class Document(BaseModel):
 
 
 class DocumentUploadInfo(BaseModel):
-    url: HttpUrl
+    url: str
     data: dict
     document: Document
 

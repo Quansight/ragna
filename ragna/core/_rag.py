@@ -37,7 +37,7 @@ class Rag:
         source_storage: Union[Type[SourceStorage], SourceStorage, str],
         assistant: Union[Type[Assistant], Assistant, str],
         **params: Any,
-    ):
+    ) -> Chat:
         """Create a new [ragna.core.Chat][]."""
         return Chat(
             self,
@@ -111,7 +111,7 @@ class Chat:
         self._unpacked_params = self._unpack_chat_params(params)
 
         self._prepared = False
-        self._messages = []
+        self._messages: list[Message] = []
 
     async def prepare(self):
         """Prepare the chat.
@@ -184,7 +184,9 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.rag.document(document)
+                document = self._rag.config.rag.document(
+                    document  # type: ignore[misc, call-arg]
+                )
 
             if not document.is_readable():
                 raise RagnaException(

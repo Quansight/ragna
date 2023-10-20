@@ -43,7 +43,7 @@ class Document(RequirementsMixin, abc.ABC):
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
     ):
-        self.id = id
+        self.id = id or uuid.uuid4()
         self.name = name
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
@@ -97,7 +97,7 @@ class LocalDocument(Document):
         import jwt
 
         try:
-            payload = jwt.decode(token, key=secret, algorithms=cls._JWT_ALGORITHM)
+            payload = jwt.decode(token, key=secret, algorithms=[cls._JWT_ALGORITHM])
         except jwt.InvalidSignatureError:
             raise RagnaException(
                 "Token invalid", http_status_code=401, http_detail=RagnaException.EVENT

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Annotated, Type
+from typing import Annotated, cast, Type, TYPE_CHECKING
 
 import rich
 import typer
@@ -7,6 +7,9 @@ from rich.table import Table
 
 import ragna
 from ragna.core import Config, EnvVarRequirement, PackageRequirement, Requirement
+
+if TYPE_CHECKING:
+    pass
 
 
 def parse_config(value: str) -> Config:
@@ -52,6 +55,11 @@ def check_config(config: Config):
         ("source storages", config.rag.source_storages),
         ("assistants", config.rag.assistants),
     ]:
+        if TYPE_CHECKING:
+            from ragna.core._components import Component
+
+            components = cast(list[Type[Component]], components)
+
         table = Table(
             "",
             "name",

@@ -1,12 +1,12 @@
 import itertools
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 
 from ragna._compat import itertools_pairwise
 
 from ragna.core import Source
 
 
-def page_numbers_to_str(page_numbers: list[int]) -> str:
+def page_numbers_to_str(page_numbers: Optional[list[int]]) -> str:
     if not page_numbers:
         return ""
     elif len(page_numbers) == 1:
@@ -18,10 +18,7 @@ def page_numbers_to_str(page_numbers: list[int]) -> str:
         itertools.chain(sorted(page_numbers), [None])
     ):
         range_int.append(current_page_number)
-        if (
-            next_page_number is None
-            or next_page_number > current_page_number + 1  # type: ignore[operator]
-        ):
+        if next_page_number is None or next_page_number > current_page_number + 1:
             ranges_str.append(
                 ", ".join(map(str, range_int))
                 if len(range_int) < 3

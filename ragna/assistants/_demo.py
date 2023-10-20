@@ -20,7 +20,7 @@ class RagnaDemoAssistant(Assistant):
         else:
             return self._default_answer(prompt, sources)
 
-    def _markdown_answer(self):
+    def _markdown_answer(self) -> str:
         return textwrap.dedent(
             """
             | String | Integer  | Float | Emoji              |

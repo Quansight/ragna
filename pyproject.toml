@@ -129,5 +129,30 @@ warn_unused_configs = true
 [[tool.mypy.overrides]]
 module = [
     "fitz",
+    "huey.*",
+    "lancedb",
+    "pyarrow",
+    "sentence_transformers",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ragna._api.orm",
+]
+# Our ORM schema doesn't really work with mypy. There are some other ways to define it
+# to play ball. We should do that in the future.
+disable_error_code = [
+    "var-annotated",
+]
+
+[[tool.mypy.overrides]]
+# It is a fundamental feature of the components to request more parameters than the base
+# class. Thus, we just silence mypy here.
+module = [
+    "ragna.source_storages.*",
+    "ragna.assistants.*"
+]
+disable_error_code = [
+    "override",
+]

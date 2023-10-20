@@ -4,7 +4,6 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Optional
 
 import pydantic
 import pydantic.utils
@@ -67,8 +66,8 @@ class Source(pydantic.BaseModel):
     id: str
     document: Document
     location: str
-    content: Optional[str]
-    num_tokens: Optional[int]
+    content: str
+    num_tokens: int
 
 
 class SourceStorage(Component, abc.ABC):

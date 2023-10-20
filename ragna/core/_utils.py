@@ -67,7 +67,7 @@ class PackageRequirement(Requirement):
         for module_name in {
             module_name
             for module_name, distribution_names in importlib_metadata_package_distributions().items()
-            if distribution.name in distribution_names
+            if distribution.name in distribution_names  # type: ignore[attr-defined]
             and module_name not in self._exclude_modules
         }:
             try:

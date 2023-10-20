@@ -137,7 +137,7 @@ def api(config: Config):
         #  not needed, because the chat itself never accesses past messages. However,
         #  if we implement a chat history feature, i.e. passing past messages to
         #  the assistant, this becomes crucial.
-        core_chat.messages = []
+        core_chat._messages = []
         core_chat._prepared = chat.prepared
 
         return core_chat
