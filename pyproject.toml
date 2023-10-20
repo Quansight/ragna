@@ -24,6 +24,7 @@ dependencies = [
     "pydantic>=2",
     "pydantic-settings>=2",
     "redis",
+    "questionary",
     "rich",
     "tomlkit",
     "typer",
