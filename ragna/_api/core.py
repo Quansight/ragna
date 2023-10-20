@@ -14,7 +14,7 @@ from ragna.core import Config, Rag, RagnaException
 from . import database, schemas
 
 
-def app(config: Config, *, no_authentication=False):
+def app(config: Config):
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
@@ -39,12 +39,6 @@ def app(config: Config, *, no_authentication=False):
         return ragna.__version__
 
     authentication = config.api.authentication()
-
-    # async def _authorize_user(
-    #     x_user: Annotated[str, Header(default_factory=default_user)]
-    # ) -> str:
-    #     # FIXME: implement auth here
-    #     return x_user
 
     @app.post("/token")
     async def create_token(request: Request) -> str:

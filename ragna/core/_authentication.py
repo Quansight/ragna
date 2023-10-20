@@ -7,8 +7,6 @@ import jwt
 from fastapi import HTTPException, Request, status
 from fastapi.security.utils import get_authorization_scheme_param
 
-from ._utils import default_user
-
 
 class Authentication(abc.ABC):
     @abc.abstractmethod
@@ -18,22 +16,6 @@ class Authentication(abc.ABC):
     @abc.abstractmethod
     async def get_user(self, request: Request) -> str:
         pass
-
-
-class NoAuthentication(Authentication):
-    def __init__(self):
-        self._default_user = default_user()
-
-    async def create_token(self, request: Request) -> str:
-        return request.headers.get("X-User", self._default_user)
-
-    async def get_user(self, request: Request) -> str:
-        authorization = request.headers.get("Authorization")
-        scheme, token = get_authorization_scheme_param(authorization)
-        if authorization and scheme.lower() == "bearer":
-            return token
-
-        return await self.get_user(request)
 
 
 class RagnaDemoAuthentication(Authentication):
