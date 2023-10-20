@@ -34,6 +34,19 @@ chat_entry_stylesheets = [
                         margin-top:0px;
                     }
                 """,
+    """ 
+    :host .left {
+        /*background-color:red;*/
+        height: unset !important;
+        min-height: unset !important;
+    }
+    """,
+    """ 
+    :host .right {
+        /*background-color: green;*/
+        margin-bottom: 20px;
+    }
+    """,
 ]
 pn.chat.ChatMessage._stylesheets = (
     pn.chat.ChatMessage._stylesheets + chat_entry_stylesheets
@@ -181,7 +194,12 @@ class CentralView(pn.viewable.Viewer):
             sizing_mode="stretch_width",
             renderers=[lambda txt: pn.pane.Markdown(txt)],
             # entry_params={"show_reaction_icons": False, "show_user": False},
-            message_params={"show_reaction_icons": False, "show_user": False},
+            message_params={
+                "show_reaction_icons": False,
+                "show_user": False,
+                "show_copy_icon": False,
+                "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
+            },
             stylesheets=["""  """],
         )
 
@@ -221,6 +239,59 @@ class CentralView(pn.viewable.Viewer):
         #             height: unset; max-height: 90%; }
         #     """
         # )
+
+        def messages_changed(event):
+            for msg in chat_interface.objects:
+                if (
+                    "chat-entry-user" not in msg.css_classes
+                    and "chat-entry-ragna" not in msg.css_classes
+                ):
+                    msg.renderers = [
+                        lambda txt: chat_entry_value_renderer(
+                            txt, role="user" if msg.user == "User" else "ragna"
+                        )
+                    ]
+
+                    msg._composite.param.update(
+                        css_classes=[
+                            "chat-entry",
+                            "chat-entry-user"
+                            if msg.user == "User"
+                            else "chat-entry-ragna",
+                        ]
+                    )
+                    msg.param.trigger("object")
+
+                    # msg.param.update(avatar="👤" if msg.user == "User" else "🤖")
+
+                    # msg.param.update(**{"show_copy_icon":True,
+                    #                     "show_reaction_icons":True,
+                    #                     "show_user":True,
+                    #                     }
+                    #                 )
+                    # msg.show_user = True
+                    # breakpoint()
+
+        chat_interface.param.watch(
+            messages_changed,
+            ["objects"],
+            what="value",
+            onlychanged=True,
+            queued=True,
+            precedence=0,
+        )
+
+        def changed_placeholder(event):
+            print("changed_placeholder")
+
+        chat_interface.param.watch(
+            changed_placeholder,
+            ["_placeholder"],
+            what="value",
+            onlychanged=True,
+            queued=True,
+            precedence=0,
+        )
 
         return chat_interface
 
