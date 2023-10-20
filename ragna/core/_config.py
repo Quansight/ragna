@@ -103,7 +103,7 @@ class Config(BaseSettings):
 
     def to_file(self, path: Union[str, Path], *, force: bool = False):
         path = Path(path).expanduser().resolve()
-        if path.is_file() and not force:
+        if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
 
         with open(path, "w") as file:
