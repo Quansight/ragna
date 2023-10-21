@@ -48,7 +48,7 @@ class ApiWrapper:
             params={"user": self.user, "prompt": prompt},
         )
 
-        return raw_result.json()["message"]["content"]
+        return raw_result.json()
 
     async def get_components_async(self):
         async with httpx.AsyncClient() as async_client:

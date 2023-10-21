@@ -72,40 +72,83 @@ markdown_table_stylesheet = """
             """
 
 
-def chat_entry_value_renderer(txt, role):
-    markdown_css_classes = []
-    if role is not None:
-        markdown_css_classes = [
-            "chat-entry-user" if role == "user" else "chat-entry-ragna"
-        ]
+class RagnaChatMessage(pn.chat.ChatMessage):
+    msg_data = param.Dict(default={})
+    on_click_source_info_callback = param.Callable(default=None)
 
-    return pn.pane.Markdown(
-        txt, css_classes=markdown_css_classes, stylesheets=[markdown_table_stylesheet]
-    )
+    def __init__(self, msg_data, on_click_source_info_callback=None):
+        role = msg_data["role"] if "role" in msg_data else None
 
+        params = {
+            "msg_data": msg_data,
+            "on_click_source_info_callback": on_click_source_info_callback,
+            "object": msg_data["content"],
+            "renderers": [
+                lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=role)
+            ],
+            "show_timestamp": False,
+            "show_reaction_icons": False,
+            "show_copy_icon": False,
+            "show_user": False,
+        }
 
-def build_chat_entry(role, txt, timestamp=None):
-    chat_entry = pn.chat.ChatMessage(
-        object=txt,
-        # user="User" if m["role"] == "user" else "Ragna (Chat GPT 3.5)",
-        # actually looking better with empty user name than show_user=False
-        # show_user=False,
-        renderers=[lambda txt: chat_entry_value_renderer(txt, role=role)],
-        css_classes=[
+        params["user"] = "User" if role == "user" else "Ragna"
+        params["avatar"] = "👤" if role == "user" else "🤖"
+
+        super().__init__(**params)
+
+        self.update_css_classes()
+        self.chat_copy_icon.visible = False
+
+        if role != "user":
+            source_info_button = pn.widgets.Button(
+                name="Source Info",
+                icon="info-circle",
+                stylesheets=[
+                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                ],
+            )
+
+            source_info_button.on_click(self.trigger_on_click_source_info_callback)
+
+            copy_button = pn.widgets.Button(
+                name="Copy",
+                icon="clipboard",
+                stylesheets=[
+                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                ],
+            )
+            copy_button.on_click(lambda event: print("on click copy button", event))
+
+            copy_js = """console.log("test", source); navigator.clipboard.writeText(source);"""
+            copy_button.js_on_click(args={"source": self.object}, code=copy_js)
+
+            self._composite[1].append(pn.Row(copy_button, source_info_button, height=0))
+
+    def trigger_on_click_source_info_callback(self, event):
+        if self.on_click_source_info_callback is not None:
+            self.on_click_source_info_callback(event, self)
+
+    def update_css_classes(self):
+        role = self.msg_data["role"] if "role" in self.msg_data else None
+        self.css_classes = [
             "chat-entry",
             "chat-entry-user" if role == "user" else "chat-entry-ragna",
-        ],
-        avatar="👤" if role == "user" else "🤖",
-        user="User" if role == "user" else "Ragna",
-        # timestamp=timestamp,
-        show_timestamp=False,
-        show_reaction_icons=False,
-        show_copy_icon=False,
-        show_user=False,
-    )
+        ]
 
-    chat_entry.chat_copy_icon.visible = False
-    return chat_entry
+    @classmethod
+    def chat_entry_value_renderer(cls, txt, role):
+        markdown_css_classes = []
+        if role is not None:
+            markdown_css_classes = [
+                "chat-entry-user" if role == "user" else "chat-entry-ragna"
+            ]
+
+        return pn.pane.Markdown(
+            txt,
+            css_classes=markdown_css_classes,
+            stylesheets=[markdown_table_stylesheet],
+        )
 
 
 class CentralView(pn.viewable.Viewer):
@@ -127,12 +170,19 @@ class CentralView(pn.viewable.Viewer):
                 ),
             )
 
-    def on_click_source_info_wrapper(self, event):
+    def on_click_source_info_wrapper(self, event, msg):
+        print(msg.msg_data["id"])
+        print(msg.msg_data["sources"])
         if self.on_click_chat_info is not None:
             self.on_click_chat_info(
                 event,
                 pn.Column(
-                    pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
+                    pn.pane.Markdown(
+                        f"""Chat ID: {self.current_chat['id']} <br />
+                                     Message ID: {msg.msg_data['id']} <br /> 
+                                     Sources: {msg.msg_data['sources']}""",
+                        dedent=True,
+                    ),
                     stylesheets=[""" :host {  background-color: red ; }  """],
                 ),
             )
@@ -143,18 +193,26 @@ class CentralView(pn.viewable.Viewer):
     async def chat_callback(
         self, contents: str, user: str, instance: pn.chat.ChatInterface
     ):
+        self.current_chat["messages"].append({"role": "user", "content": contents})
+
+        answer = self.api_wrapper.answer(self.current_chat["id"], contents)
+
+        self.current_chat["messages"].append(answer["message"])
+
         yield {
             "user": "Ragna",
             "avatar": "🤖",
-            "value": self.api_wrapper.answer(self.current_chat["id"], contents),
+            "value": answer["message"]["content"],
         }
 
-    def get_chat_entries(self):
+    def get_chat_messages(self):
         chat_entries = []
 
         if self.current_chat is not None:
             for m in self.current_chat["messages"]:
-                chat_entry = build_chat_entry(m["role"], m["content"], m["timestamp"])
+                chat_entry = RagnaChatMessage(
+                    m, on_click_source_info_callback=self.on_click_source_info_wrapper
+                )
                 chat_entries.append(chat_entry)
 
         return chat_entries
@@ -189,7 +247,9 @@ class CentralView(pn.viewable.Viewer):
                     ],
                 )
             ],
-            renderers=[lambda txt: chat_entry_value_renderer(txt, role=None)],
+            renderers=[
+                lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=None)
+            ],
             message_params={
                 "show_reaction_icons": False,
                 "show_user": False,
@@ -240,78 +300,40 @@ class CentralView(pn.viewable.Viewer):
         # )
 
         """
-        This is a trick to change the CSS classes of the chat entries after they have been created.
-
-        We set the css classes to "chat-entry" and "chat-entry-user" or "chat-entry-ragna" depending on the role/the user.
-        That's easy to do when building the list of existing messages, but for the new messages coming up from the AI, 
-        there is no way to test on the role of the renderers callables.
-
-        So here, we watch for the `objects` param of chat_interface. 
-        When it changes, 
-            we iterate over all the messages,
-            detect the ones without the right css classes,
-            and update it.
+        By default, each new message is a ChatMessage object. 
+        But for new messages from the AI, we want to have a RagnaChatMessage, that contains the msg data, the sources, etc.
+        I haven't found a better way than to watch for the `objects` param of chat_interface, 
+            and replace the ChatMessage objects with RagnaChatMessage object.
+        We do it only for the new messages from the rag, not for the existing messages, neither for the messages from the user.
         """
 
         def messages_changed(event):
-            print("messages_changed")
-            for msg in chat_interface.objects:
+            needs_refresh = False
+            for i in range(len(chat_interface.objects)):
+                msg = chat_interface.objects[i]
                 if (
-                    "chat-entry-user" not in msg.css_classes
-                    and "chat-entry-ragna" not in msg.css_classes
+                    len(chat_interface.objects) == len(self.current_chat["messages"])
+                    and not isinstance(msg, RagnaChatMessage)
+                    and msg.user != "User"
                 ):
-                    msg.renderers = [
-                        lambda txt: chat_entry_value_renderer(
-                            txt, role="user" if msg.user == "User" else "ragna"
-                        )
-                    ]
-
-                    msg._composite.param.update(
-                        css_classes=[
-                            "chat-entry",
-                            "chat-entry-user"
-                            if msg.user == "User"
-                            else "chat-entry-ragna",
-                        ]
+                    chat_interface.objects[i] = RagnaChatMessage(
+                        self.current_chat["messages"][i],
+                        on_click_source_info_callback=self.on_click_source_info_wrapper,
                     )
-                    msg.param.trigger("object")
-                    # msg.param.update(avatar="👤" if msg.user == "User" else "🤖")
+                    msg = chat_interface.objects[i]
+                    needs_refresh = True
 
-                if msg.user != "User" and len(msg._composite[1]) < 4:
-                    source_info_button = pn.widgets.Button(
-                        name="Source Info",
-                        icon="info-circle",
-                        stylesheets=[
-                            ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                        ],
-                    )
-
-                    source_info_button.on_click(self.on_click_source_info_wrapper)
-
-                    copy_button = pn.widgets.Button(
-                        name="Copy",
-                        icon="clipboard",
-                        stylesheets=[
-                            ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                        ],
-                    )
-                    copy_button.on_click(
-                        lambda event: print("on click copy button", event)
-                    )
-
-                    copy_js = """console.log("test", source); navigator.clipboard.writeText(source);"""
-                    copy_button.js_on_click(args={"source": msg.object}, code=copy_js)
-
-                    msg._composite[1].append(
-                        pn.Row(copy_button, source_info_button, height=0)
-                    )
+            if needs_refresh:
+                chat_interface._chat_log.param.trigger("objects")
 
         chat_interface.param.watch(
             messages_changed,
             ["objects"],
         )
 
-        chat_interface.objects = self.get_chat_entries()
+        # Here, we build a list of RagnaChatMessages from the existing messages of this chat,
+        # and set them as the content of the chat interface
+        chat_interface.objects = self.get_chat_messages()
 
         return chat_interface
 
