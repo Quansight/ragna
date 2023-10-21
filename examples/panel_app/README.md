@@ -1,3 +1,3 @@
 
 
-ragna api --config ragna.demo_config & python examples/panel_app/main.py && fg
+ragna api -c demo & python examples/panel_app/main.py && fg
