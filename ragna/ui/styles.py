@@ -66,3 +66,21 @@ span.fullscreen-button {
 }
 
 """
+
+
+CHAT_INTERFACE_CUSTOM_BUTTON = """
+:host(.solid) .bk-btn.bk-btn-default {
+    background-color: transparent;
+    color: gray;
+}
+
+:host {
+    transform: translate(14px, -56px); 
+}
+
+.bk-btn {
+    border-radius: 0;
+    padding: 0;
+    font-size: 14px;
+}
+    """

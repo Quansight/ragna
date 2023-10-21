@@ -1,52 +1,60 @@
 import panel as pn
 import param
 
+import ragna.ui.styles as ui
+
 # TODO : move all the CSS rules in a dedicated file
 
 chat_entry_stylesheets = [
-    """ :host .right, :host .center, :host .chat-entry {
-                            width:100% !important;
-                    }
-                """,
-    """
-                    :host div.bk-panel-models-layout-Column:not(.left) { 
-                            width:100% !important;
-                    }
-                """,
-    """
-                    :host .message {
-                        width: calc(100% - 15px);
-                    }
-            """,
-    """
-                    :host .chat-entry-user {
-                        background-color: rgba(243, 243, 243);
-                        border: 1px solid rgb(238, 238, 238);
-                    }
-                """,
-    """
-                    :host .chat-entry-ragna {
-                        background-color: white;
-                        border: 1px solid rgb(234, 234, 234);
-                    }
-                """,
-    """
-                    :host .avatar {
-                        margin-top:0px;
-                    }
-                """,
     """ 
-    :host .left {
-        /*background-color:red;*/
-        height: unset !important;
-        min-height: unset !important;
-    }
+            :host .right, :host .center, :host .chat-entry {
+                    width:100% !important;
+            }
+    """,
+    """
+            :host div.bk-panel-models-layout-Column:not(.left) { 
+                    width:100% !important;
+            }
+    """,
+    """
+            :host .message {
+                width: calc(100% - 15px);
+                box-shadow: unset;
+            }
+    """,
+    """
+            :host .chat-entry-user {
+                background-color: rgba(243, 243, 243);
+                border: 1px solid rgb(238, 238, 238);
+                margin-bottom: 20px;
+            }
+    """,
+    # The padding bottom is used to give some space for the copy and source info buttons
+    """
+            :host .chat-entry-ragna {
+                background-color: white;
+                border: 1px solid rgb(234, 234, 234);
+                padding-bottom: 30px;
+                margin-bottom: 20px;
+            }
+    """,
+    """
+            :host .avatar {
+                margin-top:0px;
+            }
     """,
     """ 
-    :host .right {
-        /*background-color: green;*/
-        margin-bottom: 20px;
-    }
+            :host .left {
+                /*background-color:red;*/
+                height: unset !important;
+                min-height: unset !important;
+            }
+    """,
+    """ 
+            :host .right {
+                /*background-color: green;*/
+                /*margin-bottom: 20px;*/
+            }
     """,
 ]
 pn.chat.ChatMessage._stylesheets = (
@@ -87,6 +95,7 @@ def build_chat_entry(role, txt, timestamp=None):
             "chat-entry-user" if role == "user" else "chat-entry-ragna",
         ],
         avatar="👤" if role == "user" else "🤖",
+        user="User" if role == "user" else "Ragna",
         # timestamp=timestamp,
         show_timestamp=False,
         show_reaction_icons=False,
@@ -114,6 +123,16 @@ class CentralView(pn.viewable.Viewer):
                 pn.Column(
                     pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
                     stylesheets=[""" :host {  background-color: lightblue ; }  """],
+                ),
+            )
+
+    def on_click_source_info_wrapper(self, event):
+        if self.on_click_chat_info is not None:
+            self.on_click_chat_info(
+                event,
+                pn.Column(
+                    pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
+                    stylesheets=[""" :host {  background-color: red ; }  """],
                 ),
             )
 
@@ -204,7 +223,6 @@ class CentralView(pn.viewable.Viewer):
                                             """
         ]
 
-        chat_interface.objects = self.get_chat_entries()
         # Trick to make the chat start from the bottom :
         #  - move the spacer first, and not last
         # chat_interface._composite.objects =  (
@@ -235,6 +253,7 @@ class CentralView(pn.viewable.Viewer):
         """
 
         def messages_changed(event):
+            print("messages_changed")
             for msg in chat_interface.objects:
                 if (
                     "chat-entry-user" not in msg.css_classes
@@ -257,10 +276,41 @@ class CentralView(pn.viewable.Viewer):
                     msg.param.trigger("object")
                     # msg.param.update(avatar="👤" if msg.user == "User" else "🤖")
 
+                if msg.user != "User" and len(msg._composite[1]) < 4:
+                    source_info_button = pn.widgets.Button(
+                        name="Source Info",
+                        icon="info-circle",
+                        stylesheets=[
+                            ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                        ],
+                    )
+
+                    source_info_button.on_click(self.on_click_source_info_wrapper)
+
+                    copy_button = pn.widgets.Button(
+                        name="Copy",
+                        icon="clipboard",
+                        stylesheets=[
+                            ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                        ],
+                    )
+                    copy_button.on_click(
+                        lambda event: print("on click copy button", event)
+                    )
+
+                    copy_js = """console.log("test", source); navigator.clipboard.writeText(source);"""
+                    copy_button.js_on_click(args={"source": msg.object}, code=copy_js)
+
+                    msg._composite[1].append(
+                        pn.Row(copy_button, source_info_button, height=0)
+                    )
+
         chat_interface.param.watch(
             messages_changed,
             ["objects"],
         )
+
+        chat_interface.objects = self.get_chat_entries()
 
         return chat_interface
 
