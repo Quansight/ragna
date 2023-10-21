@@ -41,6 +41,7 @@ chat_entry_stylesheets = [
     """
             :host .avatar {
                 margin-top:0px;
+                box-shadow: unset;
             }
     """,
     """ 
