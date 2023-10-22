@@ -39,7 +39,7 @@ class App(param.Parameterized):
 
         # TODO : build the Api Wrapper after we have the user's name,
         # and replace the default "User" here
-        self.api_wrapper = ApiWrapper(api_url=self.api_url, user="User")
+        self.api_wrapper = ApiWrapper(api_url=self.api_url)
 
     def index_page(self):
         main_page = MainPage(api_wrapper=self.api_wrapper)

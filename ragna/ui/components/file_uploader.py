@@ -13,12 +13,11 @@ class FileUploader(ReactiveHTML, Widget):
 
     title = param.String(default="")
 
-    def __init__(self, user, informations_endpoint, upload_endpoint, **params):
+    def __init__(self, token, informations_endpoint, **params):
         super().__init__(**params)
 
-        self.user = user
+        self.token = token
         self.informations_endpoint = informations_endpoint
-        self.upload_endpoint = upload_endpoint
 
         self.after_upload_callback = None
 
@@ -40,7 +39,7 @@ class FileUploader(ReactiveHTML, Widget):
 
         self.custom_js = (
             final_callback_js
-            + f""" upload( self.get_upload_files(),  '{self.user}', '{self.informations_endpoint}', '{self.upload_endpoint}', final_callback) """
+            + f""" upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {

@@ -1,3 +1,4 @@
+import os
 import re
 from datetime import datetime
 
@@ -8,83 +9,84 @@ import httpx
 
 # The goal is this class is to provide ready-to-use functions to interact with the API
 class ApiWrapper:
-    def __init__(self, api_url, user):
-        self.api_url = api_url
-        self.user = user
-        self.client = httpx.Client()
+    def __init__(self, api_url):
+        # FIXME: this should be an async client
+        self.client = httpx.Client(base_url=api_url)
+        self.client.get("/").raise_for_status()
+        # FIXME: the token should come from a cookie that is set after UI login
+        user = "User"
+        token = (
+            self.client.post(
+                "/token",
+                data={
+                    "username": user,
+                    "password": os.environ.get(
+                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", user
+                    ),
+                },
+            )
+            .raise_for_status()
+            .json()
+        )
+        # FIXME: remove this as it should come from a cookie on the JS side as well
+        self.token = token
+        self.client.headers["Authorization"] = f"Bearer {token}"
 
     def get_chats(self):
-        # Make a GET request to the API endpoint
-        response = self.client.get(f"{self.api_url}/chats", params={"user": self.user})
+        json_data = self.client.get("/chats").raise_for_status().json()
 
-        if response.status_code == 200:
-            json_data = response.json()
+        for chat in json_data:
+            for msg in chat["messages"]:
+                # convert timestamps to datetime
+                msg["timestamp"] = datetime.strptime(
+                    msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"
+                )
 
-            for chat in json_data:
-                for msg in chat["messages"]:
-                    # convert timestamps to datetime
-                    msg["timestamp"] = datetime.strptime(
-                        msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"
-                    )
+                msg["content"] = self.replace_emoji_shortcodes_with_emoji(
+                    msg["content"]
+                )
 
-                    msg["content"] = self.replace_emoji_shortcodes_with_emoji(
-                        msg["content"]
-                    )
-
-            return json_data
-        else:
-            # If the request was not successful, raise an exception
-            raise Exception(
-                f"API request failed with status code {response.status_code}"
-            )
+        return json_data
 
     def answer(self, chat_id, prompt):
-        self.client.post(
-            f"{self.api_url}/chats/{chat_id}/start",
-            params={"user": self.user},
+        return (
+            self.client.post(f"/chats/{chat_id}/answer", params={"prompt": prompt})
+            .raise_for_status()
+            .json()
         )
-        raw_result = self.client.post(
-            f"{self.api_url}/chats/{chat_id}/answer",
-            params={"user": self.user, "prompt": prompt},
-        )
-
-        return raw_result.json()
 
     async def get_components_async(self):
-        async with httpx.AsyncClient() as async_client:
-            response = await async_client.get(
-                self.api_url + "/components?user=" + self.user
-            )
-            return response.json()
+        async with httpx.AsyncClient(
+            base_url=self.client.base_url, headers=self.client.headers
+        ) as async_client:
+            return (await async_client.get("/components")).raise_for_status().json()
 
     # Upload and related functions
     def upload_endpoints(self):
         return {
-            "informations_endpoint": f"{self.api_url}/document",
-            "upload_endpoint": f"{self.api_url}/document",
+            "informations_endpoint": f"{self.client.base_url}/document",
         }
 
     def start_chat(self, name, documents, source_storage, assistant, params={}):
-        response = self.client.post(
-            f"{self.api_url}/chats",
-            params={"user": self.user},
-            json={
-                "name": name,
-                "documents": documents,
-                "source_storage": source_storage,
-                "assistant": assistant,
-                "params": params,
-            },
+        return (
+            self.client.post(
+                "/chats",
+                json={
+                    "name": name,
+                    "documents": documents,
+                    "source_storage": source_storage,
+                    "assistant": assistant,
+                    "params": params,
+                },
+            )
+            .raise_for_status()
+            .json()
         )
-        return response.json()
 
     def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
         chat = self.start_chat(name, documents, source_storage, assistant, params)
 
-        _ = self.client.post(
-            f"{self.api_url}/chats/{chat['id']}/prepare",
-            params={"user": self.user},
-        )
+        _ = self.client.post(f"/chats/{chat['id']}/prepare")
 
         return chat["id"]
 

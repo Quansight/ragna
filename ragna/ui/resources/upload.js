@@ -1,25 +1,18 @@
 
 
-function upload(files, user, informationsEndpoint, uploadEndpoint, final_callback) {
-    
+function upload(files, token, informationsEndpoint, final_callback) {
     var uploaded_documents = [] 
 
     Array.from(files).map(file => {
 
-        getUploadInformations(file, user, informationsEndpoint).then(
+        getUploadInformations(file, token, informationsEndpoint).then(
 
-                function(uploadInformations) { 
-                        
-                        uploadFile(file, uploadInformations, uploadEndpoint).then(
-                                function(response){
-                                        
-                                        uploaded_documents.push(response)
-                                        if (uploaded_documents.length == files.length) {
-                                            final_callback(uploaded_documents);
-                                        }
-                                    
-                                }
-                        )
+                function(uploadInformations) {
+                        uploadFile(uploadInformations.url, uploadInformations.data, file)
+                        uploaded_documents.push(uploadInformations.document)
+                        if (uploaded_documents.length == files.length) {
+                            final_callback(uploaded_documents);
+                        }
                 }
         );
         
@@ -27,28 +20,31 @@ function upload(files, user, informationsEndpoint, uploadEndpoint, final_callbac
     
     
 }
- 
-async function getUploadInformations(file, user, informationsEndpoint) {
-        const response = await fetch(informationsEndpoint+"?name="+file.name+"&user="+user );
+
+async function getUploadInformations(file, token, informationsEndpoint) {
+        const response = await fetch(
+            `${informationsEndpoint}?name=${file.name}`,
+            {"headers": {"Authorization": `Bearer ${token}`}},
+        );
         const uploadInformations = await response.json();
 
         return uploadInformations
 }
 
-async function uploadFile(file, uploadInformations, uploadEndpoint) {
-
+async function uploadFile(url, data, file) {
     var body = new FormData()
-    
-    body.append('token', uploadInformations['data']['token']);
+
+    for (const [key, value] of Object.entries(data)) {
+      body.append(key, value);
+    }
     body.append('file', file );
-    
-    
+
     const payload = {
         method: 'POST',
         body: body
     }
 
-    const response = fetch(uploadEndpoint, payload).then((response) => response.json())
+    const response = fetch(url, payload).then((response) => response.json())
     
     return response
     

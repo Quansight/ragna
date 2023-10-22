@@ -32,9 +32,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
         self.document_uploader = FileUploader(
-            self.api_wrapper.user,
+            self.api_wrapper.token,
             upload_endpoints["informations_endpoint"],
-            upload_endpoints["upload_endpoint"],
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
