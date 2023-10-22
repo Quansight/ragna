@@ -58,13 +58,15 @@ class MainPage(param.Parameterized):
         self.right_sidebar.param.trigger("content")
         self.right_sidebar.show()
 
-    def page(self):
-        pn.state.location.sync(
-            self,
-            {"current_chat_id": "current_chat_id"},
-            on_error=lambda x: print(f"error sync on {x}"),
-        )
+    @param.depends("current_chat_id", watch=True)
+    def update_subviews_current_chat_id(self):
+        try:
+            if self.left_sidebar is not None:
+                self.left_sidebar.current_chat_id = self.current_chat_id
+        except Exception:
+            pass
 
+    def page(self):
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
@@ -98,6 +100,12 @@ class MainPage(param.Parameterized):
         )
 
         self.right_sidebar = RightSidebar()
+
+        pn.state.location.sync(
+            self,
+            {"current_chat_id": "current_chat_id"},
+            on_error=lambda x: print(f"error sync on {x}"),
+        )
 
         main_page = pn.Row(
             self.left_sidebar,

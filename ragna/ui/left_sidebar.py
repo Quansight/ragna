@@ -5,6 +5,7 @@ import ragna.ui.js as js
 
 
 class LeftSidebar(pn.viewable.Viewer):
+    current_chat_id = param.String(default=None)
     refresh_counter = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
@@ -60,7 +61,7 @@ class LeftSidebar(pn.viewable.Viewer):
     def refresh(self):
         self.refresh_counter += 1
 
-    @pn.depends("refresh_counter")
+    @pn.depends("refresh_counter", "current_chat_id", on_init=True)
     def __panel__(self):
         chats = self.api_wrapper.get_chats()
 
@@ -107,10 +108,7 @@ class LeftSidebar(pn.viewable.Viewer):
             self.chat_buttons.append(button)
 
             try:
-                if chat["id"] == pn.state.session_args.get("current_chat_id")[0].decode(
-                    "utf-8"
-                ):
-                    # current_chat_button = button
+                if chat["id"] == self.current_chat_id:
                     current_chat = chat
                     button.css_classes = ["selected"]
             except Exception:
