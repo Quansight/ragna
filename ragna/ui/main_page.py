@@ -71,7 +71,7 @@ class MainPage(param.Parameterized):
             title="Ragna",
             # neutral_color="#FF0000", #ui.MAIN_COLOR,
             # header_background="#FF0000", #ui.MAIN_COLOR,
-            # accent_base_color="#00FF00", #ui.MAIN_COLOR,
+            accent_base_color=ui.MAIN_COLOR,
             theme_toggle=False,
             collapsed_sidebar=True,
             # main_layout=None

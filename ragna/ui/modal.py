@@ -98,11 +98,19 @@ class ModalConfiguration(pn.viewable.Viewer):
         return pn.Row(
             pn.Column(
                 pn.pane.HTML("<b>Model</b>"),
-                pn.widgets.Select.from_param(self.param.assistant_name, name=""),
+                pn.widgets.Select.from_param(
+                    self.param.assistant_name,
+                    name="",
+                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                ),
             ),
             pn.Column(
                 pn.pane.HTML("<b>Source storage</b>"),
-                pn.widgets.Select.from_param(self.param.source_storage_name, name=""),
+                pn.widgets.Select.from_param(
+                    self.param.source_storage_name,
+                    name="",
+                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                ),
             ),
         )
 
@@ -122,7 +130,11 @@ class ModalConfiguration(pn.viewable.Viewer):
             pn.Param(
                 self,
                 widgets={
-                    "chat_name": {"widget_type": pn.widgets.TextInput, "name": ""}
+                    "chat_name": {
+                        "widget_type": pn.widgets.TextInput,
+                        "name": "",
+                        "stylesheets": [ui.BK_INPUT_GRAY_BORDER],
+                    }
                 },
                 parameters=["chat_name"],
                 show_name=False,

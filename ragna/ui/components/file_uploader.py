@@ -63,7 +63,7 @@ class FileUploader(ReactiveHTML, Widget):
                 .fileUploadDropArea {
                     margin-left: 10px;
                     margin-right: 10px;
-                    border: 1px dashed rgba(69, 35, 145, 1);
+                    border: 1px dashed var(--accent-color);
                     border-radius: 5px;
                     height:100%;
                     display:flex;
@@ -111,7 +111,7 @@ class FileUploader(ReactiveHTML, Widget):
                     margin-right: 5px;
                     padding: 5px 15px;
                     border-radius: 10px;
-                    color:rgba(69, 35, 145, 1);
+                    color: var(--accent-color);
                     display: inline-table;
                     }
                 

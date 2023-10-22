@@ -98,7 +98,7 @@ class LeftSidebar(pn.viewable.Viewer):
                                       :host(.selected) div button, :host div button:hover {
                                         background-color: #F3F3F3 !important;
                                         border-radius: 0px 5px 5px 0px !important;
-                                        border-left: solid 4px #452391 !important;
+                                        border-left: solid 4px var(--accent-color) !important;
                                       }
 
                                       
@@ -147,7 +147,7 @@ class LeftSidebar(pn.viewable.Viewer):
                                                           
                                                         }
                                                          :host div button { 
-                                                         background-color: #452391 !important;
+                                                         background-color: var(--accent-color) !important;
                                                          text-align: left;
                                                           
                                                          }
@@ -167,7 +167,6 @@ class LeftSidebar(pn.viewable.Viewer):
             stylesheets=[
                 """   
                         :host { 
-                            background-color: white;
                             overflow-x: hidden;
                             height: 100%;
                             width:100%;

@@ -2,7 +2,7 @@
 CSS constants
 """
 
-MAIN_COLOR = "#10BBE5"
+MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
 
 # MAIN_COLOR_LIGHT = "#10BBE580"
@@ -15,8 +15,12 @@ MODAL_MAX_HEIGHT = 63
 
 MODAL_WIDTH = 800
 
-
 APP_RAW = """
+
+:root {
+    --body-font: 'Inter', sans-serif !important;
+    --accent-color: {{MAIN_COLOR}} !important;
+}
 
 * {
     font-family: 'Inter', sans-serif;
@@ -65,7 +69,9 @@ span.fullscreen-button {
     display:none;
 }
 
-"""
+""".replace(
+    "{{MAIN_COLOR}}", MAIN_COLOR
+)
 
 
 CHAT_INTERFACE_CUSTOM_BUTTON = """
@@ -84,3 +90,7 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
     font-size: 14px;
 }
     """
+
+BK_INPUT_GRAY_BORDER = (
+    """ .bk-input {border-color: var(--neutral-color) !important;} """
+)

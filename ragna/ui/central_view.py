@@ -390,7 +390,7 @@ class CentralView(pn.viewable.Viewer):
                                                     margin-right: 5px;
                                                     padding: 5px 15px;
                                                     border-radius: 10px;
-                                                    color:rgba(69, 35, 145, 1);
+                                                    color:var(--accent-color);
                                                     
                                                  }   
 
