@@ -3,6 +3,7 @@ import param
 
 
 class RightSidebar(pn.viewable.Viewer):
+    title = param.String(default="")
     content = param.List(default=[])
 
     def __init__(self, **params):
@@ -12,17 +13,28 @@ class RightSidebar(pn.viewable.Viewer):
         self.close_button = None
 
     def show(self):
-        print("show", len(self.content))
         self.main_column.css_classes = ["visible_sidebar"]
-        # self.close_button.visible = True
 
     def hide(self, event):
         self.main_column.css_classes = ["hidden_sidebar"]
-        # self.close_button.visible = False
 
     @pn.depends("content")
     def content_layout(self):
-        return pn.Column(*self.content)
+        return pn.Column(*self.content, stylesheets=[""" :host { width: 100%; } """])
+
+    @pn.depends("title")
+    def header(self):
+        return pn.pane.Markdown(
+            f"## {self.title}",
+            stylesheets=[
+                """ :host { 
+                            background-color: rgb(238, 238, 238);
+                            margin:0;
+                            padding-left:15px !important;
+                            width:100%;
+                    } """
+            ],
+        )
 
     def __panel__(self):
         self.close_button = pn.widgets.Button(
@@ -44,22 +56,11 @@ class RightSidebar(pn.viewable.Viewer):
 
         self.main_column = pn.Column(
             self.close_button,
-            pn.pane.Markdown(
-                "## Source Info",
-                stylesheets=[
-                    """ :host { 
-                                                                    background-color: rgb(238, 238, 238);
-                                                                    margin:0;
-                                                                    padding-left:15px !important;
-                                                                    width:100%;
-                                                           } """
-                ],
-            ),
+            self.header,
             self.content_layout,
             stylesheets=[
                 """   
                                 :host { 
-                                        /*background-color: lightgreen !important; */
                                         height:100%;
                                         min-width: unset;
                                         width: 0px;
@@ -67,6 +68,10 @@ class RightSidebar(pn.viewable.Viewer):
 
                                         margin-left: min(15px, 2%);
                                         border-left: 1px solid #EEEEEE;
+                                }
+
+                                .bk-panel-models-layout-Column {
+                                    width: 100%;
                                 }
 
                                 :host .close_button {

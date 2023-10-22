@@ -160,12 +160,69 @@ class CentralView(pn.viewable.Viewer):
 
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is not None:
+            pills = "".join(
+                [
+                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                    for d in self.current_chat["metadata"]["documents"]
+                ]
+                * 10
+            )
+
+            markdown = [
+                "To change configurations, start a new chat.\n",
+                "**Model**",
+                f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
+                "----",
+                "**Uploaded Files**",
+                f"<div class='pills_list'>{pills}</div><br />\n\n",
+                "----",
+                "**Source Storage**",
+                f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
+            ]
+
+            markdown = "\n".join(markdown)
+
             self.on_click_chat_info(
                 event,
-                pn.Column(
-                    pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
-                    stylesheets=[""" :host {  background-color: lightblue ; }  """],
-                ),
+                "Chat Config",
+                [
+                    pn.pane.Markdown(
+                        markdown,
+                        dedent=True,
+                        # debug
+                        # pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
+                        stylesheets=[
+                            """ :host {  width: 100%; } 
+                                                 
+                                                .pills_list {
+                                                    /*background-color:gold;*/
+                                                    display: grid;
+                                                    grid-auto-flow: row;
+                                                    row-gap: 10px;
+                                                    grid-template: repeat(5, 1fr) / repeat(3, 1fr);
+                                                    height: 200px;
+                                                    overflow: scroll;
+                                                }
+                                                 
+                                                .chat_document_pill {
+                                                                    background-color: rgb(241,241,241);
+                                                                    
+                                                                    margin-left: 5px;   
+                                                                    margin-right: 5px;
+                                                                    padding: 5px 15px;
+                                                                    border-radius: 10px;
+                                                                    color:var(--accent-color);
+                                                                    width:fit-content;
+                                                                    grid-column: span 1;
+                                                                    
+                                                                }   
+                                                 
+
+                                                """
+                        ],
+                    ),
+                    # stylesheets=[""" :host {background-color:red; width:100%;} .bk-panel-models-layout-Column { width: 100%; } """ ]
+                ],
             )
 
     def on_click_source_info_wrapper(self, event, msg):
@@ -185,7 +242,8 @@ class CentralView(pn.viewable.Viewer):
 
             self.on_click_chat_info(
                 event,
-                pn.Column(
+                "Source Info",
+                [
                     pn.pane.Markdown(
                         markdown,
                         dedent=True,
@@ -199,7 +257,7 @@ class CentralView(pn.viewable.Viewer):
                     #         dedent=True,
                     #     stylesheets=[""" :host {  background-color: red ; }  """]
                     # ),
-                ),
+                ],
             )
 
     def set_current_chat(self, chat):

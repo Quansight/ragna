@@ -53,8 +53,9 @@ class MainPage(param.Parameterized):
         self.central_view.set_current_chat(chat)
 
     # Right sidebar callbacks
-    def show_right_sidebar(self, content):
-        self.right_sidebar.content = [content]
+    def show_right_sidebar(self, title, content):
+        self.right_sidebar.title = title
+        self.right_sidebar.content = content
         self.right_sidebar.param.trigger("content")
         self.right_sidebar.show()
 
@@ -90,7 +91,7 @@ class MainPage(param.Parameterized):
 
         self.central_view = CentralView(api_wrapper=self.api_wrapper)
         self.central_view.on_click_chat_info = (
-            lambda event, content: self.show_right_sidebar(content)
+            lambda event, title, content: self.show_right_sidebar(title, content)
         )
 
         self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
