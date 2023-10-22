@@ -1,7 +1,6 @@
 import uuid
 
 from typing import Annotated, cast, Iterator
-from urllib.parse import urlsplit, urlunsplit
 
 import aiofiles
 
@@ -11,29 +10,10 @@ from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
+from ragna._utils import get_origins
 from ragna.core import Config, Rag, RagnaException
 
 from . import database, schemas
-
-
-def _get_cors_origins(config):
-    origins = []
-
-    for url in [config.api.url, config.ui.url]:
-        origins.append(url)
-        components = urlsplit(url)
-
-        def replace_hostname(hostname):
-            return components._replace(netloc=f"{hostname}:{components.port}")
-
-        # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
-        # don't need to worry about it.
-        if components.hostname == "127.0.0.1":
-            origins.append(urlunsplit(replace_hostname("localhost")))
-        elif components.hostname == "localhost":
-            origins.append(urlunsplit(replace_hostname("127.0.0.1")))
-
-    return origins
 
 
 def app(config: Config) -> FastAPI:
@@ -42,7 +22,7 @@ def app(config: Config) -> FastAPI:
     app = FastAPI(title="ragna", version=ragna.__version__)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=_get_cors_origins(config),
+        allow_origins=get_origins(config.ui.url),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

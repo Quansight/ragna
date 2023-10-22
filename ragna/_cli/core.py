@@ -1,9 +1,12 @@
 import logging
 import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Annotated, Optional
 from urllib.parse import urlsplit
+
+import httpx
 
 import rich
 
@@ -12,7 +15,9 @@ import uvicorn
 
 import ragna
 from ragna._api import app as api_app
+from ragna._utils import timeout_after
 from ragna.core._queue import Queue
+from ragna.ui import app as ui_app
 from .config import (
     check_config,
     COMMON_CONFIG_OPTION_ARGS,
@@ -164,6 +169,61 @@ def api(
         uvicorn.run(
             api_app(config), host=components.hostname, port=components.port or 31476
         )
+    finally:
+        if process is not None:
+            process.kill()
+            process.communicate()
+
+
+@app.command(help="Start the UI.")
+def ui(
+    *,
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
+    start_api: Annotated[
+        Optional[bool],
+        typer.Option(
+            help="Start the ragna REST API alongside the UI in a subprocess.",
+            show_default="Start if the API is not served at the configured URL.",
+        ),
+    ] = None,
+) -> None:
+    def check_api_available() -> bool:
+        try:
+            httpx.get(config.api.url)
+            return True
+        except httpx.ConnectError:
+            return False
+
+    if start_api is None:
+        start_api = not check_api_available()
+
+    if start_api:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "ragna",
+                "api",
+                "--config",
+                config.__ragna_cli_value__,  # type: ignore[attr-defined]
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    else:
+        process = None
+
+    try:
+        if process is not None:
+
+            @timeout_after(10)
+            def wait_for_api() -> None:
+                while not check_api_available():
+                    time.sleep(0.5)
+
+            wait_for_api()
+
+        ui_app(config).serve()
     finally:
         if process is not None:
             process.kill()

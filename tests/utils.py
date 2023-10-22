@@ -1,17 +1,17 @@
 import contextlib
-import functools
 import platform
 import shutil
 import socket
 import subprocess
 import sys
-import threading
 import time
 
 import httpx
 
 import pytest
 import redis
+
+from ragna._utils import timeout_after
 
 
 @contextlib.contextmanager
@@ -30,38 +30,6 @@ def background_subprocess(
         if stderr:
             sys.stderr.buffer.write(stderr)
             sys.stderr.flush()
-
-
-def timeout_after(seconds=5, *, message=None):
-    timeout = f"Timeout after {seconds:.1f} seconds"
-    message = timeout if message is None else f"{timeout}: {message}"
-
-    def decorator(fn):
-        @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            result = TimeoutError(message)
-
-            def target():
-                nonlocal result
-                try:
-                    result = fn(*args, **kwargs)
-                except Exception as exc:
-                    result = exc
-
-            thread = threading.Thread(target=target)
-            thread.daemon = True
-
-            thread.start()
-            thread.join(seconds)
-
-            if isinstance(result, Exception):
-                raise result
-
-            return result
-
-        return wrapper
-
-    return decorator
 
 
 def get_available_port():
