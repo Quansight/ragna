@@ -223,7 +223,7 @@ def ui(
 
             wait_for_api()
 
-        ui_app(config).serve()
+        ui_app(config).serve()  # type: ignore[no-untyped-call]
     finally:
         if process is not None:
             process.kill()

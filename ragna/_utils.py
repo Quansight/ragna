@@ -1,6 +1,6 @@
 import functools
 import threading
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 
@@ -49,16 +49,18 @@ def get_origins(url: str) -> list[str]:
     return origins
 
 
-def timeout_after(seconds=5, *, message=None):
+def timeout_after(
+    seconds: float = 5, *, message: str = ""
+) -> Callable[[Callable], Callable]:
     timeout = f"Timeout after {seconds:.1f} seconds"
-    message = timeout if message is None else f"{timeout}: {message}"
+    message = timeout if message else f"{timeout}: {message}"
 
-    def decorator(fn):
+    def decorator(fn: Callable) -> Callable:
         @functools.wraps(fn)
-        def wrapper(*args, **kwargs):
-            result = TimeoutError(message)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            result: Any = TimeoutError(message)
 
-            def target():
+            def target() -> None:
                 nonlocal result
                 try:
                     result = fn(*args, **kwargs)

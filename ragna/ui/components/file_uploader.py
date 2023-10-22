@@ -5,7 +5,7 @@ from panel.reactive import ReactiveHTML
 from panel.widgets import Widget
 
 
-class FileUploader(ReactiveHTML, Widget):
+class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     file_list = param.List(default=[])
 
     custom_js = param.String(default="")

@@ -110,9 +110,18 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = [
+    "ragna.ui.*",
+]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = [
     "fitz",
     "huey.*",
     "lancedb",
+    "param",
     "pyarrow",
     "sentence_transformers",
 ]
