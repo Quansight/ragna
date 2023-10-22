@@ -235,7 +235,7 @@ class Chat:
         return cast(
             Type[pydantic.BaseModel],
             create_model(  # type: ignore[call-overload]
-                self.params["chat_id"],
+                str(self.params["chat_id"]),
                 __config__=ConfigDict(extra="forbid"),
                 **field_definitions,
             ),
