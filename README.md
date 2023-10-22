@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="docs/brand-assets/Ragna-logo-lockup-vertical.png" width=30%>
+    <img src="docs/brand-assets/logo-lockup-vertical/logo-lockup-vertical.png" width=30%>
 </p>
 
 <hr>
