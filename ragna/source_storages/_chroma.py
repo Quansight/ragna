@@ -1,18 +1,31 @@
 import uuid
+from typing import cast
 
-from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
+from ragna.core import (
+    Config,
+    Document,
+    PackageRequirement,
+    Requirement,
+    Source,
+    SourceStorage,
+)
+from ragna.utils import (
+    chunk_pages,
+    page_numbers_to_str,
+    take_sources_up_to_max_tokens,
+    Tokenizer,
+)
 
 
 class Chroma(SourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            PackageRequirement("chromadb >=0.4"),
+            PackageRequirement("chromadb>=0.4.13"),
             PackageRequirement("tiktoken"),
         ]
 
-    def __init__(self, config):
+    def __init__(self, config: Config) -> None:
         super().__init__(config)
 
         import chromadb
@@ -29,7 +42,7 @@ class Chroma(SourceStorage):
         self._embedding_function = (
             chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
         )
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+        self._tokenizer = cast(Tokenizer, tiktoken.get_encoding("cl100k_base"))
 
     def store(
         self,
@@ -63,7 +76,11 @@ class Chroma(SourceStorage):
                     }
                 )
 
-        collection.add(ids=ids, documents=texts, metadatas=metadatas)
+        collection.add(
+            ids=ids,
+            documents=texts,
+            metadatas=metadatas,  # type: ignore[arg-type]
+        )
 
     def retrieve(
         self,
@@ -93,7 +110,7 @@ class Chroma(SourceStorage):
 
         num_results = len(result["ids"])
         result = {
-            key: [None] * num_results if value is None else value[0]
+            key: [None] * num_results if value is None else value[0]  # type: ignore[index]
             for key, value in result.items()
         }
         # dict of lists -> list of dicts

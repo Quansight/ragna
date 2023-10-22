@@ -1,15 +1,15 @@
 import textwrap
 import uuid
 
-from ragna.core import Document, Source, SourceStorage
+from ragna.core import Config, Document, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return "Ragna/DemoSourceStorage"
 
-    def __init__(self, config):
+    def __init__(self, config: Config) -> None:
         super().__init__(config)
         self._storage: dict[uuid.UUID, list[Source]] = {}
 

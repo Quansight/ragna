@@ -1,7 +1,7 @@
 import itertools
 import platform
 import re
-from typing import Optional, Type, TypeVar, Union
+from typing import Any, Callable, cast, Optional, Type, TypeVar, Union
 from urllib.parse import urlsplit
 
 import huey.api
@@ -12,28 +12,40 @@ import redis
 
 from ._components import Component
 from ._config import Config
+
 from ._utils import RagnaException
 
 
-def task_config(retries: int = 0, retry_delay: int = 0):
-    def decorator(fn):
-        fn.__ragna_task_config__ = dict(retries=retries, retry_delay=retry_delay)
+def task_config(
+    retries: int = 0, retry_delay: int = 0
+) -> Callable[[Callable], Callable]:
+    def decorator(fn: Callable) -> Callable:
+        fn.__ragna_task_config__ = (  # type: ignore[attr-defined]
+            dict(retries=retries, retry_delay=retry_delay)
+        )
         return fn
 
     return decorator
 
 
-_COMPONENTS: dict[Type[Component], Component] = {}
+_COMPONENTS: dict[Type[Component], Optional[Component]] = {}
+
+R = TypeVar("R")
 
 
-def execute(component, fn, args, kwargs):
+def execute(
+    component: Type[Component],
+    fn: Callable[..., R],
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
+) -> R:
     self = _COMPONENTS[component]
     assert self is not None
     return fn(self, *args, **kwargs)
 
 
 class _Task(huey.api.Task):
-    def execute(self):
+    def execute(self) -> Any:
         return execute(*self.args)
 
 
@@ -41,17 +53,17 @@ T = TypeVar("T", bound=Component)
 
 
 class Queue:
-    def __init__(self, config: Config, *, load_components: Optional[bool]):
+    def __init__(self, config: Config, *, load_components: Optional[bool]) -> None:
         self._config = config
-        self._huey = self._load_huey(config.rag.queue_url)
+        self._huey = self._load_huey(config.core.queue_url)
 
         for component in itertools.chain(
-            config.rag.source_storages,
-            config.rag.assistants,
+            config.core.source_storages,
+            config.core.assistants,
         ):
             self.parse_component(component, load=load_components)
 
-    def _load_huey(self, url: Optional[str]):
+    def _load_huey(self, url: str) -> huey.Huey:
         # FIXME: we need to store_none=True here. SourceStorage.store returns None and
         #  if we wouldn't store it, waiting for a result is timing out. Maybe there is a
         #  better way to do this?
@@ -95,19 +107,19 @@ class Queue:
             cls = component
             instance = None
         elif isinstance(component, Component):
-            cls = type(component)
+            cls = cast(Type[T], type(component))
             instance = component
         elif isinstance(component, str):
             try:
-                cls = next(
-                    cls for cls in _COMPONENTS if cls.display_name() == component
+                cls = cast(
+                    Type[T],
+                    next(cls for cls in _COMPONENTS if cls.display_name() == component),
                 )
             except StopIteration:
                 raise RagnaException("Unknown component", component=component)
             instance = None
 
-        if instance is None:
-            instance = _COMPONENTS.get(cls)
+        instance = _COMPONENTS.setdefault(cls, instance)
 
         if instance is not None:
             return cls
@@ -122,7 +134,13 @@ class Queue:
 
         return cls
 
-    async def enqueue(self, component, action, args, kwargs):
+    async def enqueue(
+        self,
+        component: Type[Component],
+        action: str,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+    ) -> Any:
         fn = getattr(component, action)
         task = _Task(
             args=(component, fn, args, kwargs),
@@ -134,7 +152,7 @@ class Queue:
             raise RagnaException("Task failed", **output.metadata)
         return output
 
-    def create_worker(self, num_workers: int = 1):
+    def create_worker(self, num_workers: int = 1) -> huey.api.Consumer:
         return self._huey.create_consumer(
             workers=num_workers, worker_type=huey.constants.WORKER_THREAD
         )

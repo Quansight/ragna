@@ -5,10 +5,13 @@ from pathlib import Path
 from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
+import rich
+
 import typer
+import uvicorn
 
 import ragna
-from ragna.core import PackageRequirement
+from ragna._api import app as api_app
 from ragna.core._queue import Queue
 from .config import (
     check_config,
@@ -27,9 +30,9 @@ app = typer.Typer(
 )
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
-        print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
+        rich.print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
         raise typer.Exit()
 
 
@@ -41,7 +44,7 @@ def _main(
             "--version", callback=version_callback, help="Show version and exit."
         ),
     ] = None
-):
+) -> None:
     pass
 
 
@@ -60,7 +63,7 @@ def config(
         ),
     ],
     config: Annotated[
-        ragna.Config,
+        Optional[ragna.Config],
         typer.Option(
             *COMMON_CONFIG_OPTION_ARGS,
             **COMMON_CONFIG_OPTION_KWARGS,
@@ -83,9 +86,14 @@ def config(
             "-f", "--force", help="Overwrite an existing file at <OUTPUT_PATH>."
         ),
     ] = False,
-):
+) -> None:
     if config is None:
-        config = config_wizard()
+        if check:
+            rich.print(
+                "--check makes no sense without passing a config with -c / --config"
+            )
+            raise typer.Exit(1)
+        config, output_path, force = config_wizard(output_path=output_path, force=force)
 
     if check:
         is_available = check_config(config)
@@ -97,14 +105,14 @@ def config(
 @app.command(help="Start workers.")
 def worker(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     num_threads: Annotated[
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
-):
-    if config.rag.queue_url == "memory":
-        print(f"With {config.rag.queue_url=} no worker is required!")
+) -> None:
+    if config.core.queue_url == "memory":
+        rich.print(f"With {config.core.queue_url=} no worker is required!")
         raise typer.Exit(1)
 
     queue = Queue(config, load_components=True)
@@ -118,26 +126,18 @@ def worker(
 @app.command(help="Start the REST API.")
 def api(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     start_worker: Annotated[
-        bool,
+        Optional[bool],
         typer.Option(
             help="Start a ragna worker alongside the REST API in a subprocess.",
             show_default="Start if a non-memory queue is configured.",
         ),
     ] = None,
-):
-    required_packages = [
-        package
-        for package in ["fastapi", "uvicorn"]
-        if not PackageRequirement(package).is_available()
-    ]
-    if required_packages:
-        print(f"Please install {', '.join(required_packages)}")
-        raise typer.Exit(1)
-
+) -> None:
     if start_worker is None:
-        start_worker = config.rag.queue_url != "memory"
+        start_worker = config.core.queue_url != "memory"
+
     if start_worker:
         process = subprocess.Popen(
             [
@@ -146,7 +146,7 @@ def api(
                 "ragna",
                 "worker",
                 "--config",
-                config.__ragna_cli_value__,
+                config.__ragna_cli_value__,  # type: ignore[attr-defined]
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -154,13 +154,16 @@ def api(
     else:
         process = None
 
-    import uvicorn
-
-    from ragna._api import api
-
     try:
         components = urlsplit(config.api.url)
-        uvicorn.run(api(config), host=components.hostname, port=components.port)
+        if components.hostname is None or components.port is None:
+            # TODO: make this part of the config validation
+            rich.print(f"Unable to extract hostname and port from {config.api.url}.")
+            raise typer.Exit(1)
+
+        uvicorn.run(
+            api_app(config), host=components.hostname, port=components.port or 31476
+        )
     finally:
         if process is not None:
             process.kill()

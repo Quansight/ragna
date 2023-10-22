@@ -1,38 +1,19 @@
-import functools
 import uuid
-from typing import Annotated
+
+from typing import Annotated, cast, Iterator
 from urllib.parse import urlsplit, urlunsplit
 
 import aiofiles
-from fastapi import Depends, FastAPI, Form, HTTPException, UploadFile
+
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
 from ragna.core import Config, Rag, RagnaException
 
 from . import database, schemas
-
-
-def process_ragna_exception(afn):
-    @functools.wraps(afn)
-    async def wrapper(*args, **kwargs):
-        try:
-            return await afn(*args, **kwargs)
-        except RagnaException as exc:
-            if exc.http_detail is RagnaException.EVENT:
-                detail = exc.event
-            elif exc.http_detail is RagnaException.MESSAGE:
-                detail = str(exc)
-            else:
-                detail = exc.http_detail
-            raise HTTPException(
-                status_code=exc.http_status_code, detail=detail
-            ) from None
-        except Exception:
-            raise
-
-    return wrapper
 
 
 def _get_cors_origins(config):
@@ -55,7 +36,7 @@ def _get_cors_origins(config):
     return origins
 
 
-def api(config: Config):
+def app(config: Config) -> FastAPI:
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
@@ -67,27 +48,42 @@ def api(config: Config):
         allow_headers=["*"],
     )
 
+    @app.exception_handler(RagnaException)
+    async def ragna_exception_handler(
+        request: Request, exc: RagnaException
+    ) -> JSONResponse:
+        if exc.http_detail is RagnaException.EVENT:
+            detail = exc.event
+        elif exc.http_detail is RagnaException.MESSAGE:
+            detail = str(exc)
+        else:
+            detail = cast(str, exc.http_detail)
+        return JSONResponse(
+            status_code=exc.http_status_code,
+            content={"error": {"message": detail}},
+        )
+
     @app.get("/")
-    @process_ragna_exception
-    async def health() -> str:
+    async def version() -> str:
         return ragna.__version__
 
-    async def _authorize_user(user: str) -> str:
-        # FIXME: implement auth here
-        return user
+    authentication = config.api.authentication()
 
-    UserDependency = Annotated[str, Depends(_authorize_user)]
+    @app.post("/token")
+    async def create_token(request: Request) -> str:
+        return await authentication.create_token(request)
+
+    UserDependency = Annotated[str, Depends(authentication.get_user)]
 
     @app.get("/components")
-    @process_ragna_exception
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
             source_storages=[
                 source_storage.display_name()
-                for source_storage in config.rag.source_storages
+                for source_storage in config.core.source_storages
             ],
             assistants=[
-                assistant.display_name() for assistant in config.rag.assistants
+                assistant.display_name() for assistant in config.core.assistants
             ],
         )
 
@@ -96,7 +92,7 @@ def api(config: Config):
         database_url = "sqlite://"
     make_session = database.get_sessionmaker(database_url)
 
-    def get_session():
+    def get_session() -> Iterator[database.Session]:
         session = make_session()
         try:
             yield session
@@ -106,31 +102,29 @@ def api(config: Config):
     SessionDependency = Annotated[database.Session, Depends(get_session)]
 
     @app.get("/document")
-    @process_ragna_exception
     async def get_document_upload_info(
         session: SessionDependency,
         user: UserDependency,
         name: str,
     ) -> schemas.DocumentUploadInfo:
         document = schemas.Document(name=name)
-        url, data, metadata = await config.rag.document.get_upload_info(
+        url, data, metadata = await config.core.document.get_upload_info(
             config=config, user=user, id=document.id, name=document.name
         )
         database.add_document(session, user=user, document=document, metadata=metadata)
         return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
     @app.post("/document")
-    @process_ragna_exception
     async def upload_document(
         session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.rag.document, ragna.core.LocalDocument):
+        if not issubclass(rag.config.core.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
 
-        user, id = ragna.core.LocalDocument._decode_upload_token(
+        user, id = ragna.core.LocalDocument.decode_upload_token(
             token, secret=rag.config.api.upload_token_secret
         )
         document, metadata = database.get_document(session, user=user, id=id)
@@ -146,11 +140,11 @@ def api(config: Config):
         return document
 
     def schema_to_core_chat(
-        session, *, user: str, chat: schemas.Chat
+        session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                rag.config.rag.document(
+                rag.config.core.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
@@ -172,13 +166,12 @@ def api(config: Config):
         #  not needed, because the chat itself never accesses past messages. However,
         #  if we implement a chat history feature, i.e. passing past messages to
         #  the assistant, this becomes crucial.
-        core_chat.messages = []
+        core_chat._messages = []
         core_chat._prepared = chat.prepared
 
         return core_chat
 
     @app.post("/chats")
-    @process_ragna_exception
     async def create_chat(
         session: SessionDependency,
         user: UserDependency,
@@ -194,21 +187,18 @@ def api(config: Config):
         return chat
 
     @app.get("/chats")
-    @process_ragna_exception
     async def get_chats(
         session: SessionDependency, user: UserDependency
     ) -> list[schemas.Chat]:
         return database.get_chats(session, user=user)
 
     @app.get("/chats/{id}")
-    @process_ragna_exception
     async def get_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> schemas.Chat:
         return database.get_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/prepare")
-    @process_ragna_exception
     async def prepare_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> schemas.MessageOutput:
@@ -224,7 +214,6 @@ def api(config: Config):
         return schemas.MessageOutput(message=welcome, chat=chat)
 
     @app.post("/chats/{id}/answer")
-    @process_ragna_exception
     async def answer(
         session: SessionDependency, user: UserDependency, id: uuid.UUID, prompt: str
     ) -> schemas.MessageOutput:
@@ -243,7 +232,6 @@ def api(config: Config):
         return schemas.MessageOutput(message=answer, chat=chat)
 
     @app.delete("/chats/{id}")
-    @process_ragna_exception
     async def delete_chat(
         session: SessionDependency, user: UserDependency, id: uuid.UUID
     ) -> None:
