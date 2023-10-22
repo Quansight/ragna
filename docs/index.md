@@ -1,5 +1,5 @@
 ---
-title: Welcome!
+title: Home
 ---
 
 # ![Ragna logo](brand-assets/logo-lockup-horizontal/logo-lockup-horizontal.png)
