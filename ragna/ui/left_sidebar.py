@@ -65,7 +65,6 @@ class LeftSidebar(pn.viewable.Viewer):
     def __panel__(self):
         chats = self.api_wrapper.get_chats()
 
-        # current_chat_button = None
         current_chat = None
 
         self.chat_buttons = []
@@ -114,19 +113,34 @@ class LeftSidebar(pn.viewable.Viewer):
             except Exception:
                 pass
 
-        header = pn.pane.Markdown(
-            "# Ragna",
+        header = pn.pane.HTML(
+            """<img src="imgs/ragna_logo.svg" height="32px" /><span>Ragna</span>""",
             stylesheets=[
                 """ 
                                                :host { 
-                                                    background-color: rgb(248, 248, 248);
+                                                    background-color: #F9F9F9;
+                                                    border-bottom: 1px solid #EEEEEE;
+
                                                     width: 100%;
+                                                    height: 54px;
                                                     margin: 0;
                                                }
 
-                                               :host div h1 { 
-                                                    margin-left: 40px;
-                                                    font-size: 20px;
+                                                :host div {
+                                                    display: flex;
+                                                    align-items: center;
+                                                    height: 100%;
+                                                }
+
+                                                :host img {
+                                                    margin: 5px;
+                                                    margin-left: 12px;
+                                                }
+
+                                               :host span { 
+                                                    margin-left: 20px;
+                                                    font-size: 24px;
+                                                    font-weight: 600;
                                                }
                                     """
             ],

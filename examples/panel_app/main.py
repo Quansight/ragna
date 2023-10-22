@@ -33,7 +33,7 @@ def main():
     # First, ensure the API is running
     loop = asyncio.get_event_loop()
     result = loop.run_until_complete(check_ragna_api())
-    print(result)
+    print("API Found ? ", result)
 
     # Then, build and start the UI
     url, port = config.ui.url.rsplit(":", 1)
