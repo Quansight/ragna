@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import contextlib
 import datetime
-import getpass
 import itertools
-import os
 import uuid
 from collections import defaultdict
 from typing import Any, cast, Iterable, Optional, Type, TypeVar, Union
@@ -16,7 +13,7 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._config import Config
 from ._document import Document
 from ._queue import Queue
-from ._utils import RagnaException
+from ._utils import default_user, RagnaException
 
 T = TypeVar("T", bound=Component)
 
@@ -47,14 +44,6 @@ class Rag:
             assistant=assistant,
             **params,
         )
-
-
-def default_user() -> str:
-    with contextlib.suppress(Exception):
-        return getpass.getuser()
-    with contextlib.suppress(Exception):
-        return os.getlogin()
-    return "Ragna"
 
 
 class _SpecialChatParams(BaseModel):
@@ -106,6 +95,7 @@ class Chat:
         self.assistant = self._rag._queue.parse_component(assistant)
 
         special_params = _SpecialChatParams().model_dump()
+
         special_params.update(params)
         params = special_params
         self.params = params
@@ -185,7 +175,7 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.rag.document(
+                document = self._rag.config.core.document(
                     document  # type: ignore[misc, call-arg]
                 )
 
@@ -245,7 +235,9 @@ class Chat:
         return cast(
             Type[pydantic.BaseModel],
             create_model(  # type: ignore[call-overload]
-                str(self), __config__=ConfigDict(extra="forbid"), **field_definitions
+                str(self.params["chat_id"]),
+                __config__=ConfigDict(extra="forbid"),
+                **field_definitions,
             ),
         )
 

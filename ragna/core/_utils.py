@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import abc
+import contextlib
 import enum
+
 import functools
+import getpass
 import importlib
 import importlib.metadata
 import os
@@ -105,3 +108,11 @@ class EnvVarRequirement(Requirement):
 
     def __repr__(self) -> str:
         return self._name
+
+
+def default_user() -> str:
+    with contextlib.suppress(Exception):
+        return getpass.getuser()
+    with contextlib.suppress(Exception):
+        return os.getlogin()
+    return "Ragna"

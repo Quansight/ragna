@@ -144,12 +144,12 @@ def _wizard_builtin(*, hint_builtin: bool = True) -> Config:
             _print_special_config("builtin")
         return config
 
-    config.rag.source_storages = _select_components(
+    config.core.source_storages = _select_components(
         "source storages",
         ragna.source_storages,
         SourceStorage,  # type: ignore[type-abstract]
     )
-    config.rag.assistants = _select_components(
+    config.core.assistants = _select_components(
         "assistants",
         ragna.assistants,
         Assistant,  # type: ignore[type-abstract]
@@ -231,7 +231,7 @@ def _wizard_common() -> Config:
         ).unsafe_ask()
     )
 
-    config.rag.queue_url = _select_queue_url(config)
+    config.core.queue_url = _select_queue_url(config)
 
     config.api.url = questionary.text(
         "At what URL do you want the ragna REST API to be served?",
@@ -363,8 +363,8 @@ def check_config(config: Config) -> bool:
     fully_available = True
 
     for title, components in [
-        ("source storages", config.rag.source_storages),
-        ("assistants", config.rag.assistants),
+        ("source storages", config.core.source_storages),
+        ("assistants", config.core.assistants),
     ]:
         if TYPE_CHECKING:
             from ragna.core._components import Component

@@ -8,9 +8,10 @@ from urllib.parse import urlsplit
 import rich
 
 import typer
+import uvicorn
 
 import ragna
-from ragna.core import PackageRequirement
+from ragna._api import app as api_app
 from ragna.core._queue import Queue
 from .config import (
     check_config,
@@ -110,8 +111,8 @@ def worker(
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
 ) -> None:
-    if config.rag.queue_url == "memory":
-        rich.print(f"With {config.rag.queue_url=} no worker is required!")
+    if config.core.queue_url == "memory":
+        rich.print(f"With {config.core.queue_url=} no worker is required!")
         raise typer.Exit(1)
 
     queue = Queue(config, load_components=True)
@@ -134,17 +135,9 @@ def api(
         ),
     ] = None,
 ) -> None:
-    required_packages = [
-        package
-        for package in ["fastapi", "uvicorn"]
-        if not PackageRequirement(package).is_available()
-    ]
-    if required_packages:
-        print(f"Please install {', '.join(required_packages)}")
-        raise typer.Exit(1)
-
     if start_worker is None:
-        start_worker = config.rag.queue_url != "memory"
+        start_worker = config.core.queue_url != "memory"
+
     if start_worker:
         process = subprocess.Popen(
             [
@@ -161,10 +154,6 @@ def api(
     else:
         process = None
 
-    import uvicorn
-
-    from ragna._api import api
-
     try:
         components = urlsplit(config.api.url)
         if components.hostname is None or components.port is None:
@@ -173,7 +162,7 @@ def api(
             raise typer.Exit(1)
 
         uvicorn.run(
-            api(config), host=components.hostname, port=components.port or 31476
+            api_app(config), host=components.hostname, port=components.port or 31476
         )
     finally:
         if process is not None:

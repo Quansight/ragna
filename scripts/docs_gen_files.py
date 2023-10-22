@@ -8,7 +8,7 @@ import mkdocs_gen_files
 import typer.rich_utils
 
 from ragna import Config
-from ragna._api import api as api_app
+from ragna._api import app as api_app
 from ragna._cli import app as cli_app
 
 
