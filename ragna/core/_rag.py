@@ -7,8 +7,9 @@ import itertools
 import os
 import uuid
 from collections import defaultdict
-from typing import Any, Iterable, Optional, Type, TypeVar, Union
+from typing import Any, cast, Iterable, Optional, Type, TypeVar, Union
 
+import pydantic
 from pydantic import BaseModel, ConfigDict, create_model, Field
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
@@ -37,7 +38,7 @@ class Rag:
         source_storage: Union[Type[SourceStorage], SourceStorage, str],
         assistant: Union[Type[Assistant], Assistant, str],
         **params: Any,
-    ):
+    ) -> Chat:
         """Create a new [ragna.core.Chat][]."""
         return Chat(
             self,
@@ -48,7 +49,7 @@ class Rag:
         )
 
 
-def default_user():
+def default_user() -> str:
     with contextlib.suppress(Exception):
         return getpass.getuser()
     with contextlib.suppress(Exception):
@@ -97,7 +98,7 @@ class Chat:
         source_storage: Union[Type[SourceStorage], SourceStorage, str],
         assistant: Union[Type[Assistant], Assistant, str],
         **params: Any,
-    ):
+    ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
@@ -111,9 +112,9 @@ class Chat:
         self._unpacked_params = self._unpack_chat_params(params)
 
         self._prepared = False
-        self._messages = []
+        self._messages: list[Message] = []
 
-    async def prepare(self):
+    async def prepare(self) -> Message:
         """Prepare the chat.
 
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
@@ -141,7 +142,7 @@ class Chat:
         self._messages.append(welcome)
         return welcome
 
-    async def answer(self, prompt: str):
+    async def answer(self, prompt: str) -> Message:
         """Answer a prompt
 
         Raises:
@@ -184,7 +185,9 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.rag.document(document)
+                document = self._rag.config.rag.document(
+                    document  # type: ignore[misc, call-arg]
+                )
 
             if not document.is_readable():
                 raise RagnaException(
@@ -196,7 +199,9 @@ class Chat:
             documents_.append(document)
         return documents_
 
-    def _unpack_chat_params(self, params):
+    def _unpack_chat_params(
+        self, params: dict[str, Any]
+    ) -> dict[tuple[Type[Component], str], dict[str, Any]]:
         source_storage_models = self.source_storage._models()
         assistant_models = self.assistant._models()
 
@@ -214,7 +219,9 @@ class Chat:
             )
         }
 
-    def _merge_models(self, *models):
+    def _merge_models(
+        self, *models: Type[pydantic.BaseModel]
+    ) -> Type[pydantic.BaseModel]:
         raw_field_definitions = defaultdict(list)
         for model_cls in models:
             for name, field in model_cls.model_fields.items():
@@ -235,11 +242,16 @@ class Chat:
 
             field_definitions[name] = (type_, default)
 
-        return create_model(
-            str(self), __config__=ConfigDict(extra="forbid"), **field_definitions
+        return cast(
+            Type[pydantic.BaseModel],
+            create_model(  # type: ignore[call-overload]
+                str(self), __config__=ConfigDict(extra="forbid"), **field_definitions
+            ),
         )
 
-    async def _enqueue(self, component, action, *args):
+    async def _enqueue(
+        self, component: Type[Component], action: str, *args: Any
+    ) -> Any:
         try:
             return await self._rag._queue.enqueue(
                 component, action, args, self._unpacked_params[(component, action)]
@@ -249,9 +261,11 @@ class Chat:
             exc.extra["action"] = action
             raise exc
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Chat:
         await self.prepare()
         return self
 
-    async def __aexit__(self, *exc_info):
+    async def __aexit__(
+        self, exc_type: Type[Exception], exc: Exception, traceback: str
+    ) -> None:
         pass

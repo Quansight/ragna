@@ -1,6 +1,8 @@
 from collections import defaultdict
+
 from pathlib import Path
-from typing import Annotated, Type
+from types import ModuleType
+from typing import Annotated, cast, Type, TYPE_CHECKING, TypeVar
 
 import questionary
 import rich
@@ -16,6 +18,7 @@ from ragna.core import (
     Requirement,
     SourceStorage,
 )
+from ragna.core._components import Component
 
 
 def parse_config(value: str) -> Config:
@@ -51,7 +54,7 @@ ConfigOption = Annotated[
 QMARK = "\n?"
 
 
-def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
+def config_wizard(*, output_path: Path, force: bool) -> tuple[Config, Path, bool]:
     # FIXME: add link to the config documentation when it is available
     rich.print(
         "\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n"
@@ -86,7 +89,9 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
         "demo": _wizard_demo,
         "builtin": _wizard_builtin,
         "common": _wizard_common,
-    }[intent]()
+    }[
+        intent
+    ]()  # type: ignore[operator]
 
     if output_path.exists() and not force:
         output_path, force = _handle_output_path(output_path=output_path, force=force)
@@ -99,7 +104,7 @@ def config_wizard(*, output_path: Path, force: bool) -> (Config, Path, bool):
     return config, output_path, force
 
 
-def _print_special_config(name):
+def _print_special_config(name: str) -> None:
     rich.print(
         f"For this use case the {name} configuration is the perfect fit!\n"
         f"Hint for the future: the demo configuration can also be accessed by passing "
@@ -113,7 +118,7 @@ def _wizard_demo() -> Config:
     return Config.demo()
 
 
-def _wizard_builtin(*, hint_builtin=True) -> Config:
+def _wizard_builtin(*, hint_builtin: bool = True) -> Config:
     config = Config.builtin()
 
     intent = questionary.select(
@@ -140,17 +145,26 @@ def _wizard_builtin(*, hint_builtin=True) -> Config:
         return config
 
     config.rag.source_storages = _select_components(
-        "source storages", ragna.source_storages, SourceStorage
+        "source storages",
+        ragna.source_storages,
+        SourceStorage,  # type: ignore[type-abstract]
     )
     config.rag.assistants = _select_components(
-        "assistants", ragna.assistants, Assistant
+        "assistants",
+        ragna.assistants,
+        Assistant,  # type: ignore[type-abstract]
     )
 
     return config
 
 
-def _select_components(title, module, base_cls):
-    selected_components = questionary.checkbox(
+T = TypeVar("T", bound=Component)
+
+
+def _select_components(
+    title: str, module: ModuleType, base_cls: Type[T]
+) -> list[Type[T]]:
+    selected_components: list[Type[T]] = questionary.checkbox(
         (
             f"ragna has the following {title} builtin. "
             f"Choose the he ones you want to use. "
@@ -187,6 +201,9 @@ def _select_components(title, module, base_cls):
             ("Installed packages:", PackageRequirement),
             ("Environment variables:", EnvVarRequirement),
         ]:
+            if TYPE_CHECKING:
+                requirement_type = cast(Type[Requirement], requirement_type)
+
             if requirement_type in requirements:
                 rich.print(f"{title}\n")
                 rich.print(f"{_format_requirements(requirements[requirement_type])}\n")
@@ -244,7 +261,7 @@ def _wizard_common() -> Config:
     return config
 
 
-def _select_queue_url(config):
+def _select_queue_url(config: Config) -> str:
     queue = questionary.select(
         (
             "Ragna internally uses a task queue to perform the RAG workflow. "
@@ -284,20 +301,26 @@ def _select_queue_url(config):
     if queue == "memory":
         return "memory"
     elif queue == "file_system":
-        return questionary.path(
-            "Where do you want to store the queue files?",
-            default=str(config.local_cache_root / "queue"),
-            qmark=QMARK,
-        ).unsafe_ask()
-    elif queue == "redis":
-        return questionary.text(
-            "What is the URL of the Redis instance?",
-            default="redis://127.0.0.1:6379",
-            qmark=QMARK,
-        ).unsafe_ask()
+        return cast(
+            str,
+            questionary.path(
+                "Where do you want to store the queue files?",
+                default=str(config.local_cache_root / "queue"),
+                qmark=QMARK,
+            ).unsafe_ask(),
+        )
+    else:  # queue == "redis":
+        return cast(
+            str,
+            questionary.text(
+                "What is the URL of the Redis instance?",
+                default="redis://127.0.0.1:6379",
+                qmark=QMARK,
+            ).unsafe_ask(),
+        )
 
 
-def _handle_output_path(*, output_path, force):
+def _handle_output_path(*, output_path: Path, force: bool) -> tuple[Path, bool]:
     rich.print(
         f"The output path {output_path} already exists "
         f"and you didn't pass the --force flag to overwrite it. "
@@ -336,11 +359,18 @@ def _handle_output_path(*, output_path, force):
     return output_path, force
 
 
-def check_config(config: Config):
+def check_config(config: Config) -> bool:
+    fully_available = True
+
     for title, components in [
         ("source storages", config.rag.source_storages),
         ("assistants", config.rag.assistants),
     ]:
+        if TYPE_CHECKING:
+            from ragna.core._components import Component
+
+            components = cast(list[Type[Component]], components)
+
         table = Table(
             "",
             "name",
@@ -351,15 +381,20 @@ def check_config(config: Config):
         )
 
         for component in components:
+            is_available = component.is_available()
+            fully_available &= is_available
+
             requirements = _split_requirements(component.requirements())
             table.add_row(
-                _yes_or_no(component.is_available()),
+                _yes_or_no(is_available),
                 component.display_name(),
                 _format_requirements(requirements[EnvVarRequirement]),
                 _format_requirements(requirements[PackageRequirement]),
             )
 
         rich.print(table)
+
+    return fully_available
 
 
 def _split_requirements(
@@ -371,12 +406,12 @@ def _split_requirements(
     return split_reqs
 
 
-def _format_requirements(requirements: list[Requirement]):
+def _format_requirements(requirements: list[Requirement]) -> str:
     if not requirements:
         return ""
 
     return "\n".join(f"{_yes_or_no(req.is_available())} {req}" for req in requirements)
 
 
-def _yes_or_no(condition):
+def _yes_or_no(condition: bool) -> str:
     return ":white_check_mark:" if condition else ":x:"

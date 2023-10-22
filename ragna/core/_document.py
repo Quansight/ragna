@@ -21,7 +21,7 @@ class Document(RequirementsMixin, abc.ABC):
         return set(DOCUMENT_HANDLERS.keys())
 
     @staticmethod
-    def get_handler(name: str):
+    def get_handler(name: str) -> DocumentHandler:
         handler = DOCUMENT_HANDLERS.get(Path(name).suffix)
         if handler is None:
             raise RagnaException
@@ -43,7 +43,7 @@ class Document(RequirementsMixin, abc.ABC):
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
     ):
-        self.id = id
+        self.id = id or uuid.uuid4()
         self.name = name
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
@@ -56,7 +56,7 @@ class Document(RequirementsMixin, abc.ABC):
     def read(self) -> bytes:
         ...
 
-    def extract_pages(self):
+    def extract_pages(self) -> Iterator[Page]:
         yield from self.handler.extract_pages(self)
 
 
@@ -97,7 +97,7 @@ class LocalDocument(Document):
         import jwt
 
         try:
-            payload = jwt.decode(token, key=secret, algorithms=cls._JWT_ALGORITHM)
+            payload = jwt.decode(token, key=secret, algorithms=[cls._JWT_ALGORITHM])
         except jwt.InvalidSignatureError:
             raise RagnaException(
                 "Token invalid", http_status_code=401, http_detail=RagnaException.EVENT
@@ -112,10 +112,11 @@ class LocalDocument(Document):
         self,
         path: Optional[str | Path] = None,
         *,
+        id: Optional[uuid.UUID] = None,
         name: Optional[str] = None,
         metadata: Optional[dict[str, Any]] = None,
-        **kwargs,
-    ):
+        handler: Optional[DocumentHandler] = None,
+    ) -> None:
         if metadata is None:
             metadata = {}
         metadata_path = metadata.get("path")
@@ -132,7 +133,7 @@ class LocalDocument(Document):
         if name is None:
             name = Path(metadata["path"]).name
 
-        super().__init__(name=name, metadata=metadata, **kwargs)
+        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
 
     @property
     def path(self) -> Path:
@@ -165,7 +166,7 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
 T = TypeVar("T", bound=DocumentHandler)
 
 
-class DocumentHandlerRegistry(dict):
+class DocumentHandlerRegistry(dict[str, DocumentHandler]):
     def load_if_available(self, cls: Type[T]) -> Type[T]:
         if cls.is_available():
             instance = cls()

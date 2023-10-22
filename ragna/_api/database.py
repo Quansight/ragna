@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import functools
-
 import uuid
-from typing import Any, Callable
+from typing import Any, Callable, cast, Optional
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker as _sessionmaker
@@ -21,7 +20,7 @@ def get_sessionmaker(database_url: str) -> Callable[[], Session]:
 
 @functools.lru_cache(maxsize=1024)
 def _get_user_id(session: Session, username: str) -> uuid.UUID:
-    user = session.execute(
+    user: Optional[orm.User] = session.execute(
         select(orm.User).where(orm.User.name == username)
     ).scalar_one_or_none()
 
@@ -32,7 +31,7 @@ def _get_user_id(session: Session, username: str) -> uuid.UUID:
         session.add(user)
         session.commit()
 
-    return user.id
+    return cast(uuid.UUID, user.id)
 
 
 def add_document(
@@ -66,7 +65,7 @@ def get_document(
     return _orm_to_schema_document(document), document.metadata_
 
 
-def add_chat(session: Session, *, user: str, chat: schemas.Chat):
+def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
     document_ids = {document.id for document in chat.metadata.documents}
     documents = (
         session.execute(select(orm.Document).where(orm.Document.id.in_(document_ids)))
@@ -75,7 +74,7 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat):
     )
     if len(documents) != len(document_ids):
         raise RagnaException(
-            set(document_ids) - {document.id for document in documents}
+            str(set(document_ids) - {document.id for document in documents})
         )
     session.add(
         orm.Chat(
@@ -121,7 +120,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             documents=documents,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
-            params=chat.params,
+            params=chat.params,  # type: ignore[arg-type]
         ),
         messages=messages,
         prepared=chat.prepared,
@@ -140,7 +139,7 @@ def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
 
 
 def _get_orm_chat(session: Session, *, user: str, id: uuid.UUID) -> orm.Chat:
-    chat = session.execute(
+    chat: Optional[orm.Chat] = session.execute(
         select(orm.Chat).where(
             (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
         )
@@ -155,7 +154,7 @@ def get_chat(session: Session, *, user: str, id: uuid.UUID) -> schemas.Chat:
 
 
 def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Source:
-    orm_source = session.execute(
+    orm_source: Optional[orm.Source] = session.execute(
         select(orm.Source).where(orm.Source.id == source.id)
     ).scalar_one_or_none()
 
@@ -175,7 +174,7 @@ def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Sourc
 def _schema_to_orm_message(
     session: Session, chat_id: uuid.UUID, message: schemas.Message
 ) -> orm.Message:
-    orm_message = session.execute(
+    orm_message: Optional[orm.Message] = session.execute(
         select(orm.Message).where(orm.Message.id == message.id)
     ).scalar_one_or_none()
     if orm_message is None:
@@ -211,5 +210,5 @@ def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
 
 def delete_chat(session: Session, user: str, id: uuid.UUID) -> None:
     orm_chat = _get_orm_chat(session, user=user, id=id)
-    session.delete(orm_chat)
+    session.delete(orm_chat)  # type: ignore[no-untyped-call]
     session.commit()
