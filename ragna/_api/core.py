@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, cast, Iterator
 
 import aiofiles
 
@@ -8,13 +8,12 @@ from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
-
 from ragna.core import Config, Rag, RagnaException
 
 from . import database, schemas
 
 
-def app(config: Config):
+def app(config: Config) -> FastAPI:
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
@@ -28,7 +27,7 @@ def app(config: Config):
         elif exc.http_detail is RagnaException.MESSAGE:
             detail = str(exc)
         else:
-            detail = exc.http_detail
+            detail = cast(str, exc.http_detail)
         return JSONResponse(
             status_code=exc.http_status_code,
             content={"error": {"message": detail}},
@@ -63,7 +62,7 @@ def app(config: Config):
         database_url = "sqlite://"
     make_session = database.get_sessionmaker(database_url)
 
-    def get_session():
+    def get_session() -> Iterator[database.Session]:
         session = make_session()
         try:
             yield session
@@ -111,7 +110,7 @@ def app(config: Config):
         return document
 
     def schema_to_core_chat(
-        session, *, user: str, chat: schemas.Chat
+        session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
@@ -137,7 +136,7 @@ def app(config: Config):
         #  not needed, because the chat itself never accesses past messages. However,
         #  if we implement a chat history feature, i.e. passing past messages to
         #  the assistant, this becomes crucial.
-        core_chat.messages = []
+        core_chat._messages = []
         core_chat._prepared = chat.prepared
 
         return core_chat

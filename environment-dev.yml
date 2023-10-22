@@ -12,9 +12,12 @@ dependencies:
     - python-dotenv
     - boto3
     - pytest >=6
-    - mypy
+    - mypy ==1.6.1
     - pre-commit
+    - types-aiofiles
+    - sqlalchemy-stubs
     # documentation
     - mkdocs
     - mkdocs-material
     - mkdocstrings[python]
+    - mkdocs-gen-files

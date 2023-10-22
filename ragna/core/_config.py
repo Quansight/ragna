@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import secrets
 from pathlib import Path
-from typing import Union
+from types import ModuleType
+from typing import Type, Union
 
-import pydantic
 import tomlkit
 from pydantic import Field, field_validator, ImportString
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
-from pydantic_settings import BaseSettings
+import ragna
 
 from ._authentication import Authentication
 from ._components import Assistant, SourceStorage
@@ -20,10 +21,10 @@ class ConfigBase:
     @classmethod
     def customise_sources(
         cls,
-        init_settings: pydantic.env_settings.SettingsSourceCallable,
-        env_settings: pydantic.env_settings.SettingsSourceCallable,
-        file_secret_settings: pydantic.env_settings.SettingsSourceCallable,
-    ) -> tuple[pydantic.env_settings.SettingsSourceCallable, ...]:
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
         # This order is needed to prioritize values from environment variables over
         # values from a configuration file. However, since the config instantiation from
         # a config file goes through the regular constructor of the Python object, we
@@ -45,12 +46,12 @@ class CoreConfig(BaseSettings):
 
     queue_url: str = "memory"
 
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [
-        "ragna.source_storages.RagnaDemoSourceStorage"
+        "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
     ]
     assistants: list[ImportString[type[Assistant]]] = [
-        "ragna.assistants.RagnaDemoAssistant"
+        "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
     ]
 
 
@@ -63,7 +64,7 @@ class ApiConfig(BaseSettings):
 
     authentication: ImportString[
         type[Authentication]
-    ] = "ragna.core.RagnaDemoAuthentication"
+    ] = "ragna.core.RagnaDemoAuthentication"  # type: ignore[assignment]
 
     upload_token_secret: str = Field(
         default_factory=lambda: secrets.token_urlsafe(32)[:32]
@@ -97,8 +98,11 @@ class Config(BaseSettings):
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 
+    # We need the awkward ragna.Config return annotation, because it otherwise uses the
+    # Config class we have defined above. Since that needs to be removed for
+    # pydantic==3, we can cleanup the annotation at the same time
     @classmethod
-    def from_file(cls, path: Union[str, Path]) -> Config:
+    def from_file(cls, path: Union[str, Path]) -> ragna.Config:
         path = Path(path).expanduser().resolve()
         if not path.is_file():
             raise RagnaException(f"{path} does not exist.")
@@ -106,7 +110,7 @@ class Config(BaseSettings):
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
 
-    def to_file(self, path: Union[str, Path], *, force: bool = False):
+    def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
@@ -115,15 +119,18 @@ class Config(BaseSettings):
             tomlkit.dump(self.model_dump(mode="json"), file)
 
     @classmethod
-    def demo(cls):
+    def demo(cls) -> ragna.Config:
         return cls()
 
     @classmethod
-    def builtin(cls):
+    def builtin(cls) -> ragna.Config:
         from ragna import assistants, source_storages
         from ragna.core import Assistant, SourceStorage
+        from ragna.core._components import Component
 
-        def get_available_components(module, cls):
+        def get_available_components(
+            module: ModuleType, cls: Type[Component]
+        ) -> list[Type]:
             return [
                 obj
                 for obj in module.__dict__.values()

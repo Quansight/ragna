@@ -30,7 +30,7 @@ app = typer.Typer(
 )
 
 
-def version_callback(value: bool):
+def version_callback(value: bool) -> None:
     if value:
         rich.print(f"ragna {ragna.__version__} from {ragna.__path__[0]}")
         raise typer.Exit()
@@ -44,7 +44,7 @@ def _main(
             "--version", callback=version_callback, help="Show version and exit."
         ),
     ] = None
-):
+) -> None:
     pass
 
 
@@ -63,7 +63,7 @@ def config(
         ),
     ],
     config: Annotated[
-        ragna.Config,
+        Optional[ragna.Config],
         typer.Option(
             *COMMON_CONFIG_OPTION_ARGS,
             **COMMON_CONFIG_OPTION_KWARGS,
@@ -86,7 +86,7 @@ def config(
             "-f", "--force", help="Overwrite an existing file at <OUTPUT_PATH>."
         ),
     ] = False,
-):
+) -> None:
     if config is None:
         if check:
             rich.print(
@@ -105,12 +105,12 @@ def config(
 @app.command(help="Start workers.")
 def worker(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     num_threads: Annotated[
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
     ] = 1,
-):
+) -> None:
     if config.core.queue_url == "memory":
         rich.print(f"With {config.core.queue_url=} no worker is required!")
         raise typer.Exit(1)
@@ -126,15 +126,15 @@ def worker(
 @app.command(help="Start the REST API.")
 def api(
     *,
-    config: ConfigOption = "builtin",
+    config: ConfigOption = "builtin",  # type: ignore[assignment]
     start_worker: Annotated[
-        bool,
+        Optional[bool],
         typer.Option(
             help="Start a ragna worker alongside the REST API in a subprocess.",
             show_default="Start if a non-memory queue is configured.",
         ),
     ] = None,
-):
+) -> None:
     if start_worker is None:
         start_worker = config.core.queue_url != "memory"
 
@@ -146,7 +146,7 @@ def api(
                 "ragna",
                 "worker",
                 "--config",
-                config.__ragna_cli_value__,
+                config.__ragna_cli_value__,  # type: ignore[attr-defined]
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -156,7 +156,14 @@ def api(
 
     try:
         components = urlsplit(config.api.url)
-        uvicorn.run(api_app(config), host=components.hostname, port=components.port)
+        if components.hostname is None or components.port is None:
+            # TODO: make this part of the config validation
+            rich.print(f"Unable to extract hostname and port from {config.api.url}.")
+            raise typer.Exit(1)
+
+        uvicorn.run(
+            api_app(config), host=components.hostname, port=components.port or 31476
+        )
     finally:
         if process is not None:
             process.kill()

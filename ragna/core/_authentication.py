@@ -3,6 +3,8 @@ import os
 import secrets
 import time
 
+from typing import cast
+
 import jwt
 from fastapi import HTTPException, Request, status
 from fastapi.security.utils import get_authorization_scheme_param
@@ -19,7 +21,7 @@ class Authentication(abc.ABC):
 
 
 class RagnaDemoAuthentication(Authentication):
-    def __init__(self):
+    def __init__(self) -> None:
         self._password = os.environ.get("AI_PROXY_DEMO_AUTHENTICATION_PASSWORD")
 
     _JWT_SECRET = secrets.token_urlsafe(32)
@@ -58,9 +60,9 @@ class RagnaDemoAuthentication(Authentication):
 
         try:
             payload = jwt.decode(
-                token, key=self._JWT_SECRET, algorithms=self._JWT_ALGORITHM
+                token, key=self._JWT_SECRET, algorithms=[self._JWT_ALGORITHM]
             )
         except (jwt.InvalidSignatureError, jwt.ExpiredSignatureError):
             raise unauthorized
 
-        return payload["user"]
+        return cast(str, payload["user"])

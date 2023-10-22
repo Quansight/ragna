@@ -1,6 +1,13 @@
 import uuid
 
-from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
+from ragna.core import (
+    Config,
+    Document,
+    PackageRequirement,
+    Requirement,
+    Source,
+    SourceStorage,
+)
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 
@@ -17,7 +24,7 @@ class LanceDB(SourceStorage):
             PackageRequirement("sentence-transformers"),
         ]
 
-    def __init__(self, config):
+    def __init__(self, config: Config) -> None:
         super().__init__(config)
 
         import lancedb
@@ -39,9 +46,6 @@ class LanceDB(SourceStorage):
                 pa.field("num_tokens", pa.int32()),
             ]
         )
-
-    def _embed(self, batch):
-        return [self._model.encode(sentence) for sentence in batch]
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
