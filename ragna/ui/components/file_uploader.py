@@ -6,8 +6,7 @@ from panel.widgets import Widget
 
 
 class FileUploader(ReactiveHTML, Widget):
-    file_list = param.List(default=["test", "test2"])
-    file_list_html = param.String(default="")
+    file_list = param.List(default=[])
 
     custom_js = param.String(default="")
     uploaded_documents_json = param.String(default="")
@@ -22,14 +21,6 @@ class FileUploader(ReactiveHTML, Widget):
         self.upload_endpoint = upload_endpoint
 
         self.after_upload_callback = None
-
-        # self.param.watch(self.did_change_value_input, ["value_input"])
-
-    @param.depends("file_list", watch=True)
-    def update_file_list_html(self):
-        self.file_list_html = "<br />\n".join([f["name"] for f in self.file_list])
-        print(self.file_list_html)
-        return
 
     @param.depends("uploaded_documents_json", watch=True)
     def did_finish_upload(self):
@@ -53,14 +44,74 @@ class FileUploader(ReactiveHTML, Widget):
     _child_config = {
         "custom_js": "template",
         "uploaded_documents_json": "template",
-        "file_list_html": "model",  # literal template
     }
 
     _template = """
             <style>
                 :host {
-                background-color: red;
+                    width: 100%;
+                    margin: 0px;
+                    padding: 0px;
                 }
+
+                .fileUploadContainer {
+                    height: 130px;
+                }
+
+                .fileUploadDropArea {
+                    margin-left: 10px;
+                    margin-right: 10px;
+                    border: 1px dashed rgba(69, 35, 145, 1);
+                    border-radius: 5px;
+                    height:100%;
+                    display:flex;
+                    text-align: center;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                }
+
+                .fileUploadDropArea span.bold {
+                    font-weight: bold;
+                }
+
+                .fileUploadDropArea img {
+                    padding-bottom:5px;
+                }
+
+                .fileUploadDropArea.draggedOver {
+                    border-width: 3px;
+                }
+
+                .fileUploadDropArea.uploaded {
+                    height: calc(100% - 40px);
+                }
+                
+                .fileUpload {
+                    height: 100% !important;
+                    position: absolute;
+                    opacity: 0;
+                }
+
+                .fileListContainer {
+                    display:flex;
+                    flex-direction: row;
+                    height: 44px;
+                    overflow:scroll;
+                    padding-top:14px;
+                    padding-left:6px;
+                }
+                
+                .chat_document_pill {
+                    background-color: rgb(241,241,241);
+                    margin-top:0px; 
+                    margin-left: 5px;   
+                    margin-right: 5px;
+                    padding: 5px 15px;
+                    border-radius: 10px;
+                    color:rgba(69, 35, 145, 1);
+                    display: inline-table;
+                    }
                 
             </style>
             <script>
@@ -68,14 +119,25 @@ class FileUploader(ReactiveHTML, Widget):
                 var scr = document.createElement("script");
                 scr.src = "/resources/upload.js" + "?ts=" + new Date().getTime();
                 document.getElementsByTagName("head")[0].appendChild(scr);
-                                                                
+
             </script>
-            <div>
-                <label>Select file to upload</label>
-                    <input type="file" id="fileUpload" multiple="multiple" onchange="${script('file_input_on_change')}" /> 
-            </div>
-            <div>
-                ${file_list_html}
+            <div id="fileUploadContainer" class="fileUploadContainer">
+                <div id="fileUploadDropArea" class="fileUploadDropArea">
+                    <img src="/imgs/cloud-upload.svg" width="24px" height="24px" />
+                    <div id='fileUploadText'>
+                        <span class="bold">Click to upload</span> or drag and drop.<br />
+                        PDF, TXT or DOC [ max. 10MB]
+                    </div>
+                    <input  type="file" 
+                            name="fileUpload"
+                            class="fileUpload" 
+                            id="fileUpload" 
+                            multiple="multiple" 
+                            onchange="${script('file_input_on_change')}" /> 
+                </div>
+                <div id="fileListContainer" class="fileListContainer">
+                    
+                </div>
             </div>
             <div style="display:none;">
                 <div id="custom_js_watcher">
@@ -89,9 +151,32 @@ class FileUploader(ReactiveHTML, Widget):
 
     _scripts = {
         "after_layout": """ 
+            self.update_layout();
+        """,
+        "update_layout": """ 
+
             
+            if (data.file_list.length > 0) {
+                fileUploadDropArea.classList.add("uploaded");
+            } else {
+                fileUploadDropArea.classList.remove("uploaded");
+            }
+
+            fileListContainer.innerHTML = "";
+
+            data.file_list.forEach(function(f) {
+                var pill = document.createElement("div");
+                pill.classList.add("chat_document_pill");
+                var fname = document.createTextNode(f.name);
+
+                pill.appendChild(fname);
+                fileListContainer.appendChild(pill);
+
+            });
+
         """,
         "file_input_on_change": """
+            
             
             var new_file_list = Array.from(fileUpload.files).map(function(f) {
                 new_f = {
@@ -101,24 +186,23 @@ class FileUploader(ReactiveHTML, Widget):
                     "type":f.type ,
                 };
 
-                console.log(new_f);
                 return new_f;
             });
             
-            console.log("new file list", new_file_list);
-
             data.file_list = new_file_list;
+            self.update_layout();
            
             
         """,
         "get_upload_files": """
+            
             return fileUpload.files;
         """,
         "get_uploaded_documents_json": """
             return uploaded_documents_json_watcher;
         """,
         "render": """
-
+            
             var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
             var observer = new MutationObserver(function(mutationsList, observer) {
                     mutationsList.forEach(function(mutation){
@@ -142,6 +226,20 @@ class FileUploader(ReactiveHTML, Widget):
             observer.observe(uploaded_documents_json_watcher, {characterData: true, childList: true, attributes: true, subtree: true});
 
 
+            fileUpload.addEventListener("dragenter", function(event){
+                    fileUploadDropArea.classList.add("draggedOver");
+            });
+
+            fileUpload.addEventListener("dragleave", function(event){
+                    fileUploadDropArea.classList.remove("draggedOver")
+            });
+
+            fileUpload.addEventListener("drop", function(event){
+                    fileUploadDropArea.classList.remove("draggedOver")
+                    event.preventDefault();
+                    fileUpload.files = event.dataTransfer.files;
+                    self.file_input_on_change();
+            });
 
         """,
         "remove": """  

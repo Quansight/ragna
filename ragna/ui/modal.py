@@ -65,6 +65,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         # Keep this as a row, we add the loading spinner in it later
         self.upload_row = pn.Row(
             self.document_uploader,
+            sizing_mode="stretch_width",
+            stylesheets=[""" :host { margin-bottom: 20px; } """],
         )
 
         self.got_timezone = False
