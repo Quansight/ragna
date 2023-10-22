@@ -17,11 +17,6 @@ dependencies:
     - types-aiofiles
     - sqlalchemy-stubs
     # documentation
-    
-    # Temporary dependency for the new Panel Chat Interface.
-    # TODO: remove this dependency once the new Panel Chat Interface is released,
-    # and pin Panel's version
-    - git+https://github.com/holoviz/panel@chat_components
     - mkdocs
     - mkdocs-material
     - mkdocstrings[python]
