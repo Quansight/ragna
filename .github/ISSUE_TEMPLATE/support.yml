@@ -1,0 +1,29 @@
+name: "Usage question 🙋🏽‍♀️"
+description: "Create a report to help us fix something that is currently broken."
+title: "[Q/A] - <title>"
+labels: ["type: question 🙋🏽‍♀️"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting!
+        Before asking a question, please make sure the issue hasn't already been addressed by searching through
+        the documentation and past issues in this repository.
+
+  - type: textarea
+    attributes:
+      label: Share your question
+      description: |
+        A clear and concise description of what the bug is.
+      placeholder: Be as precise as you can, describe what you expected to happen and what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Minimal example
+      description: |
+        Provide a minimal code example and detailed step-by-step guidelines to reproduce the error.
+    validations:
+      required: true
