@@ -71,10 +71,5 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
 
-      - name: Install third-party types
-        run: |
-          pip install sqlalchemy-stubs
-          mypy --install-types --non-interactive
-
       - name: Run type checks
         run: mypy
