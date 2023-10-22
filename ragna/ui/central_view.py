@@ -165,7 +165,6 @@ class CentralView(pn.viewable.Viewer):
                     f"""<div class='chat_document_pill'>{d['name']}</div>"""
                     for d in self.current_chat["metadata"]["documents"]
                 ]
-                * 10
             )
 
             markdown = [
