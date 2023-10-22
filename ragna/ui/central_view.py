@@ -46,15 +46,13 @@ chat_entry_stylesheets = [
     """,
     """ 
             :host .left {
-                /*background-color:red;*/
                 height: unset !important;
                 min-height: unset !important;
             }
     """,
     """ 
             :host .right {
-                /*background-color: green;*/
-                /*margin-bottom: 20px;*/
+                
             }
     """,
 ]
@@ -171,19 +169,36 @@ class CentralView(pn.viewable.Viewer):
             )
 
     def on_click_source_info_wrapper(self, event, msg):
-        print(msg.msg_data["id"])
-        print(msg.msg_data["sources"])
         if self.on_click_chat_info is not None:
+            markdown = "This response was generated using the following data from the uploaded files: <br />\n"
+
+            for i in range(len(msg.msg_data["sources"])):
+                source = msg.msg_data["sources"][i]
+                print(source)
+                location = ""
+                if source["location"] != "":
+                    location = f": {source['location']}"
+                markdown += (
+                    f"""{(i+1)}. **{source['document']['name']}** {location}\n"""
+                )
+                markdown += "----\n"
+
             self.on_click_chat_info(
                 event,
                 pn.Column(
                     pn.pane.Markdown(
-                        f"""Chat ID: {self.current_chat['id']} <br />
-                                     Message ID: {msg.msg_data['id']} <br /> 
-                                     Sources: {msg.msg_data['sources']}""",
+                        markdown,
                         dedent=True,
+                        stylesheets=[""" hr { width: 94%; height:1px;  }  """],
                     ),
-                    stylesheets=[""" :host {  background-color: red ; }  """],
+                    # Debug bloc :
+                    # pn.pane.Markdown(
+                    #         f"""Chat ID: {self.current_chat['id']} <br />
+                    #                     Message ID: {msg.msg_data['id']} <br />
+                    #                     Sources: {msg.msg_data['sources']}""",
+                    #         dedent=True,
+                    #     stylesheets=[""" :host {  background-color: red ; }  """]
+                    # ),
                 ),
             )
 
@@ -257,7 +272,6 @@ class CentralView(pn.viewable.Viewer):
                 "show_timestamp": False,
                 "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
             },
-            stylesheets=[""" :host { background-color:red; }  """],
         )
 
         chat_interface._card.stylesheets += [
