@@ -24,16 +24,15 @@ class MainPage(param.Parameterized):
 
     # Modal and callbacks
     def open_modal(self, template):
-        if self.modal is None:
-            self.modal = ModalConfiguration(
-                api_wrapper=self.api_wrapper,
-                new_chat_ready_callback=lambda new_chat_id, template=template: self.open_new_chat(
-                    new_chat_id, template
-                ),
-                cancel_button_callback=lambda event, template=template: self.on_click_cancel_button(
-                    event, template
-                ),
-            )
+        self.modal = ModalConfiguration(
+            api_wrapper=self.api_wrapper,
+            new_chat_ready_callback=lambda new_chat_id, template=template: self.open_new_chat(
+                new_chat_id, template
+            ),
+            cancel_button_callback=lambda event, template=template: self.on_click_cancel_button(
+                event, template
+            ),
+        )
 
         template.modal.objects[0].objects = [self.modal]
         template.open_modal()

@@ -30,12 +30,14 @@ class FileUploader(ReactiveHTML, Widget):
     def perform_upload(self, event=None, after_upload_callback=None):
         self.after_upload_callback = after_upload_callback
 
+        self.loading = True
+
         final_callback_js = """
             var final_callback = function(uploaded_documents) {
                 self.get_uploaded_documents_json().innerText = JSON.stringify(uploaded_documents);
             };
-
         """
+
         self.custom_js = (
             final_callback_js
             + f""" upload( self.get_upload_files(),  '{self.user}', '{self.informations_endpoint}', '{self.upload_endpoint}', final_callback) """

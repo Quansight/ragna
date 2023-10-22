@@ -177,8 +177,6 @@ class LeftSidebar(pn.viewable.Viewer):
             ],
         )
 
-        # if current_chat_button is not None:
-        #     current_chat_button.clicks = 1
         if current_chat is not None:
             self.on_click_chat(current_chat)
         elif len(chats) > 0:

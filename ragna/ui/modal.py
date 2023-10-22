@@ -50,18 +50,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.upload_files_label = pn.pane.HTML("<b>Upload files</b> (required)")
 
-        # LoadingSpinner has a property named "visible".
-        # But it we set it to visible=False by default, the spinner
-        # will never appear, even if we set it to visible=True later.
-        # The solution I found is to add/remove the spinner from the
-        # panel page.
-        self.spinner_upload = pn.indicators.LoadingSpinner(
-            value=True,
-            name="Uploading ...",
-            size=40,
-            color="success",
-        )
-
         # Keep this as a row, we add the loading spinner in it later
         self.upload_row = pn.Row(
             self.document_uploader,
@@ -72,7 +60,6 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.got_timezone = False
 
     def did_click_on_start_chat_button(self, event):
-        self.upload_row.append(self.spinner_upload)
         self.start_chat_button.disabled = True
 
         self.document_uploader.perform_upload(event, self.did_finish_upload)
@@ -91,7 +78,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         print("new_chat_id", new_chat_id)
 
-        self.upload_row.remove(self.spinner_upload)
         self.start_chat_button.disabled = False
 
         if self.new_chat_ready_callback is not None:
