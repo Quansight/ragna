@@ -126,30 +126,6 @@ class MainPage(param.Parameterized):
         template.main.append(main_page)
 
         template.header.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
-
-        """I haven't found a better way to open the modal when the pages load,
-        than simulating a click on the "New chat" button.
-        - calling self.template.open_modal() doesn't work
-        - calling self.on_click_new_chat doesn't work either
-        - trying to schedule a call to on_click_new_chat with pn.state.schedule_task
-            could have worked but my tests were yielding an unstable result.
-        """
-        new_chat_button_name = "New Chat"
-        pn.pane.HTML(
-            """
-                         <script>   let buttons = $$$('button.bk-btn-primary');
-                                    buttons.forEach(function(btn){
-                                        if ( btn.innerText.trim() == '{new_chat_btn_name}' ){
-                                            btn.click();
-                                        }
-                                    });
-                         </script>
-                         """.replace(
-                "{new_chat_btn_name}", new_chat_button_name
-            ).strip(),
-            stylesheets=[":host { position:absolute; z-index:-999; }"],
-        )
-        # template.header.append(hack_open_modal)
         template.header.append(pn.pane.HTML(js.CONNECTION_MONITOR))
 
         return template

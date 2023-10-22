@@ -1,6 +1,8 @@
 import panel as pn
 import param
 
+import ragna.ui.js as js
+
 
 class LeftSidebar(pn.viewable.Viewer):
     refresh_counter = param.Integer(default=0)
@@ -180,6 +182,32 @@ class LeftSidebar(pn.viewable.Viewer):
         if current_chat is not None:
             self.on_click_chat(current_chat)
         elif len(chats) > 0:
-            self.on_click_chat(chats[0])
+            self.chat_buttons[0].clicks = 1
+        elif len(chats) == 0:
+            """I haven't found a better way to open the modal when the pages load,
+            than simulating a click on the "New chat" button.
+            - calling self.template.open_modal() doesn't work
+            - calling self.on_click_new_chat doesn't work either
+            - trying to schedule a call to on_click_new_chat with pn.state.schedule_task
+                could have worked but my tests were yielding an unstable result.
+            """
+            new_chat_button_name = "New Chat"
+            hack_open_modal = pn.pane.HTML(
+                """
+                            <script>   let buttons = $$$('button.bk-btn-primary');
+                                        buttons.forEach(function(btn){
+                                            if ( btn.innerText.trim() == '{new_chat_btn_name}' ){
+                                                btn.click();
+                                            }
+                                        });
+                            </script>
+                            """.replace(
+                    "{new_chat_btn_name}", new_chat_button_name
+                ).strip(),
+                stylesheets=[":host { position:absolute; z-index:-999; }"],
+            )
+
+            result.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
+            result.append(hack_open_modal)
 
         return result
