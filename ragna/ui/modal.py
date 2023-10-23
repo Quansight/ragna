@@ -59,9 +59,13 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.got_timezone = False
 
     def did_click_on_start_chat_button(self, event):
-        self.start_chat_button.disabled = True
-
-        self.document_uploader.perform_upload(event, self.did_finish_upload)
+        if not self.document_uploader.can_proceed_to_upload():
+            self.upload_files_label.object = (
+                "<span style='color:red;'><b>Upload files</b> (required)</span>"
+            )
+        else:
+            self.start_chat_button.disabled = True
+            self.document_uploader.perform_upload(event, self.did_finish_upload)
 
     def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
