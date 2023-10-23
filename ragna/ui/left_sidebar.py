@@ -1,21 +1,26 @@
 import panel as pn
 import param
 
-import ragna.ui.js as js
-
 
 class LeftSidebar(pn.viewable.Viewer):
+    chats = param.List(default=[])
     current_chat_id = param.String(default=None)
     refresh_counter = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
 
-        self.api_wrapper = api_wrapper
+        # self.api_wrapper = api_wrapper
         self.on_click_chat = None
         self.on_click_new_chat = None
 
         self.chat_buttons = []
+
+        pn.state.location.sync(
+            self,
+            {"current_chat_id": "current_chat_id"},
+            on_error=lambda x: print(f"error sync on {x}"),
+        )
 
     def trigger_on_click_new_chat(self, event):
         if self.on_click_new_chat is not None:
@@ -32,6 +37,7 @@ class LeftSidebar(pn.viewable.Viewer):
 
         # call the actual callback
         if self.on_click_chat is not None:
+            print("on click chat wrapper", chat["id"])
             self.on_click_chat(chat)
 
     def footer(self):
@@ -61,14 +67,10 @@ class LeftSidebar(pn.viewable.Viewer):
     def refresh(self):
         self.refresh_counter += 1
 
-    @pn.depends("refresh_counter", "current_chat_id", on_init=True)
+    @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
-        chats = self.api_wrapper.get_chats()
-
-        current_chat = None
-
         self.chat_buttons = []
-        for chat in chats:
+        for chat in self.chats:
             button = pn.widgets.Button(
                 name=chat["metadata"]["name"], button_style="outline"
             )
@@ -108,7 +110,6 @@ class LeftSidebar(pn.viewable.Viewer):
 
             try:
                 if chat["id"] == self.current_chat_id:
-                    current_chat = chat
                     button.css_classes = ["selected"]
             except Exception:
                 pass
@@ -187,36 +188,5 @@ class LeftSidebar(pn.viewable.Viewer):
                 """
             ],
         )
-
-        if current_chat is not None:
-            self.on_click_chat(current_chat)
-        elif len(chats) > 0:
-            self.chat_buttons[0].clicks = 1
-        elif len(chats) == 0:
-            """I haven't found a better way to open the modal when the pages load,
-            than simulating a click on the "New chat" button.
-            - calling self.template.open_modal() doesn't work
-            - calling self.on_click_new_chat doesn't work either
-            - trying to schedule a call to on_click_new_chat with pn.state.schedule_task
-                could have worked but my tests were yielding an unstable result.
-            """
-            new_chat_button_name = "New Chat"
-            hack_open_modal = pn.pane.HTML(
-                """
-                            <script>   let buttons = $$$('button.bk-btn-primary');
-                                        buttons.forEach(function(btn){
-                                            if ( btn.innerText.trim() == '{new_chat_btn_name}' ){
-                                                btn.click();
-                                            }
-                                        });
-                            </script>
-                            """.replace(
-                    "{new_chat_btn_name}", new_chat_button_name
-                ).strip(),
-                stylesheets=[":host { position:absolute; z-index:-999; }"],
-            )
-
-            result.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
-            result.append(hack_open_modal)
 
         return result

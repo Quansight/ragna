@@ -16,9 +16,36 @@ class MainPage(param.Parameterized):
         self.template = template
 
         self.modal = None
-        self.central_view = None
-        self.left_sidebar = None
-        self.right_sidebar = None
+        self.central_view = CentralView(api_wrapper=self.api_wrapper)
+        self.central_view.on_click_chat_info = (
+            lambda event, title, content: self.show_right_sidebar(title, content)
+        )
+
+        self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
+        self.left_sidebar.on_click_chat = lambda chat: self.on_click_chat(chat)
+        self.left_sidebar.on_click_new_chat = lambda event: self.open_modal()
+
+        self.right_sidebar = RightSidebar()
+
+        pn.state.location.sync(
+            self,
+            {"current_chat_id": "current_chat_id"},
+            on_error=lambda x: print(f"error sync on {x}"),
+        )
+
+        self.refresh_data()
+
+    def refresh_data(self):
+        chats = self.api_wrapper.get_chats()
+        self.left_sidebar.chats = chats
+
+        if self.current_chat_id is None:
+            self.current_chat_id = chats[0]["id"]
+
+        for c in chats:
+            if c["id"] == self.current_chat_id:
+                self.central_view.set_current_chat(c)
+                break
 
     # Modal and callbacks
     def open_modal(self):
@@ -34,7 +61,7 @@ class MainPage(param.Parameterized):
     def open_new_chat(self, new_chat_id):
         # called after creating a new chat.
         self.current_chat_id = new_chat_id
-        self.left_sidebar.refresh()
+        self.refresh_data()
 
         self.template.close_modal()
 
@@ -63,23 +90,6 @@ class MainPage(param.Parameterized):
             pass
 
     def page(self):
-        self.central_view = CentralView(api_wrapper=self.api_wrapper)
-        self.central_view.on_click_chat_info = (
-            lambda event, title, content: self.show_right_sidebar(title, content)
-        )
-
-        self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
-        self.left_sidebar.on_click_chat = lambda chat: self.on_click_chat(chat)
-        self.left_sidebar.on_click_new_chat = lambda event: self.open_modal()
-
-        self.right_sidebar = RightSidebar()
-
-        pn.state.location.sync(
-            self,
-            {"current_chat_id": "current_chat_id"},
-            on_error=lambda x: print(f"error sync on {x}"),
-        )
-
         main_page = pn.Row(
             self.left_sidebar,
             self.central_view,
