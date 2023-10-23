@@ -52,7 +52,7 @@ class Message(BaseModel):
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
     timestamp: datetime.datetime = Field(
-        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
+        default_factory=lambda: datetime.datetime.utcnow()
     )
 
     @classmethod
