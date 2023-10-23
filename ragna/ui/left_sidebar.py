@@ -37,7 +37,6 @@ class LeftSidebar(pn.viewable.Viewer):
 
         # call the actual callback
         if self.on_click_chat is not None:
-            print("on click chat wrapper", chat["id"])
             self.on_click_chat(chat)
 
     def footer(self):

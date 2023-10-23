@@ -71,7 +71,6 @@ class MainPage(param.Parameterized):
 
     # Left sidebar callbacks
     def on_click_chat(self, chat):
-        print("set current chat id", chat["id"])
         self.current_chat_id = chat["id"]
         self.central_view.set_current_chat(chat)
 
