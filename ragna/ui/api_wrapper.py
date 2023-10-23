@@ -119,22 +119,7 @@ class ApiWrapper:
     def improve_message(self, msg):
         # convert timestamps to datetime
 
-        """
-        New messages from the answer endpoint (in json_data["message"]) have a timestamp with a Z at the end
-        List of messages don't (in json_data["chat"]["messages"] )
-
-        temporary fix below
-        TODO : fix API
-        """
-
-        if msg["timestamp"][-1] == "Z":
-            msg["timestamp"] = datetime.strptime(
-                msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ"
-            )
-        else:
-            msg["timestamp"] = datetime.strptime(
-                msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f"
-            )
+        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f")
 
         msg["content"] = self.replace_emoji_shortcodes_with_emoji(msg["content"])
 
