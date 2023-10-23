@@ -4,7 +4,6 @@
 
 <!-- TODO -->
 
-
 ## Minimal example
 
 ```python
