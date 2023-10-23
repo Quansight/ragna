@@ -39,13 +39,14 @@ class MainPage(param.Parameterized):
         chats = self.api_wrapper.get_chats()
         self.left_sidebar.chats = chats
 
-        if self.current_chat_id is None:
-            self.current_chat_id = chats[0]["id"]
+        if len(chats) > 0:
+            if self.current_chat_id is None:
+                self.current_chat_id = chats[0]["id"]
 
-        for c in chats:
-            if c["id"] == self.current_chat_id:
-                self.central_view.set_current_chat(c)
-                break
+            for c in chats:
+                if c["id"] == self.current_chat_id:
+                    self.central_view.set_current_chat(c)
+                    break
 
     # Modal and callbacks
     def open_modal(self):
