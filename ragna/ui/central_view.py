@@ -167,6 +167,8 @@ class CentralView(pn.viewable.Viewer):
                 ]
             )
 
+            grid_height = len(self.current_chat["metadata"]["documents"]) // 3
+
             markdown = [
                 "To change configurations, start a new chat.\n",
                 "**Model**",
@@ -198,8 +200,8 @@ class CentralView(pn.viewable.Viewer):
                                                     display: grid;
                                                     grid-auto-flow: row;
                                                     row-gap: 10px;
-                                                    grid-template: repeat(5, 1fr) / repeat(3, 1fr);
-                                                    height: 200px;
+                                                    grid-template: repeat({{GRID_HEIGHT}}, 1fr) / repeat(3, 1fr);
+                                                    max-height: 200px;
                                                     overflow: scroll;
                                                 }
                                                  
@@ -217,7 +219,9 @@ class CentralView(pn.viewable.Viewer):
                                                                 }   
                                                  
 
-                                                """
+                                                """.replace(
+                                "{{GRID_HEIGHT}}", str(grid_height)
+                            )
                         ],
                     ),
                     # stylesheets=[""" :host {background-color:red; width:100%;} .bk-panel-models-layout-Column { width: 100%; } """ ]
