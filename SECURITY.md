@@ -2,11 +2,12 @@
 
 ## Supported Versions
 
-We support only the latest version, and we use [SemVer](https://semver.org/) for
-versioning which means minor version are backwards compatible.
+We support only the latest version of Ragna, and we use [SemVer](https://semver.org/)
+for versioning. As an early-stage project, we do not guarantee backwards compatibility
+for minor versions until the 1.0 release.
 
 You should feel comfortable upgrading if you're using our documented public APIs and pay
-attention to `DeprecationWarnings`. Whenever there is a need to break compatibility, it
+attention to `DeprecationWarning`s. Whenever there is a need to break compatibility, it
 is announced in the [Changelog](docs/references/changelog.md) and will raise a
 `DeprecationWarning` before it's finally really broken.
 
