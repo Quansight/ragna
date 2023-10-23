@@ -13,16 +13,16 @@ body:
 
   - type: textarea
     attributes:
-      label: Describe the bug
+      label: Bug description
       description: |
         A clear and concise description of what the bug is.
-      placeholder: Be as precise as you can, describe what you expected to happen and what actually happened.
+        Precisely describe what you expected to happen and what actually happened.
     validations:
       required: true
 
   - type: textarea
     attributes:
-      label: How to Reproduce the problem?
+      label: How to reproduce the bug?
       description: |
         Provide a minimal code example and detailed step-by-step guidelines to reproduce the error.
     validations:
@@ -30,7 +30,7 @@ body:
 
   - type: textarea
     attributes:
-      label: Versions and dependencies used.
+      label: Versions and dependencies used
       description: |
         Describe your environment:
         - Ragna version
@@ -43,6 +43,7 @@ body:
     attributes:
       label: Anything else?
       description: |
-        Links? References? Anything that will give us more context about the issue you are encountering!
+        Links? References? Screenshots?
+        Anything that will give us more context!
     validations:
       required: false

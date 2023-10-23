@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Ragna documentation
     url: https://docs.ragna.chat/
-    about: Check out the conda-store documentation
+    about: Check out the Ragna documentation
   - name: Blank issue (maintainers only)
     url: https://github.com/Quansight/ragna/issues/new
-    about: For maintainers only - should be used sparingly
+    about: Please use sparingly, only when required
