@@ -16,18 +16,67 @@ def get_default_chat_name(timezone_offset=None):
         return f"Chat {datetime.now().astimezone(tz=tz):%m/%d/%Y %I:%M %p}"
 
 
+supported_document_dbs = ["foo", "bar"]
+
+
+def get_supported_models():
+    return {"foo": ["bar", "baz"], "bar": ["foo", "baz"], "baz": ["foo", "bar"]}
+
+
+class ChatConfig(param.Parameterized):
+    source_storage_name = param.Selector()
+    assistant_name = param.Selector()
+
+    document_db_name = param.Selector(
+        objects=supported_document_dbs,
+        allow_None=False,
+        default=supported_document_dbs[0],
+    )
+
+    chunk_size = param.Integer(
+        default=500,
+        step=100,
+        bounds=(100, 1_000),
+    )
+    chunk_overlap = param.Integer(
+        default=250,
+        step=50,
+        bounds=(50, 500),
+    )
+
+    llm_name = param.Selector(
+        objects=[
+            f"{organization}/{model}"
+            for organization, models in get_supported_models().items()
+            for model in models
+        ],
+        allow_None=False,
+    )
+    max_context_tokens = param.Integer(
+        step=500,
+        doc=(
+            "Maximum number of context tokens and in turn the number of document chunks "
+            "pulled out of the vector database."
+        ),
+    )
+    max_new_tokens = param.Integer(
+        default=1_000,
+        step=100,
+        bounds=(100, 10_000),
+    )
+
+
 class ModalConfiguration(pn.viewable.Viewer):
     chat_name = param.String()
     new_chat_ready_callback = param.Callable()
     cancel_button_callback = param.Callable()
-    #
-    source_storage_name = param.Selector()
-    assistant_name = param.Selector()
 
     def __init__(self, api_wrapper, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
         self.api_wrapper = api_wrapper
+
+        self.config = ChatConfig()
 
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
@@ -75,8 +124,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         new_chat_id = self.api_wrapper.start_and_prepare(
             name=self.chat_name,
             documents=uploaded_documents,
-            source_storage=self.source_storage_name,
-            assistant=self.assistant_name,
+            source_storage=self.config.source_storage_name,
+            assistant=self.config.assistant_name,
         )
 
         print("new_chat_id", new_chat_id)
@@ -89,20 +138,20 @@ class ModalConfiguration(pn.viewable.Viewer):
     async def model_section(self):
         components = await self.api_wrapper.get_components_async()
 
-        self.param.assistant_name.objects = components["assistants"]
-        self.param.source_storage_name.objects = components["source_storages"]
+        self.config.param.assistant_name.objects = components["assistants"]
+        self.config.param.source_storage_name.objects = components["source_storages"]
 
         if len(components["assistants"]) > 0:
-            self.assistant_name = components["assistants"][0]
+            self.config.assistant_name = components["assistants"][0]
 
         if len(components["source_storages"]) > 0:
-            self.source_storage_name = components["source_storages"][0]
+            self.config.source_storage_name = components["source_storages"][0]
 
         return pn.Row(
             pn.Column(
                 pn.pane.HTML("<b>Model</b>"),
                 pn.widgets.Select.from_param(
-                    self.param.assistant_name,
+                    self.config.param.assistant_name,
                     name="",
                     stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
@@ -110,16 +159,126 @@ class ModalConfiguration(pn.viewable.Viewer):
             pn.Column(
                 pn.pane.HTML("<b>Source storage</b>"),
                 pn.widgets.Select.from_param(
-                    self.param.source_storage_name,
+                    self.config.param.source_storage_name,
                     name="",
                     stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
             ),
         )
 
+    def advanced_config_ui(self):
+        card = pn.Card(
+            pn.Row(
+                pn.Column(
+                    pn.pane.HTML(
+                        """<h2> Retrieval Method</h2>
+                            <span>Adjusting these settings requires re-embedding the documents, which may take some time.
+                            </span><br />
+                                         """
+                    ),
+                    pn.widgets.Select.from_param(
+                        self.config.param.document_db_name,
+                        name="Document DB Name",
+                        width_policy="max",
+                        stylesheets=[ui.SS_LABEL_STYLE, ui.BK_INPUT_GRAY_BORDER],
+                    ),
+                    pn.widgets.IntSlider.from_param(
+                        self.config.param.chunk_size,
+                        name="Chunk Size",
+                        bar_color=ui.MAIN_COLOR,
+                        stylesheets=[ui.SS_LABEL_STYLE],
+                        width_policy="max",
+                    ),
+                    pn.widgets.IntSlider.from_param(
+                        self.config.param.chunk_overlap,
+                        name="Chunk Overlap",
+                        bar_color=ui.MAIN_COLOR,
+                        stylesheets=[ui.SS_LABEL_STYLE],
+                        width_policy="max",
+                    ),
+                    margin=(0, 20, 0, 0),
+                    width_policy="max",
+                ),
+                pn.Column(
+                    pn.pane.HTML(
+                        """<h2> Model Configuration</h2>
+                            <span>Changing these parameters alters the output. This might affect accuracy and efficiency.
+                            </span><br />
+                                         """
+                    ),
+                    pn.widgets.Select.from_param(
+                        self.config.param.llm_name,
+                        name="LLM Name",
+                        stylesheets=[
+                            ui.SS_MULTI_SELECT_STYLE,
+                            ui.SS_LABEL_STYLE,
+                            ui.BK_INPUT_GRAY_BORDER,
+                        ],
+                        width_policy="max",
+                    ),
+                    pn.widgets.IntSlider.from_param(
+                        self.config.param.max_context_tokens,
+                        bar_color=ui.MAIN_COLOR,
+                        stylesheets=[ui.SS_LABEL_STYLE],
+                        width_policy="max",
+                    ),
+                    pn.widgets.IntSlider.from_param(
+                        self.config.param.max_new_tokens,
+                        bar_color=ui.MAIN_COLOR,
+                        stylesheets=[ui.SS_LABEL_STYLE],
+                        width_policy="max",
+                    ),
+                    width_policy="max",
+                    height_policy="max",
+                    margin=(0, 20, 0, 0),
+                    styles={
+                        "border-left": "1px solid var(--neutral-stroke-divider-rest)"
+                    },
+                ),
+                height=350,
+            ),
+            collapsed=True,
+            collapsible=True,
+            hide_header=True,
+            stylesheets=[ui.SS_ADVANCED_UI_CARD],
+        )
+
+        def toggle_card(event):
+            card.collapsed = not card.collapsed
+            toggle_button = event.obj
+
+            if card.collapsed:
+                toggle_button.name = toggle_button.name.replace("▼", "▶")
+            else:
+                toggle_button.name = toggle_button.name.replace("▶", "▼")
+
+        toggle_button = pn.widgets.Button(
+            name="Advanced Configurations   ▶",
+            button_type="light",
+            stylesheets=[
+                """button.bk-btn { 
+                        font-size:13px; 
+                        font-weight:600; 
+                        padding-left: 0px;
+                        color: MAIN_COLOR; 
+                }""".replace(
+                    "MAIN_COLOR", ui.MAIN_COLOR
+                )
+            ],
+        )
+
+        toggle_button.on_click(toggle_card)
+
+        toggle_button.js_on_click(
+            args={"card": card},
+            code=js.JS_TOGGLE_CARD,
+        )
+
+        return pn.Column(toggle_button, card)
+
     def __panel__(self):
         def divider():
-            return pn.layout.Divider(styles={"padding": "0em 2em 0em 2em"})
+            return pn.layout.Divider(styles={"padding": "0em 1em"})
 
         return pn.Column(
             pn.pane.HTML(
@@ -144,6 +303,8 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
             divider(),
             self.model_section,
+            divider(),
+            self.advanced_config_ui,
             divider(),
             self.upload_files_label,
             self.upload_row,

@@ -10,8 +10,9 @@ MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 # TABS_SIDEBAR_BKGROUND_COLOR = "#EAEAEA"
 # TABS_SIDEBAR_WIDTH = "20em"
 
-# set modal height (in x heights)
-MODAL_MAX_HEIGHT = 63
+# set modal height
+MODAL_MIN_HEIGHT = 610
+MODAL_MAX_HEIGHT = 950
 
 MODAL_WIDTH = 800
 
@@ -94,3 +95,46 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
 BK_INPUT_GRAY_BORDER = (
     """ .bk-input {border-color: var(--neutral-color) !important;} """
 )
+
+
+SS_MULTI_SELECT_STYLE = """
+option:hover, option:checked, option:focus {
+    color:white !important;
+}
+"""
+
+SS_LABEL_STYLE = """
+:host {
+    margin-top:20px;
+}
+
+label, .bk-slider-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.bk-slider-value {
+    font-weight: normal;
+}
+
+.noUi-target {
+    border-color: var(--accent-fill-active);
+}
+
+.noUi-handle {
+    border-radius: 50%;
+}
+
+.noUi-handle, .noUi-connects {
+    background-color: var(--clear-button-active);
+}
+"""
+
+
+SS_ADVANCED_UI_CARD = """
+:host {
+    border : none !important;
+    outline: none !important;
+    background-color: unset !important;
+}
+"""
