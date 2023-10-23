@@ -1,6 +1,7 @@
 
 
 function upload(files, token, informationsEndpoint, final_callback) {
+
     var uploaded_documents = [] 
 
     Array.from(files).map(file => {
@@ -8,11 +9,17 @@ function upload(files, token, informationsEndpoint, final_callback) {
         getUploadInformations(file, token, informationsEndpoint).then(
 
                 function(uploadInformations) {
-                        uploadFile(uploadInformations.url, uploadInformations.data, file)
-                        uploaded_documents.push(uploadInformations.document)
-                        if (uploaded_documents.length == files.length) {
-                            final_callback(uploaded_documents);
-                        }
+
+                        uploadFile(uploadInformations.url, uploadInformations.data, file).then(
+                            function(response) {
+                                uploaded_documents.push(response)
+                                if (uploaded_documents.length == files.length) {
+                                    final_callback(uploaded_documents);
+                                }
+                            }
+
+
+                        )
                 }
         );
         
