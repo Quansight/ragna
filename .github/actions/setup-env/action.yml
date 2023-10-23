@@ -37,7 +37,10 @@ runs:
       uses: actions/cache@v3
       with:
         path: ${{ env.CONDA }}/envs
-        key: env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml', 'pyproject.toml') }}
+        key:
+          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
+          }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml',
+          'pyproject.toml') }}
         restore-keys: |
           env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
 
