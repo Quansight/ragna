@@ -10,6 +10,7 @@ import ragna.core
 
 
 class Components(BaseModel):
+    documents: list[str]
     source_storages: list[dict[str, Any]]
     assistants: list[dict[str, Any]]
 

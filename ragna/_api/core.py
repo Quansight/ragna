@@ -66,6 +66,7 @@ def app(config: Config) -> FastAPI:
     @app.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
+            documents=sorted(config.core.document.supported_suffixes()),
             source_storages=[
                 _get_component_json_schema(source_storage)
                 for source_storage in config.core.source_storages
