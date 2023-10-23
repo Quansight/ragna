@@ -200,7 +200,7 @@ class Chat:
             *assistant_models.values(),
         )
 
-        chat_params = ChatModel.model_validate(**params).model_dump(exclude_none=True)
+        chat_params = ChatModel.model_validate(params).model_dump(exclude_none=True)
         return {
             component_and_action: model(**chat_params).model_dump()
             for component_and_action, model in itertools.chain(
