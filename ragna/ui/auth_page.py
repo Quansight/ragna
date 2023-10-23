@@ -7,7 +7,6 @@ import ragna.ui.styles as ui
 login_inputs_stylesheets = """
 
 :host {
-    /* background-color:gold; */
     width:100%;
     margin-left:0px;
     margin-right:0px;
@@ -43,22 +42,20 @@ class AuthPage(param.Parameterized):
             stylesheets=[login_inputs_stylesheets, ui.BK_INPUT_GRAY_BORDER],
         )
 
-        # for dev only
-        self.login_input.value = "foo"
-        self.password_input.value = "foo"
-
     async def perform_login(self, event=None):
         self.main_layout.loading = True
 
-        authed = await self.api_wrapper.auth(
-            self.login_input.value, self.password_input.value
-        )
+        try:
+            authed = await self.api_wrapper.auth(
+                self.login_input.value, self.password_input.value
+            )
+        except Exception:
+            authed = False
 
         if authed:
             pn.state.location.param.update(reload=True, pathname="/")
-
         else:
-            self.feedback_message = "Authentication failed. Please Retry"
+            self.feedback_message = "Authentication failed. Please retry."
 
         self.main_layout.loading = False
 
