@@ -5,13 +5,12 @@ function upload(files, token, informationsEndpoint, final_callback) {
     getUploadInformations(file, token, informationsEndpoint).then(
       function (uploadInformations) {
         uploadFile(uploadInformations.url, uploadInformations.data, file).then(
-          function (response) {
-            uploaded_documents.push(response);
-            if (uploaded_documents.length == files.length) {
-              final_callback(uploaded_documents);
-            }
-          },
+          () => undefined,
         );
+        uploaded_documents.push(uploadInformations.document);
+        if (uploaded_documents.length == files.length) {
+          final_callback(uploaded_documents);
+        }
       },
     );
   });
