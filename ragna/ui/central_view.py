@@ -1,7 +1,9 @@
 import panel as pn
 import param
+from panel.reactive import ReactiveHTML
 
 import ragna.ui.styles as ui
+
 
 # TODO : move all the CSS rules in a dedicated file
 
@@ -70,6 +72,49 @@ markdown_table_stylesheet = """
             """
 
 
+class RagnaChatCopyIcon(ReactiveHTML):
+    title = param.String(default=None, doc="The title of the button ")
+    value = param.String(default=None, doc="The text to copy to the clipboard.")
+
+    _template = """
+        <div type="button" 
+                id="copy-button"
+                onclick="${script('copy_to_clipboard')}"
+                class="container"
+                style="cursor: pointer;"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clipboard" width="16" height="16" 
+                    viewBox="0 0 24 24" stroke-width="2" stroke="gray" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
+                <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v0a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+            </svg>
+            <span>${title}</span>
+        </div>            
+        """
+
+    _scripts = {
+        "copy_to_clipboard": """navigator.clipboard.writeText(`${data.value}`);"""
+    }
+
+    _stylesheets = [
+        """ div.container { 
+                            
+                            display:flex;
+                            flex-direction: row;
+                            margin: 7px 10px;
+                    
+                            color:gray;
+                        } 
+                    
+                        svg {
+                            margin-right:5px;
+                        }
+
+                    """
+    ]
+
+
 class RagnaChatMessage(pn.chat.ChatMessage):
     msg_data = param.Dict(default={})
     on_click_source_info_callback = param.Callable(default=None)
@@ -109,17 +154,13 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
             source_info_button.on_click(self.trigger_on_click_source_info_callback)
 
-            copy_button = pn.widgets.Button(
-                name="Copy",
-                icon="clipboard",
+            copy_button = RagnaChatCopyIcon(
+                value=self.object,
+                title="Copy",
                 stylesheets=[
                     ui.CHAT_INTERFACE_CUSTOM_BUTTON,
                 ],
             )
-            copy_button.on_click(lambda event: print("on click copy button", event))
-
-            copy_js = """console.log("test", source); navigator.clipboard.writeText(source);"""
-            copy_button.js_on_click(args={"source": self.object}, code=copy_js)
 
             self._composite[1].append(pn.Row(copy_button, source_info_button, height=0))
 
