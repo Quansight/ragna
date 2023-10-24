@@ -27,12 +27,6 @@ class ChatConfig(param.Parameterized):
     source_storage_name = param.Selector()
     assistant_name = param.Selector()
 
-    document_db_name = param.Selector(
-        objects=supported_document_dbs,
-        allow_None=False,
-        default=supported_document_dbs[0],
-    )
-
     chunk_size = param.Integer(
         default=500,
         step=100,
@@ -44,16 +38,10 @@ class ChatConfig(param.Parameterized):
         bounds=(50, 500),
     )
 
-    llm_name = param.Selector(
-        objects=[
-            f"{organization}/{model}"
-            for organization, models in get_supported_models().items()
-            for model in models
-        ],
-        allow_None=False,
-    )
     max_context_tokens = param.Integer(
         step=500,
+        bounds=(1, 8000),
+        default=4000,
         doc=(
             "Maximum number of context tokens and in turn the number of document chunks "
             "pulled out of the vector database."
@@ -64,6 +52,14 @@ class ChatConfig(param.Parameterized):
         step=100,
         bounds=(100, 10_000),
     )
+
+    def to_params_dict(self):
+        return {
+            "chunk_overlap": self.chunk_overlap,
+            "chunk_size": self.chunk_size,
+            "num_tokens": self.max_context_tokens,
+            "max_new_tokens": self.max_new_tokens,
+        }
 
 
 class ModalConfiguration(pn.viewable.Viewer):
@@ -120,22 +116,30 @@ class ModalConfiguration(pn.viewable.Viewer):
         # We can now start the chat
         print("did finish upload", uploaded_documents)
 
-        new_chat_id = self.api_wrapper.start_and_prepare(
-            name=self.chat_name,
-            documents=uploaded_documents,
-            source_storage=self.config.source_storage_name,
-            assistant=self.config.assistant_name,
-        )
+        try:
+            new_chat_id = self.api_wrapper.start_and_prepare(
+                name=self.chat_name,
+                documents=uploaded_documents,
+                source_storage=self.config.source_storage_name,
+                assistant=self.config.assistant_name,
+                params=self.config.to_params_dict(),
+            )
 
-        print("new_chat_id", new_chat_id)
+            print("new_chat_id", new_chat_id)
 
-        self.start_chat_button.disabled = False
+            self.start_chat_button.disabled = False
 
-        if self.new_chat_ready_callback is not None:
-            self.new_chat_ready_callback(new_chat_id)
+            if self.new_chat_ready_callback is not None:
+                self.new_chat_ready_callback(new_chat_id)
+
+        except Exception:
+            self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+            self.document_uploader.loading = False
+            pass
 
     async def model_section(self):
         components = await self.api_wrapper.get_components_async()
+        # TODO : use the components to set up the default values for the various params
 
         assistants = [component["title"] for component in components["assistants"]]
         self.config.param.assistant_name.objects = assistants
@@ -176,12 +180,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                             </span><br />
                                          """
                     ),
-                    pn.widgets.Select.from_param(
-                        self.config.param.document_db_name,
-                        name="Document DB Name",
-                        width_policy="max",
-                        stylesheets=[ui.SS_LABEL_STYLE, ui.BK_INPUT_GRAY_BORDER],
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.chunk_size,
                         name="Chunk Size",
@@ -206,16 +204,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                             </span><br />
                                          """
                     ),
-                    pn.widgets.Select.from_param(
-                        self.config.param.llm_name,
-                        name="LLM Name",
-                        stylesheets=[
-                            ui.SS_MULTI_SELECT_STYLE,
-                            ui.SS_LABEL_STYLE,
-                            ui.BK_INPUT_GRAY_BORDER,
-                        ],
-                        width_policy="max",
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_context_tokens,
                         bar_color=ui.MAIN_COLOR,
@@ -235,7 +223,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                         "border-left": "1px solid var(--neutral-stroke-divider-rest)"
                     },
                 ),
-                height=350,
+                height=250,
             ),
             collapsed=True,
             collapsible=True,

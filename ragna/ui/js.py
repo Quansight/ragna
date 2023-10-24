@@ -93,7 +93,7 @@ CONNECTION_MONITOR = """
                 div.style.padding = '10px 10px 10px 10px';
                 div.style.textAlign= 'center';
 
-                let text = document.createTextNode('Bokeh session has expired. Please reload.');
+                let text = document.createTextNode('Session has expired. Please reload.');
                 div.appendChild(text);
 
 
