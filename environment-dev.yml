@@ -8,14 +8,16 @@ dependencies:
   #  - redis-server
   - pip
   - pip:
-    - jupyter
-    - python-dotenv
-    - boto3
-    - pytest >=6
-    - mypy
-    - pre-commit
-    # documentation
-    - mkdocs
-    - mkdocs-material
-    - mkdocstrings[python]
-    - mkdocs-gen-files
+      - jupyter
+      - python-dotenv
+      - boto3
+      - pytest >=6
+      - mypy ==1.6.1
+      - pre-commit
+      - types-aiofiles
+      - sqlalchemy-stubs
+      # documentation
+      - mkdocs
+      - mkdocs-material
+      - mkdocstrings[python]
+      - mkdocs-gen-files

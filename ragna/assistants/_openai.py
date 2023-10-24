@@ -1,5 +1,6 @@
-from ragna.core import RagnaException, Source
+from typing import cast
 
+from ragna.core import RagnaException, Source
 from ._api import ApiAssistant
 
 
@@ -9,7 +10,7 @@ class OpenaiApiAssistant(ApiAssistant):
     _CONTEXT_SIZE: int
 
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return f"OpenAI/{cls._MODEL}"
 
     @property
@@ -25,7 +26,9 @@ class OpenaiApiAssistant(ApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _call_api(self, prompt: str, sources: list[Source], *, max_new_tokens: int):
+    def _call_api(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    ) -> str:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/object
         response = self._client.post(
@@ -54,7 +57,7 @@ class OpenaiApiAssistant(ApiAssistant):
             raise RagnaException(
                 status_code=response.status_code, response=response.json()
             )
-        return response.json()["choices"][0]["message"]["content"]
+        return cast(str, response.json()["choices"][0]["message"]["content"])
 
 
 class Gpt35Turbo16k(OpenaiApiAssistant):

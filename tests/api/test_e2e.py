@@ -1,9 +1,11 @@
 import contextlib
+import os
 
 import httpx
 import pytest
 
 from ragna import Config
+from ragna.core._utils import default_user
 
 from tests.utils import (
     ragna_api,
@@ -38,7 +40,7 @@ def test_e2e(tmp_path, queue, database):
     with queue_cm as queue_url:
         config = Config(
             local_cache_root=tmp_path,
-            rag=dict(queue_url=queue_url),
+            core=dict(queue_url=queue_url),
             api=dict(database_url=database_url),
         )
         with worker_cm_fn(config):
@@ -56,6 +58,22 @@ def check_api(config):
     with ragna_api(config, start_worker=False), httpx.Client(
         base_url=config.api.url
     ) as client:
+        username = default_user()
+        token = (
+            client.post(
+                "/token",
+                data={
+                    "username": username,
+                    "password": os.environ.get(
+                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", username
+                    ),
+                },
+            )
+            .raise_for_status()
+            .json()
+        )
+        client.headers["Authorization"] = f"Bearer {token}"
+
         assert client.get("/chats").raise_for_status().json() == []
 
         document_info = (
@@ -73,16 +91,23 @@ def check_api(config):
                 files={"file": file},
             ).raise_for_status()
 
-        available_components = client.get("/components").raise_for_status().json()
-        assert available_components == {
-            component_type: [
-                component.display_name()
-                for component in getattr(config.rag, component_type)
-            ]
-            for component_type in ["source_storages", "assistants"]
-        }
-        source_storage = available_components["source_storages"][0]
-        assistant = available_components["assistants"][0]
+        components = client.get("/components").raise_for_status().json()
+        documents = components["documents"]
+        assert set(documents) == config.core.document.supported_suffixes()
+        source_storages = [
+            json_schema["title"] for json_schema in components["source_storages"]
+        ]
+        assert source_storages == [
+            source_storage.display_name()
+            for source_storage in config.core.source_storages
+        ]
+        assistants = [json_schema["title"] for json_schema in components["assistants"]]
+        assert assistants == [
+            assistant.display_name() for assistant in config.core.assistants
+        ]
+
+        source_storage = source_storages[0]
+        assistant = assistants[0]
 
         chat_metadata = {
             "name": "test-chat",

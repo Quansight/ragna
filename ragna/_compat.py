@@ -1,17 +1,17 @@
 import sys
-
+from typing import Callable, Iterable, Iterator, Mapping, TypeVar
 
 __all__ = ["itertools_pairwise", "importlib_metadata_package_distributions"]
 
+T = TypeVar("T")
 
-def _itertools_pairwise():
+
+def _itertools_pairwise() -> Callable[[Iterable[T]], Iterator[tuple[T, T]]]:
     if sys.version_info[:2] >= (3, 10):
         from itertools import pairwise
     else:
         from itertools import tee
-        from typing import Iterable, Iterator, TypeVar
-
-        T = TypeVar("T")
+        from typing import Iterable, Iterator
 
         # https://docs.python.org/3/library/itertools.html#itertools.pairwise
         def pairwise(iterable: Iterable[T]) -> Iterator[tuple[T, T]]:
@@ -26,7 +26,9 @@ def _itertools_pairwise():
 itertools_pairwise = _itertools_pairwise()
 
 
-def _importlib_metadata_package_distributions():
+def _importlib_metadata_package_distributions() -> (
+    Callable[[], Mapping[str, list[str]]]
+):
     if sys.version_info[:2] >= (3, 10):
         from importlib.metadata import packages_distributions
     else:

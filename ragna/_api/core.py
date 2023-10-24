@@ -1,20 +1,21 @@
 import uuid
-from typing import Annotated
+from typing import Annotated, Any, cast, Iterator, Type
 
 import aiofiles
-from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request, UploadFile
+
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
-
 from ragna.core import Config, Rag, RagnaException
-from ragna.core._rag import default_user
+from ragna.core._components import Component
+from ragna.core._rag import SpecialChatParams
 
 from . import database, schemas
 
 
-def api(config: Config):
+def app(config: Config) -> FastAPI:
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
@@ -28,33 +29,51 @@ def api(config: Config):
         elif exc.http_detail is RagnaException.MESSAGE:
             detail = str(exc)
         else:
-            detail = exc.http_detail
+            detail = cast(str, exc.http_detail)
         return JSONResponse(
             status_code=exc.http_status_code,
             content={"error": {"message": detail}},
         )
 
     @app.get("/")
-    async def health() -> str:
+    async def version() -> str:
         return ragna.__version__
 
-    async def _authorize_user(
-        x_user: Annotated[str, Header(default_factory=default_user)]
-    ) -> str:
-        # FIXME: implement auth here
-        return x_user
+    authentication = config.api.authentication()
 
-    UserDependency = Annotated[str, Depends(_authorize_user)]
+    @app.post("/token")
+    async def create_token(request: Request) -> str:
+        return await authentication.create_token(request)
+
+    UserDependency = Annotated[str, Depends(authentication.get_user)]
+
+    def _get_component_json_schema(
+        component: Type[Component],
+    ) -> dict[str, dict[str, Any]]:
+        json_schema = component._protocol_model().model_json_schema()
+        # FIXME: there is likely a better way to exclude certain fields builtin in
+        #  pydantic
+        for special_param in SpecialChatParams.model_fields:
+            if (
+                "properties" in json_schema
+                and special_param in json_schema["properties"]
+            ):
+                del json_schema["properties"][special_param]
+            if "required" in json_schema and special_param in json_schema["required"]:
+                json_schema["required"].remove(special_param)
+        return json_schema
 
     @app.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
+            documents=sorted(config.core.document.supported_suffixes()),
             source_storages=[
-                source_storage.display_name()
-                for source_storage in config.rag.source_storages
+                _get_component_json_schema(source_storage)
+                for source_storage in config.core.source_storages
             ],
             assistants=[
-                assistant.display_name() for assistant in config.rag.assistants
+                _get_component_json_schema(assistant)
+                for assistant in config.core.assistants
             ],
         )
 
@@ -63,7 +82,7 @@ def api(config: Config):
         database_url = "sqlite://"
     make_session = database.get_sessionmaker(database_url)
 
-    def get_session():
+    def get_session() -> Iterator[database.Session]:
         session = make_session()
         try:
             yield session
@@ -79,7 +98,7 @@ def api(config: Config):
         name: str,
     ) -> schemas.DocumentUploadInfo:
         document = schemas.Document(name=name)
-        url, data, metadata = await config.rag.document.get_upload_info(
+        url, data, metadata = await config.core.document.get_upload_info(
             config=config, user=user, id=document.id, name=document.name
         )
         database.add_document(session, user=user, document=document, metadata=metadata)
@@ -89,13 +108,13 @@ def api(config: Config):
     async def upload_document(
         session: SessionDependency, token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.rag.document, ragna.core.LocalDocument):
+        if not issubclass(rag.config.core.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
 
-        user, id = ragna.core.LocalDocument._decode_upload_token(
+        user, id = ragna.core.LocalDocument.decode_upload_token(
             token, secret=rag.config.api.upload_token_secret
         )
         document, metadata = database.get_document(session, user=user, id=id)
@@ -111,11 +130,11 @@ def api(config: Config):
         return document
 
     def schema_to_core_chat(
-        session, *, user: str, chat: schemas.Chat
+        session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                rag.config.rag.document(
+                rag.config.core.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
@@ -137,7 +156,7 @@ def api(config: Config):
         #  not needed, because the chat itself never accesses past messages. However,
         #  if we implement a chat history feature, i.e. passing past messages to
         #  the assistant, this becomes crucial.
-        core_chat.messages = []
+        core_chat._messages = []
         core_chat._prepared = chat.prepared
 
         return core_chat

@@ -22,7 +22,9 @@ from ._components import (
     SourceStorage,
 )  # usort: skip
 
-from ._config import RagConfig, Config, ApiConfig, UiConfig  # usort: skip
+from ._authentication import Authentication, RagnaDemoAuthentication  # usort: skip
+
+from ._config import Config  # usort: skip
 
 from ._queue import task_config
 from ._rag import Chat, Rag

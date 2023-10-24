@@ -7,7 +7,7 @@ inputs:
     description: "Python version to install."
   optional-dependencies:
     default: "true"
-    description: "Install ragna with [complete], i.e. all optional dependencies"
+    description: "Install ragna with [builtin], i.e. all optional dependencies"
 
 runs:
   using: composite
@@ -37,7 +37,10 @@ runs:
       uses: actions/cache@v3
       with:
         path: ${{ env.CONDA }}/envs
-        key: env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml', 'pyproject.toml') }}
+        key:
+          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
+          }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml',
+          'pyproject.toml') }}
         restore-keys: |
           env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
 
@@ -60,7 +63,7 @@ runs:
       run: |
         if [[ ${{ inputs.optional-dependencies }} == true ]]
         then
-          PROJECT_PATH='.[complete]'
+          PROJECT_PATH='.[builtin]'
         else
           PROJECT_PATH='.'
         fi

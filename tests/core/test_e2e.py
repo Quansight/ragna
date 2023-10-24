@@ -29,7 +29,7 @@ def test_e2e(tmp_path, queue):
     with queue_cm as queue_url:
         config = Config(
             local_cache_root=tmp_path,
-            rag=dict(queue_url=queue_url),
+            core=dict(queue_url=queue_url),
         )
         with worker_cm_fn(config):
             check_core(config)

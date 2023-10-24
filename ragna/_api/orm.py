@@ -1,5 +1,5 @@
 from sqlalchemy import Column, ForeignKey, Table, types
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import DeclarativeBase, relationship  # type: ignore[attr-defined]
 
 from ragna.core import MessageRole
 
@@ -14,7 +14,7 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(types.Uuid, primary_key=True)
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     name = Column(types.String)
 
 
@@ -29,7 +29,7 @@ document_chat_association_table = Table(
 class Document(Base):
     __tablename__ = "documents"
 
-    id = Column(types.Uuid, primary_key=True)
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
@@ -49,7 +49,7 @@ class Document(Base):
 class Chat(Base):
     __tablename__ = "chats"
 
-    id = Column(types.Uuid, primary_key=True)
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
     documents = relationship(
@@ -95,7 +95,7 @@ class Source(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(types.Uuid, primary_key=True)
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     chat_id = Column(ForeignKey("chats.id"))
     content = Column(types.String)
     role = Column(types.Enum(MessageRole))
