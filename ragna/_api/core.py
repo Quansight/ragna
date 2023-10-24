@@ -1,6 +1,5 @@
 import uuid
-
-from typing import Annotated, cast, Iterator
+from typing import Annotated, Any, cast, Iterator, Type
 
 import aiofiles
 
@@ -12,6 +11,8 @@ import ragna
 import ragna.core
 from ragna._utils import get_origins
 from ragna.core import Config, Rag, RagnaException
+from ragna.core._components import Component
+from ragna.core._rag import SpecialChatParams
 
 from . import database, schemas
 
@@ -55,15 +56,33 @@ def app(config: Config) -> FastAPI:
 
     UserDependency = Annotated[str, Depends(authentication.get_user)]
 
+    def _get_component_json_schema(
+        component: Type[Component],
+    ) -> dict[str, dict[str, Any]]:
+        json_schema = component._protocol_model().model_json_schema()
+        # FIXME: there is likely a better way to exclude certain fields builtin in
+        #  pydantic
+        for special_param in SpecialChatParams.model_fields:
+            if (
+                "properties" in json_schema
+                and special_param in json_schema["properties"]
+            ):
+                del json_schema["properties"][special_param]
+            if "required" in json_schema and special_param in json_schema["required"]:
+                json_schema["required"].remove(special_param)
+        return json_schema
+
     @app.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
+            documents=sorted(config.core.document.supported_suffixes()),
             source_storages=[
-                source_storage.display_name()
+                _get_component_json_schema(source_storage)
                 for source_storage in config.core.source_storages
             ],
             assistants=[
-                assistant.display_name() for assistant in config.core.assistants
+                _get_component_json_schema(assistant)
+                for assistant in config.core.assistants
             ],
         )
 

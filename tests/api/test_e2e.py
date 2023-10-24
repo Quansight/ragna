@@ -91,16 +91,23 @@ def check_api(config):
                 files={"file": file},
             ).raise_for_status()
 
-        available_components = client.get("/components").raise_for_status().json()
-        assert available_components == {
-            component_type: [
-                component.display_name()
-                for component in getattr(config.core, component_type)
-            ]
-            for component_type in ["source_storages", "assistants"]
-        }
-        source_storage = available_components["source_storages"][0]
-        assistant = available_components["assistants"][0]
+        components = client.get("/components").raise_for_status().json()
+        documents = components["documents"]
+        assert set(documents) == config.core.document.supported_suffixes()
+        source_storages = [
+            json_schema["title"] for json_schema in components["source_storages"]
+        ]
+        assert source_storages == [
+            source_storage.display_name()
+            for source_storage in config.core.source_storages
+        ]
+        assistants = [json_schema["title"] for json_schema in components["assistants"]]
+        assert assistants == [
+            assistant.display_name() for assistant in config.core.assistants
+        ]
+
+        source_storage = source_storages[0]
+        assistant = assistants[0]
 
         chat_metadata = {
             "name": "test-chat",
