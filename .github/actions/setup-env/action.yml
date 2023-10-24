@@ -61,8 +61,6 @@ runs:
     - name: Install ragna
       shell: bash -el {0}
       run: |
-        # FIXME remove this after panel==1.3 is released
-        pip install --pre panel
         if [[ ${{ inputs.optional-dependencies }} == true ]]
         then
           PROJECT_PATH='.[builtin]'
