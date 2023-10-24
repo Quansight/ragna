@@ -98,7 +98,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.upload_files_label = pn.pane.HTML("<b>Upload files</b> (required)")
 
-        # Keep this as a row, we add the loading spinner in it later
         self.upload_row = pn.Row(
             self.document_uploader,
             sizing_mode="stretch_width",
