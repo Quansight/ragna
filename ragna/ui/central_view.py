@@ -1,3 +1,5 @@
+import random
+
 import panel as pn
 import param
 from panel.reactive import ReactiveHTML
@@ -192,6 +194,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
+    trigger_scroll_to_latest = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
@@ -275,7 +278,7 @@ class CentralView(pn.viewable.Viewer):
 
             for i in range(len(msg.msg_data["sources"])):
                 source = msg.msg_data["sources"][i]
-                print(source)
+
                 location = ""
                 if source["location"] != "":
                     location = f": {source['location']}"
@@ -451,7 +454,45 @@ class CentralView(pn.viewable.Viewer):
         # and set them as the content of the chat interface
         chat_interface.objects = self.get_chat_messages()
 
+        # Now that setting all the objects is done, we can watch the change of objects,
+        # ie new messages being appended to the chat. When that happens,
+        # make sure we scroll to the latest msg.
+        chat_interface.param.watch(
+            lambda event: self.param.trigger("trigger_scroll_to_latest"),
+            ["objects"],
+        )
+
         return chat_interface
+
+    @pn.depends("current_chat", "trigger_scroll_to_latest")
+    def scroll_to_latest_fix(self):
+        """
+        This snippet needs to be re-rendered many times so the scroll-to-latest happens:
+            - each time the current chat changes, hence the pn.depends on current_chat
+            - each time a message is appended to the chat, hence the pn.depends on trigger_scroll_to_latest.
+                trigger_scroll_to_latest is triggered in the chat_interface method, when chat_interface.objects changes.
+
+        Twist : the HTML script node needs to have a different ID each time it is rendered,
+                otherwise the browser doesn't re-render it / doesn't execute the JS part.
+                Hence the random ID.
+        """
+
+        random_id = "".join(
+            random.choice("".join([chr(n) for n in range(65, 91)])) for _ in range(16)
+        )
+
+        return pn.pane.HTML(
+            """<script id="{{RANDOM_ID}}" type="text/javascript">
+
+                            setTimeout(() => {
+                                    var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
+                                    chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
+                            }, 150);
+                            
+            </script>""".replace(
+                "{{RANDOM_ID}}", random_id
+            )
+        )
 
     @pn.depends("current_chat")
     def header(self):
@@ -550,6 +591,9 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
+    def set_loading(self, is_loading):
+        self.main_column.loading = is_loading
+
     def __panel__(self):
         """
         The ChatInterface.view_latest option doesn't seem to work.
@@ -561,19 +605,10 @@ class CentralView(pn.viewable.Viewer):
         to the bottom.
         """
 
-        scroll_to_latest_fix = pn.pane.HTML(
-            """<script type="text/javascript">
-                            setTimeout(() => {
-                                    var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
-                                    chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
-                            }, 200);
-                         </script>"""
-        )
-
-        result = pn.Column(
+        self.main_column = pn.Column(
             self.header,
             self.chat_interface,
-            scroll_to_latest_fix,
+            self.scroll_to_latest_fix,
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
@@ -589,4 +624,4 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
-        return result
+        return self.main_column

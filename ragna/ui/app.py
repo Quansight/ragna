@@ -65,6 +65,7 @@ class App(param.Parameterized):
         ]
 
         template.header.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
+        template.header.append(pn.pane.HTML(js.MODAL_MOUSE_UP_FIX))
         template.header.append(pn.pane.HTML(js.CONNECTION_MONITOR))
 
         return template

@@ -23,10 +23,17 @@ class LeftSidebar(pn.viewable.Viewer):
         )
 
     def trigger_on_click_new_chat(self, event):
+        if event.old > event.new:
+            return
+
         if self.on_click_new_chat is not None:
             self.on_click_new_chat(event)
 
     def on_click_chat_wrapper(self, event, chat):
+        # This is a hack to avoid the event being triggered twice in a row
+        if event.old > event.new:
+            return
+
         # update the UI, unselect all buttons ...
         for button in self.chat_buttons:
             if "selected" in button.css_classes:
@@ -152,20 +159,19 @@ class LeftSidebar(pn.viewable.Viewer):
             icon="plus",
             stylesheets=[
                 """ 
-                                                        :host { 
-                                                          width: 90%;
-                                                         margin-left: 10px;
-                                                         margin-top: 10px;
-                                                          
-                                                        }
-                                                         :host div button { 
-                                                         background-color: var(--accent-color) !important;
-                                                         text-align: left;
-                                                          
-                                                         }
+                        :host { 
+                            width: 90%;
+                            margin-left: 10px;
+                            margin-top: 10px;
+                        }
+                        :host div button { 
+                            background-color: var(--accent-color) !important;
+                            text-align: left;
+                        }
                 """
             ],
         )
+
         new_chat_button.on_click(self.trigger_on_click_new_chat)
 
         objects = (
