@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Ragna documentation
+  - name: Documentation
     url: https://docs.ragna.chat/
-    about: Check out the Ragna documentation
+  - name: User support forum (GitHub Discussions)
+    url: https://github.com/Quansight/ragna/discussions
   - name: Blank issue (maintainers only)
     url: https://github.com/Quansight/ragna/issues/new
-    about: Please use sparingly, only when required
