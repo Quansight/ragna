@@ -218,8 +218,11 @@ def ui(
 
             @timeout_after(30)
             def wait_for_api() -> None:
+                rich.print(f"Starting ragna api at {config.api.url}")
                 while not check_api_available():
                     time.sleep(0.5)
+
+                rich.print("Started ragna api")
 
             wait_for_api()
 
