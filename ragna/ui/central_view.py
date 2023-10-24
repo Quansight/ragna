@@ -348,6 +348,9 @@ class CentralView(pn.viewable.Viewer):
 
     @pn.depends("current_chat")
     def chat_interface(self):
+        if self.current_chat is None:
+            return
+
         chat_interface = pn.chat.ChatInterface(
             callback=self.chat_callback,
             callback_user="Ragna",
@@ -505,6 +508,9 @@ class CentralView(pn.viewable.Viewer):
 
     @pn.depends("current_chat")
     def header(self):
+        if self.current_chat is None:
+            return
+
         current_chat_name = ""
         if self.current_chat is not None:
             current_chat_name = self.current_chat["metadata"]["name"]
@@ -566,18 +572,20 @@ class CentralView(pn.viewable.Viewer):
 
                 chat_documents_pills.append(pill)
 
-        chat_info_button = pn.widgets.Button(
-            name="Chat Info", button_style="outline", icon="info-circle"
-        )
-        chat_info_button.stylesheets.append(
-            """
-                                    :host {  
-                                                margin-top:10px;
-                                    }
-                                      
-                                """
-        )
-        chat_info_button.on_click(self.on_click_chat_info_wrapper)
+        chat_info_button = None
+        if self.current_chat is not None:
+            chat_info_button = pn.widgets.Button(
+                name="Chat Info", button_style="outline", icon="info-circle"
+            )
+            chat_info_button.stylesheets.append(
+                """
+                                        :host {  
+                                                    margin-top:10px;
+                                        }
+                                        
+                                    """
+            )
+            chat_info_button.on_click(self.on_click_chat_info_wrapper)
 
         return pn.Row(
             chat_name_header,
@@ -621,7 +629,7 @@ class CentralView(pn.viewable.Viewer):
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
-                                            background-color: white;
+                                            background-color: #F9F9F9;
                                             
                                             height:100%;
                                             max-width: 100%;

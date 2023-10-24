@@ -1,9 +1,12 @@
 import panel as pn
 import param
 
+from ragna.ui import js
+
 from ragna.ui.central_view import CentralView
 from ragna.ui.left_sidebar import LeftSidebar
-from ragna.ui.modal import ModalConfiguration
+from ragna.ui.modal_configuration import ModalConfiguration
+from ragna.ui.modal_welcome import ModalWelcome
 from ragna.ui.right_sidebar import RightSidebar
 
 
@@ -33,17 +36,18 @@ class MainPage(param.Parameterized):
             on_error=lambda x: print(f"error sync on {x}"),
         )
 
+        self.chats = []
         self.refresh_data()
 
     def refresh_data(self):
-        chats = self.api_wrapper.get_chats()
-        self.left_sidebar.chats = chats
+        self.chats = self.api_wrapper.get_chats()
+        self.left_sidebar.chats = self.chats
 
-        if len(chats) > 0:
+        if len(self.chats) > 0:
             if self.current_chat_id is None:
-                self.current_chat_id = chats[0]["id"]
+                self.current_chat_id = self.chats[0]["id"]
 
-            for c in chats:
+            for c in self.chats:
                 if c["id"] == self.current_chat_id:
                     self.central_view.set_current_chat(c)
                     break
@@ -54,6 +58,14 @@ class MainPage(param.Parameterized):
             api_wrapper=self.api_wrapper,
             new_chat_ready_callback=lambda new_chat_id: self.open_new_chat(new_chat_id),
             cancel_button_callback=lambda event: self.on_click_cancel_button(event),
+        )
+
+        self.template.modal.objects[0].objects = [self.modal]
+        self.template.open_modal()
+
+    def open_welcome_modal(self, event):
+        self.modal = ModalWelcome(
+            close_button_callback=lambda: self.template.close_modal(),
         )
 
         self.template.modal.objects[0].objects = [self.modal]
@@ -92,10 +104,51 @@ class MainPage(param.Parameterized):
             pass
 
     def page(self):
+        objects = [self.left_sidebar, self.central_view, self.right_sidebar]
+
+        if len(self.chats) == 0:
+            """I haven't found a better way to open the modal when the pages load,
+            than simulating a click on the "New chat" button.
+            - calling self.template.open_modal() doesn't work
+            - calling self.on_click_new_chat doesn't work either
+            - trying to schedule a call to on_click_new_chat with pn.state.schedule_task
+                could have worked but my tests were yielding an unstable result.
+            """
+
+            new_chat_button_name = "open welcome modal"
+            open_welcome_modal = pn.widgets.Button(
+                name=new_chat_button_name,
+                button_type="primary",
+            )
+            open_welcome_modal.on_click(self.open_welcome_modal)
+
+            hack_open_modal = pn.pane.HTML(
+                """
+                            <script>   let buttons = $$$('button.bk-btn-primary');
+                            console.log(buttons);
+                                        buttons.forEach(function(btn){
+                                            if ( btn.innerText.trim() == '{new_chat_btn_name}' ){
+                                                btn.click();
+                                            }
+                                        });
+                            </script>
+                            """.replace(
+                    "{new_chat_btn_name}", new_chat_button_name
+                ).strip(),
+                stylesheets=[":host { position:absolute; z-index:-999; }"],
+            )
+
+            objects.append(
+                pn.Row(
+                    open_welcome_modal,
+                    pn.pane.HTML(js.SHADOWROOT_INDEXING),
+                    hack_open_modal,
+                    visible=False,
+                )
+            )
+
         main_page = pn.Row(
-            self.left_sidebar,
-            self.central_view,
-            self.right_sidebar,
+            *objects,
             stylesheets=[
                 """   
                                 :host { 

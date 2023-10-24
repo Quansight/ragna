@@ -277,9 +277,6 @@ class ModalConfiguration(pn.viewable.Viewer):
         return pn.Column(toggle_button, card)
 
     def __panel__(self):
-        def divider():
-            return pn.layout.Divider(styles={"padding": "0em 1em"})
-
         return pn.Column(
             pn.pane.HTML(
                 f"""<h2>Start a new chat</h2>
@@ -287,7 +284,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                          <script>{js.MODAL_HACK}</script>
                          """,
             ),
-            divider(),
+            ui.divider(),
             pn.pane.HTML("<b>Chat name</b>"),
             pn.Param(
                 self,
@@ -301,11 +298,11 @@ class ModalConfiguration(pn.viewable.Viewer):
                 parameters=["chat_name"],
                 show_name=False,
             ),
-            divider(),
+            ui.divider(),
             self.model_section,
-            divider(),
+            ui.divider(),
             self.advanced_config_ui,
-            divider(),
+            ui.divider(),
             self.upload_files_label,
             self.upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),

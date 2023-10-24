@@ -1,4 +1,14 @@
 """
+UI Helpers
+"""
+import panel as pn
+
+
+def divider():
+    return pn.layout.Divider(styles={"padding": "0em 1em"})
+
+
+"""
 CSS constants
 """
 
