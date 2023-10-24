@@ -54,6 +54,7 @@ class App(param.Parameterized):
             collapsed_sidebar=True,
             # main_layout=None
             raw_css=[ui.APP_RAW],
+            favicon="imgs/ragna_logo.svg",
             css_files=["https://rsms.me/", "https://rsms.me/inter/inter.css"],
         )
 
@@ -65,6 +66,7 @@ class App(param.Parameterized):
         ]
 
         template.header.append(pn.pane.HTML(js.SHADOWROOT_INDEXING))
+        template.header.append(pn.pane.HTML(js.MODAL_MOUSE_UP_FIX))
         template.header.append(pn.pane.HTML(js.CONNECTION_MONITOR))
 
         return template
