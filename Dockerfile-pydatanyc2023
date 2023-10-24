@@ -1,0 +1,14 @@
+FROM ragna:0.1.0
+
+ENV APP_DIR=/var/ragna
+WORKDIR $APP_DIR
+
+RUN pip install --progress-bar=off boto3
+COPY ragna_pydatanyc2023.py .
+ENV PYTHONPATH="${APP_DIR}:{$PYTHONPATH}"
+
+COPY ragna-pydatanyc2023.toml .
+ENV RAGNA_CONFIG=$APP_DIR/ragna-pydatanyc2023.toml
+
+# FIXME: can we move this to local cache root?
+ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb

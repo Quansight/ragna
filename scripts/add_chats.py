@@ -36,10 +36,10 @@ def main():
         document_info = (
             client.get("/document", params={"name": name}).raise_for_status().json()
         )
-        client.post(
+        httpx.post(
             document_info["url"],
             data=document_info["data"],
-            files={"file": f"Content of {name}".encode()},
+            files={"file": f"Content of {name}\n".encode()},
         ).raise_for_status()
         documents.append(document_info["document"])
 
