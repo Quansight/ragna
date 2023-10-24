@@ -216,7 +216,7 @@ def ui(
     try:
         if process is not None:
 
-            @timeout_after(10)
+            @timeout_after(30)
             def wait_for_api() -> None:
                 while not check_api_available():
                     time.sleep(0.5)

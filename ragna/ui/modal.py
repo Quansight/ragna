@@ -138,18 +138,19 @@ class ModalConfiguration(pn.viewable.Viewer):
     async def model_section(self):
         components = await self.api_wrapper.get_components_async()
 
-        self.config.param.assistant_name.objects = components["assistants"]
-        self.config.param.source_storage_name.objects = components["source_storages"]
+        assistants = [component["title"] for component in components["assistants"]]
+        self.config.param.assistant_name.objects = assistants
+        self.config.assistant_name = assistants[0]
 
-        if len(components["assistants"]) > 0:
-            self.config.assistant_name = components["assistants"][0]
-
-        if len(components["source_storages"]) > 0:
-            self.config.source_storage_name = components["source_storages"][0]
+        source_storages = [
+            component["title"] for component in components["source_storages"]
+        ]
+        self.config.param.source_storage_name.objects = source_storages
+        self.config.source_storage_name = source_storages[0]
 
         return pn.Row(
             pn.Column(
-                pn.pane.HTML("<b>Model</b>"),
+                pn.pane.HTML("<b>Assistants</b>"),
                 pn.widgets.Select.from_param(
                     self.config.param.assistant_name,
                     name="",
