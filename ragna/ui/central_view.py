@@ -315,15 +315,24 @@ class CentralView(pn.viewable.Viewer):
     ):
         self.current_chat["messages"].append({"role": "user", "content": contents})
 
-        answer = self.api_wrapper.answer(self.current_chat["id"], contents)
+        try:
+            answer = self.api_wrapper.answer(self.current_chat["id"], contents)
 
-        self.current_chat["messages"].append(answer["message"])
+            self.current_chat["messages"].append(answer["message"])
 
-        yield {
-            "user": "Ragna",
-            "avatar": "🤖",
-            "value": answer["message"]["content"],
-        }
+            yield {
+                "user": "Ragna",
+                "avatar": "🤖",
+                "value": answer["message"]["content"],
+            }
+        except Exception as e:
+            print(e)
+
+            yield {
+                "user": "Ragna",
+                "avatar": "❌",
+                "value": "Sorry, something went wrong. If this problem persists, please contact your administrator.",
+            }
 
     def get_chat_messages(self):
         chat_entries = []
@@ -427,14 +436,14 @@ class CentralView(pn.viewable.Viewer):
         """
 
         def messages_changed(event):
+            if len(chat_interface.objects) != len(self.current_chat["messages"]):
+                return
+
             needs_refresh = False
             for i in range(len(chat_interface.objects)):
                 msg = chat_interface.objects[i]
-                if (
-                    len(chat_interface.objects) == len(self.current_chat["messages"])
-                    and not isinstance(msg, RagnaChatMessage)
-                    and msg.user != "User"
-                ):
+
+                if not isinstance(msg, RagnaChatMessage) and msg.user != "User":
                     chat_interface.objects[i] = RagnaChatMessage(
                         self.current_chat["messages"][i],
                         on_click_source_info_callback=self.on_click_source_info_wrapper,
