@@ -54,6 +54,7 @@ class App(param.Parameterized):
             collapsed_sidebar=True,
             # main_layout=None
             raw_css=[ui.APP_RAW],
+            favicon="imgs/ragna_logo.svg",
             css_files=["https://rsms.me/", "https://rsms.me/inter/inter.css"],
         )
 
