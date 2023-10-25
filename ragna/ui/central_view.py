@@ -368,7 +368,6 @@ class CentralView(pn.viewable.Viewer):
             username = "User"
 
             for m in self.current_chat["messages"]:
-                print("->", m["role"])
                 chat_entry = RagnaChatMessage(
                     m,
                     username if m["role"] == "user" else assistant,
