@@ -2,11 +2,11 @@ from collections import defaultdict
 from functools import reduce
 from pathlib import Path
 
-import ragna
 import tomlkit
 import tomlkit.items
-
 from packaging.requirements import Requirement
+
+import ragna
 from ragna.core import Assistant, SourceStorage
 
 HERE = Path(__file__).parent

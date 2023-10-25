@@ -6,7 +6,6 @@ import pytest
 
 from ragna import Config
 from ragna.core._utils import default_user
-
 from tests.utils import (
     ragna_api,
     ragna_worker,
