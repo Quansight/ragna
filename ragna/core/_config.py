@@ -6,7 +6,7 @@ from types import ModuleType
 from typing import Type, Union
 
 import tomlkit
-from pydantic import Field, field_validator, ImportString
+from pydantic import Field, ImportString, field_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 import ragna

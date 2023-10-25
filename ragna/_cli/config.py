@@ -1,8 +1,7 @@
 from collections import defaultdict
-
 from pathlib import Path
 from types import ModuleType
-from typing import Annotated, cast, Type, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Annotated, Type, TypeVar, cast
 
 import questionary
 import rich
@@ -89,9 +88,7 @@ def config_wizard(*, output_path: Path, force: bool) -> tuple[Config, Path, bool
         "demo": _wizard_demo,
         "builtin": _wizard_builtin,
         "common": _wizard_common,
-    }[
-        intent
-    ]()  # type: ignore[operator]
+    }[intent]()  # type: ignore[operator]
 
     if output_path.exists() and not force:
         output_path, force = _handle_output_path(output_path=output_path, force=force)

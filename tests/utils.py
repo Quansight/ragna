@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import inspect
 import platform
 import shutil
 import socket
@@ -9,7 +10,6 @@ import threading
 import time
 
 import httpx
-
 import pytest
 import redis
 
@@ -37,6 +37,9 @@ def timeout_after(seconds=5, *, message=None):
     message = timeout if message is None else f"{timeout}: {message}"
 
     def decorator(fn):
+        if is_debugging():
+            return fn
+
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
             result = TimeoutError(message)
@@ -62,6 +65,23 @@ def timeout_after(seconds=5, *, message=None):
         return wrapper
 
     return decorator
+
+
+# Vendored from pytest-timeout
+# https://github.com/pytest-dev/pytest-timeout/blob/d91e6d8d69ad706e38a2c9de461a72c4d19777ff/pytest_timeout.py#L218-L247
+def is_debugging():
+    trace_func = sys.gettrace()
+    trace_module = None
+    if trace_func:
+        trace_module = inspect.getmodule(trace_func) or inspect.getmodule(
+            trace_func.__class__
+        )
+    if trace_module:
+        parts = trace_module.__name__.split(".")
+        for name in {"pydevd", "bdb", "pydevd_frame_evaluator"}:
+            if any(part.startswith(name) for part in parts):
+                return True
+    return False
 
 
 def get_available_port():

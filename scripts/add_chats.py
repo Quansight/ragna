@@ -3,7 +3,8 @@ import json
 import os
 
 import httpx
-from ragna.core._rag import default_user
+
+from ragna.core._utils import default_user
 
 
 def main():

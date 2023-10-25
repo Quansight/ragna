@@ -7,7 +7,6 @@ import ragna.core
 from ragna import Config, Rag
 from ragna.assistants import RagnaDemoAssistant
 from ragna.source_storages import RagnaDemoSourceStorage
-
 from tests.utils import ragna_worker, redis_server, skip_redis_on_windows, timeout_after
 
 

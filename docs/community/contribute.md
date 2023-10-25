@@ -36,11 +36,11 @@ ragna ls
 
 Ragna uses MkDocs to build it's documentation.
 
-You can contribute to narrative documentation at `docs/`,
-and configure the docs website using `mkdocs.yml`
+You can contribute to narrative documentation at `docs/`, and configure the docs website
+using `mkdocs.yml`
 
-To start a development build that auto-refreshes on new changes,
-run the following from the root directory:
+To start a development build that auto-refreshes on new changes, run the following from
+the root directory:
 
 ```bash
 mkdocs serve

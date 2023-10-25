@@ -3,15 +3,16 @@ from __future__ import annotations
 import abc
 import contextlib
 import enum
-
 import functools
 import getpass
 import importlib
 import importlib.metadata
 import os
-from typing import Any, Collection, Union
+from collections import defaultdict
+from typing import Any, Collection, Type, Union, cast
 
 import packaging.requirements
+import pydantic
 
 from ragna._compat import importlib_metadata_package_distributions
 
@@ -116,3 +117,47 @@ def default_user() -> str:
     with contextlib.suppress(Exception):
         return os.getlogin()
     return "Ragna"
+
+
+def merge_models(
+    model_name: str, *models: Type[pydantic.BaseModel]
+) -> Type[pydantic.BaseModel]:
+    raw_field_definitions = defaultdict(list)
+    for model_cls in models:
+        for name, field in model_cls.model_fields.items():
+            raw_field_definitions[name].append(
+                (
+                    field.annotation,
+                    ...
+                    if field.is_required()
+                    else (
+                        field.default or field.default_factory()  # type: ignore[misc]
+                    ),
+                )
+            )
+
+    field_definitions = {}
+    for name, definitions in raw_field_definitions.items():
+        types, defaults = zip(*definitions)
+
+        types = set(types)
+        if len(types) > 1:
+            raise RagnaException(f"Mismatching types for field {name}: {types}")
+        type_ = types.pop()
+
+        defaults = set(defaults)
+        if len(defaults) == 1:
+            default = defaults.pop()
+        elif ... in defaults:
+            default = ...
+        else:
+            default = None
+
+        field_definitions[name] = (type_, default)
+
+    return cast(
+        Type[pydantic.BaseModel],
+        pydantic.create_model(  # type: ignore[call-overload]
+            model_name, **field_definitions
+        ),
+    )

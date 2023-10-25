@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -9,8 +10,9 @@ import ragna.core
 
 
 class Components(BaseModel):
-    source_storages: list[str]
-    assistants: list[str]
+    documents: list[str]
+    source_storages: list[dict[str, Any]]
+    assistants: list[dict[str, Any]]
 
 
 class Document(BaseModel):
@@ -52,7 +54,7 @@ class Message(BaseModel):
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
     timestamp: datetime.datetime = Field(
-        default_factory=lambda: datetime.datetime.now(tz=datetime.timezone.utc)
+        default_factory=lambda: datetime.datetime.utcnow()
     )
 
     @classmethod
