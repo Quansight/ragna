@@ -20,9 +20,13 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+            unwrap_annotated: true
+          import:
+            - https://docs.python.org/3/objects.inv
   - gen-files:
       scripts:
         - scripts/docs_gen_files.py
 
 watch:
+  - ragna
   - scripts/docs_gen_files.py

@@ -6,6 +6,18 @@ from ragna.core import Assistant, Source
 
 
 class RagnaDemoAssistant(Assistant):
+    """Demo assistant without requirements.
+
+    !!! note
+
+        As the name implies, this assistant is just for demo purposes and cannot
+        answer any questions. By default it replies with the prompt and the given
+        sources.
+
+        If you include the phrase `"markdown"` into your prompt, it will return a
+        MarkDown table including emojis.
+    """
+
     @classmethod
     def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
