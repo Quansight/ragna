@@ -240,14 +240,14 @@ class CentralView(pn.viewable.Viewer):
 
             markdown = [
                 "To change configurations, start a new chat.\n",
-                "**Model**",
-                f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
-                "----",
                 "**Uploaded Files**",
                 f"<div class='pills_list'>{pills}</div><br />\n\n",
                 "----",
                 "**Source Storage**",
                 f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
+                "----",
+                "**Assistant**",
+                f"""<span>{self.current_chat['metadata']['assistant']}</span>\n""",
             ]
 
             markdown = "\n".join(markdown)
