@@ -1,0 +1,38 @@
+version: "3"
+
+services:
+  queue:
+    image: "redis:alpine"
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
+
+  worker:
+    depends_on:
+      queue:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile-pydatanyc2023
+    env_file: .env
+    command:
+      - ragna
+      - worker
+
+  api:
+    depends_on:
+      - worker
+    build:
+      context: .
+      dockerfile: Dockerfile-pydatanyc2023
+    env_file: .env
+    command:
+      - ragna
+      - api
+      - --no-start-worker
+    ports:
+      - "31476:31476"
