@@ -54,13 +54,25 @@ class AnthropicApiAssistant(ApiAssistant):
         return cast(str, response.json()["completion"])
 
 
-class Claude1Instant(AnthropicApiAssistant):
-    # https://docs.anthropic.com/claude/reference/selecting-a-model
+class ClaudeInstant(AnthropicApiAssistant):
+    """[Claude Instant](https://docs.anthropic.com/claude/reference/selecting-a-model)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+    """
+
     _MODEL = "claude-instant-1"
     _CONTEXT_SIZE = 100_000
 
 
-class Claude2(AnthropicApiAssistant):
-    # https://docs.anthropic.com/claude/reference/selecting-a-model
+class Claude(AnthropicApiAssistant):
+    """[Claude](https://docs.anthropic.com/claude/reference/selecting-a-model)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+    """
+
     _MODEL = "claude-2"
     _CONTEXT_SIZE = 100_000

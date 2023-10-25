@@ -51,13 +51,26 @@ class MosaicmlApiAssistant(ApiAssistant):
 
 
 class Mpt7bInstruct(MosaicmlApiAssistant):
-    # TODO: Find something official
+    """[MPT-7B-Instruct](https://docs.mosaicml.com/en/latest/inference.html#text-completion-models)
+
+    !!! info "Required environment variables"
+
+        - `MOSAICML_API_KEY`
+    """
+
     # https://huggingface.co/mosaicml/mpt-7b-instruct#model-description
     _MODEL = "mpt-7b-instruct"
     _CONTEXT_SIZE = 2048
 
 
 class Mpt30bInstruct(MosaicmlApiAssistant):
-    # https://docs.mosaicml.com/en/latest/inference.html#text-completion-models
+    """[MPT-30B-Instruct](https://docs.mosaicml.com/en/latest/inference.html#text-completion-models)
+
+    !!! info "Required environment variables"
+
+        - `MOSAICML_API_KEY`
+    """
+
+    # https://huggingface.co/mosaicml/mpt-30b-instruct#model-description
     _MODEL = "mpt-30b-instruct"
     _CONTEXT_SIZE = 8_192
