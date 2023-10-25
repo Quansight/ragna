@@ -60,10 +60,6 @@ include = [
     "ragna*",
 ]
 
-[tool.usort.known]
-# TODO: remove this with usort>=1.1
-third_party = ["panel"]
-
 [tool.ruff]
 select = [
     "E",
