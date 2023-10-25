@@ -15,24 +15,25 @@ Run the following command, and answer the questions when prompted:
 ragna config
 ```
 
-![ragna config executed in the terminal showing the first question: Which of the following statements describes best what you want to do?; And user selection: I want to try Ragna without worrying about any additional dependencies or setup.](images/ragna-config-wizard.png)
+![ragna config executed in the terminal showing questions and selections of the form: Which of the following statements describes best what you want to do? I want to try Ragna and its builtin components; How do you want to select the components? I want to manually select the builtin components I want to use. This continues to allow selecting the [Chroma] source storage and the [OpenAI/gpt-4] assistant.](images/ragna-config-wizard.png)
 
 At the end, this will create a `ragna.toml` file based on your choices.
 
 Here's an example configuration file:
 
 ```toml
-local_cache_root = "/home/<user>/.cache/ragna"
+local_cache_root = "/Users/<username>/.cache/ragna"
 
-[rag]
-queue_url = "memory"
+[core]
+queue_url = "/Users/<username>/.cache/ragna/queue"
 document = "ragna.core.LocalDocument"
-source_storages = ["ragna.source_storages.Chroma", "ragna.source_storages.RagnaDemoSourceStorage", "ragna.source_storages.LanceDB"]
-assistants = ["ragna.assistants.RagnaDemoAssistant"]
+source_storages = ["ragna.source_storages.Chroma"]
+assistants = ["ragna.assistants.Gpt4"]
 
 [api]
 url = "http://127.0.0.1:31476"
-database_url = "memory"
+database_url = "sqlite:////Users/<username>/.cache/ragna/ragna.db"
+authentication = "ragna.core.RagnaDemoAuthentication"
 upload_token_secret = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 upload_token_ttl = 300
 
