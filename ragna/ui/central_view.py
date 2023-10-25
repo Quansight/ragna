@@ -418,7 +418,9 @@ class CentralView(pn.viewable.Viewer):
                 "show_user": False,
                 "show_copy_icon": False,
                 "show_timestamp": False,
-                # "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
+                # the proper avatar for the assistant is not when replacing the default ChatMessage objects
+                # with RagnaChatMessage objects.
+                "avatar_lookup": lambda user: "👤" if user == "User" else None,
             },
         )
 
