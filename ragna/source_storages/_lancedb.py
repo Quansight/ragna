@@ -1,27 +1,22 @@
 import uuid
 
-from ragna.core import (
-    Config,
-    Document,
-    PackageRequirement,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+from ragna.core import Config, Document, PackageRequirement, Requirement, Source
 from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
+from ._vector_database import VectorDatabaseSourceStorage
 
-class LanceDB(SourceStorage):
+
+class LanceDB(VectorDatabaseSourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
+            *super().requirements(),
             PackageRequirement("lancedb>=0.2"),
             PackageRequirement(
                 "pyarrow",
                 # See https://github.com/apache/arrow/issues/38167
                 exclude_modules=["__dummy__"],
             ),
-            PackageRequirement("sentence-transformers"),
         ]
 
     def __init__(self, config: Config) -> None:
@@ -29,10 +24,8 @@ class LanceDB(SourceStorage):
 
         import lancedb
         import pyarrow as pa
-        from sentence_transformers import SentenceTransformer
 
         self._db = lancedb.connect(config.local_cache_root / "lancedb")
-        self._model = SentenceTransformer("paraphrase-albert-small-v2")
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -41,7 +34,7 @@ class LanceDB(SourceStorage):
                 pa.field("text", pa.string()),
                 pa.field(
                     self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._model[-1].word_embedding_dimension),
+                    pa.list_(pa.float32(), self._embedding_dimensions),
                 ),
                 pa.field("num_tokens", pa.int32()),
             ]
@@ -64,7 +57,7 @@ class LanceDB(SourceStorage):
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._model.tokenizer,
+                tokenizer=self._tokenizer,
             ):
                 table.add(
                     [
@@ -73,7 +66,9 @@ class LanceDB(SourceStorage):
                             "document_id": str(document.id),
                             "page_numbers": page_numbers_to_str(chunk.page_numbers),
                             "text": chunk.text,
-                            self._VECTOR_COLUMN_NAME: self._model.encode(chunk.text),
+                            self._VECTOR_COLUMN_NAME: self._embedding_function(
+                                [chunk.text]
+                            )[0],
                             "num_tokens": chunk.num_tokens,
                         }
                     ]

@@ -1,36 +1,27 @@
 import uuid
-from typing import cast
 
 from ragna.core import (
     Config,
     Document,
-    PackageRequirement,
-    Requirement,
     Source,
-    SourceStorage,
 )
 from ragna.utils import (
-    Tokenizer,
     chunk_pages,
     page_numbers_to_str,
     take_sources_up_to_max_tokens,
 )
 
+from ._vector_database import VectorDatabaseSourceStorage
 
-class Chroma(SourceStorage):
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [
-            PackageRequirement("chromadb>=0.4.13"),
-            PackageRequirement("tiktoken"),
-        ]
+
+class Chroma(VectorDatabaseSourceStorage):
+    # Note that this class has no extra requirements, since the chromadb package is
+    # already required for the base class
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)
 
         import chromadb
-        import chromadb.utils.embedding_functions
-        import tiktoken
 
         self._client = chromadb.Client(
             chromadb.config.Settings(
@@ -39,10 +30,6 @@ class Chroma(SourceStorage):
                 anonymized_telemetry=False,
             )
         )
-        self._embedding_function = (
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
-        )
-        self._tokenizer = cast(Tokenizer, tiktoken.get_encoding("cl100k_base"))
 
     def store(
         self,

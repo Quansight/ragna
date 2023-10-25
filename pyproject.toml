@@ -45,7 +45,6 @@ builtin = [
     "lancedb>=0.2",
     "pyarrow",
     "pymupdf",
-    "sentence-transformers",
     "tiktoken",
 ]
 
