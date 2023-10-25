@@ -11,7 +11,7 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._config import Config
 from ._document import Document
 from ._queue import Queue
-from ._utils import default_user, merge_models, RagnaException
+from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T", bound=Component)
 

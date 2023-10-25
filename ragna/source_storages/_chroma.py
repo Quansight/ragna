@@ -10,10 +10,10 @@ from ragna.core import (
     SourceStorage,
 )
 from ragna.utils import (
+    Tokenizer,
     chunk_pages,
     page_numbers_to_str,
     take_sources_up_to_max_tokens,
-    Tokenizer,
 )
 
 

@@ -1,7 +1,7 @@
 import itertools
 import platform
 import re
-from typing import Any, Callable, cast, Optional, Type, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar, Union, cast
 from urllib.parse import urlsplit
 
 import huey.api
@@ -12,7 +12,6 @@ import redis
 
 from ._components import Component
 from ._config import Config
-
 from ._utils import RagnaException
 
 
