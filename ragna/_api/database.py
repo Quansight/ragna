@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import functools
 import uuid
-from typing import Any, Callable, cast, Optional
+from typing import Any, Callable, Optional, cast
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker as _sessionmaker
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker as _sessionmaker
 
 from ragna.core import RagnaException
 

@@ -1,5 +1,4 @@
 import dataclasses
-
 from collections import deque
 from typing import Deque, Iterable, Iterator, Optional, Protocol, Sequence, TypeVar
 
