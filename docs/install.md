@@ -4,7 +4,8 @@
 
 You need Python 3.9 or above in your working environment to use Ragna.
 
-While you can get started with Demo Assistants (Assistants are LLMs), to use Ragna for real-world workflows, you
+While you can get started with Demo Assistants (Assistants are LLMs), to use Ragna for
+real-world workflows, you
 
 ## Install Ragana
 
