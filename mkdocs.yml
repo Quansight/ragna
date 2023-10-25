@@ -8,7 +8,7 @@ extra:
 
 theme:
   name: material
-  logo: brand-assets/logo-symbol/logo-symbol.png # TODO: Use white-version of logo
+  logo: assets/brand/logo-symbol/logo-symbol.png # TODO: Use white-version of logo
   palette:
     primary: custom
     accent: custom

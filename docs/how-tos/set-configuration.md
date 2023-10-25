@@ -15,7 +15,7 @@ Run the following command, and answer the questions when prompted:
 ragna config
 ```
 
-![](../assets/images/ragna-config-wizard.png)
+![ragna config executed in the terminal showing the first question: Which of the following statements describes best what you want to do?; And user selection: I want to try Ragna without worrying about any additional dependencies or setup.](images/ragna-config-wizard.png)
 
 At the end, this will create a `ragna.toml` file based on your choices.
 
@@ -42,7 +42,7 @@ url = "http://127.0.0.1:31477"
 
 ## Set configuration using the file
 
-You can now use this configuration file for setting configurations in your applications:
+You can use `ragna.toml` for setting configurations in your applications:
 
 ```py
 from ragna import Config
