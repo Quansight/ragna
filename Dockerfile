@@ -1,4 +1,5 @@
 FROM python:3.11
+ENTRYPOINT []
 
 WORKDIR /opt/ragna
 
