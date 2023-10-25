@@ -91,7 +91,6 @@ class ApiWrapper:
         }
 
     def start_chat(self, name, documents, source_storage, assistant, params={}):
-        print("start_chat", self.client.headers)
         return (
             self.client.post(
                 "/chats",
@@ -110,7 +109,9 @@ class ApiWrapper:
     def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
         chat = self.start_chat(name, documents, source_storage, assistant, params)
 
-        _ = self.client.post(f"/chats/{chat['id']}/prepare")
+        _ = self.client.post(
+            f"/chats/{chat['id']}/prepare", timeout=None
+        ).raise_for_status()
 
         return chat["id"]
 
