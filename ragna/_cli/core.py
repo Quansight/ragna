@@ -6,19 +6,19 @@ from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
 import rich
-
 import typer
 import uvicorn
 
 import ragna
 from ragna._api import app as api_app
 from ragna.core._queue import Queue
+
 from .config import (
-    check_config,
     COMMON_CONFIG_OPTION_ARGS,
     COMMON_CONFIG_OPTION_KWARGS,
-    config_wizard,
     ConfigOption,
+    check_config,
+    config_wizard,
 )
 
 app = typer.Typer(
@@ -43,7 +43,7 @@ def _main(
         typer.Option(
             "--version", callback=version_callback, help="Show version and exit."
         ),
-    ] = None
+    ] = None,
 ) -> None:
     pass
 

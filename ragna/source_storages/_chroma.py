@@ -1,7 +1,15 @@
 import uuid
 
-from ragna.core import Config, Document, Source
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
+from ragna.core import (
+    Config,
+    Document,
+    Source,
+)
+from ragna.utils import (
+    chunk_pages,
+    page_numbers_to_str,
+    take_sources_up_to_max_tokens,
+)
 
 from ._vector_database import VectorDatabaseSourceStorage
 

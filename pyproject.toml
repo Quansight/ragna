@@ -65,12 +65,19 @@ include = [
 third_party = ["panel"]
 
 [tool.ruff]
+select = [
+    "E",
+    "F",
+    # import sorting
+    "I001"
+]
 # Ignore line too long, because due to black, the error can only occur for strings
 ignore = ["E501"]
 
 [tool.ruff.per-file-ignores]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
+"*.ipynb" = ["E402"]
 
 
 [tool.pytest.ini_options]

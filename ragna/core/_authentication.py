@@ -2,7 +2,6 @@ import abc
 import os
 import secrets
 import time
-
 from typing import cast
 
 import jwt

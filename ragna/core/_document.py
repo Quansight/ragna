@@ -4,13 +4,12 @@ import abc
 import time
 import uuid
 from pathlib import Path
-from typing import Any, Iterator, Optional, Type, TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar
 
 import jwt
 from pydantic import BaseModel
 
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
-
 
 if TYPE_CHECKING:
     from ._config import Config

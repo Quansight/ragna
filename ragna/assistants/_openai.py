@@ -1,6 +1,7 @@
 from typing import cast
 
 from ragna.core import RagnaException, Source
+
 from ._api import ApiAssistant
 
 

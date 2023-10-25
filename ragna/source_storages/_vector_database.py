@@ -22,11 +22,13 @@ class VectorDatabaseSourceStorage(SourceStorage):
     def __init__(self, config: Config):
         super().__init__(config)
 
+        import chromadb.api
         import chromadb.utils.embedding_functions
         import tiktoken
 
-        self._embedding_function = (
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
+        self._embedding_function = cast(
+            chromadb.api.types.EmbeddingFunction,
+            chromadb.utils.embedding_functions.DefaultEmbeddingFunction(),
         )
         # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#all-minilm-l6-v2
         self._embedding_dimensions = 384

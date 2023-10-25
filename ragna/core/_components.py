@@ -4,13 +4,13 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 import pydantic
 import pydantic.utils
 
 from ._document import Document
-from ._utils import merge_models, RequirementsMixin
+from ._utils import RequirementsMixin, merge_models
 
 if TYPE_CHECKING:
     from ._config import Config

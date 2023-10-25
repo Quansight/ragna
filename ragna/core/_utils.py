@@ -3,15 +3,13 @@ from __future__ import annotations
 import abc
 import contextlib
 import enum
-
 import functools
 import getpass
 import importlib
 import importlib.metadata
 import os
 from collections import defaultdict
-
-from typing import Any, cast, Collection, Type, Union
+from typing import Any, Collection, Type, Union, cast
 
 import packaging.requirements
 import pydantic
