@@ -15,6 +15,8 @@ Run the following command, and answer the questions when prompted:
 ragna config
 ```
 
+![](../assets/images/ragna-config-wizard.png)
+
 At the end, this will create a `ragna.toml` file based on your choices.
 
 Here's an example configuration file:

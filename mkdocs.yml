@@ -52,29 +52,28 @@ plugins:
 watch:
   - scripts/docs_gen_files.py
 
-
 extra_css:
-  - stylesheets/extra.css
+  - assets/stylesheet.css
 
 # Explicit navigation
 nav:
-- 'index.md'
-- 'install.md'
-- Tutorials:
-  - 'tutorials/python-api.md'
-  - 'tutorials/rest-api.md'
-  - 'tutorials/web-app.md'
-- How-to:
-  - 'how-tos/set-configuration.md'
-- Explanations:
-  - 'explanations/understand-rag.md'
-- Community:
-  - 'community/welcome.md'
-  - 'community/contribute.md'
-  - 'community/brand.md'
-- References:
-  - 'references/python-api.md'
-  - 'references/rest-api.md'
-  - 'references/cli.md'
-  - 'references/faq.md'
-  - 'references/changelog.md'
+  - "index.md"
+  - "install.md"
+  - Tutorials:
+      - "tutorials/python-api.md"
+      - "tutorials/rest-api.md"
+      - "tutorials/web-app.md"
+  - How-to:
+      - "how-tos/set-configuration.md"
+  - Explanations:
+      - "explanations/understand-rag.md"
+  - Community:
+      - "community/welcome.md"
+      - "community/contribute.md"
+      - "community/brand.md"
+  - References:
+      - "references/python-api.md"
+      - "references/rest-api.md"
+      - "references/cli.md"
+      - "references/faq.md"
+      - "references/changelog.md"
