@@ -1,11 +1,16 @@
 import json
 
+from random import random
+
 import param
 from panel.reactive import ReactiveHTML
 from panel.widgets import Widget
 
 
 class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
+    allowed_documents = param.List(default=[])
+    allowed_documents_str = param.String(default="")
+
     file_list = param.List(default=[])
 
     custom_js = param.String(default="")
@@ -13,7 +18,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     title = param.String(default="")
 
-    def __init__(self, token, informations_endpoint, **params):
+    def __init__(self, allowed_documents, token, informations_endpoint, **params):
         super().__init__(**params)
 
         self.token = token
@@ -23,6 +28,17 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     def can_proceed_to_upload(self):
         return len(self.file_list) > 0
+
+    @param.depends("allowed_documents", watch=True)
+    def update_allowed_documents_str(self):
+        if len(self.allowed_documents) == 1:
+            self.allowed_documents_str = (
+                "Only " + self.allowed_documents[0] + " files are allowed."
+            )
+        else:
+            self.allowed_documents_str = "Allowed files : " + ", ".join(
+                self.allowed_documents
+            )
 
     @param.depends("uploaded_documents_json", watch=True)
     def did_finish_upload(self):
@@ -40,9 +56,15 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
             };
         """
 
+        # This is a hack to force the re-execution of the javascript.
+        # If the whole javascript is the same, and doesn't change,
+        # the panel widget is not re-renderer, and the upload function is not called.
+        random_id = f" var random_id = '{str(random())}';"
+
         self.custom_js = (
             final_callback_js
-            + f""" upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
+            + random_id
+            + f"""  upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {
@@ -130,7 +152,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                     <img src="/imgs/cloud-upload.svg" width="24px" height="24px" />
                     <div id='fileUploadText'>
                         <span class="bold">Click to upload</span> or drag and drop.<br />
-                        PDF, TXT or DOC [ max. 10MB]
+                        ${allowed_documents_str}
                     </div>
                     <input  type="file" 
                             name="fileUpload"

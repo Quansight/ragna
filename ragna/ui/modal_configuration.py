@@ -24,6 +24,8 @@ def get_supported_models():
 
 
 class ChatConfig(param.Parameterized):
+    allowed_documents = param.List(default=["TXT"])
+
     source_storage_name = param.Selector()
     assistant_name = param.Selector()
 
@@ -77,6 +79,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
         self.document_uploader = FileUploader(
+            self.config.allowed_documents,
             self.api_wrapper.token,
             upload_endpoints["informations_endpoint"],
         )
@@ -92,7 +95,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.start_chat_button.on_click(self.did_click_on_start_chat_button)
 
-        self.upload_files_label = pn.pane.HTML("<b>Upload files</b> (required)")
+        self.upload_files_label = pn.pane.HTML()
+        self.change_upload_files_label()
 
         self.upload_row = pn.Row(
             self.document_uploader,
@@ -104,9 +108,7 @@ class ModalConfiguration(pn.viewable.Viewer):
 
     def did_click_on_start_chat_button(self, event):
         if not self.document_uploader.can_proceed_to_upload():
-            self.upload_files_label.object = (
-                "<span style='color:red;'><b>Upload files</b> (required)</span>"
-            )
+            self.change_upload_files_label("missing_file")
         else:
             self.start_chat_button.disabled = True
             self.document_uploader.perform_upload(event, self.did_finish_upload)
@@ -133,13 +135,29 @@ class ModalConfiguration(pn.viewable.Viewer):
                 self.new_chat_ready_callback(new_chat_id)
 
         except Exception:
-            self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+            self.change_upload_files_label("upload_error")
             self.document_uploader.loading = False
+            self.start_chat_button.disabled = False
             pass
+
+    def change_upload_files_label(self, mode="normal"):
+        if mode == "upload_error":
+            self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+        elif mode == "missing_file":
+            self.upload_files_label.object = (
+                "<span style='color:red;'><b>Upload files</b> (required)</span>"
+            )
+        else:
+            self.upload_files_label.object = "<b>Upload files</b> (required)"
 
     async def model_section(self):
         components = await self.api_wrapper.get_components_async()
         # TODO : use the components to set up the default values for the various params
+
+        self.config.allowed_documents = [
+            ext[1:].upper() for ext in components["documents"]
+        ]
+        self.document_uploader.allowed_documents = self.config.allowed_documents
 
         assistants = [component["title"] for component in components["assistants"]]
         self.config.param.assistant_name.objects = assistants
