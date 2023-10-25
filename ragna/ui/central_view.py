@@ -121,15 +121,20 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     msg_data = param.Dict(default={})
     on_click_source_info_callback = param.Callable(default=None)
 
-    def __init__(self, msg_data, on_click_source_info_callback=None):
-        role = msg_data["role"] if "role" in msg_data else None
+    def __init__(self, msg_data, user, on_click_source_info_callback=None):
+        self.role = msg_data["role"]
 
         params = {
             "msg_data": msg_data,
+            # user is the name of the assistant (eg 'Ragna/DemoAssistant')
+            # or the name of the user, depending on the role
+            "user": user,
             "on_click_source_info_callback": on_click_source_info_callback,
             "object": msg_data["content"],
             "renderers": [
-                lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=role)
+                lambda txt: RagnaChatMessage.chat_entry_value_renderer(
+                    txt, role=self.role
+                )
             ],
             "show_timestamp": False,
             "show_reaction_icons": False,
@@ -137,15 +142,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             "show_user": False,
         }
 
-        params["user"] = "User" if role == "user" else "Ragna"
-        params["avatar"] = "👤" if role == "user" else "🤖"
+        params["avatar"] = RagnaChatMessage.get_avatar(self.role, user)
 
         super().__init__(**params)
 
         self.update_css_classes()
         self.chat_copy_icon.visible = False
 
-        if role != "user":
+        if self.role != "user":
             source_info_button = pn.widgets.Button(
                 name="Source Info",
                 icon="info-circle",
@@ -176,6 +180,27 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             "chat-entry",
             "chat-entry-user" if role == "user" else "chat-entry-ragna",
         ]
+
+    @classmethod
+    def get_avatar(cls, role, user) -> str:
+        if role == "system":
+            return "imgs/ragna_logo.svg"
+        elif role == "user":
+            # FIXME: user needs to be dynamic based on the username that was logged in with
+            return "👤"
+        elif role == "assistant":
+            # FIXME: This needs to represent the assistant somehow
+            if user == "Ragna/DemoAssistant":
+                return "imgs/ragna_logo.svg"
+            elif user.startswith("OpenAI/gpt-3.5"):
+                return pn.chat.message.GPT_3_LOGO
+            elif user == "OpenAI/gpt-4":
+                return pn.chat.message.GPT_4_LOGO
+
+            return "🤖"
+
+        # should never happen
+        return "?"
 
     @classmethod
     def chat_entry_value_renderer(cls, txt, role):
@@ -338,9 +363,16 @@ class CentralView(pn.viewable.Viewer):
         chat_entries = []
 
         if self.current_chat is not None:
+            assistant = self.current_chat["metadata"]["assistant"]
+            # FIXME: user needs to be dynamic based on the username that was logged in with
+            username = "User"
+
             for m in self.current_chat["messages"]:
+                print("->", m["role"])
                 chat_entry = RagnaChatMessage(
-                    m, on_click_source_info_callback=self.on_click_source_info_wrapper
+                    m,
+                    username if m["role"] == "user" else assistant,
+                    on_click_source_info_callback=self.on_click_source_info_wrapper,
                 )
                 chat_entries.append(chat_entry)
 
@@ -387,7 +419,7 @@ class CentralView(pn.viewable.Viewer):
                 "show_user": False,
                 "show_copy_icon": False,
                 "show_timestamp": False,
-                "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
+                # "avatar_lookup": lambda user: "👤" if user == "User" else "🤖",
             },
         )
 
@@ -442,6 +474,10 @@ class CentralView(pn.viewable.Viewer):
             if len(chat_interface.objects) != len(self.current_chat["messages"]):
                 return
 
+            assistant = self.current_chat["metadata"]["assistant"]
+            # FIXME: user needs to be dynamic based on the username that was logged in with
+            username = "User"
+
             needs_refresh = False
             for i in range(len(chat_interface.objects)):
                 msg = chat_interface.objects[i]
@@ -449,6 +485,9 @@ class CentralView(pn.viewable.Viewer):
                 if not isinstance(msg, RagnaChatMessage) and msg.user != "User":
                     chat_interface.objects[i] = RagnaChatMessage(
                         self.current_chat["messages"][i],
+                        username
+                        if self.current_chat["messages"][i]["role"] == "user"
+                        else assistant,
                         on_click_source_info_callback=self.on_click_source_info_wrapper,
                     )
                     msg = chat_interface.objects[i]
