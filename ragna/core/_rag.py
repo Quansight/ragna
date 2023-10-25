@@ -56,10 +56,10 @@ class Rag:
                     document class. It accepts a path as positional input to create it.
                     Thus, in this configuration you can pass paths as documents.
             source_storage: Source storage to use. If [str][] can be the
-                [ragna.core.SourceStorage.display_name][] of any configured source
+                [ragna.core.Component.display_name][] of any configured source
                 storage.
             assistant: Assistant to use. If [str][] can be the
-                [ragna.core.Assistant.display_name][] of any configured assistant.
+                [ragna.core.Component.display_name][] of any configured assistant.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -115,9 +115,9 @@ class Chat:
                 class. It accepts a path as positional input to create it. Thus, in
                 this configuration you can pass paths as documents.
         source_storage: Source storage to use. If [str][] can be the
-            [ragna.core.SourceStorage.display_name][] of any configured source storage.
+            [ragna.core.Component.display_name][] of any configured source storage.
         assistant: Assistant to use. If [str][] can be the
-            [ragna.core.Assistant.display_name][] of any configured assistant.
+            [ragna.core.Component.display_name][] of any configured assistant.
         **params: Additional parameters passed to the source storage and assistant.
     """
 

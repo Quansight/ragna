@@ -23,6 +23,7 @@ plugins:
             unwrap_annotated: true
           import:
             - https://docs.python.org/3/objects.inv
+            - https://fastapi.tiangolo.com/objects.inv
   - gen-files:
       scripts:
         - scripts/docs_gen_files.py

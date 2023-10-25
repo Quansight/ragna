@@ -27,6 +27,10 @@ class Component(RequirementsMixin):
 
     @classmethod
     def display_name(cls) -> str:
+        """
+        Returns:
+            Component name.
+        """
         return cls.__name__
 
     def __init__(self, config: Config) -> None:
@@ -79,6 +83,16 @@ class Component(RequirementsMixin):
 
 
 class Source(pydantic.BaseModel):
+    """Data class for sources stored inside a source storage.
+
+    Attributes:
+        id: Unique ID of the source.
+        document: Document this source belongs to.
+        location: Location of the source inside the document.
+        content: Content of the source.
+        num_tokens: Number of tokens of the content.
+    """
+
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
     id: str

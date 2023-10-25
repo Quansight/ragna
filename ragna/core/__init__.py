@@ -1,5 +1,6 @@
 __all__ = [
     "Assistant",
+    "Authentication",
     "Chat",
     "Component",
     "Config",
@@ -13,6 +14,7 @@ __all__ = [
     "Page",
     "PdfDocumentHandler",
     "Rag",
+    "RagnaDemoAuthentication",
     "RagnaException",
     "Requirement",
     "Source",
