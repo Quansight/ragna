@@ -8,12 +8,12 @@ extra:
 
 theme:
   name: material
-  logo: assets/brand/logo-symbol/logo-symbol.png # TODO: Use white-version of logo
+  logo: assets/brand/logo-symbol/logo-symbol-white.png
   palette:
     primary: custom
     accent: custom
   font:
-    text: Roboto # TODO: Update based on brand guidelines
+    text: Fira Sans
   features:
     - navigation.sections
     - navigation.indexes

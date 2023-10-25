@@ -5,7 +5,7 @@ we rely on community members to help improve Ragna and we're grateful for your i
 
 ## Code of Conduct
 
-All RAgna community spaces including discussions on GitHub and audio/video meetings are
+All Ragna community spaces including discussions on GitHub and audio/video meetings are
 covered by the
 [Quansight Repository Code of Conduct](https://github.com/Quansight/.github/blob/master/CODE_OF_CONDUCT.md)
 to create an welcoming environment for everyone.
@@ -14,7 +14,7 @@ to create an welcoming environment for everyone.
 
 If you have questions about how to use Ragna, open a discussion on the
 [GitHub Discussions forum](https://github.com/Quansight/ragna/discussions) to reach the
-development team. We'll be happy to help you!
+development team.
 
 ## Contribute
 

@@ -2,7 +2,7 @@
 
 <!-- TODO Update version after release -->
 
-## Version 0.1
+## Version 0.1.0
 
 Initial release 🎉
 

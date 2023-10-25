@@ -2,7 +2,7 @@
 title: Home
 ---
 
-# ![Ragna logo](brand-assets/logo-lockup-horizontal/logo-lockup-horizontal.png)
+# ![Ragna logo](assets/brand/logo-lockup-horizontal/logo-lockup-horizontal.png)
 
 Ragna is an open source RAG orchestration framework.
 
@@ -10,7 +10,7 @@ With an intuitive API for quick experimentation and built-in tools for creating
 production-ready application, you can quickly leverage Large Language Models (LLMs) for
 your work.
 
-[Get started](get-started.md){ .md-button }
+[Get started](install.md){ .md-button }
 
 ## Key features
 

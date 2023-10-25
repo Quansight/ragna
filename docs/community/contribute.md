@@ -56,7 +56,7 @@ These checks are also run in the CI on each pull request.
 You install Ragna in editable mode to test your contributions locally as you develop:
 
 ```bash
-pip install --editable '.[complete]'
+pip install --editable '.[builtin]'
 ```
 
 Verify that a development version is installed with:

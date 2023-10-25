@@ -42,25 +42,7 @@ config
 
 <!-- Link to API Ref. for Config() when available -->
 
-## Step 2: Select an assistant (LLM)
-
-Pick the Large Language Model you want to use as your chat assistant.
-
-Ragna has the following built-in options:
-
-- **`RagnaDemoAssistant`** - This is not actually an LLM, and will not provide useful
-  answers. It's a demo (toy) assistant so that you can quickly setup and use Ragna.
-- **OpenAI's `Gpt35Turbo16k` and `Gpt4`** - You will need an
-  [OpenAI API key](https://platform.openai.com/docs/quickstart/account-setup) and set
-  the `OPENAI_API_KEY` environment variable to use these assistants.
-
-Pick the demo assistant for this tutorial:
-
-```py
-from ragna.assistant import RagnaDemoAssistant
-```
-
-## Step 3: Upload relevant documents
+## Step 2: Upload relevant documents
 
 The RAG framework is powerful because it can maintain context from the information
 sources that you provide. In Ragna, you can use text files to share this information.
@@ -74,7 +56,7 @@ with open(document_path, "w") as file:
     file.write("Ragna is an open-source RAG orchestration app.\n")
 ```
 
-## Step 4: Select source storage
+## Step 3: Select source storage
 
 The sources and information (in our case the `demo_document.txt`) need be to stored in a
 vector database[^1], and similar to assistants, Ragna has a few built-in options:
@@ -94,6 +76,24 @@ You select the demo source storage:
 
 ```py
 from ragna.source_storages import RagnaDemoSourceStorage,
+```
+
+## Step 4: Select an assistant (LLM)
+
+Pick the Large Language Model you want to use as your chat assistant.
+
+Ragna has the following built-in options:
+
+- **`RagnaDemoAssistant`** - This is not actually an LLM, and will not provide useful
+  answers. It's a demo (toy) assistant so that you can quickly setup and use Ragna.
+- **OpenAI's `Gpt35Turbo16k` and `Gpt4`** - You will need an
+  [OpenAI API key](https://platform.openai.com/docs/quickstart/account-setup) and set
+  the `OPENAI_API_KEY` environment variable to use these assistants.
+
+Pick the demo assistant for this tutorial:
+
+```py
+from ragna.assistant import RagnaDemoAssistant
 ```
 
 ## Step 5: Start a chat
