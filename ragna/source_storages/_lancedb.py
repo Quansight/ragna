@@ -6,6 +6,15 @@ from ._vector_database import VectorDatabaseSourceStorage
 
 
 class LanceDB(VectorDatabaseSourceStorage):
+    """[LanceDB vector database](https://lancedb.com/)
+
+    !!! info "Required packages"
+
+        - `chromadb>=0.4.13`
+        - `lancedb>=0.2`
+        - `pyarrow`
+    """
+
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [

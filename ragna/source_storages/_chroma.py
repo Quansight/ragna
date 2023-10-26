@@ -10,8 +10,15 @@ from ._vector_database import VectorDatabaseSourceStorage
 
 
 class Chroma(VectorDatabaseSourceStorage):
+    """[Chroma vector database](https://www.trychroma.com/)
+
+    !!! info "Required packages"
+
+        - `chromadb>=0.4.13`
+    """
+
     # Note that this class has no extra requirements, since the chromadb package is
-    # already required for the base class
+    # already required for the base class.
 
     def __init__(self, config: Config) -> None:
         super().__init__(config)
