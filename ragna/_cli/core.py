@@ -7,7 +7,6 @@ from typing import Annotated, Optional
 from urllib.parse import urlsplit
 
 import httpx
-
 import rich
 import typer
 import uvicorn

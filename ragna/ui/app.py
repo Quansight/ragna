@@ -1,17 +1,13 @@
 from pathlib import Path
-
 from urllib.parse import urlsplit
 
 import panel as pn
 import param
 
 import ragna.ui.js as js
-
 import ragna.ui.styles as ui
-
 from ragna._utils import get_origins
 from ragna.core import Config
-
 from ragna.ui.api_wrapper import ApiWrapper
 from ragna.ui.auth_page import AuthPage
 from ragna.ui.main_page import MainPage

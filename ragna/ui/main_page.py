@@ -2,7 +2,6 @@ import panel as pn
 import param
 
 from ragna.ui import js
-
 from ragna.ui.central_view import CentralView
 from ragna.ui.left_sidebar import LeftSidebar
 from ragna.ui.modal_configuration import ModalConfiguration

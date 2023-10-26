@@ -83,9 +83,7 @@ span.fullscreen-button {
     display:none;
 }
 
-""".replace(
-    "{{MAIN_COLOR}}", MAIN_COLOR
-)
+""".replace("{{MAIN_COLOR}}", MAIN_COLOR)
 
 
 CHAT_INTERFACE_CUSTOM_BUTTON = """

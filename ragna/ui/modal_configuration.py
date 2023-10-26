@@ -275,9 +275,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                         font-weight:600; 
                         padding-left: 0px;
                         color: MAIN_COLOR; 
-                }""".replace(
-                    "MAIN_COLOR", ui.MAIN_COLOR
-                )
+                }""".replace("MAIN_COLOR", ui.MAIN_COLOR)
             ],
         )
 

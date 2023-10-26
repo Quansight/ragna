@@ -6,7 +6,6 @@ from panel.reactive import ReactiveHTML
 
 import ragna.ui.styles as ui
 
-
 # TODO : move all the CSS rules in a dedicated file
 
 chat_entry_stylesheets = [
@@ -541,9 +540,7 @@ class CentralView(pn.viewable.Viewer):
                                     chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
                             }, 150);
                             
-            </script>""".replace(
-                "{{RANDOM_ID}}", random_id
-            )
+            </script>""".replace("{{RANDOM_ID}}", random_id)
         )
 
     @pn.depends("current_chat")

@@ -2,7 +2,6 @@ import panel as pn
 import param
 
 import ragna.ui.js as js
-
 import ragna.ui.styles as ui
 
 
