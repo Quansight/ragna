@@ -27,8 +27,9 @@ And, launch a new notebook.
 
 ## Step 1: Setup RAG configuration
 
-The first step is to setup the configuration for components like the storage, api,
-assistant, and more. You can set this using a `config.toml` file, learn more in the
+The first step is to setup the configuration for components like the source storage
+(vector database), API, assistant (LLM), and more. You can set this using a
+`config.toml` file, learn more in the
 [how-to guide for setting configuration](../how-tos/set-configuration.md).
 
 For this minimal tutorial on basics, start with the default configuration:
@@ -40,7 +41,7 @@ config = Config()
 config
 ```
 
-<!-- Link to API Ref. for Config() when available -->
+Learn more in [Set configuration](../how-tos/set-configuration.md).
 
 ## Step 2: Upload relevant documents
 
@@ -86,15 +87,20 @@ Ragna has the following built-in options:
 
 - **`RagnaDemoAssistant`** - This is not actually an LLM, and will not provide useful
   answers. It's a demo (toy) assistant so that you can quickly setup and use Ragna.
-- **OpenAI's `Gpt35Turbo16k` and `Gpt4`** - You will need an
-  [OpenAI API key](https://platform.openai.com/docs/quickstart/account-setup) and set
-  the `OPENAI_API_KEY` environment variable to use these assistants.
+- **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
+- **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
+- **Anthropic's `ClaudeInstant` and `Claude`**
 
 Pick the demo assistant for this tutorial:
 
 ```py
 from ragna.assistant import RagnaDemoAssistant
 ```
+
+!!! note
+
+    You need to get API keys and set relevant environment variables
+    to use all Assistants (except the `RagnaDemoAssistant`).
 
 ## Step 5: Start a chat
 
