@@ -113,7 +113,7 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna.ui.*",
+    "ragna._ui.*",
 ]
 disallow_untyped_calls = false
 disallow_untyped_defs = false
