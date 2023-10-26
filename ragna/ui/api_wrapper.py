@@ -66,7 +66,9 @@ class ApiWrapper:
 
     def answer(self, chat_id, prompt):
         json_data = (
-            self.client.post(f"/chats/{chat_id}/answer", params={"prompt": prompt})
+            self.client.post(
+                f"/chats/{chat_id}/answer", params={"prompt": prompt}, timeout=None
+            )
             .raise_for_status()
             .json()
         )
