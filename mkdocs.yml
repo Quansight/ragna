@@ -78,7 +78,6 @@ nav:
   - Community:
       - "community/welcome.md"
       - "community/contribute.md"
-      - "community/brand.md"
   - References:
       - "references/python-api.md"
       - "references/rest-api.md"
