@@ -159,8 +159,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
             assistants = [component["title"] for component in components["assistants"]]
 
-            assistants = [k[::-1] for k in assistants] + assistants
-
             config.param.assistant_name.objects = assistants
             config.assistant_name = assistants[0]
 
