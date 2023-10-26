@@ -70,6 +70,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     _child_config = {
         "custom_js": "template",
         "uploaded_documents_json": "template",
+        "allowed_documents_str": "literal",
     }
 
     _template = """
@@ -150,8 +151,8 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
             <div id="fileUploadContainer" class="fileUploadContainer">
                 <div id="fileUploadDropArea" class="fileUploadDropArea">
                     <img src="/imgs/cloud-upload.svg" width="24px" height="24px" />
-                    <div id='fileUploadText'>
-                        <span class="bold">Click to upload</span> or drag and drop.<br />
+                    <span><b>Click to upload</b> or drag and drop.<br /></span>
+                    <div id='allowedDocuments'>
                         ${allowed_documents_str}
                     </div>
                     <input  type="file" 
