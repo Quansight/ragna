@@ -51,11 +51,14 @@ plugins:
             - https://fastapi.tiangolo.com/objects.inv
   - gen-files:
       scripts:
-        - scripts/docs_gen_files.py
+        - scripts/docs/gen_files.py
+
+hooks:
+  - scripts/docs/rtd.py
 
 watch:
   - ragna
-  - scripts/docs_gen_files.py
+  - scripts/docs
 
 extra_css:
   - assets/stylesheet.css
@@ -75,7 +78,6 @@ nav:
   - Community:
       - "community/welcome.md"
       - "community/contribute.md"
-      - "community/brand.md"
   - References:
       - "references/python-api.md"
       - "references/rest-api.md"
