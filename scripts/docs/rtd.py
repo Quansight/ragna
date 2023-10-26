@@ -1,6 +1,5 @@
 import os
 
-from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.plugins import get_plugin_logger
 
 logger = get_plugin_logger(__file__)
@@ -33,13 +32,3 @@ def on_startup(command, dirty):
 
     for name, value in RTD_ENV_VARS.items():
         logger.info(f"{name}={value}")
-
-
-def on_config(config: MkDocsConfig):
-    if not RTD:
-        return
-
-    # Run in strict mode, i.e. fail on warnings, if we are building a non-release
-    # version on ReadTheDocs
-    if RTD_ENV_VARS["READTHEDOCS_VERSION_TYPE"] != "tag":
-        config["strict"] = True
