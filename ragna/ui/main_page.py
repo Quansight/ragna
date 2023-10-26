@@ -24,7 +24,7 @@ class MainPage(param.Parameterized):
         )
 
         self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
-        self.left_sidebar.on_click_chat = lambda chat: self.on_click_chat(chat)
+        self.left_sidebar.on_click_chat = self.on_click_chat
         self.left_sidebar.on_click_new_chat = lambda event: self.open_modal()
 
         self.right_sidebar = RightSidebar()
@@ -60,8 +60,8 @@ class MainPage(param.Parameterized):
     def open_modal(self):
         self.modal = ModalConfiguration(
             api_wrapper=self.api_wrapper,
-            new_chat_ready_callback=lambda new_chat_id: self.open_new_chat(new_chat_id),
-            cancel_button_callback=lambda event: self.on_click_cancel_button(event),
+            new_chat_ready_callback=self.open_new_chat,
+            cancel_button_callback=self.on_click_cancel_button,
         )
 
         self.template.modal.objects[0].objects = [self.modal]
@@ -101,11 +101,8 @@ class MainPage(param.Parameterized):
 
     @param.depends("current_chat_id", watch=True)
     def update_subviews_current_chat_id(self, avoid_senders=[]):
-        try:
-            if self.left_sidebar is not None and self.left_sidebar not in avoid_senders:
-                self.left_sidebar.current_chat_id = self.current_chat_id
-        except Exception:
-            pass
+        if self.left_sidebar is not None and self.left_sidebar not in avoid_senders:
+            self.left_sidebar.current_chat_id = self.current_chat_id
 
     def page(self):
         objects = [self.left_sidebar, self.central_view, self.right_sidebar]

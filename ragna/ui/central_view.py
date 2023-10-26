@@ -1,4 +1,4 @@
-import random
+import uuid
 
 import panel as pn
 import param
@@ -34,7 +34,7 @@ chat_entry_stylesheets = [
     """,
     # The padding bottom is used to give some space for the copy and source info buttons
     """
-            :host .chat-entry-ragna {
+            :host .chat-entry-ragna, :host .chat-entry-system,  :host .chat-entry-assistant{
                 background-color: white;
                 border: 1px solid rgb(234, 234, 234);
                 padding-bottom: 30px;
@@ -175,10 +175,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
     def update_css_classes(self):
         role = self.msg_data["role"] if "role" in self.msg_data else None
-        self.css_classes = [
-            "chat-entry",
-            "chat-entry-user" if role == "user" else "chat-entry-ragna",
-        ]
+        self.css_classes = ["chat-entry", f"chat-entry-{role}"]
 
     @classmethod
     def get_avatar(cls, role, user) -> str:
@@ -206,7 +203,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         markdown_css_classes = []
         if role is not None:
             markdown_css_classes = [
-                "chat-entry-user" if role == "user" else "chat-entry-ragna"
+                f"chat-entry-{role}",
             ]
 
         return pn.pane.Markdown(
@@ -292,7 +289,6 @@ class CentralView(pn.viewable.Viewer):
                             )
                         ],
                     ),
-                    # stylesheets=[""" :host {background-color:red; width:100%;} .bk-panel-models-layout-Column { width: 100%; } """ ]
                 ],
             )
 
@@ -320,14 +316,6 @@ class CentralView(pn.viewable.Viewer):
                         dedent=True,
                         stylesheets=[""" hr { width: 94%; height:1px;  }  """],
                     ),
-                    # Debug bloc :
-                    # pn.pane.Markdown(
-                    #         f"""Chat ID: {self.current_chat['id']} <br />
-                    #                     Message ID: {msg.msg_data['id']} <br />
-                    #                     Sources: {msg.msg_data['sources']}""",
-                    #         dedent=True,
-                    #     stylesheets=[""" :host {  background-color: red ; }  """]
-                    # ),
                 ],
             )
 
@@ -354,7 +342,7 @@ class CentralView(pn.viewable.Viewer):
 
             yield {
                 "user": "Ragna",
-                "avatar": "❌",
+                "avatar": RagnaChatMessage.get_avatar("system", None),
                 "value": "Sorry, something went wrong. If this problem persists, please contact your administrator.",
             }
 
@@ -447,21 +435,6 @@ class CentralView(pn.viewable.Viewer):
                                             """
         ]
 
-        # Trick to make the chat start from the bottom :
-        #  - move the spacer first, and not last
-        # chat_interface._composite.objects =  (
-        #     [pn.layout.spacer.VSpacer()] +
-        #     [
-        #     w
-        #     for w in chat_interface._composite.objects
-        #     if not isinstance(w, pn.layout.spacer.VSpacer)
-        # ])
-        # chat_interface._chat_log.stylesheets.append(
-        #     """ :host .chat-feed-log {
-        #             height: unset; max-height: 90%; }
-        #     """
-        # )
-
         """
         By default, each new message is a ChatMessage object. 
         But for new messages from the AI, we want to have a RagnaChatMessage, that contains the msg data, the sources, etc.
@@ -528,9 +501,7 @@ class CentralView(pn.viewable.Viewer):
                 Hence the random ID.
         """
 
-        random_id = "".join(
-            random.choice("".join([chr(n) for n in range(65, 91)])) for _ in range(16)
-        )
+        random_id = str(uuid.uuid4())
 
         return pn.pane.HTML(
             """<script id="{{RANDOM_ID}}" type="text/javascript">

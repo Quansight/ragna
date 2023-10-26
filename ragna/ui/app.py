@@ -43,8 +43,6 @@ class App(param.Parameterized):
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
             title="Ragna",
-            # neutral_color="#FF0000", #ui.MAIN_COLOR,
-            # header_background="#FF0000", #ui.MAIN_COLOR,
             accent_base_color=ui.MAIN_COLOR,
             theme_toggle=False,
             collapsed_sidebar=True,
@@ -80,8 +78,6 @@ class App(param.Parameterized):
         return pn.pane.HTML("<h1>Ok</h1>")
 
     def serve(self):
-        # logging.init(log_level=args.log_level)
-
         all_pages = {
             "/": self.index_page,
             "auth": self.auth_page,

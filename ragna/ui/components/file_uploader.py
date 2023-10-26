@@ -1,5 +1,5 @@
 import json
-from random import random
+import uuid
 
 import param
 from panel.reactive import ReactiveHTML
@@ -58,12 +58,12 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         # This is a hack to force the re-execution of the javascript.
         # If the whole javascript is the same, and doesn't change,
         # the panel widget is not re-renderer, and the upload function is not called.
-        random_id = f" var random_id = '{str(random())}';"
+        random_id = f" var random_id = '{str(uuid.uuid4())}';"
 
         self.custom_js = (
             final_callback_js
             + random_id
-            + f"""  upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
+            + f"""upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {

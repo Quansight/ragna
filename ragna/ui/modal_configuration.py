@@ -113,7 +113,6 @@ class ModalConfiguration(pn.viewable.Viewer):
     def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
-        print("did finish upload", uploaded_documents)
 
         try:
             new_chat_id = self.api_wrapper.start_and_prepare(
@@ -133,7 +132,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.change_upload_files_label("upload_error")
             self.document_uploader.loading = False
             self.start_chat_button.disabled = False
-            pass
 
     def change_upload_files_label(self, mode="normal"):
         if mode == "upload_error":
