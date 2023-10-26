@@ -1,6 +1,8 @@
 import panel as pn
 import param
 
+import ragna.ui.js as js
+
 import ragna.ui.styles as ui
 
 
@@ -16,26 +18,26 @@ class ModalWelcome(pn.viewable.Viewer):
 
     def __panel__(self):
         close_button = pn.widgets.Button(
-            name="Okay, let's go", button_type="primary", min_width=375
+            name="Okay, let's go",
+            button_type="primary",
+            stylesheets=[""" :host { width:35%; margin-left:60%; }"""],
         )
         close_button.on_click(self.did_click_on_close_button)
 
         return pn.Column(
             pn.pane.HTML(
-                """<h2>Welcome !</h2>
-                         blablabla
-                         """,
-            ),
-            ui.divider(),
-            pn.pane.HTML(
-                """<b>Ask Away !</b><br />
-                         Ragna can answer questions, help you learn, write code, and much more.<br />
-                         <br />
-                         <b>Another info !</b><br />
-                         Lorem ipsum.<br />
-                         <br />
-                         """
+                f"""<script>{js.reset_modal_size(ui.WELCOME_MODAL_WIDTH, ui.WELCOME_MODAL_HEIGHT)}</script>"""
+                + """<h2>Welcome !</h2><br />
+                        Ragna is a RAG Orchestration Framework.<br />
+                        With its UI, select and configure LLMs, upload documents, and chat with the LLM.<br />
+                        <br />
+                        Use Ragna UI out-of-the-box, as a daily-life interface with your favorite AI, <br />
+                        or as a reference to build custom web applications.
+                        <br /><br /><br />
+                """
             ),
             close_button,
-            min_width=ui.MODAL_WIDTH,
+            width=ui.WELCOME_MODAL_WIDTH,
+            height=ui.WELCOME_MODAL_HEIGHT,
+            sizing_mode="fixed",
         )

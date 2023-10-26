@@ -1,12 +1,16 @@
-from .styles import MODAL_MAX_HEIGHT, MODAL_MIN_HEIGHT
+from .styles import CONFIG_MODAL_MAX_HEIGHT, CONFIG_MODAL_MIN_HEIGHT
+
 
 # Reset modal size
-MODAL_HACK = f"""
-document.getElementById("pn-Modal").style.setProperty("--dialog-height","{MODAL_MIN_HEIGHT}px", "important")
-"""
+def reset_modal_size(width, height):
+    return f"""
+    document.getElementById("pn-Modal").style.setProperty("--dialog-height","{height}px", "important")
+    document.getElementById("pn-Modal").style.setProperty("--dialog-width","{width}px", "important")
+    """
+
 
 JS_TOGGLE_CARD = f"""
-let height = card.collapsed ? "{MODAL_MAX_HEIGHT}px" : "{MODAL_MIN_HEIGHT}px";
+let height = card.collapsed ? "{CONFIG_MODAL_MAX_HEIGHT}px" : "{CONFIG_MODAL_MIN_HEIGHT}px";
 document.getElementById("pn-Modal").style.setProperty("--dialog-height",height, "important")
 """
 

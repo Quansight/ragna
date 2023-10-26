@@ -60,7 +60,6 @@ class App(param.Parameterized):
 
         template.modal.objects = [
             pn.Column(
-                min_height=600,
                 sizing_mode="stretch_both",
             )
         ]

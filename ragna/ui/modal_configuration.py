@@ -295,7 +295,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             pn.pane.HTML(
                 f"""<h2>Start a new chat</h2>
                          Let's set up the configurations for your new chat !<br />
-                         <script>{js.MODAL_HACK}</script>
+                         <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
                          """,
             ),
             ui.divider(),
@@ -309,7 +309,8 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.upload_files_label,
             self.upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
-            min_width=ui.MODAL_WIDTH,
+            min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
+            min_width=ui.CONFIG_MODAL_WIDTH,
             sizing_mode="stretch_both",
             height_policy="max",
         )
