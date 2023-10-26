@@ -26,7 +26,7 @@ class ApiAssistant(Assistant):
 
         self._client = httpx.Client(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
-            timeout=10,
+            timeout=30,
         )
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
