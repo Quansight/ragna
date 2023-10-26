@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="https://github.com/Quansight/ragna/blob/fix-project-metadata/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" width=30%>
+    <img src="https://raw.githubusercontent.com/Quansight/ragna/fix-project-metadata/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" width=30%>
 </p>
 
 <hr>
