@@ -26,7 +26,7 @@ body:
       description: |
         Provide a minimal code example and detailed step-by-step guidelines to reproduce the error.
     validations:
-      required: false
+      required: true
 
   - type: textarea
     attributes:
