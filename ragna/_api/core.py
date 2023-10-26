@@ -3,10 +3,12 @@ from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
+from ragna._utils import get_origins
 from ragna.core import Config, Rag, RagnaException
 from ragna.core._components import Component
 from ragna.core._rag import SpecialChatParams
@@ -18,6 +20,13 @@ def app(config: Config) -> FastAPI:
     rag = Rag(config)
 
     app = FastAPI(title="ragna", version=ragna.__version__)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=get_origins(config.ui.url),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
