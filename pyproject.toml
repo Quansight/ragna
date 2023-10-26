@@ -7,9 +7,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Ragna"
+description = "RAG orchestration framework"
+license = {file = "LICENSE"}
 authors = [
     { name = "Ragna Development Team", email = "connect@quansight.com" },
 ]
+readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.9",
@@ -39,6 +42,12 @@ dependencies = [
     "uvicorn",
 ]
 dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://ragna.chat"
+Documentation = "https://ragna.chat"
+Changelog = "https://ragna.chat/en/latest/references/changelog/"
+Repository = "https://github.com/Quansight/ragna"
 
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py

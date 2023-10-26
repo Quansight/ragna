@@ -1,18 +1,15 @@
 <p align="center">
-    <img src="docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" width=30%>
+    <img src="https://raw.githubusercontent.com/Quansight/ragna/fix-project-metadata/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" width=30%>
 </p>
 
 <hr>
-
-> **Note** This project is in active development, check back after 26th October for
-> updates!
 
 A RAG orchestration framework. ⛵️
 
 ## Local development
 
-- Quickstart: [docs/get-started.md](docs/get-started.md#minimal-example)
-- Setup: [docs/community/contribute.md](docs/community/contribute.md)
+- [Setup](https://ragna.chat/en/stable/install/)
+- [Quickstart](https://ragna.chat/en/stable/tutorials/python-api/)
 
 ## Code of Conduct
 
