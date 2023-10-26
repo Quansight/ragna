@@ -1,7 +1,9 @@
 from ._demo import RagnaDemoAssistant
-from ._openai import Gpt35Turbo16k, Gpt4
+from ._openai import Gpt4, Gpt35Turbo16k
 
-from ragna._utils import fix_module  # usort: skip
+# isort: split
+
+from ragna._utils import fix_module
 
 fix_module(globals())
 del fix_module

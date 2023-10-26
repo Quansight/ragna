@@ -4,13 +4,13 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Type
 
 import pydantic
 import pydantic.utils
 
 from ._document import Document
-from ._utils import RequirementsMixin
+from ._utils import RequirementsMixin, merge_models
 
 if TYPE_CHECKING:
     from ._config import Config
@@ -33,7 +33,9 @@ class Component(RequirementsMixin):
 
     @classmethod
     @functools.cache
-    def _models(cls) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
+    def _protocol_models(
+        cls,
+    ) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
         protocol_cls, protocol_methods = next(
             (cls_, cls_.__ragna_protocol_methods__)  # type: ignore[attr-defined]
             for cls_ in cls.__mro__
@@ -61,6 +63,11 @@ class Component(RequirementsMixin):
                 },
             )
         return models
+
+    @classmethod
+    @functools.cache
+    def _protocol_model(cls) -> Type[pydantic.BaseModel]:
+        return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
 class Source(pydantic.BaseModel):

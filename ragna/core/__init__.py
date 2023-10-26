@@ -1,18 +1,22 @@
 from ._utils import (
-    RagnaException,
     EnvVarRequirement,
     PackageRequirement,
+    RagnaException,
     Requirement,
-)  # usort: skip
+)
+
+# isort: split
 
 from ._document import (
     Document,
+    DocumentHandler,
     LocalDocument,
     Page,
-    DocumentHandler,
     PdfDocumentHandler,
     TxtDocumentHandler,
-)  # usort: skip
+)
+
+# isort: split
 
 from ._components import (
     Assistant,
@@ -20,17 +24,21 @@ from ._components import (
     MessageRole,
     Source,
     SourceStorage,
-)  # usort: skip
+)
 
-from ._authentication import Authentication, RagnaDemoAuthentication  # usort: skip
+# isort: split
 
-from ._config import Config  # usort: skip
+from ._authentication import Authentication, RagnaDemoAuthentication
 
+# isort: split
+
+from ._config import Config
 from ._queue import task_config
 from ._rag import Chat, Rag
 
+# isort: split
 
-from ragna._utils import fix_module  # usort: skip
+from ragna._utils import fix_module
 
 fix_module(globals())
 del fix_module
