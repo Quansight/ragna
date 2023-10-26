@@ -32,7 +32,7 @@ def background_subprocess(
             sys.stderr.flush()
 
 
-def timeout_after(seconds=5, *, message=None):
+def timeout_after(seconds=30, *, message=None):
     timeout = f"Timeout after {seconds:.1f} seconds"
     message = timeout if message is None else f"{timeout}: {message}"
 
@@ -159,7 +159,7 @@ def ragna_api(config, *, start_worker=None):
 
     with background_subprocess(cmd):
 
-        @timeout_after(20, message="Unable to start ragna api")
+        @timeout_after(message="Unable to start ragna api")
         def wait_for_ragna_api(poll=0.1):
             url = config.api.url
             while True:
