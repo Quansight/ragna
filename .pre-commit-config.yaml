@@ -13,6 +13,8 @@ repos:
           - markdown
           - toml
           - yaml
+          - javascript
+          - css
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.2
     hooks:
