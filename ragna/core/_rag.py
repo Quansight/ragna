@@ -46,9 +46,8 @@ class Rag:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. Items that are not [ragna.core.Document]s are
-                passed to the configured document class in
-                [ragna.core.Rag][].
+            documents: Documents to use. Items that are not [ragna.core.Document][]s are
+                passed as positional argument to the configured document class.
 
                 !!! note
 
@@ -105,9 +104,8 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. Items that are not [ragna.core.Document]s are
-            passed to the configured document class in
-            [ragna.core.Rag][].
+        documents: Documents to use. Items that are not [ragna.core.Document][]s are
+            passed as positional argument to the configured document class.
 
             !!! note
 

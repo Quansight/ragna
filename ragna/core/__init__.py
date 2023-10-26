@@ -45,6 +45,7 @@ from ._document import (
 
 from ._components import (
     Assistant,
+    Component,
     Message,
     MessageRole,
     Source,
