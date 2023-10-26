@@ -1,9 +1,9 @@
-FROM quay.io/quansight/ragna:0.1.0.rc2
+FROM quay.io/quansight/ragna:0.1.0.rc4
 
 ENV APP_DIR=/var/ragna
 WORKDIR $APP_DIR
 
-RUN pip install --progress-bar=off boto3
+RUN pip install --progress-bar=off boto3 psycopg2
 COPY ragna_pydatanyc2023.py .
 ENV PYTHONPATH="${APP_DIR}:{$PYTHONPATH}"
 

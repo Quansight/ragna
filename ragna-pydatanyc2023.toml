@@ -10,7 +10,6 @@ assistants = ["ragna.assistants.RagnaDemoAssistant"]
 url = "http://0.0.0.0:31476"
 database_url = "sqlite:////var/ragna/ragna.db"
 authentication = "ragna.core.RagnaDemoAuthentication"
-upload_token_secret = "Nsz4-8_2juMny-C2yVsdkhR4TVpk_rkH"
 upload_token_ttl = 300
 
 [ui]
