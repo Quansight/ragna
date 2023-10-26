@@ -1,14 +1,39 @@
 site_name: Ragna
+repo_url: https://github.com/Quansight/ragna
+copyright: Copyright &copy; 2023 Ragna Development Team at Quansight LLC
+extra:
+  social:
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/ragna/
 
 theme:
   name: material
+  logo: assets/brand/logo-symbol/logo-symbol-white.png
+  palette:
+    primary: custom
+    accent: custom
+  font:
+    text: Fira Sans
   features:
     - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - search
+    - search.suggest
+    - search.highlight
 
 markdown_extensions:
   - admonition
   - codehilite
   - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - footnotes
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 plugins:
   - search
@@ -20,9 +45,40 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+            unwrap_annotated: true
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://fastapi.tiangolo.com/objects.inv
   - gen-files:
       scripts:
         - scripts/docs_gen_files.py
 
 watch:
+  - ragna
   - scripts/docs_gen_files.py
+
+extra_css:
+  - assets/stylesheet.css
+
+# Explicit navigation
+nav:
+  - "index.md"
+  - "install.md"
+  - Tutorials:
+      - "tutorials/python-api.md"
+      - "tutorials/rest-api.md"
+      - "tutorials/web-app.md"
+  - How-to:
+      - "how-tos/set-configuration.md"
+  - Explanations:
+      - "explanations/understand-rag.md"
+  - Community:
+      - "community/welcome.md"
+      - "community/contribute.md"
+      - "community/brand.md"
+  - References:
+      - "references/python-api.md"
+      - "references/rest-api.md"
+      - "references/cli.md"
+      - "references/faq.md"
+      - "references/changelog.md"
