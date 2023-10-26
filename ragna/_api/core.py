@@ -1,8 +1,7 @@
 import uuid
-from typing import Annotated, Any, cast, Iterator, Type
+from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
-
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

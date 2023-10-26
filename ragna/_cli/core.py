@@ -9,7 +9,6 @@ from urllib.parse import urlsplit
 import httpx
 
 import rich
-
 import typer
 import uvicorn
 
@@ -18,12 +17,13 @@ from ragna._api import app as api_app
 from ragna._utils import timeout_after
 from ragna.core._queue import Queue
 from ragna.ui import app as ui_app
+
 from .config import (
-    check_config,
     COMMON_CONFIG_OPTION_ARGS,
     COMMON_CONFIG_OPTION_KWARGS,
-    config_wizard,
     ConfigOption,
+    check_config,
+    config_wizard,
 )
 
 app = typer.Typer(
@@ -48,7 +48,7 @@ def _main(
         typer.Option(
             "--version", callback=version_callback, help="Show version and exit."
         ),
-    ] = None
+    ] = None,
 ) -> None:
     pass
 
