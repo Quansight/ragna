@@ -80,6 +80,8 @@ class UiConfig(BaseSettings):
 
 
 class Config(BaseSettings):
+    """Ragna configuration"""
+
     class Config(ConfigBase):
         env_prefix = "ragna_"
 

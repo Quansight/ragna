@@ -11,7 +11,9 @@ def fix_module(globals: dict[str, Any]) -> None:
     subpackages. This will hide any internally private structure.
 
     ```python
-    from ragna._utils import fix_module  # usort: skip
+    # isort: split
+
+    from ragna._utils import fix_module
 
     fix_module(globals())
     del fix_module
