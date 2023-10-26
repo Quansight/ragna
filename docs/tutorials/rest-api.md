@@ -107,7 +107,7 @@ with open(path, "w") as file:
 ### Request upload information
 
 ```py
-response = await client.get("/document", params={"user": USER, "name": path.name})
+response = await client.get("/document", params={"name": path.name})
 document_info = response.json()
 ```
 
@@ -129,8 +129,19 @@ Model) you want to use for the chat.
 View options available as per your configuration:
 
 ```py
-response = await client.get("/components", params={"user": USER})
+response = await client.get("/components")
 components = response.json()
+
+# `components` has the following structure:
+#
+# {'documents': ['.pdf', '.txt'],
+#  'source_storages': [{'properties': {},
+#                       'required': [],
+#                       'title': 'Ragna/DemoSourceStorage',
+#                       'type': 'object'}],
+#  'assistants': [{'properties': {},
+#                  'title': 'Ragna/DemoAssistant',
+#                  'type': 'object'}]}
 ```
 
 Select your preferred options. As per the demo configuration, the following snippet
@@ -145,7 +156,7 @@ ASSISTANT = components["assistants"][0]["title"]
 
 With selection and setup complete, you can start a Ragna chat.
 
-## Create a new chat
+### Create a new chat
 
 ```py
 response = await client.post(
@@ -166,7 +177,7 @@ chat = response.json()
 ```py
 CHAT_ID = chat["id"]
 
-response = await client.post(f"/chats/{CHAT_ID}/prepare", params={"user": USER})
+response = await client.post(f"/chats/{CHAT_ID}/prepare")
 chat = response.json()
 ```
 
@@ -174,7 +185,7 @@ chat = response.json()
 
 ```py
 response = await client.post(
-    f"/chats/{CHAT_ID}/answer", params={"user": USER, "prompt": "What is Ragna?"}
+    f"/chats/{CHAT_ID}/answer", params={"prompt": "What is Ragna?"}
 )
 answer = response.json()
 
@@ -197,3 +208,7 @@ print(chats)
 ```py
 await client.delete(f"/chats/{CHAT_ID}", params={"user": USER})
 ```
+
+!!! tip
+
+    If you have multiple users, most Ragna API requests accept `params={"user": USER}` to specific the user, as shown in the above examples.
