@@ -14,7 +14,7 @@ from . import orm, schemas
 
 
 def get_sessionmaker(database_url: str) -> Callable[[], Session]:
-    engine = create_engine(database_url, connect_args=dict(check_same_thread=False))
+    engine = create_engine(database_url)  # , connect_args=dict(check_same_thread=False)
     orm.Base.metadata.create_all(bind=engine)
     return _sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

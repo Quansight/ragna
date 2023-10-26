@@ -42,7 +42,7 @@ class ConfigBase:
 
 class CoreConfig(BaseSettings):
     class Config(ConfigBase):
-        env_prefix = "ragna_rag_"
+        env_prefix = "ragna_core_"
 
     queue_url: str = "memory"
 

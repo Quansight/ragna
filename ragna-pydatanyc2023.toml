@@ -1,16 +1,12 @@
 local_cache_root = "/var/ragna"
 
 [core]
-queue_url = "redis://queue:6379"
 document = "ragna_pydatanyc2023.S3Document"
 source_storages = ["ragna.source_storages.RagnaDemoSourceStorage"]
 assistants = ["ragna.assistants.RagnaDemoAssistant"]
 
 [api]
-url = "http://0.0.0.0:31476"
-database_url = "sqlite:////var/ragna/ragna.db"
 authentication = "ragna.core.RagnaDemoAuthentication"
 upload_token_ttl = 300
 
 [ui]
-url = "http://0.0.0.0:31477"

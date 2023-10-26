@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import pprint
 
 import httpx
 
@@ -8,7 +9,7 @@ from ragna.core._utils import default_user
 
 
 def main():
-    client = httpx.Client(base_url="http://127.0.0.1:31476")
+    client = httpx.Client(base_url="https://ragna.quansight.dev")
     client.get("/").raise_for_status()
 
     ## authentication
@@ -37,11 +38,14 @@ def main():
         document_info = (
             client.get("/document", params={"name": name}).raise_for_status().json()
         )
-        httpx.post(
+        pprint.pprint(document_info, sort_dicts=False)
+        response = httpx.post(
             document_info["url"],
             data=document_info["data"],
             files={"file": f"Content of {name}\n".encode()},
-        ).raise_for_status()
+        )
+        print(response.status_code, response.content.decode())
+        response.raise_for_status()
         documents.append(document_info["document"])
 
     ## chat 1
