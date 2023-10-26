@@ -1,4 +1,4 @@
-FROM quay.io/quansight/ragna:0.1.0.rc1
+FROM quay.io/quansight/ragna:0.1.0.rc2
 
 ENV APP_DIR=/var/ragna
 WORKDIR $APP_DIR

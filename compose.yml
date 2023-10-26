@@ -15,9 +15,10 @@ services:
     depends_on:
       queue:
         condition: service_healthy
-    build:
-      context: .
-      dockerfile: Dockerfile-pydatanyc2023
+    image: "quay.io/quansight/ragna:pydatanyc2023.rc0"
+    #    build:
+    #      context: .
+    #      dockerfile: Dockerfile-pydatanyc2023
     env_file: .env
     command:
       - ragna
@@ -26,9 +27,10 @@ services:
   api:
     depends_on:
       - worker
-    build:
-      context: .
-      dockerfile: Dockerfile-pydatanyc2023
+    #    build:
+    #      context: .
+    #      dockerfile: Dockerfile-pydatanyc2023
+    image: "quay.io/quansight/ragna:pydatanyc2023.rc0"
     env_file: .env
     command:
       - ragna
