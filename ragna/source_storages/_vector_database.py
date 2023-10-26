@@ -99,10 +99,12 @@ class VectorDatabaseSourceStorage(SourceStorage):
                 num_tokens=len(tokens),
             )
 
-    def _page_numbers_to_str(self, page_numbers: Optional[list[int]]) -> str:
+    def _page_numbers_to_str(self, page_numbers: Optional[Iterable[int]]) -> str:
         if not page_numbers:
             return ""
-        elif len(page_numbers) == 1:
+
+        page_numbers = sorted(set(page_numbers))
+        if len(page_numbers) == 1:
             return str(page_numbers[0])
 
         ranges_str = []
