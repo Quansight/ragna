@@ -47,10 +47,13 @@ plugins:
             show_bases: false
   - gen-files:
       scripts:
-        - scripts/docs_gen_files.py
+        - scripts/docs/gen_files.py
+
+hooks:
+  - scripts/docs/rtd.py
 
 watch:
-  - scripts/docs_gen_files.py
+  - scripts/docs
 
 extra_css:
   - assets/stylesheet.css
