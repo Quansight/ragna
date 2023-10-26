@@ -16,13 +16,6 @@ def get_default_chat_name(timezone_offset=None):
         return f"Chat {datetime.now().astimezone(tz=tz):%m/%d/%Y %I:%M %p}"
 
 
-supported_document_dbs = ["foo", "bar"]
-
-
-def get_supported_models():
-    return {"foo": ["bar", "baz"], "bar": ["foo", "baz"], "baz": ["foo", "bar"]}
-
-
 class ChatConfig(param.Parameterized):
     allowed_documents = param.List(default=["TXT"])
 
@@ -66,6 +59,8 @@ class ChatConfig(param.Parameterized):
 
 class ModalConfiguration(pn.viewable.Viewer):
     chat_name = param.String()
+
+    config = param.ClassSelector(class_=ChatConfig, default=None)
     new_chat_ready_callback = param.Callable()
     cancel_button_callback = param.Callable()
 
@@ -74,12 +69,14 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.api_wrapper = api_wrapper
 
-        self.config = ChatConfig()
-
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
+        self.chat_name_input = pn.widgets.TextInput.from_param(
+            self.param.chat_name,
+            stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+        )
         self.document_uploader = FileUploader(
-            self.config.allowed_documents,
+            [],  # the allowed documents are set in the model_section function
             self.api_wrapper.token,
             upload_endpoints["informations_endpoint"],
         )
@@ -127,8 +124,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                 params=self.config.to_params_dict(),
             )
 
-            print("new_chat_id", new_chat_id)
-
             self.start_chat_button.disabled = False
 
             if self.new_chat_ready_callback is not None:
@@ -151,23 +146,34 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.upload_files_label.object = "<b>Upload files</b> (required)"
 
     async def model_section(self):
-        components = await self.api_wrapper.get_components_async()
-        # TODO : use the components to set up the default values for the various params
+        # prevents re-rendering the section
+        if self.config is None:
+            # Retrieve the components from the API and build a config object
+            components = await self.api_wrapper.get_components_async()
+            # TODO : use the components to set up the default values for the various params
 
-        self.config.allowed_documents = [
-            ext[1:].upper() for ext in components["documents"]
-        ]
-        self.document_uploader.allowed_documents = self.config.allowed_documents
+            config = ChatConfig()
+            config.allowed_documents = [
+                ext[1:].upper() for ext in components["documents"]
+            ]
 
-        assistants = [component["title"] for component in components["assistants"]]
-        self.config.param.assistant_name.objects = assistants
-        self.config.assistant_name = assistants[0]
+            assistants = [component["title"] for component in components["assistants"]]
 
-        source_storages = [
-            component["title"] for component in components["source_storages"]
-        ]
-        self.config.param.source_storage_name.objects = source_storages
-        self.config.source_storage_name = source_storages[0]
+            assistants = [k[::-1] for k in assistants] + assistants
+
+            config.param.assistant_name.objects = assistants
+            config.assistant_name = assistants[0]
+
+            source_storages = [
+                component["title"] for component in components["source_storages"]
+            ]
+            config.param.source_storage_name.objects = source_storages
+            config.source_storage_name = source_storages[0]
+
+            # Now that the config object is set, we can assign it to the param.
+            # This will trigger the update of the advanced_config_ui section
+            self.config = config
+            self.document_uploader.allowed_documents = config.allowed_documents
 
         return pn.Row(
             pn.Column(
@@ -188,7 +194,11 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
+    @pn.depends("config")
     def advanced_config_ui(self):
+        if self.config is None:
+            return
+
         card = pn.Card(
             pn.Row(
                 pn.Column(
@@ -292,18 +302,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
             ui.divider(),
             pn.pane.HTML("<b>Chat name</b>"),
-            pn.Param(
-                self,
-                widgets={
-                    "chat_name": {
-                        "widget_type": pn.widgets.TextInput,
-                        "name": "",
-                        "stylesheets": [ui.BK_INPUT_GRAY_BORDER],
-                    }
-                },
-                parameters=["chat_name"],
-                show_name=False,
-            ),
+            self.chat_name_input,
             ui.divider(),
             self.model_section,
             ui.divider(),
