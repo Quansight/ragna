@@ -3,9 +3,9 @@ from datetime import datetime, timedelta, timezone
 import panel as pn
 import param
 
-import ragna.ui.js as js
-import ragna.ui.styles as ui
-from ragna.ui.components.file_uploader import FileUploader
+from . import js
+from . import styles as ui
+from .components.file_uploader import FileUploader
 
 
 def get_default_chat_name(timezone_offset=None):

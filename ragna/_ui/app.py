@@ -4,13 +4,14 @@ from urllib.parse import urlsplit
 import panel as pn
 import param
 
-import ragna.ui.js as js
-import ragna.ui.styles as ui
 from ragna._utils import get_origins
 from ragna.core import Config
-from ragna.ui.api_wrapper import ApiWrapper
-from ragna.ui.auth_page import AuthPage
-from ragna.ui.main_page import MainPage
+
+from . import js
+from . import styles as ui
+from .api_wrapper import ApiWrapper
+from .auth_page import AuthPage
+from .main_page import MainPage
 
 pn.extension(
     loading_spinner="dots",

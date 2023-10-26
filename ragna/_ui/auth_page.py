@@ -1,7 +1,7 @@
 import panel as pn
 import param
 
-import ragna.ui.styles as ui
+from . import styles as ui
 
 # TODO Move this into a CSS file
 login_inputs_stylesheets = """

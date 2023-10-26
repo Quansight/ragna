@@ -13,9 +13,9 @@ import uvicorn
 
 import ragna
 from ragna._api import app as api_app
+from ragna._ui import app as ui_app
 from ragna._utils import timeout_after
 from ragna.core._queue import Queue
-from ragna.ui import app as ui_app
 
 from .config import (
     COMMON_CONFIG_OPTION_ARGS,

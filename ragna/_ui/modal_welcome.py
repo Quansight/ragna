@@ -1,8 +1,8 @@
 import panel as pn
 import param
 
-import ragna.ui.js as js
-import ragna.ui.styles as ui
+from . import js
+from . import styles as ui
 
 
 class ModalWelcome(pn.viewable.Viewer):

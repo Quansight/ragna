@@ -1,12 +1,12 @@
 import panel as pn
 import param
 
-from ragna.ui import js
-from ragna.ui.central_view import CentralView
-from ragna.ui.left_sidebar import LeftSidebar
-from ragna.ui.modal_configuration import ModalConfiguration
-from ragna.ui.modal_welcome import ModalWelcome
-from ragna.ui.right_sidebar import RightSidebar
+from . import js
+from .central_view import CentralView
+from .left_sidebar import LeftSidebar
+from .modal_configuration import ModalConfiguration
+from .modal_welcome import ModalWelcome
+from .right_sidebar import RightSidebar
 
 
 class MainPage(param.Parameterized):

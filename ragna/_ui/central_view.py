@@ -4,7 +4,7 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
-import ragna.ui.styles as ui
+from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
 
