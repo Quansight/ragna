@@ -15,7 +15,7 @@ class RagnaDemoAssistant(Assistant):
         sources.
 
         If you include the phrase `"markdown"` into your prompt, it will return a
-        MarkDown table including emojis.
+        Markdown table including emojis.
     """
 
     @classmethod

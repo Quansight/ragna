@@ -10,11 +10,11 @@ from fastapi.security.utils import get_authorization_scheme_param
 
 
 class Authentication(abc.ABC):
-    """Abstract base class for authentication used by the REST API"""
+    """Abstract base class for authentication used by the REST API."""
 
     @abc.abstractmethod
     async def create_token(self, request: Request) -> str:
-        """Authenticate user and create an authorization token
+        """Authenticate user and create an authorization token.
 
         Args:
             request: Request send to the `/token` endpoint of the REST API.

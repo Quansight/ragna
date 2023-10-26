@@ -17,7 +17,7 @@ T = TypeVar("T", bound=Component)
 
 
 class Rag:
-    """RAG workflow
+    """RAG workflow.
 
     Args:
         config: Ragna configuration.
