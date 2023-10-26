@@ -234,6 +234,23 @@ class CentralView(pn.viewable.Viewer):
 
             grid_height = len(self.current_chat["metadata"]["documents"]) // 3
 
+            advanced_config_data = {
+                "Chunk size": self.current_chat["metadata"]["params"]["chunk_size"],
+                "Chunk overlap": self.current_chat["metadata"]["params"][
+                    "chunk_overlap"
+                ],
+                "Max context tokens": self.current_chat["metadata"]["params"][
+                    "num_tokens"
+                ],
+                "Max new tokens": self.current_chat["metadata"]["params"][
+                    "max_new_tokens"
+                ],
+            }
+
+            advanced_config_md = "\n".join(
+                [f"""- **{k}**: {v}""" for k, v in advanced_config_data.items()]
+            )
+
             markdown = [
                 "To change configurations, start a new chat.\n",
                 "**Uploaded Files**",
@@ -244,6 +261,8 @@ class CentralView(pn.viewable.Viewer):
                 "----",
                 "**Assistant**",
                 f"""<span>{self.current_chat['metadata']['assistant']}</span>\n""",
+                "**Advanced configuration**",
+                advanced_config_md,
             ]
 
             markdown = "\n".join(markdown)
@@ -282,7 +301,9 @@ class CentralView(pn.viewable.Viewer):
                                                                     grid-column: span 1;
                                                                     
                                                                 }   
-                                                 
+                                                ul {
+                                                    list-style-type: none
+                                                }                                                 
 
                                                 """.replace(
                                 "{{GRID_HEIGHT}}", str(grid_height)
@@ -582,8 +603,9 @@ class CentralView(pn.viewable.Viewer):
 
         chat_info_button = None
         if self.current_chat is not None:
+            button_name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
             chat_info_button = pn.widgets.Button(
-                name="Chat Info", button_style="outline", icon="info-circle"
+                name=button_name, button_style="outline", icon="info-circle"
             )
             chat_info_button.stylesheets.append(
                 """
