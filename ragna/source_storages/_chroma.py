@@ -5,11 +5,6 @@ from ragna.core import (
     Document,
     Source,
 )
-from ragna.utils import (
-    chunk_pages,
-    page_numbers_to_str,
-    take_sources_up_to_max_tokens,
-)
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -54,18 +49,17 @@ class Chroma(VectorDatabaseSourceStorage):
         texts = []
         metadatas = []
         for document in documents:
-            for chunk in chunk_pages(
+            for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._tokenizer,
             ):
                 ids.append(str(uuid.uuid4()))
                 texts.append(chunk.text)
                 metadatas.append(
                     {
                         "document_id": str(document.id),
-                        "page_numbers": page_numbers_to_str(chunk.page_numbers),
+                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
                         "num_tokens": chunk.num_tokens,
                     }
                 )
@@ -123,18 +117,16 @@ class Chroma(VectorDatabaseSourceStorage):
         #  Thus, we likely need to have a callable parameter for this class
 
         document_map = {str(document.id): document for document in documents}
-        return list(
-            take_sources_up_to_max_tokens(
-                (
-                    Source(
-                        id=result["ids"],
-                        document=document_map[result["metadatas"]["document_id"]],
-                        location=result["metadatas"]["page_numbers"],
-                        content=result["documents"],
-                        num_tokens=result["metadatas"]["num_tokens"],
-                    )
-                    for result in results
-                ),
-                max_tokens=num_tokens,
-            )
+        return self._take_sources_up_to_max_tokens(
+            (
+                Source(
+                    id=result["ids"],
+                    document=document_map[result["metadatas"]["document_id"]],
+                    location=result["metadatas"]["page_numbers"],
+                    content=result["documents"],
+                    num_tokens=result["metadatas"]["num_tokens"],
+                )
+                for result in results
+            ),
+            max_tokens=num_tokens,
         )
