@@ -45,6 +45,10 @@ plugins:
             show_source: false
             show_root_heading: true
             show_bases: false
+            unwrap_annotated: true
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://fastapi.tiangolo.com/objects.inv
   - gen-files:
       scripts:
         - scripts/docs/gen_files.py
@@ -53,6 +57,7 @@ hooks:
   - scripts/docs/rtd.py
 
 watch:
+  - ragna
   - scripts/docs
 
 extra_css:
