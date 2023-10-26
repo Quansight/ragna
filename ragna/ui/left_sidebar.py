@@ -1,6 +1,8 @@
 import panel as pn
 import param
 
+from ragna import __version__ as ragna_version
+
 
 class LeftSidebar(pn.viewable.Viewer):
     chats = param.List(default=[])
@@ -177,7 +179,11 @@ class LeftSidebar(pn.viewable.Viewer):
         objects = (
             [header, new_chat_button]
             + self.chat_buttons
-            + [pn.layout.VSpacer(), pn.pane.HTML("version: 1.0"), self.footer()]
+            + [
+                pn.layout.VSpacer(),
+                pn.pane.HTML(f"version: {ragna_version}"),
+                # self.footer()
+            ]
         )
 
         result = pn.Column(
