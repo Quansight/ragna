@@ -51,8 +51,6 @@ class ApiWrapper:
 
             self.client.headers["Authorization"] = f"Bearer {self.token}"
 
-            print("token : ", self.token)
-
             return True
 
     def get_chats(self):
