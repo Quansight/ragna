@@ -13,7 +13,7 @@ Ragna workflows starts with a configuration. You can select the components like 
 assistant (LLM) and source storage (vector database) and set options like the API
 endpoint and cache location.
 
-To quickly try out Ragna, you can use the `demo` configuration withL
+To quickly try out Ragna, you can use the `demo` configuration:
 
 ```py
 config = Config.demo()
@@ -26,7 +26,7 @@ Learn more in [How to set configuration](../how-tos/set-configuration.md).
 ## Step 2: Start and connect to the API
 
 You can use the [`ragna api`](../references/cli.md#ragna-api) command to start the REST
-API from you terminal. The command includes a `--config` option where you can share your
+API from you terminal. The command includes a `--config` option where you can chose your
 preferred configuration.
 
 This tutorial is using the `demo` configuration, so you can start the API using the
@@ -37,11 +37,12 @@ ragna api --config demo
 ```
 
 Once started, use the displayed URL to connect to the running API. By default, Ragna
-starts the API at http://127.0.0.1/31476. You can set a different UR in the
-configuration stage as well.
+starts the API at [http://127.0.0.1/31476](http://127.0.0.1/31476). You can set a
+different URL in the configuration stage as well.
 
-This tutorial uses [HTTPX], a http client for Python to demonstrate the REST API.
-However, feel free to use the language or library of your choice!
+This tutorial uses [`httpx`](https://github.com/encode/httpx), a HTTP client for Python
+to demonstrate the REST API. However, feel free to use the language or library of your
+choice!
 
 Let's connect to the API with an `AsyncClient`:
 
@@ -69,14 +70,14 @@ And, use this password with any username.
 USERNAME = "Ragnvaldr"
 
 token = (
-            await client.post(
-                "/token",
-                data={
-                    "username": USERNAME,
-                    "password": "*****",
-                },
-            )
-        ).json()
+    await client.post(
+        "/token",
+        data={
+            "username": USERNAME,
+            "password": "*****",
+        },
+    )
+).json()
 
 client.headers["Authorization"] = f"Bearer {token}"
 ```
@@ -197,7 +198,7 @@ print(answer["message"])
 ### List available chats
 
 ```py
-response = await client.get("/chats", params={"user": USER})
+response = await client.get("/chats")
 chats = response.json()
 
 print(chats)
@@ -206,9 +207,5 @@ print(chats)
 ### Delete chats
 
 ```py
-await client.delete(f"/chats/{CHAT_ID}", params={"user": USER})
+await client.delete(f"/chats/{CHAT_ID}")
 ```
-
-!!! tip
-
-    If you have multiple users, most Ragna API requests accept `params={"user": USER}` to specific the user, as shown in the above examples.
