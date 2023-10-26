@@ -5,6 +5,16 @@ from ragna.core import Config, Document, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
+    """Demo assistant without requirements.
+
+    !!! note
+
+        As the name implies, this source storage is just for demo purposes and cannot
+        retrieve relevant sources for a given prompt. It returns a single
+        [ragna.core.Source][] per stored [ragna.core.Document][] with potentially
+        shortened text extracted from the first [ragna.core.Page][].
+    """
+
     @classmethod
     def display_name(cls) -> str:
         return "Ragna/DemoSourceStorage"

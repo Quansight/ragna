@@ -19,9 +19,7 @@ class ApiAssistant(Assistant):
     def requirements(cls) -> list[Requirement]:
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
-    def __init__(
-        self, config: Config, *, num_retries: int = 2, retry_delay: float = 1.0
-    ) -> None:
+    def __init__(self, config: Config) -> None:
         super().__init__(config)
 
         import httpx
@@ -30,8 +28,6 @@ class ApiAssistant(Assistant):
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=10,
         )
-        self._num_retries = num_retries
-        self._retry_delay = retry_delay
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
     @task_config(retries=2, retry_delay=1)

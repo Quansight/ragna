@@ -17,6 +17,15 @@ T = TypeVar("T", bound=Component)
 
 
 class Rag:
+    """RAG workflow.
+
+    Args:
+        config: Ragna configuration.
+        load_components: Whether to load the configured components in the current
+            process. If omitted, components will be loaded if a memory queue is
+            configured.
+    """
+
     def __init__(
         self,
         config: Optional[Config] = None,
@@ -34,7 +43,24 @@ class Rag:
         assistant: Union[Type[Assistant], Assistant, str],
         **params: Any,
     ) -> Chat:
-        """Create a new [ragna.core.Chat][]."""
+        """Create a new [ragna.core.Chat][].
+
+        Args:
+            documents: Documents to use. Items that are not [ragna.core.Document][]s are
+                passed as positional argument to the configured document class.
+
+                !!! note
+
+                    The default configuration uses [ragna.core.LocalDocument][] as
+                    document class. It accepts a path as positional input to create it.
+                    Thus, in this configuration you can pass paths as documents.
+            source_storage: Source storage to use. If [str][] can be the
+                [ragna.core.Component.display_name][] of any configured source
+                storage.
+            assistant: Assistant to use. If [str][] can be the
+                [ragna.core.Component.display_name][] of any configured assistant.
+            **params: Additional parameters passed to the source storage and assistant.
+        """
         return Chat(
             self,
             documents=documents,
@@ -54,7 +80,7 @@ class SpecialChatParams(BaseModel):
 
 class Chat:
     """
-    !!! note
+    !!! tip
 
         This object is usually not instantiated manually, but rather through
         [ragna.core.Rag.chat][].
@@ -75,6 +101,22 @@ class Chat:
     ) as chat:
         print(await chat.answer("What is Ragna?"))
     ```
+
+    Args:
+        rag: The RAG workflow this chat is associated with.
+        documents: Documents to use. Items that are not [ragna.core.Document][]s are
+            passed as positional argument to the configured document class.
+
+            !!! note
+
+                The default configuration uses [ragna.core.LocalDocument][] as document
+                class. It accepts a path as positional input to create it. Thus, in
+                this configuration you can pass paths as documents.
+        source_storage: Source storage to use. If [str][] can be the
+            [ragna.core.Component.display_name][] of any configured source storage.
+        assistant: Assistant to use. If [str][] can be the
+            [ragna.core.Component.display_name][] of any configured assistant.
+        **params: Additional parameters passed to the source storage and assistant.
     """
 
     def __init__(
@@ -108,6 +150,9 @@ class Chat:
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
         source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
 
+        Returns:
+            Welcome message.
+
         Raises:
             ragna.core.RagnaException: If chat is already
                 [`prepare`][ragna.core.Chat.prepare]d.
@@ -131,7 +176,10 @@ class Chat:
         return welcome
 
     async def answer(self, prompt: str) -> Message:
-        """Answer a prompt
+        """Answer a prompt.
+
+        Returns:
+            Answer.
 
         Raises:
             ragna.core.RagnaException: If chat is not

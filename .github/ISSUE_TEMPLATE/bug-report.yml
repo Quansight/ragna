@@ -1,0 +1,49 @@
+name: "Bug report 🐛"
+description: "Create a report to help us fix something that is currently broken."
+title: "[BUG] - <title>"
+labels: ["type: bug 🐛"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting!
+        Before submitting a bug, please make sure the issue hasn't already been addressed by searching through
+        the past issues in this repository.
+
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: |
+        A clear and concise description of what the bug is.
+        Precisely describe what you expected to happen and what actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: How to reproduce the bug?
+      description: |
+        Provide a minimal code example and detailed step-by-step guidelines to reproduce the error.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Versions and dependencies used
+      description: |
+        Describe your environment:
+        - Ragna version
+        - Python version
+        - Operating system
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Anything else?
+      description: |
+        Links? References? Screenshots?
+        Anything that will give us more context!
+    validations:
+      required: false

@@ -10,18 +10,44 @@ from fastapi.security.utils import get_authorization_scheme_param
 
 
 class Authentication(abc.ABC):
+    """Abstract base class for authentication used by the REST API."""
+
     @abc.abstractmethod
     async def create_token(self, request: Request) -> str:
+        """Authenticate user and create an authorization token.
+
+        Args:
+            request: Request send to the `/token` endpoint of the REST API.
+
+        Returns:
+            Authorization token.
+        """
         pass
 
     @abc.abstractmethod
     async def get_user(self, request: Request) -> str:
+        """
+        Args:
+            request: Request send to any endpoint of the REST API that requires
+                authorization.
+
+        Returns:
+            Authorized user.
+        """
         pass
 
 
 class RagnaDemoAuthentication(Authentication):
+    """Demo OAuth2 password authentication without requirements.
+
+    !!! danger
+
+        As the name implies, this authentication is just for demo purposes and should
+        not be used in production.
+    """
+
     def __init__(self) -> None:
-        self._password = os.environ.get("AI_PROXY_DEMO_AUTHENTICATION_PASSWORD")
+        self._password = os.environ.get("RAGNA_DEMO_AUTHENTICATION_PASSWORD")
 
     _JWT_SECRET = secrets.token_urlsafe(32)
     _JWT_ALGORITHM = "HS256"
@@ -29,6 +55,21 @@ class RagnaDemoAuthentication(Authentication):
     _ONE_WEEK = 60 * 60 * 24 * 7
 
     async def create_token(self, request: Request) -> str:
+        """Authenticate user and create an authorization token.
+
+        User name is arbitrary. Authentication is possible in two ways:
+
+        1. If the `RAGNA_DEMO_AUTHENTICATION_PASSWORD` environment variable is set, the
+           password is checked against that.
+        2. Otherwise, the password has to match the user name.
+
+        Args:
+            request: Request send to the `/token` endpoint of the REST API. Must include
+                the `"username"` and `"password"` as form data.
+
+        Returns:
+            Authorization [JWT](https://jwt.io/) that expires after one day.
+        """
         async with request.form() as form:
             username = form.get("username")
             password = form.get("password")
@@ -36,7 +77,9 @@ class RagnaDemoAuthentication(Authentication):
         if username is None or password is None:
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY)
 
-        if self._password is not None and password != self._password:
+        if (self._password is not None and password != self._password) or (
+            self._password is None and password != username
+        ):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         return jwt.encode(
@@ -46,6 +89,20 @@ class RagnaDemoAuthentication(Authentication):
         )
 
     async def get_user(self, request: Request) -> str:
+        """Get user from an authorization token.
+
+        Token has to be supplied in the
+        [Bearer authentication scheme](https://swagger.io/docs/specification/authentication/bearer-authentication/),
+        i.e. including a `Authorization: Bearer {token}` header.
+
+        Args:
+            request: Request send to any endpoint of the REST API that requires
+                authorization.
+
+        Returns:
+            Authorized user.
+        """
+
         unauthorized = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",

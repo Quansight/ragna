@@ -1,13 +1,7 @@
 # Python API reference
 
-## `ragna.core`
+::: ragna.core
 
-### ::: ragna.core.Rag
+::: ragna.source_storages
 
-### ::: ragna.core.Chat
-
-### ::: ragna.core.SourceStorage
-
-### ::: ragna.core.Document
-
-### ::: ragna.core.RagnaException
+::: ragna.assistants

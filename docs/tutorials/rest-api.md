@@ -1,1 +1,6 @@
-# Explore the REST API
+# Understand the REST API
+
+!!! tip "Under development"
+
+    This documentation page is being actively worked on.
+    It will be available soon. :)

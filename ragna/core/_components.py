@@ -17,8 +17,20 @@ if TYPE_CHECKING:
 
 
 class Component(RequirementsMixin):
+    """Base class for RAG components.
+
+    !!! tip See also
+
+        - [ragna.core.SourceStorage][]
+        - [ragna.core.Assistant][]
+    """
+
     @classmethod
     def display_name(cls) -> str:
+        """
+        Returns:
+            Component name.
+        """
         return cls.__name__
 
     def __init__(self, config: Config) -> None:
@@ -71,6 +83,16 @@ class Component(RequirementsMixin):
 
 
 class Source(pydantic.BaseModel):
+    """Data class for sources stored inside a source storage.
+
+    Attributes:
+        id: Unique ID of the source.
+        document: Document this source belongs to.
+        location: Location of the source inside the document.
+        content: Content of the source.
+        num_tokens: Number of tokens of the content.
+    """
+
     model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
 
     id: str
@@ -88,22 +110,54 @@ class SourceStorage(Component, abc.ABC):
         """Store content of documents.
 
         Args:
-            documents: Documents to store
+            documents: Documents to store.
         """
         ...
 
     @abc.abstractmethod
     def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+        """Retrieve sources for a given prompt.
+
+        Args:
+            documents: Documents to retrieve sources from.
+            prompt: Prompt to retrieve sources for.
+
+        Returns:
+            Matching sources for the given prompt ordered by relevance.
+        """
         ...
 
 
 class MessageRole(enum.Enum):
+    """Message role
+
+    Attributes:
+        SYSTEM: The message was produced by the system. This includes the welcome
+            message when [preparing a new chat][ragna.core.Chat.prepare] as well as
+            error messages.
+        USER: The message was produced by the user.
+        ASSISTANT: The message was produced by an assistant.
+    """
+
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
 
 
 class Message(pydantic.BaseModel):
+    """Data class for messages.
+
+    Attributes:
+        content: The content of the message.
+        role: The message producer.
+        sources: The sources used to produce the message.
+
+    !!! tip "See also"
+
+        - [ragna.core.Chat.prepare][]
+        - [ragna.core.Chat.answer][]
+    """
+
     content: str
     role: MessageRole
     sources: list[Source] = pydantic.Field(default_factory=list)
@@ -113,6 +167,8 @@ class Message(pydantic.BaseModel):
 
 
 class Assistant(Component, abc.ABC):
+    """Abstract base class for assistants used in [ragna.core.Chat][]"""
+
     __ragna_protocol_methods__ = ["answer"]
 
     @property
@@ -121,5 +177,14 @@ class Assistant(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def answer(self, prompt: str, sources: list[Source]) -> Message:
+    def answer(self, prompt: str, sources: list[Source]) -> str:
+        """Answer a prompt given some sources.
+
+        Args:
+            prompt: Prompt to be answered.
+            sources: Sources to use when answering answer the prompt.
+
+        Returns:
+            Answer.
+        """
         ...

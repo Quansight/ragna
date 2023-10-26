@@ -23,6 +23,8 @@ class RagnaExceptionHttpDetail(enum.Enum):
 
 
 class RagnaException(Exception):
+    """Ragna exception."""
+
     # The values below are sentinels to be used with the http_detail field.
     # They tells the API to use the event as detail in the returned error message
     EVENT = RagnaExceptionHttpDetail.EVENT

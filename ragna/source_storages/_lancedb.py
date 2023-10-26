@@ -1,12 +1,20 @@
 import uuid
 
 from ragna.core import Config, Document, PackageRequirement, Requirement, Source
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
 
 from ._vector_database import VectorDatabaseSourceStorage
 
 
 class LanceDB(VectorDatabaseSourceStorage):
+    """[LanceDB vector database](https://lancedb.com/)
+
+    !!! info "Required packages"
+
+        - `chromadb>=0.4.13`
+        - `lancedb>=0.2`
+        - `pyarrow`
+    """
+
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
@@ -53,18 +61,19 @@ class LanceDB(VectorDatabaseSourceStorage):
         table = self._db.create_table(name=str(chat_id), schema=self._schema)
 
         for document in documents:
-            for chunk in chunk_pages(
+            for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._tokenizer,
             ):
                 table.add(
                     [
                         {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
-                            "page_numbers": page_numbers_to_str(chunk.page_numbers),
+                            "page_numbers": self._page_numbers_to_str(
+                                chunk.page_numbers
+                            ),
                             "text": chunk.text,
                             self._VECTOR_COLUMN_NAME: self._embedding_function(
                                 [chunk.text]
@@ -96,21 +105,19 @@ class LanceDB(VectorDatabaseSourceStorage):
         )
 
         document_map = {str(document.id): document for document in documents}
-        return list(
-            take_sources_up_to_max_tokens(
-                (
-                    Source(
-                        id=result["id"],
-                        document=document_map[result["document_id"]],
-                        # For some reason adding an empty string during store() results
-                        # in this field being None. Thus, we need to parse it back here.
-                        # TODO: See if there is a configuration option for this
-                        location=result["page_numbers"] or "",
-                        content=result["text"],
-                        num_tokens=result["num_tokens"],
-                    )
-                    for result in results.to_pylist()
-                ),
-                max_tokens=num_tokens,
-            )
+        return self._take_sources_up_to_max_tokens(
+            (
+                Source(
+                    id=result["id"],
+                    document=document_map[result["document_id"]],
+                    # For some reason adding an empty string during store() results
+                    # in this field being None. Thus, we need to parse it back here.
+                    # TODO: See if there is a configuration option for this
+                    location=result["page_numbers"] or "",
+                    content=result["text"],
+                    num_tokens=result["num_tokens"],
+                )
+                for result in results.to_pylist()
+            ),
+            max_tokens=num_tokens,
         )

@@ -12,6 +12,7 @@ build:
 
 mkdocs:
   configuration: mkdocs.yml
+  fail_on_warning: true
 
 # Optionally declare the Python requirements required to build your docs
 conda:

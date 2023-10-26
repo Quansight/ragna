@@ -46,7 +46,7 @@ def test_e2e(tmp_path, queue, database):
             check_api(config)
 
 
-@timeout_after(30)
+@timeout_after()
 def check_api(config):
     document_root = config.local_cache_root / "documents"
     document_root.mkdir()

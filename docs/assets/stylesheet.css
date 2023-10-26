@@ -1,0 +1,14 @@
+/* TODO: Update based on new brand guidelines */
+
+:root {
+    --md-primary-fg-color: #df5538;
+    --md-accent-fg-color: #3c8d89;
+  }
+
+.md-header, .md-footer {
+    background-color: #1f2636;
+}
+
+.icon {
+  color: #df5538;
+}

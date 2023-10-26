@@ -62,12 +62,27 @@ class OpenaiApiAssistant(ApiAssistant):
 
 
 class Gpt35Turbo16k(OpenaiApiAssistant):
-    # https://platform.openai.com/docs/models/gpt-3-5
+    """[OpenAI GPT-3.5](https://platform.openai.com/docs/models/gpt-3-5)
+
+    !!! info "Required environment variables"
+
+        - `OPENAI_API_KEY`
+    """
+
     _MODEL = "gpt-3.5-turbo-16k"
     _CONTEXT_SIZE = 16_384
 
 
+Gpt35Turbo16k.__doc__ = "OOPS"
+
+
 class Gpt4(OpenaiApiAssistant):
-    # https://platform.openai.com/docs/models/gpt-4
+    """[OpenAI GPT-4](https://platform.openai.com/docs/models/gpt-4)
+
+    !!! info "Required environment variables"
+
+        - `OPENAI_API_KEY`
+    """
+
     _MODEL = "gpt-4"
     _CONTEXT_SIZE = 8_192
