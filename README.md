@@ -8,8 +8,8 @@ A RAG orchestration framework. ⛵️
 
 ## Local development
 
-- [Setup](https://docs.ragna.chat/en/latest/install/)
-- [Quickstart](https://docs.ragna.chat/en/latest/tutorials/python-api/)
+- [Setup](https://docs.ragna.chat/en/stable/install/)
+- [Quickstart](https://docs.ragna.chat/en/stable/tutorials/python-api/)
 
 ## Code of Conduct
 
