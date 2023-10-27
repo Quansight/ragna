@@ -15,21 +15,13 @@ import redis
 
 
 @contextlib.contextmanager
-def background_subprocess(
-    *args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs
-):
+def background_subprocess(*args, stdout=sys.stdout, stderr=sys.stdout, **kwargs):
     process = subprocess.Popen(*args, stdout=stdout, stderr=stderr, **kwargs)
     try:
         yield process
     finally:
         process.kill()
-        stdout, stderr = process.communicate()
-        if stdout:
-            sys.stdout.buffer.write(stdout)
-            sys.stdout.flush()
-        if stderr:
-            sys.stderr.buffer.write(stderr)
-            sys.stderr.flush()
+        process.communicate()
 
 
 def timeout_after(seconds=30, *, message=None):
@@ -130,17 +122,15 @@ def ragna_worker(config):
 
     with background_subprocess(
         [sys.executable, "-m", "ragna", "worker", "--config", str(config_path)]
-    ) as process:
+    ):
 
         @timeout_after(message="Unable to start worker")
         def wait_for_worker():
             # This seems quite brittle, but I didn't find a better way to check
             # whether the worker is ready. We are checking the logged messages until
             # we see the "ready" message.
-            for line in process.stderr:
-                sys.stderr.buffer.write(line)
-                if b"Huey consumer started" in line:
-                    sys.stderr.flush()
+            for line in sys.stderr:
+                if "Huey consumer started" in line:
                     return
 
         yield wait_for_worker()

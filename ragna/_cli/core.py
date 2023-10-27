@@ -142,6 +142,12 @@ def api(
     if start_worker is None:
         start_worker = config.core.queue_url != "memory"
 
+    components = urlsplit(config.api.url)
+    if components.hostname is None or components.port is None:
+        # TODO: make this part of the config validation
+        rich.print(f"Unable to extract hostname and port from {config.api.url}.")
+        raise typer.Exit(1)
+
     if start_worker:
         process = subprocess.Popen(
             [
@@ -152,19 +158,13 @@ def api(
                 "--config",
                 config.__ragna_cli_value__,  # type: ignore[attr-defined]
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
     else:
         process = None
 
     try:
-        components = urlsplit(config.api.url)
-        if components.hostname is None or components.port is None:
-            # TODO: make this part of the config validation
-            rich.print(f"Unable to extract hostname and port from {config.api.url}.")
-            raise typer.Exit(1)
-
         uvicorn.run(
             api_app(config), host=components.hostname, port=components.port or 31476
         )
@@ -206,8 +206,8 @@ def ui(
                 "--config",
                 config.__ragna_cli_value__,  # type: ignore[attr-defined]
             ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
     else:
         process = None
@@ -217,11 +217,8 @@ def ui(
 
             @timeout_after(30)
             def wait_for_api() -> None:
-                rich.print(f"Starting ragna api at {config.api.url}")
                 while not check_api_available():
                     time.sleep(0.5)
-
-                rich.print("Started ragna api")
 
             wait_for_api()
 
