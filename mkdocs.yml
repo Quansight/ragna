@@ -67,14 +67,14 @@ extra_css:
 nav:
   - "index.md"
   - "install.md"
+  # - Explanations:
+  #     - "explanations/what-is-rag.md" # Hide for 0.1.0 release
   - Tutorials:
       - "tutorials/python-api.md"
       - "tutorials/rest-api.md"
       - "tutorials/web-app.md"
   - How-to:
       - "how-tos/set-configuration.md"
-  - Explanations:
-      - "explanations/understand-rag.md"
   - Community:
       - "community/welcome.md"
       - "community/contribute.md"
