@@ -128,7 +128,7 @@ def _wizard_builtin() -> Config:
         Assistant,  # type: ignore[type-abstract]
     )
 
-    _handle_unment_requirements(
+    _handle_unmet_requirements(
         itertools.chain(config.core.source_storages, config.core.assistants)
     )
 
@@ -165,7 +165,7 @@ def _select_components(
     )
 
 
-def _handle_unment_requirements(components: Iterable[Type[Component]]) -> None:
+def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
     unmet_requirements = set(
         itertools.chain.from_iterable(
             component.requirements() for component in components
