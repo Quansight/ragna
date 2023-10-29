@@ -1,3 +1,4 @@
+import itertools
 from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
@@ -110,21 +111,66 @@ def _wizard_demo() -> Config:
 def _wizard_builtin() -> Config:
     config = _wizard_demo()
 
-    unmet_requirements: set[Requirement] = set()
-
-    config.core.source_storages, partial_unmet_requirements = _select_components(
+    rich.print(
+        "\nragna has the following components builtin. "
+        "Select the ones that you want to use. "
+        "If the requirements of a selected component are not met, "
+        "I'll show you instructions how to meet them later."
+    )
+    config.core.source_storages = _select_components(
         "source storages",
         ragna.source_storages,
         SourceStorage,  # type: ignore[type-abstract]
     )
-    unmet_requirements.update(partial_unmet_requirements)
-
-    config.core.assistants, partial_unmet_requirements = _select_components(
+    config.core.assistants = _select_components(
         "assistants",
         ragna.assistants,
         Assistant,  # type: ignore[type-abstract]
     )
-    unmet_requirements.update(partial_unmet_requirements)
+
+    _handle_unment_requirements(
+        itertools.chain(config.core.source_storages, config.core.assistants)
+    )
+
+    return config
+
+
+T = TypeVar("T", bound=Component)
+
+
+def _select_components(
+    title: str,
+    module: ModuleType,
+    base_cls: Type[T],
+) -> list[Type[T]]:
+    components = [
+        obj
+        for obj in module.__dict__.values()
+        if isinstance(obj, type) and issubclass(obj, base_cls) and obj is not base_cls
+    ]
+    return cast(
+        list[Type[T]],
+        questionary.checkbox(
+            f"Which {title} do you want to use?",
+            choices=[
+                questionary.Choice(
+                    component.display_name(),
+                    value=component,
+                    checked=component.is_available(),
+                )
+                for component in components
+            ],
+            qmark=QMARK,
+        ).unsafe_ask(),
+    )
+
+
+def _handle_unment_requirements(components: Iterable[Type[Component]]) -> None:
+    unmet_requirements = set(
+        itertools.chain.from_iterable(
+            component.requirements() for component in components
+        )
+    )
 
     if unmet_requirements:
         rich.print(
@@ -169,80 +215,6 @@ def _wizard_builtin() -> Config:
             "\nTip: You can check the availability of the requirements with "
             "[bold]ragna check[/bold]."
         )
-
-    return config
-
-
-T = TypeVar("T", bound=Component)
-
-
-def _select_components(
-    title: str, module: ModuleType, base_cls: Type[T]
-) -> tuple[list[Type[T]], set[Requirement]]:
-    selected_components: list[Type[T]] = questionary.checkbox(
-        (
-            f"ragna has the following {title} builtin. "
-            f"Choose the ones you want to use. "
-            f"If the requirements of a selected component are not met, "
-            f"I'll ask for confirmation later."
-        ),
-        choices=[
-            questionary.Choice(
-                component.display_name(),
-                value=component,
-                checked=component.is_available(),
-            )
-            for component in [
-                obj
-                for obj in module.__dict__.values()
-                if isinstance(obj, type)
-                and issubclass(obj, base_cls)
-                and obj is not base_cls
-            ]
-        ],
-        qmark=QMARK,
-    ).unsafe_ask()
-
-    unmet_requirements: set[Requirement] = set()
-    for component in [
-        component for component in selected_components if not component.is_available()
-    ]:
-        rich.print(
-            f"The component [bold]{component.display_name()}[/bold] "
-            f"has the following requirements that are currently not fully met:\n"
-        )
-
-        requirements = component.requirements()
-        requirements_by_type = _split_requirements(requirements)
-        for title, requirement_type in [
-            ("Installed packages:", PackageRequirement),
-            ("Environment variables:", EnvVarRequirement),
-        ]:
-            if TYPE_CHECKING:
-                requirement_type = cast(Type[Requirement], requirement_type)
-
-            if requirement_type in requirements_by_type:
-                rich.print(f"{title}\n")
-                rich.print(
-                    f"{_format_requirements(requirements_by_type[requirement_type])}\n"
-                )
-
-        if questionary.confirm(
-            (
-                f"Are you able to meet these requirements in the future and "
-                f"thus want to include {component.display_name()} in the configuration?"
-            ),
-            qmark=QMARK,
-        ).unsafe_ask():
-            unmet_requirements.update(
-                requirement
-                for requirement in requirements
-                if not requirement.is_available()
-            )
-        else:
-            selected_components.remove(component)
-
-    return selected_components, unmet_requirements
 
 
 def _wizard_common() -> Config:

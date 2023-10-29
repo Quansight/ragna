@@ -68,6 +68,7 @@ def init(
     ] = False,
 ) -> None:
     config, output_path, force = init_config(output_path=output_path, force=force)
+    config.to_file(output_path, force=force)
 
 
 @app.command(help="Check the availability of components.")
