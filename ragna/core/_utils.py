@@ -132,10 +132,11 @@ def merge_models(
         for name, field in model_cls.model_fields.items():
             type_ = field.annotation
 
+            default: Any
             if field.is_required():
                 default = ...
             elif field.default is pydantic_core.PydanticUndefined:
-                default = field.default_factory()
+                default = field.default_factory()  # type: ignore[misc]
             else:
                 default = field.default
 
