@@ -5,7 +5,7 @@ import itertools
 import uuid
 from typing import Any, Iterable, Optional, Type, TypeVar, Union
 
-from pydantic import BaseModel, Field
+import pydantic
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._config import Config
@@ -70,10 +70,10 @@ class Rag:
         )
 
 
-class SpecialChatParams(BaseModel):
-    user: str = Field(default_factory=default_user)
-    chat_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    chat_name: str = Field(
+class SpecialChatParams(pydantic.BaseModel):
+    user: str = pydantic.Field(default_factory=default_user)
+    chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    chat_name: str = pydantic.Field(
         default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
     )
 
@@ -135,7 +135,6 @@ class Chat:
         self.assistant = self._rag._queue.parse_component(assistant)
 
         special_params = SpecialChatParams().model_dump()
-
         special_params.update(params)
         params = special_params
         self.params = params
@@ -246,9 +245,12 @@ class Chat:
             SpecialChatParams,
             *source_storage_models.values(),
             *assistant_models.values(),
+            config=pydantic.ConfigDict(extra="forbid"),
         )
 
-        chat_params = ChatModel.model_validate(params).model_dump(exclude_none=True)
+        chat_params = ChatModel.model_validate(params, strict=True).model_dump(
+            exclude_none=True
+        )
         return {
             component_and_action: model(**chat_params).model_dump()
             for component_and_action, model in itertools.chain(

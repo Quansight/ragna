@@ -15,7 +15,7 @@ pip install ragna
 If you want to install all optional dependencies, append `[builtin]`:
 
 ```bash
-pip install ragna[builtin]
+pip install 'ragna[builtin]'
 ```
 
 And, upgrade to latest versions with:

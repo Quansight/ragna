@@ -96,19 +96,19 @@ class Chroma(VectorDatabaseSourceStorage):
             include=["distances", "metadatas", "documents"],
         )
 
-        num_results = len(result["ids"])
+        num_results = len(result["ids"][0])
         result = {
             key: [None] * num_results if value is None else value[0]  # type: ignore[index]
             for key, value in result.items()
         }
         # dict of lists -> list of dicts
         results = [
-            {key: value[idx] for key, value in result.items()}
+            {key[:-1]: value[idx] for key, value in result.items()}
             for idx in range(num_results)
         ]
 
         # That should be the default, but let's make extra sure here
-        results = sorted(results, key=lambda r: r["distances"])
+        results = sorted(results, key=lambda r: r["distance"])
 
         # TODO: we should have some functionality here to remove results with a high
         #  distance to keep only "valid" sources. However, there are two issues:
@@ -120,11 +120,11 @@ class Chroma(VectorDatabaseSourceStorage):
         return self._take_sources_up_to_max_tokens(
             (
                 Source(
-                    id=result["ids"],
-                    document=document_map[result["metadatas"]["document_id"]],
-                    location=result["metadatas"]["page_numbers"],
-                    content=result["documents"],
-                    num_tokens=result["metadatas"]["num_tokens"],
+                    id=result["id"],
+                    document=document_map[result["metadata"]["document_id"]],
+                    location=result["metadata"]["page_numbers"],
+                    content=result["document"],
+                    num_tokens=result["metadata"]["num_tokens"],
                 )
                 for result in results
             ),
