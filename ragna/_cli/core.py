@@ -72,7 +72,7 @@ def init(
 
 
 @app.command(help="Check the availability of components.")
-def check(config: ConfigOption = "./ragna.toml") -> None:
+def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assignment]
     is_available = check_config(config)
     raise typer.Exit(int(not is_available))
 
@@ -80,7 +80,7 @@ def check(config: ConfigOption = "./ragna.toml") -> None:
 @app.command(help="Start workers.")
 def worker(
     *,
-    config: ConfigOption = "./ragna.toml",
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     num_threads: Annotated[
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
@@ -101,7 +101,7 @@ def worker(
 @app.command(help="Start the REST API.")
 def api(
     *,
-    config: ConfigOption = "./ragna.toml",
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_worker: Annotated[
         Optional[bool],
         typer.Option(
@@ -148,7 +148,7 @@ def api(
 @app.command(help="Start the UI.")
 def ui(
     *,
-    config: ConfigOption = "./ragna.toml",
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_api: Annotated[
         Optional[bool],
         typer.Option(
