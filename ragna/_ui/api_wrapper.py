@@ -47,21 +47,28 @@ class ApiWrapper(param.Parameterized):
 
         return json_data
 
-    def answer(self, chat_id, prompt):
-        json_data = (
-            self.client.post(
-                f"/chats/{chat_id}/answer", params={"prompt": prompt}, timeout=None
+    async def answer(self, chat_id, prompt):
+        async with httpx.AsyncClient(
+            base_url=self.client.base_url, headers=self.client.headers
+        ) as async_client:
+            json_data = (
+                (
+                    await async_client.post(
+                        f"/chats/{chat_id}/answer",
+                        params={"prompt": prompt},
+                        timeout=None,
+                    )
+                )
+                .raise_for_status()
+                .json()
             )
-            .raise_for_status()
-            .json()
-        )
 
-        json_data["message"] = self.improve_message(json_data["message"])
-        json_data["chat"]["messages"] = [
-            self.improve_message(msg) for msg in json_data["chat"]["messages"]
-        ]
+            json_data["message"] = self.improve_message(json_data["message"])
+            json_data["chat"]["messages"] = [
+                self.improve_message(msg) for msg in json_data["chat"]["messages"]
+            ]
 
-        return json_data
+            return json_data
 
     async def get_components_async(self):
         async with httpx.AsyncClient(
