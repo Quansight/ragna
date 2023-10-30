@@ -9,10 +9,11 @@ import importlib
 import importlib.metadata
 import os
 from collections import defaultdict
-from typing import Any, Collection, Type, Union, cast
+from typing import Any, Collection, Optional, Type, Union, cast
 
 import packaging.requirements
 import pydantic
+import pydantic_core
 
 from ragna._compat import importlib_metadata_package_distributions
 
@@ -131,21 +132,24 @@ def default_user() -> str:
 
 
 def merge_models(
-    model_name: str, *models: Type[pydantic.BaseModel]
+    model_name: str,
+    *models: Type[pydantic.BaseModel],
+    config: Optional[pydantic.ConfigDict] = None,
 ) -> Type[pydantic.BaseModel]:
     raw_field_definitions = defaultdict(list)
     for model_cls in models:
         for name, field in model_cls.model_fields.items():
-            raw_field_definitions[name].append(
-                (
-                    field.annotation,
-                    ...
-                    if field.is_required()
-                    else (
-                        field.default or field.default_factory()  # type: ignore[misc]
-                    ),
-                )
-            )
+            type_ = field.annotation
+
+            default: Any
+            if field.is_required():
+                default = ...
+            elif field.default is pydantic_core.PydanticUndefined:
+                default = field.default_factory()  # type: ignore[misc]
+            else:
+                default = field.default
+
+            raw_field_definitions[name].append((type_, default))
 
     field_definitions = {}
     for name, definitions in raw_field_definitions.items():
@@ -169,6 +173,6 @@ def merge_models(
     return cast(
         Type[pydantic.BaseModel],
         pydantic.create_model(  # type: ignore[call-overload]
-            model_name, **field_definitions
+            model_name, **field_definitions, __config__=config
         ),
     )
