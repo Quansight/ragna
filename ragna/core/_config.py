@@ -59,6 +59,8 @@ class ApiConfig(BaseSettings):
         env_prefix = "ragna_api_"
 
     url: str = "http://127.0.0.1:31476"
+    # FIXME: this needs to be dynamic for the UI url
+    origins: list[str] = ["http://127.0.0.1:31477"]
     database_url: str = "memory"
 
     authentication: ImportString[
@@ -76,6 +78,8 @@ class UiConfig(BaseSettings):
         env_prefix = "ragna_ui_"
 
     url: str = "http://127.0.0.1:31477"
+    # FIXME: this needs to be dynamic for the url
+    origins: list[str] = ["http://127.0.0.1:31477"]
 
 
 class Config(BaseSettings):

@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 import panel as pn
 import param
 
-from ragna._utils import get_origins
+from ragna._utils import handle_localhost_origins
 from ragna.core import Config
 
 from . import js
@@ -28,10 +28,11 @@ RES = HERE / "resources"
 
 
 class App(param.Parameterized):
-    def __init__(self, *, url, api_url):
+    def __init__(self, *, url, api_url, origins):
         super().__init__()
         self.url = url
         self.api_url = api_url
+        self.origins = origins
 
         # TODO : build the Api Wrapper after we have the user's name,
         # and replace the default "User" here
@@ -97,12 +98,14 @@ class App(param.Parameterized):
             keep_alive=30 * 1000,  # 30s
             autoreload=True,
             profiler="pyinstrument",
-            allow_websocket_origin=[
-                urlsplit(origin).netloc for origin in get_origins(self.url)
-            ],
+            allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
             static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
         )
 
 
 def app(config: Config) -> App:
-    return App(url=config.ui.url, api_url=config.api.url)
+    return App(
+        url=config.ui.url,
+        api_url=config.api.url,
+        origins=handle_localhost_origins(config.ui.origins),
+    )
