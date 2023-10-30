@@ -4,6 +4,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Annotated, Iterable, Type, TypeVar, cast
 
+import pydantic
 import questionary
 import rich
 import typer
@@ -15,6 +16,7 @@ from ragna.core import (
     Config,
     EnvVarRequirement,
     PackageRequirement,
+    RagnaException,
     Requirement,
     SourceStorage,
 )
@@ -22,7 +24,19 @@ from ragna.core._components import Component
 
 
 def parse_config(value: str) -> Config:
-    config = Config.from_file(value)
+    try:
+        config = Config.from_file(value)
+    except RagnaException:
+        rich.print(f"The configuration file {value} does not exist.")
+        if value == "./ragna.toml":
+            rich.print(
+                "If you don't have a configuration file yet, "
+                "run [bold]ragna init[/bold] to generate one."
+            )
+        raise typer.Exit(1)
+    except pydantic.ValidationError as exc:
+        # FIXME: pretty formatting!
+        raise exc
     # This stores the original value so we can pass it on to subprocesses that we might
     # start.
     config.__ragna_cli_config_path__ = value
@@ -37,7 +51,6 @@ ConfigOption = Annotated[
         metavar="CONFIG",
         envvar="RAGNA_CONFIG",
         parser=parse_config,
-        show_default=False,
         help="Path to a Ragna configuration file.",
     ),
 ]
