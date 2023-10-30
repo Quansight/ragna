@@ -67,12 +67,12 @@ class App(param.Parameterized):
 
     def index_page(self):
         main_page = MainPage(api_wrapper=self.api_wrapper, template=self.template)
-        self.template.main.objects = [main_page.page()]
+        self.template.main.append(main_page)
         return self.template
 
     def auth_page(self):
         auth_page = AuthPage(api_wrapper=self.api_wrapper)
-        self.template.main.objects = [auth_page.page()]
+        self.template.main.append(auth_page)
         return self.template
 
     def health_page(self):

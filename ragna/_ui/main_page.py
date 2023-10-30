@@ -9,7 +9,7 @@ from .modal_welcome import ModalWelcome
 from .right_sidebar import RightSidebar
 
 
-class MainPage(param.Parameterized):
+class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
 
     def __init__(self, api_wrapper, template):
@@ -104,7 +104,7 @@ class MainPage(param.Parameterized):
         if self.left_sidebar is not None and self.left_sidebar not in avoid_senders:
             self.left_sidebar.current_chat_id = self.current_chat_id
 
-    def page(self):
+    def __panel__(self):
         objects = [self.left_sidebar, self.central_view, self.right_sidebar]
 
         if len(self.chats) == 0:

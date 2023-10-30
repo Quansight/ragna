@@ -24,7 +24,7 @@ input {
 """
 
 
-class AuthPage(param.Parameterized):
+class AuthPage(pn.viewable.Viewer, param.Parameterized):
     feedback_message = param.String(default=None)
 
     def __init__(self, api_wrapper):
@@ -84,7 +84,7 @@ class AuthPage(param.Parameterized):
                 ],
             )
 
-    def page(self):
+    def __panel__(self):
         login_button = pn.widgets.Button(
             name="Sign In",
             button_type="primary",
