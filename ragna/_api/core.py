@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
-from ragna._utils import get_origins
+from ragna._utils import handle_localhost_origins
 from ragna.core import Config, Rag, RagnaException
 from ragna.core._components import Component
 from ragna.core._rag import SpecialChatParams
@@ -23,7 +23,7 @@ def app(config: Config) -> FastAPI:
     app = FastAPI(title="ragna", version=ragna.__version__)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=get_origins(config.ui.url),
+        allow_origins=handle_localhost_origins(config.api.origins),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
