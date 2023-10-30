@@ -15,11 +15,10 @@ services:
     depends_on:
       queue:
         condition: service_healthy
-    image: "quay.io/quansight/ragna:pydatanyc2023.rc0"
-    #    build:
-    #      context: .
-    #      dockerfile: Dockerfile-pydatanyc2023
+    image: "quay.io/quansight/ragna:pydatanyc2023.rc6"
     env_file: .env
+    environment:
+      - "RAGNA_CORE_QUEUE_URL=redis://queue:6379"
     command:
       - ragna
       - worker
@@ -27,14 +26,34 @@ services:
   api:
     depends_on:
       - worker
-    #    build:
-    #      context: .
-    #      dockerfile: Dockerfile-pydatanyc2023
-    image: "quay.io/quansight/ragna:pydatanyc2023.rc0"
+    image: "quay.io/quansight/ragna:pydatanyc2023.rc6"
     env_file: .env
+    environment:
+      - "RAGNA_CORE_QUEUE_URL=redis://queue:6379"
+      - "RAGNA_API_URL=http://0.0.0.0:31476"
     command:
       - ragna
       - api
       - --no-start-worker
+    expose:
+      - "31476"
+    healthcheck:
+      test: ["CMD", "curl", "http://0.0.0.0:31476"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
+
+  ui:
+    depends_on:
+      api:
+        condition: service_healthy
+    image: "quay.io/quansight/ragna:pydatanyc2023.rc6"
+    environment:
+      - "RAGNA_API_URL=http://api:31476"
+    env_file: .env
+    command:
+      - ragna
+      - ui
+      - --no-start-api
     ports:
-      - "31476:31476"
+      - "31477:31477"

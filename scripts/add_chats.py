@@ -9,7 +9,7 @@ from ragna.core._utils import default_user
 
 
 def main():
-    client = httpx.Client(base_url="https://ragna.quansight.dev")
+    client = httpx.Client(base_url="http://localhost:31476")
     client.get("/").raise_for_status()
 
     ## authentication
