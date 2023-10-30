@@ -6,17 +6,19 @@ You need Python 3.9 or above in your working environment to use Ragna.
 
 ## Install Ragna
 
-You can install Ragna with `pip`:
+You can install Ragna and all recommended dependencies with:
+
+```bash
+pip install 'ragna[builtin]'
+```
+
+If you want to install a minimal version[^1]:
 
 ```bash
 pip install ragna
 ```
 
-If you want to install all optional dependencies, append `[builtin]`:
-
-```bash
-pip install 'ragna[builtin]'
-```
+[^1]: The minimal version is for users interested in writing plugins to extend Ragna.
 
 And, upgrade to latest versions with:
 
