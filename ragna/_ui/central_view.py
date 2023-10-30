@@ -120,7 +120,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     msg_data = param.Dict(default={})
     on_click_source_info_callback = param.Callable(default=None)
 
-    def __init__(self, msg_data, user, on_click_source_info_callback=None):
+    def __init__(self, msg_data, user, on_click_source_info_callback=None, **kwargs):
         self.role = msg_data["role"]
 
         params = {
@@ -143,12 +143,12 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
         params["avatar"] = RagnaChatMessage.get_avatar(self.role, user)
 
-        super().__init__(**params)
+        super().__init__(**(params | kwargs))
 
         self.update_css_classes()
         self.chat_copy_icon.visible = False
 
-        if self.role != "user":
+        if self.role not in ("user", "system"):
             source_info_button = pn.widgets.Button(
                 name="Source Info",
                 icon="info-circle",
@@ -210,6 +210,27 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             txt,
             css_classes=markdown_css_classes,
             stylesheets=[markdown_table_stylesheet],
+        )
+
+
+class RagnaChatInterface(pn.chat.ChatInterface):
+    def __init__(self, *objects, **params):
+        super().__init__(*objects, **params)
+
+    @param.depends("placeholder_text", watch=True, on_init=True)
+    def _update_placeholder(self):
+        loading_avatar = RagnaChatMessage.get_avatar("system", None)
+
+        self._placeholder = RagnaChatMessage(
+            {
+                "role": "system",
+                "content": ui.message_loading_indicator,
+            },
+            user=" ",
+            show_timestamp=False,
+            avatar=loading_avatar,
+            reaction_icons={},
+            show_copy_icon=False,
         )
 
 
@@ -349,7 +370,7 @@ class CentralView(pn.viewable.Viewer):
         self.current_chat["messages"].append({"role": "user", "content": contents})
 
         try:
-            answer = self.api_wrapper.answer(self.current_chat["id"], contents)
+            answer = await self.api_wrapper.answer(self.current_chat["id"], contents)
 
             self.current_chat["messages"].append(answer["message"])
 
@@ -390,7 +411,7 @@ class CentralView(pn.viewable.Viewer):
         if self.current_chat is None:
             return
 
-        chat_interface = pn.chat.ChatInterface(
+        chat_interface = RagnaChatInterface(
             callback=self.chat_callback,
             callback_user="Ragna",
             show_rerun=False,
