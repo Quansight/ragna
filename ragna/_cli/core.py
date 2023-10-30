@@ -17,13 +17,7 @@ from ragna._ui import app as ui_app
 from ragna._utils import timeout_after
 from ragna.core._queue import Queue
 
-from .config import (
-    COMMON_CONFIG_OPTION_ARGS,
-    COMMON_CONFIG_OPTION_KWARGS,
-    ConfigOption,
-    check_config,
-    config_wizard,
-)
+from .config import ConfigOption, check_config, init_config
 
 app = typer.Typer(
     name="ragna",
@@ -52,8 +46,8 @@ def _main(
     pass
 
 
-@app.command(help="Create or check configurations.")
-def config(
+@app.command(help="Start a wizard to build a Ragna configuration interactively.")
+def init(
     *,
     output_path: Annotated[
         Path,
@@ -66,24 +60,6 @@ def config(
             help="Write configuration to <OUTPUT_PATH>.",
         ),
     ],
-    config: Annotated[
-        Optional[ragna.Config],
-        typer.Option(
-            *COMMON_CONFIG_OPTION_ARGS,
-            **COMMON_CONFIG_OPTION_KWARGS,
-            show_default="Start a wizard to build the configuration interactively.",
-        ),
-    ] = None,
-    check: Annotated[
-        bool,
-        typer.Option(
-            "--check",
-            help=(
-                "Display the availability for all selected components in <CONFIG>. "
-                "If given, no file is generated at <OUTPUT_PATH>."
-            ),
-        ),
-    ] = False,
     force: Annotated[
         bool,
         typer.Option(
@@ -91,25 +67,20 @@ def config(
         ),
     ] = False,
 ) -> None:
-    if config is None:
-        if check:
-            rich.print(
-                "--check makes no sense without passing a config with -c / --config"
-            )
-            raise typer.Exit(1)
-        config, output_path, force = config_wizard(output_path=output_path, force=force)
-
-    if check:
-        is_available = check_config(config)
-        raise typer.Exit(int(not is_available))
-
+    config, output_path, force = init_config(output_path=output_path, force=force)
     config.to_file(output_path, force=force)
+
+
+@app.command(help="Check the availability of components.")
+def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assignment]
+    is_available = check_config(config)
+    raise typer.Exit(int(not is_available))
 
 
 @app.command(help="Start workers.")
 def worker(
     *,
-    config: ConfigOption = "builtin",  # type: ignore[assignment]
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     num_threads: Annotated[
         int,
         typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
@@ -130,7 +101,7 @@ def worker(
 @app.command(help="Start the REST API.")
 def api(
     *,
-    config: ConfigOption = "builtin",  # type: ignore[assignment]
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_worker: Annotated[
         Optional[bool],
         typer.Option(
@@ -156,7 +127,7 @@ def api(
                 "ragna",
                 "worker",
                 "--config",
-                config.__ragna_cli_value__,  # type: ignore[attr-defined]
+                config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
             ],
             stdout=sys.stdout,
             stderr=sys.stderr,
@@ -177,7 +148,7 @@ def api(
 @app.command(help="Start the UI.")
 def ui(
     *,
-    config: ConfigOption = "builtin",  # type: ignore[assignment]
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_api: Annotated[
         Optional[bool],
         typer.Option(
@@ -204,7 +175,7 @@ def ui(
                 "ragna",
                 "api",
                 "--config",
-                config.__ragna_cli_value__,  # type: ignore[attr-defined]
+                config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
             ],
             stdout=sys.stdout,
             stderr=sys.stderr,
