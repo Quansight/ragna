@@ -148,7 +148,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         self.update_css_classes()
         self.chat_copy_icon.visible = False
 
-        if self.role not in ("user", "system"):
+        if self.role == "assistant":
             source_info_button = pn.widgets.Button(
                 name="Source Info",
                 icon="info-circle",
