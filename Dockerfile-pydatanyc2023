@@ -1,14 +1,20 @@
-FROM quay.io/quansight/ragna:0.2.0.rc0
+FROM python:3.11 as builder
 
-ENV APP_DIR=/var/ragna
-WORKDIR $APP_DIR
+RUN pip wheel --progress-bar=off \
+    --wheel-dir /wheels \
+    boto3 psycopg2
 
-RUN pip install --progress-bar=off boto3 psycopg2
+
+FROM quay.io/quansight/ragna:0.2.0rc3
+
+COPY --from=builder /wheels /wheels
+RUN pip install --progress-bar=off --no-deps /wheels/*.whl
+
 COPY ragna_pydatanyc2023.py .
-ENV PYTHONPATH="${APP_DIR}:{$PYTHONPATH}"
+ENV PYTHONPATH="/var/ragna:{$PYTHONPATH}"
 
 COPY ragna-pydatanyc2023.toml .
-ENV RAGNA_CONFIG=$APP_DIR/ragna-pydatanyc2023.toml
+ENV RAGNA_CONFIG=/var/ragna/ragna-pydatanyc2023.toml
 
 # FIXME: can we move this to local cache root?
 ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb
