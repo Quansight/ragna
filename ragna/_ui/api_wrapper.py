@@ -41,7 +41,7 @@ class ApiWrapper(param.Parameterized):
     def update_auth_header(self):
         self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
-    async def get_chats_async(self):
+    async def get_chats(self):
         try:
             json_data = (await self.client.get("/chats")).raise_for_status().json()
             for chat in json_data:
@@ -54,28 +54,6 @@ class ApiWrapper(param.Parameterized):
             # unauthorized - the token might be invalid
             if e.response.status_code == 401:
                 raise RagnaAuthTokenExpiredException("Unauthorized")
-            else:
-                raise e
-
-    def get_chats(self):
-        try:
-            json_data = (
-                httpx.get(
-                    str(self.client.base_url) + "/chats", headers=self.client.headers
-                )
-                .raise_for_status()
-                .json()
-            )
-            for chat in json_data:
-                chat["messages"] = [
-                    self.improve_message(msg) for msg in chat["messages"]
-                ]
-            return json_data
-
-        except httpx.HTTPStatusError as e:
-            # unauthorized - the token might be invalid
-            if e.response.status_code == 401:
-                raise RagnaAuthTokenExpiredException("Unauthorized", e)
             else:
                 raise e
 
@@ -99,7 +77,7 @@ class ApiWrapper(param.Parameterized):
 
         return json_data
 
-    async def get_components_async(self):
+    async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()
 
     # Upload and related functions

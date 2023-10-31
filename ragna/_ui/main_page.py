@@ -1,3 +1,5 @@
+import asyncio
+
 import panel as pn
 import param
 
@@ -39,11 +41,8 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             on_error=lambda x: print(f"error sync on {x}"),
         )
 
-    def refresh_data(self):
-        self.chats = self.api_wrapper.get_chats()
-
-    async def refresh_data_async(self):
-        self.chats = await self.api_wrapper.get_chats_async()
+    async def refresh_data(self):
+        self.chats = await self.api_wrapper.get_chats()
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
@@ -86,7 +85,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     async def open_new_chat(self, new_chat_id):
         # called after creating a new chat.
         self.current_chat_id = new_chat_id
-        await self.refresh_data_async()
+        await self.refresh_data()
 
         self.template.close_modal()
 
@@ -114,7 +113,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
     def __panel__(self):
         try:
-            self.refresh_data()
+            asyncio.ensure_future(self.refresh_data())
         except RagnaAuthTokenExpiredException:
             print("token expired, redirect logout")
             page = LogoutPage(api_wrapper=self.api_wrapper)
