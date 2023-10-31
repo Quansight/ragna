@@ -110,7 +110,7 @@ class LocalDocument(Document):
         elif path is not None and metadata_path is not None:
             raise RagnaException("Path was passed directly and as part of the metadata")
         elif path is not None:
-            metadata["path"] = str(path)
+            metadata["path"] = str(Path(path).expanduser().resolve())
 
         if name is None:
             name = Path(metadata["path"]).name
