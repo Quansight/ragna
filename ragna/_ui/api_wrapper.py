@@ -1,44 +1,28 @@
-import os
 import re
 from datetime import datetime
 
 import emoji
 import httpx
+import param
 
 
 # The goal is this class is to provide ready-to-use functions to interact with the API
-class ApiWrapper:
-    def __init__(self, api_url):
+class ApiWrapper(param.Parameterized):
+    auth_token = param.String(default=None)
+
+    def __init__(self, api_url, **params):
         # FIXME: this should be an async client
         self.client = httpx.Client(base_url=api_url)
+
+        super().__init__(**params)
+
         self.client.get("/").raise_for_status()
-
-        # FIXME: the token should come from a cookie that is set after UI login
-        from ragna.core._rag import default_user  # noqa
-
-        user = default_user()
-        token = (
-            self.client.post(
-                "/token",
-                data={
-                    "username": user,
-                    "password": os.environ.get(
-                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", user
-                    ),
-                },
-            )
-            .raise_for_status()
-            .json()
-        )
-        # FIXME: remove this as it should come from a cookie on the JS side as well
-        self.token = token
-        self.client.headers["Authorization"] = f"Bearer {token}"
 
     async def auth(self, username, password):
         async with httpx.AsyncClient(
             base_url=self.client.base_url, headers=self.client.headers
         ) as async_client:
-            self.token = (
+            self.auth_token = (
                 (
                     await async_client.post(
                         "/token",
@@ -49,9 +33,11 @@ class ApiWrapper:
                 .json()
             )
 
-            self.client.headers["Authorization"] = f"Bearer {self.token}"
-
             return True
+
+    @param.depends("auth_token", watch=True)
+    def update_auth_header(self):
+        self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
     def get_chats(self):
         json_data = self.client.get("/chats").raise_for_status().json()

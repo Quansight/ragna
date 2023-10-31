@@ -11,6 +11,7 @@ from . import js
 from . import styles as ui
 from .api_wrapper import ApiWrapper
 from .auth_page import AuthPage
+from .logout_page import LogoutPage
 from .main_page import MainPage
 
 pn.extension(
@@ -36,8 +37,6 @@ class App(param.Parameterized):
         # TODO : build the Api Wrapper after we have the user's name,
         # and replace the default "User" here
         self.api_wrapper = ApiWrapper(api_url=self.api_url)
-
-        self.template = self.get_template()
 
     def get_template(self):
         template = pn.template.FastListTemplate(
@@ -66,14 +65,36 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        main_page = MainPage(api_wrapper=self.api_wrapper, template=self.template)
-        self.template.main.append(main_page)
-        return self.template
+        if "auth_token" not in pn.state.cookies:
+            return pn.pane.HTML("""<script>window.location.href = '/auth';</script>""")
+
+        self.api_wrapper.auth_token = pn.state.cookies["auth_token"]
+
+        template = self.get_template()
+        main_page = MainPage(api_wrapper=self.api_wrapper, template=template)
+        template.main.append(main_page)
+        return template
 
     def auth_page(self):
+        # If the user is already authenticated, we receive the auth token in the cookie.
+        # in that case, redirect to the index page.
+        if "auth_token" in pn.state.cookies:
+            # Usually, we do a redirect this way :
+            # >>> pn.state.location.param.update(reload=True, pathname="/")
+            # But it only works once the page is fully loaded.
+            # So we render a javascript redirect instead.
+            return pn.pane.HTML("""<script>window.location.href = '/'; </script> """)
+
+        template = self.get_template()
         auth_page = AuthPage(api_wrapper=self.api_wrapper)
-        self.template.main.append(auth_page)
-        return self.template
+        template.main.append(auth_page)
+        return template
+
+    def logout_page(self):
+        template = self.get_template()
+        logout_page = LogoutPage(api_wrapper=self.api_wrapper)
+        template.main.append(logout_page)
+        return template
 
     def health_page(self):
         return pn.pane.HTML("<h1>Ok</h1>")
@@ -82,6 +103,7 @@ class App(param.Parameterized):
         all_pages = {
             "/": self.index_page,
             "auth": self.auth_page,
+            "logout": self.logout_page,
             "/health": self.health_page,
         }
         titles = {"/": "Home"}

@@ -77,7 +77,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.document_uploader = FileUploader(
             [],  # the allowed documents are set in the model_section function
-            self.api_wrapper.token,
+            self.api_wrapper.auth_token,
             upload_endpoints["informations_endpoint"],
         )
 
