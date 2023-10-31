@@ -148,7 +148,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         # prevents re-rendering the section
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = await self.api_wrapper.get_components_async()
+            components = await self.api_wrapper.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
