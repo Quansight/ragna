@@ -57,6 +57,15 @@ class Requirement(abc.ABC):
     def __repr__(self) -> str:
         ...
 
+    def __hash__(self) -> int:
+        return hash(repr(self))
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Requirement):
+            return NotImplemented
+
+        return repr(self) == repr(other)
+
 
 class RequirementsMixin:
     @classmethod
