@@ -61,7 +61,7 @@ def update_pyproject_toml(optional_dependencies):
     with open(PYPROJECT_TOML) as file:
         document = tomlkit.load(file)
 
-    document["project"]["optional-dependencies"]["builtin"] = tomlkit.items.Array(
+    document["project"]["optional-dependencies"]["all"] = tomlkit.items.Array(
         list(map(tomlkit.items.String.from_raw, optional_dependencies)),
         trivia=tomlkit.items.Trivia(),
         multiline=True,
