@@ -6,75 +6,101 @@ import httpx
 import param
 
 
+class RagnaAuthTokenExpiredException(Exception):
+    """Just a wrapper around Exception"""
+
+    pass
+
+
 # The goal is this class is to provide ready-to-use functions to interact with the API
 class ApiWrapper(param.Parameterized):
     auth_token = param.String(default=None)
 
     def __init__(self, api_url, **params):
-        # FIXME: this should be an async client
-        self.client = httpx.Client(base_url=api_url)
+        self.client = httpx.AsyncClient(base_url=api_url)
+
+        httpx.get(api_url).raise_for_status()
 
         super().__init__(**params)
 
-        self.client.get("/").raise_for_status()
-
     async def auth(self, username, password):
-        async with httpx.AsyncClient(
-            base_url=self.client.base_url, headers=self.client.headers
-        ) as async_client:
-            self.auth_token = (
-                (
-                    await async_client.post(
-                        "/token",
-                        data={"username": username, "password": password},
-                    )
+        self.auth_token = (
+            (
+                await self.client.post(
+                    "/token",
+                    data={"username": username, "password": password},
                 )
-                .raise_for_status()
-                .json()
             )
+            .raise_for_status()
+            .json()
+        )
 
-            return True
+        return True
 
     @param.depends("auth_token", watch=True)
     def update_auth_header(self):
         self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
+    async def get_chats_async(self):
+        try:
+            json_data = (await self.client.get("/chats")).raise_for_status().json()
+            for chat in json_data:
+                chat["messages"] = [
+                    self.improve_message(msg) for msg in chat["messages"]
+                ]
+            return json_data
+
+        except httpx.HTTPStatusError as e:
+            # unauthorized - the token might be invalid
+            if e.response.status_code == 401:
+                raise RagnaAuthTokenExpiredException("Unauthorized")
+            else:
+                raise e
+
     def get_chats(self):
-        json_data = self.client.get("/chats").raise_for_status().json()
-
-        for chat in json_data:
-            chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
-
-        return json_data
-
-    async def answer(self, chat_id, prompt):
-        async with httpx.AsyncClient(
-            base_url=self.client.base_url, headers=self.client.headers
-        ) as async_client:
+        try:
             json_data = (
-                (
-                    await async_client.post(
-                        f"/chats/{chat_id}/answer",
-                        params={"prompt": prompt},
-                        timeout=None,
-                    )
+                httpx.get(
+                    str(self.client.base_url) + "/chats", headers=self.client.headers
                 )
                 .raise_for_status()
                 .json()
             )
-
-            json_data["message"] = self.improve_message(json_data["message"])
-            json_data["chat"]["messages"] = [
-                self.improve_message(msg) for msg in json_data["chat"]["messages"]
-            ]
-
+            for chat in json_data:
+                chat["messages"] = [
+                    self.improve_message(msg) for msg in chat["messages"]
+                ]
             return json_data
 
+        except httpx.HTTPStatusError as e:
+            # unauthorized - the token might be invalid
+            if e.response.status_code == 401:
+                raise RagnaAuthTokenExpiredException("Unauthorized", e)
+            else:
+                raise e
+
+    async def answer(self, chat_id, prompt):
+        json_data = (
+            (
+                await self.client.post(
+                    f"/chats/{chat_id}/answer",
+                    params={"prompt": prompt},
+                    timeout=None,
+                )
+            )
+            .raise_for_status()
+            .json()
+        )
+
+        json_data["message"] = self.improve_message(json_data["message"])
+        json_data["chat"]["messages"] = [
+            self.improve_message(msg) for msg in json_data["chat"]["messages"]
+        ]
+
+        return json_data
+
     async def get_components_async(self):
-        async with httpx.AsyncClient(
-            base_url=self.client.base_url, headers=self.client.headers
-        ) as async_client:
-            return (await async_client.get("/components")).raise_for_status().json()
+        return (await self.client.get("/components")).raise_for_status().json()
 
     # Upload and related functions
     def upload_endpoints(self):
@@ -82,27 +108,31 @@ class ApiWrapper(param.Parameterized):
             "informations_endpoint": f"{self.client.base_url}/document",
         }
 
-    def start_chat(self, name, documents, source_storage, assistant, params={}):
+    async def start_chat(self, name, documents, source_storage, assistant, params={}):
         return (
-            self.client.post(
-                "/chats",
-                json={
-                    "name": name,
-                    "documents": documents,
-                    "source_storage": source_storage,
-                    "assistant": assistant,
-                    "params": params,
-                },
+            (
+                await self.client.post(
+                    "/chats",
+                    json={
+                        "name": name,
+                        "documents": documents,
+                        "source_storage": source_storage,
+                        "assistant": assistant,
+                        "params": params,
+                    },
+                )
             )
             .raise_for_status()
             .json()
         )
 
-    def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
-        chat = self.start_chat(name, documents, source_storage, assistant, params)
+    async def start_and_prepare(
+        self, name, documents, source_storage, assistant, params={}
+    ):
+        chat = await self.start_chat(name, documents, source_storage, assistant, params)
 
-        _ = self.client.post(
-            f"/chats/{chat['id']}/prepare", timeout=None
+        (
+            await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
         ).raise_for_status()
 
         return chat["id"]
