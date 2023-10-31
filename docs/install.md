@@ -18,7 +18,9 @@ If you want to install a minimal version[^1]:
 pip install ragna
 ```
 
-[^1]: The minimal version is for users interested in writing plugins to extend Ragna.
+[^1]:
+    The minimal version is for users who want fine-grained control over the dependencies
+    needed for the builtin components.
 
 And, upgrade to latest versions with:
 
