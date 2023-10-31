@@ -93,7 +93,7 @@ def app(config: Config) -> FastAPI:
 
     @contextlib.contextmanager
     def get_session() -> Iterator[database.Session]:
-        with make_session() as session:
+        with make_session() as session:  # type: ignore[attr-defined]
             yield session
 
     @app.get("/document")
