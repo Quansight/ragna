@@ -180,54 +180,56 @@ def _select_components(
 
 def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
     unmet_requirements = set(
-        itertools.chain.from_iterable(
-            component.requirements() for component in components
-        )
+        requirement
+        for component in components
+        for requirement in component.requirements()
+        if not requirement.is_available()
     )
+    if not unmet_requirements:
+        return
 
-    if unmet_requirements:
+    rich.print(
+        "You have selected components, which have additional requirements that are"
+        "currently not met."
+    )
+    unmet_requirements_by_type = _split_requirements(unmet_requirements)
+
+    unmet_package_requirements = sorted(
+        str(requirement)
+        for requirement in unmet_requirements_by_type[PackageRequirement]
+    )
+    if unmet_package_requirements:
         rich.print(
-            "You have selected components, which have additional requirements that are"
-            "currently not met."
+            "\nTo use the selected components, "
+            "you need to install the following packages: \n"
         )
-        unmet_requirements_by_type = _split_requirements(unmet_requirements)
-
-        unmet_package_requirements = sorted(
-            str(requirement)
-            for requirement in unmet_requirements_by_type[PackageRequirement]
-        )
-        if unmet_package_requirements:
-            rich.print(
-                "\nTo use the selected components, "
-                "you need to install the following packages: \n"
-            )
-            for requirement in unmet_package_requirements:
-                rich.print(f"- {requirement}")
-
-            rich.print(
-                f"\nTo do this, you can run\n\n"
-                f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
-                f"Optionally, you can also install Ragna with all optional dependencies"
-                f"for the builtin components\n\n"
-                f"$ pip install 'ragna\[builtin]'"
-            )
-
-        unmet_env_var_requirements = sorted(
-            str(requirement)
-            for requirement in unmet_requirements_by_type[EnvVarRequirement]
-        )
-        if unmet_env_var_requirements:
-            rich.print(
-                "\nTo use the selected components, "
-                "you need to set the following environment variables: \n"
-            )
-            for requirement in unmet_env_var_requirements:
-                rich.print(f"- {requirement}")
+        for requirement in unmet_package_requirements:
+            rich.print(f"- {requirement}")
 
         rich.print(
-            "\nTip: You can check the availability of the requirements with "
-            "[bold]ragna check[/bold]."
+            f"\nTo do this, you can run\n\n"
+            f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
+            f"Optionally, you can also install Ragna with all optional dependencies"
+            f"for the builtin components\n\n"
+            f"$ pip install 'ragna\[builtin]'"
         )
+
+    unmet_env_var_requirements = sorted(
+        str(requirement)
+        for requirement in unmet_requirements_by_type[EnvVarRequirement]
+    )
+    if unmet_env_var_requirements:
+        rich.print(
+            "\nTo use the selected components, "
+            "you need to set the following environment variables: \n"
+        )
+        for requirement in unmet_env_var_requirements:
+            rich.print(f"- {requirement}")
+
+    rich.print(
+        "\nTip: You can check the availability of the requirements with "
+        "[bold]ragna check[/bold]."
+    )
 
 
 def _wizard_common() -> Config:
