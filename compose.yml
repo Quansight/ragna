@@ -27,7 +27,7 @@ services:
     volumes:
       - "/tmp/ragna/documents:/var/ragna/documents"
 
-  api:
+  api.localhost:
     build:
       context: .
       dockerfile: Dockerfile-pydatanyc2023
@@ -37,8 +37,7 @@ services:
     environment:
       - "RAGNA_CORE_QUEUE_URL=redis://queue:6379"
       - "RAGNA_API_URL=http://0.0.0.0:31476"
-      - 'RAGNA_API_ORIGINS=["*"]'
-    #      - "RAGNA_API_ORIGINS=[\"http://localhost:31477\", \"http://ui:31477\"]"
+      - 'RAGNA_API_ORIGINS=["http://localhost:31477", "http://ui:31477"]'
     command:
       - ragna
       - api
@@ -58,10 +57,10 @@ services:
       context: .
       dockerfile: Dockerfile-pydatanyc2023
     depends_on:
-      api:
+      api.localhost:
         condition: service_healthy
     environment:
-      - "RAGNA_API_URL=http://api:31476"
+      - "RAGNA_API_URL=http://api.localhost:31476"
       - "RAGNA_UI_URL=http://0.0.0.0:31477"
       - 'RAGNA_UI_ORIGINS=["http://localhost:31477"]'
     env_file: .env
