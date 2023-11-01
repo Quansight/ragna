@@ -4,6 +4,7 @@ from urllib.parse import urlsplit
 import panel as pn
 import param
 
+import ragna
 from ragna._utils import handle_localhost_origins
 from ragna.core import Config
 
@@ -77,7 +78,7 @@ class App(param.Parameterized):
         return self.template
 
     def health_page(self):
-        return pn.pane.HTML("<h1>Ok</h1>")
+        return pn.pane.HTML(f"<h1>{ragna.__version__}</h1>")
 
     def serve(self):
         all_pages = {

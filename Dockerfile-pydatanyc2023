@@ -1,14 +1,18 @@
-FROM python:3.11 as builder
+FROM python:3.11
 
-RUN pip wheel --progress-bar=off \
-    --wheel-dir /wheels \
-    boto3 psycopg2
+WORKDIR /opt/ragna
 
+COPY requirements-pydatanyc2023.lock .
+RUN pip install --progress-bar=off --requirement requirements-pydatanyc2023.lock
 
-FROM quay.io/quansight/ragna:0.2.0rc3
+COPY ragna ./ragna
+COPY pyproject.toml .
+RUN echo '[tool.setuptools.package-data]\n"*" = ["*"]' >> pyproject.toml
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=0.2.0rc0 pip install --progress-bar=off --no-deps .
 
-COPY --from=builder /wheels /wheels
-RUN pip install --progress-bar=off --no-deps /wheels/*.whl
+WORKDIR /var/ragna
+ENTRYPOINT []
+CMD ["ragna", "--help"]
 
 COPY ragna_pydatanyc2023.py .
 ENV PYTHONPATH="/var/ragna:{$PYTHONPATH}"

@@ -1,11 +1,9 @@
-FROM python:3.11 as builder
+FROM python:3.11
 
 WORKDIR /opt/ragna
 
 COPY requirements.lock .
-RUN pip wheel --progress-bar=off \
-    --wheel-dir wheels \
-    --requirement requirements.lock
+RUN pip wheel --progress-bar=off --requirement requirements.lock
 
 COPY ragna ./ragna
 COPY pyproject.toml .
@@ -20,17 +18,8 @@ COPY pyproject.toml .
 #    since setuptools-scm cannot infer the version
 RUN echo '[tool.setuptools.package-data]\n"*" = ["*"]' >> pyproject.toml
 ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA
-RUN pip wheel --progress-bar=off \
-    --wheel-dir wheels \
-    --no-deps .
-
-FROM python:3.11
+RUN pip install --progress-bar=off --no-deps .
 
 WORKDIR /var/ragna
-
-COPY --from=builder /opt/ragna/wheels wheels
-
-RUN pip install --progress-bar=off --no-deps wheels/*.whl
-
 ENTRYPOINT []
 CMD ["ragna", "--help"]
