@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import secrets
 from pathlib import Path
 from typing import Union
 
@@ -64,11 +63,6 @@ class ApiConfig(BaseSettings):
     authentication: ImportString[
         type[Authentication]
     ] = "ragna.core.RagnaDemoAuthentication"  # type: ignore[assignment]
-
-    upload_token_secret: str = Field(
-        default_factory=lambda: secrets.token_urlsafe(32)[:32]
-    )
-    upload_token_ttl: int = 5 * 60
 
 
 class UiConfig(BaseSettings):

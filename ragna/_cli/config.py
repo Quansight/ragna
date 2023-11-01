@@ -211,7 +211,7 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
             f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
             f"Optionally, you can also install Ragna with all optional dependencies"
             f"for the builtin components\n\n"
-            f"$ pip install 'ragna\[builtin]'"
+            f"$ pip install 'ragna\[all]'"
         )
 
     unmet_env_var_requirements = sorted(
