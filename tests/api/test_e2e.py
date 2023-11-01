@@ -64,7 +64,7 @@ def check_api(config):
                 data={
                     "username": username,
                     "password": os.environ.get(
-                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", username
+                        "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
                     ),
                 },
             )

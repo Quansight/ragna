@@ -23,7 +23,7 @@ class ApiWrapper:
                 data={
                     "username": user,
                     "password": os.environ.get(
-                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", user
+                        "RAGNA_DEMO_AUTHENTICATION_PASSWORD", user
                     ),
                 },
             )
