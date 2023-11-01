@@ -5,6 +5,9 @@ extra:
   social:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/ragna/
+  analytics:
+    provider: plausible
+    domain: ragna.chat
 
 theme:
   name: material
@@ -52,6 +55,7 @@ plugins:
   - gen-files:
       scripts:
         - scripts/docs/gen_files.py
+  - material-plausible
 
 hooks:
   - scripts/docs/rtd.py
