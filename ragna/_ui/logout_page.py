@@ -14,6 +14,8 @@ class LogoutPage(pn.viewable.Viewer, param.Parameterized):
         # >>> pn.state.location.param.update(reload=True, pathname="/")
         # But it only works once the page is fully loaded.
         # So we render a javascript redirect instead.
+
+        # To clear the token, we have to force its expiry date to the past.
         return pn.pane.HTML(
             """<script>
                             document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
