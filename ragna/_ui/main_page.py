@@ -3,12 +3,9 @@ import asyncio
 import panel as pn
 import param
 
-from ragna._ui.api_wrapper import RagnaAuthTokenExpiredException
-
 from . import js
 from .central_view import CentralView
 from .left_sidebar import LeftSidebar
-from .logout_page import LogoutPage
 from .modal_configuration import ModalConfiguration
 from .modal_welcome import ModalWelcome
 from .right_sidebar import RightSidebar
@@ -46,7 +43,6 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
-        print("after_update_chats")
         self.left_sidebar.chats = self.chats
 
         if len(self.chats) > 0:
@@ -112,12 +108,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             self.left_sidebar.current_chat_id = self.current_chat_id
 
     def __panel__(self):
-        try:
-            asyncio.ensure_future(self.refresh_data())
-        except RagnaAuthTokenExpiredException:
-            print("token expired, redirect logout")
-            page = LogoutPage(api_wrapper=self.api_wrapper)
-            return page.__panel__()
+        asyncio.ensure_future(self.refresh_data())
 
         objects = [self.left_sidebar, self.central_view, self.right_sidebar]
 

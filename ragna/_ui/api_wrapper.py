@@ -19,9 +19,24 @@ class ApiWrapper(param.Parameterized):
     def __init__(self, api_url, **params):
         self.client = httpx.AsyncClient(base_url=api_url)
 
-        httpx.get(api_url).raise_for_status()
-
         super().__init__(**params)
+
+        try:
+            # If no auth token is provided, we use the API base URL and only test the API is up.
+            # else, we test the API is up *and* the token is valid.
+            endpoint = (
+                api_url + "/components" if self.auth_token is not None else api_url
+            )
+            httpx.get(
+                endpoint, headers={"Authorization": f"Bearer {self.auth_token}"}
+            ).raise_for_status()
+
+        except httpx.HTTPStatusError as e:
+            # unauthorized - the token is invalid
+            if e.response.status_code == 401:
+                raise RagnaAuthTokenExpiredException("Unauthorized")
+            else:
+                raise e
 
     async def auth(self, username, password):
         self.auth_token = (
@@ -37,25 +52,15 @@ class ApiWrapper(param.Parameterized):
 
         return True
 
-    @param.depends("auth_token", watch=True)
+    @param.depends("auth_token", watch=True, on_init=True)
     def update_auth_header(self):
         self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
     async def get_chats(self):
-        try:
-            json_data = (await self.client.get("/chats")).raise_for_status().json()
-            for chat in json_data:
-                chat["messages"] = [
-                    self.improve_message(msg) for msg in chat["messages"]
-                ]
-            return json_data
-
-        except httpx.HTTPStatusError as e:
-            # unauthorized - the token might be invalid
-            if e.response.status_code == 401:
-                raise RagnaAuthTokenExpiredException("Unauthorized")
-            else:
-                raise e
+        json_data = (await self.client.get("/chats")).raise_for_status().json()
+        for chat in json_data:
+            chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
+        return json_data
 
     async def answer(self, chat_id, prompt):
         json_data = (
