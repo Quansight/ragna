@@ -24,6 +24,8 @@ services:
     command:
       - ragna
       - worker
+    volumes:
+      - "/tmp/ragna/documents:/var/ragna/documents"
 
   api:
     build:
@@ -48,6 +50,8 @@ services:
       interval: 5s
       timeout: 2s
       retries: 6
+    volumes:
+      - "/tmp/ragna/documents:/var/ragna/documents"
 
   ui:
     build:
