@@ -15,7 +15,7 @@ class LogoutPage(pn.viewable.Viewer, param.Parameterized):
         # But it only works once the page is fully loaded.
         # So we render a javascript redirect instead.
 
-        # To clear the token, we have to force its expiry date to the past.
+        # To remove the token from the cookie, we have to force its expiry date to the past.
         return pn.pane.HTML(
             """<script>
                             document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
