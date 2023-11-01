@@ -121,9 +121,7 @@ def app(config: Config) -> FastAPI:
                 detail="Ragna configuration does not support local upload",
             )
         with get_session() as session:
-            user, id = ragna.core.LocalDocument.decode_upload_token(
-                token, secret=rag.config.api.upload_token_secret
-            )
+            user, id = ragna.core.LocalDocument.decode_upload_token(token)
             document, metadata = database.get_document(session, user=user, id=id)
 
             core_document = ragna.core.LocalDocument(
