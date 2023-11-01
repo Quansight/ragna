@@ -24,11 +24,13 @@ input {
 """
 
 
-class AuthPage(param.Parameterized):
+class AuthPage(pn.viewable.Viewer, param.Parameterized):
     feedback_message = param.String(default=None)
 
-    def __init__(self, api_wrapper):
-        super().__init__()
+    custom_js = param.String(default="")
+
+    def __init__(self, api_wrapper, **params):
+        super().__init__(**params)
         self.api_wrapper = api_wrapper
 
         self.main_layout = None
@@ -49,10 +51,16 @@ class AuthPage(param.Parameterized):
             authed = await self.api_wrapper.auth(
                 self.login_input.value, self.password_input.value
             )
+
+            if authed:
+                # Sets the cookie on the JS side
+                self.custom_js = f""" document.cookie = "auth_token={self.api_wrapper.auth_token}; path:/";  """
+
         except Exception:
             authed = False
 
         if authed:
+            # perform redirect
             pn.state.location.param.update(reload=True, pathname="/")
         else:
             self.feedback_message = "Authentication failed. Please retry."
@@ -84,7 +92,17 @@ class AuthPage(param.Parameterized):
                 ],
             )
 
-    def page(self):
+    @pn.depends("custom_js")
+    def wrapped_custom_js(self):
+        return pn.pane.HTML(
+            f""" 
+            <script>
+                {self.custom_js}
+            </script
+            """,
+        )
+
+    def __panel__(self):
         login_button = pn.widgets.Button(
             name="Sign In",
             button_type="primary",
@@ -99,6 +117,7 @@ class AuthPage(param.Parameterized):
         login_button.on_click(self.perform_login)
 
         self.main_layout = pn.Column(
+            self.wrapped_custom_js,
             pn.pane.HTML(
                 "<h1>Log In</h1>",
                 stylesheets=[

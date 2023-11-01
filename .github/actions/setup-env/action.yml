@@ -7,7 +7,7 @@ inputs:
     description: "Python version to install."
   optional-dependencies:
     default: "true"
-    description: "Install ragna with [builtin], i.e. all optional dependencies"
+    description: "Install ragna with [all], i.e. all optional dependencies"
 
 runs:
   using: composite
@@ -63,7 +63,7 @@ runs:
       run: |
         if [[ ${{ inputs.optional-dependencies }} == true ]]
         then
-          PROJECT_PATH='.[builtin]'
+          PROJECT_PATH='.[all]'
         else
           PROJECT_PATH='.'
         fi
