@@ -56,8 +56,7 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
                 # Sets the cookie on the JS side
                 self.custom_js = f""" document.cookie = "auth_token={self.api_wrapper.auth_token}; path:/";  """
 
-        except Exception as e:
-            print(e)
+        except Exception:
             authed = False
 
         if authed:
