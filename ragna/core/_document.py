@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import abc
+import os
+import secrets
 import time
 import uuid
 from pathlib import Path
@@ -128,6 +130,9 @@ class LocalDocument(Document):
         with open(self.path, "rb") as stream:
             return stream.read()
 
+    _JWT_SECRET = os.environ.get(
+        "RAGNA_API_DOCUMENT_UPLOAD_SECRET", secrets.token_urlsafe(32)[:32]
+    )
     _JWT_ALGORITHM = "HS256"
 
     @classmethod
@@ -140,9 +145,9 @@ class LocalDocument(Document):
                 payload={
                     "user": user,
                     "id": str(id),
-                    "exp": time.time() + config.api.upload_token_ttl,
+                    "exp": time.time() + 5 * 60,
                 },
-                key=config.api.upload_token_secret,
+                key=cls._JWT_SECRET,
                 algorithm=cls._JWT_ALGORITHM,
             )
         }
@@ -150,9 +155,11 @@ class LocalDocument(Document):
         return url, data, metadata
 
     @classmethod
-    def decode_upload_token(cls, token: str, *, secret: str) -> tuple[str, uuid.UUID]:
+    def decode_upload_token(cls, token: str) -> tuple[str, uuid.UUID]:
         try:
-            payload = jwt.decode(token, key=secret, algorithms=[cls._JWT_ALGORITHM])
+            payload = jwt.decode(
+                token, key=cls._JWT_SECRET, algorithms=[cls._JWT_ALGORITHM]
+            )
         except jwt.InvalidSignatureError:
             raise RagnaException(
                 "Token invalid", http_status_code=401, http_detail=RagnaException.EVENT
