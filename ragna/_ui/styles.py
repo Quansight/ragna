@@ -139,6 +139,22 @@ label, .bk-slider-title {
 .noUi-handle, .noUi-connects {
     background-color: var(--clear-button-active);
 }
+
+.noUi-target[disabled='true'] {
+    border-color: darkgray;
+}
+
+
+.noUi-target[disabled='true'] .noUi-connect {
+    background-color: darkgray !important;
+}
+
+
+:host(.disabled) div.bk-slider-title {
+    color: darkgray !important;
+}
+
+
 """
 
 
