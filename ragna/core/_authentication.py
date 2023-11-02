@@ -49,10 +49,11 @@ class RagnaDemoAuthentication(Authentication):
     def __init__(self) -> None:
         self._password = os.environ.get("RAGNA_DEMO_AUTHENTICATION_PASSWORD")
 
-    _JWT_SECRET = secrets.token_urlsafe(32)
+    _JWT_SECRET = os.environ.get(
+        "RAGNA_DEMO_AUTHENTICATION_SECRET", secrets.token_urlsafe(32)[:32]
+    )
     _JWT_ALGORITHM = "HS256"
-
-    _ONE_WEEK = 60 * 60 * 24 * 7
+    _JWT_TTL = int(os.environ.get("RAGNA_DEMO_AUTHENTICATION_TTL", 60 * 60 * 24 * 7))
 
     async def create_token(self, request: Request) -> str:
         """Authenticate user and create an authorization token.
@@ -68,7 +69,7 @@ class RagnaDemoAuthentication(Authentication):
                 the `"username"` and `"password"` as form data.
 
         Returns:
-            Authorization [JWT](https://jwt.io/) that expires after one day.
+            Authorization [JWT](https://jwt.io/) that expires after one week.
         """
         async with request.form() as form:
             username = form.get("username")
@@ -83,7 +84,7 @@ class RagnaDemoAuthentication(Authentication):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
         return jwt.encode(
-            payload={"user": username, "exp": time.time() + self._ONE_WEEK},
+            payload={"user": username, "exp": time.time() + self._JWT_TTL},
             key=self._JWT_SECRET,
             algorithm=self._JWT_ALGORITHM,
         )

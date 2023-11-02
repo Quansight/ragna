@@ -42,6 +42,7 @@ class ChatConfig(param.Parameterized):
             "pulled out of the vector database."
         ),
     )
+
     max_new_tokens = param.Integer(
         default=1_000,
         step=100,
@@ -77,7 +78,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.document_uploader = FileUploader(
             [],  # the allowed documents are set in the model_section function
-            self.api_wrapper.token,
+            self.api_wrapper.auth_token,
             upload_endpoints["informations_endpoint"],
         )
 
@@ -110,12 +111,12 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.start_chat_button.disabled = True
             self.document_uploader.perform_upload(event, self.did_finish_upload)
 
-    def did_finish_upload(self, uploaded_documents):
+    async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
 
         try:
-            new_chat_id = self.api_wrapper.start_and_prepare(
+            new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
                 documents=uploaded_documents,
                 source_storage=self.config.source_storage_name,
@@ -126,7 +127,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.start_chat_button.disabled = False
 
             if self.new_chat_ready_callback is not None:
-                self.new_chat_ready_callback(new_chat_id)
+                await self.new_chat_ready_callback(new_chat_id)
 
         except Exception:
             self.change_upload_files_label("upload_error")
@@ -147,7 +148,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         # prevents re-rendering the section
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = await self.api_wrapper.get_components_async()
+            components = await self.api_wrapper.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()

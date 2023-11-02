@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import secrets
 from pathlib import Path
-from types import ModuleType
-from typing import Type, Union
+from typing import Union
 
 import tomlkit
 from pydantic import Field, ImportString, field_validator
@@ -66,11 +64,6 @@ class ApiConfig(BaseSettings):
         type[Authentication]
     ] = "ragna.core.RagnaDemoAuthentication"  # type: ignore[assignment]
 
-    upload_token_secret: str = Field(
-        default_factory=lambda: secrets.token_urlsafe(32)[:32]
-    )
-    upload_token_ttl: int = 5 * 60
-
 
 class UiConfig(BaseSettings):
     class Config(ConfigBase):
@@ -119,34 +112,3 @@ class Config(BaseSettings):
 
         with open(path, "w") as file:
             tomlkit.dump(self.model_dump(mode="json"), file)
-
-    @classmethod
-    def demo(cls) -> ragna.Config:
-        return cls()
-
-    @classmethod
-    def builtin(cls) -> ragna.Config:
-        from ragna import assistants, source_storages
-        from ragna.core import Assistant, SourceStorage
-        from ragna.core._components import Component
-
-        def get_available_components(
-            module: ModuleType, cls: Type[Component]
-        ) -> list[Type]:
-            return [
-                obj
-                for obj in module.__dict__.values()
-                if isinstance(obj, type) and issubclass(obj, cls) and obj.is_available()
-            ]
-
-        config = cls()
-
-        config.core.queue_url = str(config.local_cache_root / "queue")
-        config.core.source_storages = get_available_components(
-            source_storages, SourceStorage
-        )
-        config.core.assistants = get_available_components(assistants, Assistant)
-
-        config.api.database_url = f"sqlite:///{config.local_cache_root}/ragna.db"
-
-        return config

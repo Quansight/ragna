@@ -1,3 +1,5 @@
+import asyncio
+
 import panel as pn
 import param
 
@@ -9,8 +11,9 @@ from .modal_welcome import ModalWelcome
 from .right_sidebar import RightSidebar
 
 
-class MainPage(param.Parameterized):
+class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
+    chats = param.List(default=None)
 
     def __init__(self, api_wrapper, template):
         super().__init__()
@@ -35,11 +38,11 @@ class MainPage(param.Parameterized):
             on_error=lambda x: print(f"error sync on {x}"),
         )
 
-        self.chats = []
-        self.refresh_data()
+    async def refresh_data(self):
+        self.chats = await self.api_wrapper.get_chats()
 
-    def refresh_data(self):
-        self.chats = self.api_wrapper.get_chats()
+    @param.depends("chats", watch=True)
+    def after_update_chats(self):
         self.left_sidebar.chats = self.chats
 
         if len(self.chats) > 0:
@@ -75,10 +78,10 @@ class MainPage(param.Parameterized):
         self.template.modal.objects[0].objects = [self.modal]
         self.template.open_modal()
 
-    def open_new_chat(self, new_chat_id):
+    async def open_new_chat(self, new_chat_id):
         # called after creating a new chat.
         self.current_chat_id = new_chat_id
-        self.refresh_data()
+        await self.refresh_data()
 
         self.template.close_modal()
 
@@ -104,10 +107,12 @@ class MainPage(param.Parameterized):
         if self.left_sidebar is not None and self.left_sidebar not in avoid_senders:
             self.left_sidebar.current_chat_id = self.current_chat_id
 
-    def page(self):
+    def __panel__(self):
+        asyncio.ensure_future(self.refresh_data())
+
         objects = [self.left_sidebar, self.central_view, self.right_sidebar]
 
-        if len(self.chats) == 0:
+        if self.chats is not None and len(self.chats) == 0:
             """I haven't found a better way to open the modal when the pages load,
             than simulating a click on the "New chat" button.
             - calling self.template.open_modal() doesn't work

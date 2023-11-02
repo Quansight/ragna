@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import uuid
 from typing import Any, Callable, Optional, cast
+from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
@@ -14,7 +15,12 @@ from . import orm, schemas
 
 
 def get_sessionmaker(database_url: str) -> Callable[[], Session]:
-    engine = create_engine(database_url, connect_args=dict(check_same_thread=False))
+    components = urlsplit(database_url)
+    if components.scheme == "sqlite":
+        connect_args = dict(check_same_thread=False)
+    else:
+        connect_args = dict()
+    engine = create_engine(database_url, connect_args=connect_args)
     orm.Base.metadata.create_all(bind=engine)
     return _sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

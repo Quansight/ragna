@@ -52,7 +52,7 @@ Repository = "https://github.com/Quansight/ragna"
 
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
-builtin = [
+all = [
     "chromadb>=0.4.13",
     "lancedb>=0.2",
     "pyarrow",

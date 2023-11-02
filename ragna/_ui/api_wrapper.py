@@ -1,70 +1,75 @@
-import os
 import re
 from datetime import datetime
 
 import emoji
 import httpx
+import param
+
+
+class RagnaAuthTokenExpiredException(Exception):
+    """Just a wrapper around Exception"""
+
+    pass
 
 
 # The goal is this class is to provide ready-to-use functions to interact with the API
-class ApiWrapper:
-    def __init__(self, api_url):
-        # FIXME: this should be an async client
-        self.client = httpx.Client(base_url=api_url)
-        self.client.get("/").raise_for_status()
+class ApiWrapper(param.Parameterized):
+    auth_token = param.String(default=None)
 
-        # FIXME: the token should come from a cookie that is set after UI login
-        from ragna.core._rag import default_user  # noqa
+    def __init__(self, api_url, **params):
+        self.client = httpx.AsyncClient(base_url=api_url)
 
-        user = default_user()
-        token = (
-            self.client.post(
-                "/token",
-                data={
-                    "username": user,
-                    "password": os.environ.get(
-                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", user
-                    ),
-                },
+        super().__init__(**params)
+
+        try:
+            # If no auth token is provided, we use the API base URL and only test the API is up.
+            # else, we test the API is up *and* the token is valid.
+            endpoint = (
+                api_url + "/components" if self.auth_token is not None else api_url
+            )
+            httpx.get(
+                endpoint, headers={"Authorization": f"Bearer {self.auth_token}"}
+            ).raise_for_status()
+
+        except httpx.HTTPStatusError as e:
+            # unauthorized - the token is invalid
+            if e.response.status_code == 401:
+                raise RagnaAuthTokenExpiredException("Unauthorized")
+            else:
+                raise e
+
+    async def auth(self, username, password):
+        self.auth_token = (
+            (
+                await self.client.post(
+                    "/token",
+                    data={"username": username, "password": password},
+                )
             )
             .raise_for_status()
             .json()
         )
-        # FIXME: remove this as it should come from a cookie on the JS side as well
-        self.token = token
-        self.client.headers["Authorization"] = f"Bearer {token}"
 
-    async def auth(self, username, password):
-        async with httpx.AsyncClient(
-            base_url=self.client.base_url, headers=self.client.headers
-        ) as async_client:
-            self.token = (
-                (
-                    await async_client.post(
-                        "/token",
-                        data={"username": username, "password": password},
-                    )
-                )
-                .raise_for_status()
-                .json()
-            )
+        return True
 
-            self.client.headers["Authorization"] = f"Bearer {self.token}"
+    @param.depends("auth_token", watch=True, on_init=True)
+    def update_auth_header(self):
+        self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
-            return True
-
-    def get_chats(self):
-        json_data = self.client.get("/chats").raise_for_status().json()
-
+    async def get_chats(self):
+        json_data = (await self.client.get("/chats")).raise_for_status().json()
         for chat in json_data:
             chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
-
         return json_data
 
-    def answer(self, chat_id, prompt):
+    async def answer(self, chat_id, prompt):
         json_data = (
-            self.client.post(
-                f"/chats/{chat_id}/answer", params={"prompt": prompt}, timeout=None
+            (
+                await self.client.post(
+                    f"/chats/{chat_id}/answer",
+                    params={"prompt": prompt},
+                    timeout=None,
+                )
             )
             .raise_for_status()
             .json()
@@ -77,11 +82,8 @@ class ApiWrapper:
 
         return json_data
 
-    async def get_components_async(self):
-        async with httpx.AsyncClient(
-            base_url=self.client.base_url, headers=self.client.headers
-        ) as async_client:
-            return (await async_client.get("/components")).raise_for_status().json()
+    async def get_components(self):
+        return (await self.client.get("/components")).raise_for_status().json()
 
     # Upload and related functions
     def upload_endpoints(self):
@@ -89,27 +91,31 @@ class ApiWrapper:
             "informations_endpoint": f"{self.client.base_url}/document",
         }
 
-    def start_chat(self, name, documents, source_storage, assistant, params={}):
+    async def start_chat(self, name, documents, source_storage, assistant, params={}):
         return (
-            self.client.post(
-                "/chats",
-                json={
-                    "name": name,
-                    "documents": documents,
-                    "source_storage": source_storage,
-                    "assistant": assistant,
-                    "params": params,
-                },
+            (
+                await self.client.post(
+                    "/chats",
+                    json={
+                        "name": name,
+                        "documents": documents,
+                        "source_storage": source_storage,
+                        "assistant": assistant,
+                        "params": params,
+                    },
+                )
             )
             .raise_for_status()
             .json()
         )
 
-    def start_and_prepare(self, name, documents, source_storage, assistant, params={}):
-        chat = self.start_chat(name, documents, source_storage, assistant, params)
+    async def start_and_prepare(
+        self, name, documents, source_storage, assistant, params={}
+    ):
+        chat = await self.start_chat(name, documents, source_storage, assistant, params)
 
-        _ = self.client.post(
-            f"/chats/{chat['id']}/prepare", timeout=None
+        (
+            await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
         ).raise_for_status()
 
         return chat["id"]

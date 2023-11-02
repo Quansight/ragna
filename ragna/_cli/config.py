@@ -1,8 +1,10 @@
+import itertools
 from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Annotated, Type, TypeVar, cast
+from typing import TYPE_CHECKING, Annotated, Iterable, Type, TypeVar, cast
 
+import pydantic
 import questionary
 import rich
 import typer
@@ -14,6 +16,7 @@ from ragna.core import (
     Config,
     EnvVarRequirement,
     PackageRequirement,
+    RagnaException,
     Requirement,
     SourceStorage,
 )
@@ -21,39 +24,42 @@ from ragna.core._components import Component
 
 
 def parse_config(value: str) -> Config:
-    if value == "demo":
-        config = Config.demo()
-    elif value == "builtin":
-        config = Config.builtin()
-    else:
+    try:
         config = Config.from_file(value)
-    config.__ragna_cli_value__ = value
+    except RagnaException:
+        rich.print(f"The configuration file {value} does not exist.")
+        if value == "./ragna.toml":
+            rich.print(
+                "If you don't have a configuration file yet, "
+                "run [bold]ragna init[/bold] to generate one."
+            )
+        raise typer.Exit(1)
+    except pydantic.ValidationError as exc:
+        # FIXME: pretty formatting!
+        raise exc
+    # This stores the original value so we can pass it on to subprocesses that we might
+    # start.
+    config.__ragna_cli_config_path__ = value
     return config
 
 
-COMMON_CONFIG_OPTION_ARGS = ("-c", "--config")
-COMMON_CONFIG_OPTION_KWARGS = dict(
-    metavar="CONFIG",
-    envvar="RAGNA_CONFIG",
-    parser=parse_config,
-    help=(
-        "Configuration to use. "
-        "Can be path to a Ragna configuration file, 'demo', or 'builtin'.\n\n"
-        "If 'demo', loads a minimal configuration without persistent state.\n\n"
-        "If 'builtin', loads a configuration with all available builtin components, "
-        "but without extra infrastructure requirements."
-    ),
-)
 ConfigOption = Annotated[
     ragna.Config,
-    typer.Option(*COMMON_CONFIG_OPTION_ARGS, **COMMON_CONFIG_OPTION_KWARGS),
+    typer.Option(
+        "-c",
+        "--config",
+        metavar="CONFIG",
+        envvar="RAGNA_CONFIG",
+        parser=parse_config,
+        help="Path to a Ragna configuration file.",
+    ),
 ]
 
 # This adds a newline before every question to unclutter the output
 QMARK = "\n?"
 
 
-def config_wizard(*, output_path: Path, force: bool) -> tuple[Config, Path, bool]:
+def init_config(*, output_path: Path, force: bool) -> tuple[Config, Path, bool]:
     # FIXME: add link to the config documentation when it is available
     rich.print(
         "\n\t[bold]Welcome to the Ragna config creation wizard![/bold]\n\n"
@@ -61,34 +67,44 @@ def config_wizard(*, output_path: Path, force: bool) -> tuple[Config, Path, bool
         "Due to the large amount of parameters, "
         "I unfortunately can't cover everything. "
         "If you want to customize everything, "
-        "you can have a look at the documentation instead."
+        "please have a look at the documentation instead."
     )
 
     intent = questionary.select(
         "Which of the following statements describes best what you want to do?",
         choices=[
             questionary.Choice(
-                "I want to try Ragna "
-                "without worrying about any additional dependencies or setup.",
+                (
+                    "I want to try Ragna without worrying about any additional "
+                    "dependencies or setup."
+                ),
                 value="demo",
             ),
             questionary.Choice(
-                "I want to try Ragna and its builtin components.",
+                (
+                    "I want to try Ragna and its builtin source storages and "
+                    "assistants, which potentially require additional dependencies "
+                    "or setup."
+                ),
                 value="builtin",
             ),
             questionary.Choice(
-                "I want to customize the most common parameters.",
+                (
+                    "I have used Ragna before and want to customize the most common "
+                    "parameters."
+                ),
                 value="common",
             ),
         ],
         qmark=QMARK,
     ).unsafe_ask()
 
-    config = {
+    wizard = {
         "demo": _wizard_demo,
         "builtin": _wizard_builtin,
         "common": _wizard_common,
-    }[intent]()  # type: ignore[operator]
+    }[intent]
+    config = wizard()
 
     if output_path.exists() and not force:
         output_path, force = _handle_output_path(output_path=output_path, force=force)
@@ -101,46 +117,19 @@ def config_wizard(*, output_path: Path, force: bool) -> tuple[Config, Path, bool
     return config, output_path, force
 
 
-def _print_special_config(name: str) -> None:
-    rich.print(
-        f"For this use case the {name} configuration is the perfect fit!\n"
-        f"Hint for the future: the demo configuration can also be accessed by passing "
-        f"--config {name} to ragna commands without the need for an actual "
-        f"configuration file."
-    )
-
-
 def _wizard_demo() -> Config:
-    _print_special_config("demo")
-    return Config.demo()
+    return Config()
 
 
-def _wizard_builtin(*, hint_builtin: bool = True) -> Config:
-    config = Config.builtin()
+def _wizard_builtin() -> Config:
+    config = _wizard_demo()
 
-    intent = questionary.select(
-        "How do you want to select the components?",
-        choices=[
-            questionary.Choice(
-                (
-                    "I want to use all builtin components "
-                    "for which the requirements are met."
-                ),
-                value="builtin",
-            ),
-            questionary.Choice(
-                "I want to manually select the builtin components I want to use.",
-                value="custom",
-            ),
-        ],
-        qmark=QMARK,
-    ).unsafe_ask()
-
-    if intent == "builtin":
-        if hint_builtin:
-            _print_special_config("builtin")
-        return config
-
+    rich.print(
+        "\nragna has the following components builtin. "
+        "Select the ones that you want to use. "
+        "If the requirements of a selected component are not met, "
+        "I'll show you instructions how to meet them later."
+    )
     config.core.source_storages = _select_components(
         "source storages",
         ragna.source_storages,
@@ -152,6 +141,10 @@ def _wizard_builtin(*, hint_builtin: bool = True) -> Config:
         Assistant,  # type: ignore[type-abstract]
     )
 
+    _handle_unmet_requirements(
+        itertools.chain(config.core.source_storages, config.core.assistants)
+    )
+
     return config
 
 
@@ -159,66 +152,88 @@ T = TypeVar("T", bound=Component)
 
 
 def _select_components(
-    title: str, module: ModuleType, base_cls: Type[T]
+    title: str,
+    module: ModuleType,
+    base_cls: Type[T],
 ) -> list[Type[T]]:
-    selected_components: list[Type[T]] = questionary.checkbox(
-        (
-            f"ragna has the following {title} builtin. "
-            f"Choose the he ones you want to use. "
-            f"If the requirements of a selected component are not met, "
-            f"I'll ask for confirmation later."
-        ),
-        choices=[
-            questionary.Choice(
-                component.display_name(),
-                value=component,
-                checked=component.is_available(),
-            )
-            for component in [
-                obj
-                for obj in module.__dict__.values()
-                if isinstance(obj, type)
-                and issubclass(obj, base_cls)
-                and obj is not base_cls
-            ]
-        ],
-        qmark=QMARK,
-    ).unsafe_ask()
+    components = [
+        obj
+        for obj in module.__dict__.values()
+        if isinstance(obj, type) and issubclass(obj, base_cls) and obj is not base_cls
+    ]
+    return cast(
+        list[Type[T]],
+        questionary.checkbox(
+            f"Which {title} do you want to use?",
+            choices=[
+                questionary.Choice(
+                    component.display_name(),
+                    value=component,
+                    checked=component.is_available(),
+                )
+                for component in components
+            ],
+            qmark=QMARK,
+        ).unsafe_ask(),
+    )
 
-    for component in [
-        component for component in selected_components if not component.is_available()
-    ]:
+
+def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
+    unmet_requirements = set(
+        requirement
+        for component in components
+        for requirement in component.requirements()
+        if not requirement.is_available()
+    )
+    if not unmet_requirements:
+        return
+
+    rich.print(
+        "You have selected components, which have additional requirements that are"
+        "currently not met."
+    )
+    unmet_requirements_by_type = _split_requirements(unmet_requirements)
+
+    unmet_package_requirements = sorted(
+        str(requirement)
+        for requirement in unmet_requirements_by_type[PackageRequirement]
+    )
+    if unmet_package_requirements:
         rich.print(
-            f"The component {component.display_name()} "
-            f"has the following requirements that are currently not fully met:\n"
+            "\nTo use the selected components, "
+            "you need to install the following packages: \n"
+        )
+        for requirement in unmet_package_requirements:
+            rich.print(f"- {requirement}")
+
+        rich.print(
+            f"\nTo do this, you can run\n\n"
+            f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
+            f"Optionally, you can also install Ragna with all optional dependencies"
+            f"for the builtin components\n\n"
+            f"$ pip install 'ragna\[all]'"
         )
 
-        requirements = _split_requirements(component.requirements())
-        for title, requirement_type in [
-            ("Installed packages:", PackageRequirement),
-            ("Environment variables:", EnvVarRequirement),
-        ]:
-            if TYPE_CHECKING:
-                requirement_type = cast(Type[Requirement], requirement_type)
+    unmet_env_var_requirements = sorted(
+        str(requirement)
+        for requirement in unmet_requirements_by_type[EnvVarRequirement]
+    )
+    if unmet_env_var_requirements:
+        rich.print(
+            "\nTo use the selected components, "
+            "you need to set the following environment variables: \n"
+        )
+        for requirement in unmet_env_var_requirements:
+            rich.print(f"- {requirement}")
 
-            if requirement_type in requirements:
-                rich.print(f"{title}\n")
-                rich.print(f"{_format_requirements(requirements[requirement_type])}\n")
-
-        if not questionary.confirm(
-            (
-                f"Are you able to meet these requirements in the future and "
-                f"thus want to include {component.display_name()} in the configuration?"
-            ),
-            qmark=QMARK,
-        ).unsafe_ask():
-            selected_components.remove(component)
-
-    return selected_components
+    rich.print(
+        "\nTip: You can check the availability of the requirements with "
+        "[bold]ragna check[/bold]."
+    )
 
 
 def _wizard_common() -> Config:
-    config = _wizard_builtin(hint_builtin=False)
+    config = _wizard_builtin()
 
     config.local_cache_root = Path(
         questionary.path(
@@ -319,7 +334,7 @@ def _select_queue_url(config: Config) -> str:
 
 def _handle_output_path(*, output_path: Path, force: bool) -> tuple[Path, bool]:
     rich.print(
-        f"The output path {output_path} already exists "
+        f"\nThe output path {output_path} already exists "
         f"and you didn't pass the --force flag to overwrite it. "
     )
     action = questionary.select(
@@ -395,7 +410,7 @@ def check_config(config: Config) -> bool:
 
 
 def _split_requirements(
-    requirements: list[Requirement],
+    requirements: Iterable[Requirement],
 ) -> dict[Type[Requirement], list[Requirement]]:
     split_reqs = defaultdict(list)
     for req in requirements:
