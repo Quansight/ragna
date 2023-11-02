@@ -34,9 +34,11 @@ def parse_config(value: str) -> Config:
                 "run [bold]ragna init[/bold] to generate one."
             )
         raise typer.Exit(1)
-    except pydantic.ValidationError as exc:
+    except pydantic.ValidationError as validation:
         # FIXME: pretty formatting!
-        raise exc
+        for error in validation.errors():
+            rich.print(error)
+        raise typer.Exit(1)
     # This stores the original value so we can pass it on to subprocesses that we might
     # start.
     config.__ragna_cli_config_path__ = value

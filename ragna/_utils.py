@@ -37,16 +37,22 @@ def _replace_hostname(split_result: SplitResult, hostname: str) -> SplitResult:
     return split_result._replace(netloc=netloc)
 
 
-def get_origins(url: str) -> list[str]:
-    origins = [url]
-
+def handle_localhost_origins(origins: list[str]) -> list[str]:
     # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
     # don't need to worry about it.
-    components = urlsplit(url)
-    if components.hostname == "127.0.0.1":
-        origins.append(urlunsplit(_replace_hostname(components, "localhost")))
-    elif components.hostname == "localhost":
-        origins.append(urlunsplit(_replace_hostname(components, "127.0.0.1")))
+    localhost_origins = {
+        components.hostname: components
+        for url in origins
+        if (components := urlsplit(url)).hostname in {"127.0.0.1", "localhost"}
+    }
+    if "127.0.0.1" in localhost_origins:
+        origins.append(
+            urlunsplit(_replace_hostname(localhost_origins["127.0.0.1"], "localhost"))
+        )
+    elif "localhost" in localhost_origins:
+        origins.append(
+            urlunsplit(_replace_hostname(localhost_origins["localhost"], "127.0.0.1"))
+        )
 
     return origins
 

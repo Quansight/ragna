@@ -10,6 +10,12 @@ With an intuitive API for quick experimentation and built-in tools for creating
 production-ready application, you can quickly leverage Large Language Models (LLMs) for
 your work.
 
+!!! note
+
+    Ragna is a framework for experimenting with LLMs. It does not install one by default. To use Ragna you either need to provide API keys to a cloud LLM API, e.g. OpenAI, Anthropic, etc. or run your own LLM.
+
+    [Learn more →](references/faq.md)
+
 [Get started](install.md){ .md-button }
 
 ## Key features
