@@ -55,6 +55,7 @@ Check out the Ragna documentation to get started:
   - [Python API](https://ragna.chat/en/stable/tutorials/python-api/)
   - [REST API](https://ragna.chat/en/stable/tutorials/rest-api/)
   - [Web application](https://ragna.chat/en/stable/tutorials/web-app/)
+- [Frequently asked questions](https://ragna.chat/en/stable/references/faq/)
 - [Contribution guidelines](https://ragna.chat/en/stable/community/contribute/)
 - [Changelog](https://ragna.chat/en/stable/references/changelog/)
 
