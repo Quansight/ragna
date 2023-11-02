@@ -53,7 +53,6 @@ def handle_localhost_origins(origins: list[str]) -> list[str]:
         origins.append(
             urlunsplit(_replace_hostname(localhost_origins["localhost"], "127.0.0.1"))
         )
-    print("#" * 10 + str(origins))
     return origins
 
 

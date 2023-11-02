@@ -49,13 +49,23 @@ class ChatConfig(param.Parameterized):
         bounds=(100, 10_000),
     )
 
+    def is_assistant_disabled(self):
+        return "Ragna/Demo" in self.assistant_name
+
+    def is_source_storage_disabled(self):
+        return "Ragna/Demo" in self.source_storage_name
+
     def to_params_dict(self):
-        return {
-            "chunk_overlap": self.chunk_overlap,
-            "chunk_size": self.chunk_size,
-            "num_tokens": self.max_context_tokens,
-            "max_new_tokens": self.max_new_tokens,
-        }
+        result = {}
+        if not self.is_assistant_disabled():
+            result["max_new_tokens"] = self.max_new_tokens
+
+        if not self.is_source_storage_disabled():
+            result["chunk_overlap"] = self.chunk_overlap
+            result["chunk_size"] = self.chunk_size
+            result["num_tokens"] = self.max_context_tokens
+
+        return result
 
 
 class ModalConfiguration(pn.viewable.Viewer):
@@ -64,6 +74,8 @@ class ModalConfiguration(pn.viewable.Viewer):
     config = param.ClassSelector(class_=ChatConfig, default=None)
     new_chat_ready_callback = param.Callable()
     cancel_button_callback = param.Callable()
+
+    advanced_config_collapsed = param.Boolean(default=True)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
@@ -191,10 +203,13 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
-    @pn.depends("config")
+    @pn.depends("config", "config.assistant_name", "config.source_storage_name")
     def advanced_config_ui(self):
         if self.config is None:
             return
+
+        disabled_assistant = self.config.is_assistant_disabled()
+        disabled_source_storage = self.config.is_source_storage_disabled()
 
         card = pn.Card(
             pn.Row(
@@ -211,6 +226,8 @@ class ModalConfiguration(pn.viewable.Viewer):
                         bar_color=ui.MAIN_COLOR,
                         stylesheets=[ui.SS_LABEL_STYLE],
                         width_policy="max",
+                        disabled=disabled_source_storage,
+                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.chunk_overlap,
@@ -218,6 +235,8 @@ class ModalConfiguration(pn.viewable.Viewer):
                         bar_color=ui.MAIN_COLOR,
                         stylesheets=[ui.SS_LABEL_STYLE],
                         width_policy="max",
+                        disabled=disabled_source_storage,
+                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     margin=(0, 20, 0, 0),
                     width_policy="max",
@@ -234,12 +253,16 @@ class ModalConfiguration(pn.viewable.Viewer):
                         bar_color=ui.MAIN_COLOR,
                         stylesheets=[ui.SS_LABEL_STYLE],
                         width_policy="max",
+                        disabled=disabled_source_storage,
+                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_new_tokens,
                         bar_color=ui.MAIN_COLOR,
                         stylesheets=[ui.SS_LABEL_STYLE],
                         width_policy="max",
+                        disabled=disabled_assistant,
+                        css_classes=["disabled"] if disabled_assistant else [],
                     ),
                     width_policy="max",
                     height_policy="max",
@@ -250,14 +273,21 @@ class ModalConfiguration(pn.viewable.Viewer):
                 ),
                 height=250,
             ),
-            collapsed=True,
+            collapsed=self.advanced_config_collapsed,
             collapsible=True,
             hide_header=True,
             stylesheets=[ui.SS_ADVANCED_UI_CARD],
         )
 
         def toggle_card(event):
-            card.collapsed = not card.collapsed
+            if event.old < event.new:
+                # This callback is triggered when the card is rerendered,
+                # after changing the assistant, for example.
+                # This test prevents collapsing the card when it is not needed
+
+                card.collapsed = not card.collapsed
+                self.advanced_config_collapsed = card.collapsed
+
             toggle_button = event.obj
 
             if card.collapsed:
