@@ -1,3 +1,6 @@
+ragna.toml
+ragna/_version.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -164,8 +167,3 @@ cython_debug/
 
 # VSCode
 .vscode/
-
-# Ragna
-ragna.toml
-ragna/_version.py
-ragna.txt
