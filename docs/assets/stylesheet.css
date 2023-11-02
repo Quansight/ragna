@@ -1,15 +1,15 @@
 /* TODO: Update based on new brand guidelines */
 
 :root {
-  --md-primary-fg-color: #DF5538;
-  --md-accent-fg-color: #3C8D89;
+  --md-primary-fg-color: #df5538;
+  --md-accent-fg-color: #3c8d89;
 }
 
 .md-header,
 .md-footer {
-  background-color: #1F2636;
+  background-color: #1f2636;
 }
 
 .icon {
-  color: #DF5538;
+  color: #df5538;
 }

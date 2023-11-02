@@ -63,13 +63,13 @@ A RAG orchestration framework.
 
 Check out the Ragna documentation to get started:
 
-* [Installation steps](https://ragna.chat/en/latest/install/)
-* Tutorials
-  * [Python API](https://ragna.chat/en/latest/tutorials/python-api/)
-  * [REST API](https://ragna.chat/en/latest/tutorials/rest-api/)
-  * [Web applicaiton](https://ragna.chat/en/latest/tutorials/web-app/)
-* [Contribution guidelines](https://ragna.chat/en/latest/community/contribute/)
-* [Changelog](https://ragna.chat/en/latest/references/changelog/)
+- [Installation steps](https://ragna.chat/en/latest/install/)
+- Tutorials
+  - [Python API](https://ragna.chat/en/latest/tutorials/python-api/)
+  - [REST API](https://ragna.chat/en/latest/tutorials/rest-api/)
+  - [Web applicaiton](https://ragna.chat/en/latest/tutorials/web-app/)
+- [Contribution guidelines](https://ragna.chat/en/latest/community/contribute/)
+- [Changelog](https://ragna.chat/en/latest/references/changelog/)
 
 ## Code of Conduct 📜
 
