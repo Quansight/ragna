@@ -16,7 +16,7 @@
 3. Configure Ragna to use the `Gpt35Turbo16k` or `Gpt4` assistants in the
    `ragna-s3.toml` file or with the `Rag.chat` function:
 
-   ```py
+   ```python
    from ragna.source_storages import Gpt35Turbo16k
 
    ...

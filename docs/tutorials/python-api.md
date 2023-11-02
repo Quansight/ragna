@@ -19,7 +19,7 @@ jupyter lab --version
 
 Start JupyterLab:
 
-```
+```bash
 jupyter lab
 ```
 
@@ -35,7 +35,7 @@ The first step is to setup the configuration for components like the source stor
 For this minimal tutorial on basics, start with the default configuration:
 
 ```python
-from ragna import Config
+from ragna.core import Config
 
 config = Config()
 config
@@ -50,7 +50,7 @@ sources that you provide. In Ragna, you can use text files to share this informa
 
 Create a `ragna.txt` and add some relevant text to it, for example:
 
-```py
+```python
 path = "ragna.txt"
 
 with open(path, "w") as file:
@@ -75,7 +75,7 @@ vector database[^1], and similar to assistants, Ragna has a few built-in options
 
 You select the demo source storage:
 
-```py
+```python
 from ragna.source_storages import RagnaDemoSourceStorage
 ```
 
@@ -93,14 +93,16 @@ Ragna has the following built-in options:
 
 Pick the demo assistant for this tutorial:
 
-```py
+```python
 from ragna.assistants import RagnaDemoAssistant
 ```
 
 !!! note
-
+    The RagnaDemoAssistant is not an assistant(LLM),
+    instead it replies with the your prompt and a static message.
+    It is only to understand the Ragna API.
     You need to get API keys and set relevant environment variables
-    to use all Assistants (except the `RagnaDemoAssistant`).
+    to use the supported assistants.
 
 ## Step 5: Start a chat
 
@@ -108,7 +110,7 @@ That's all the setup, you can now use Ragna to create a chat app.
 
 ### Create a `Rag` object with your configuration
 
-```py
+```python
 from ragna.core import Rag
 
 rag =  Rag(config)
@@ -132,16 +134,18 @@ the `async` and `await` keywords with the function definition and call respectiv
 You can provide your assistant, document, and source storage selections to the
 `rag.chat` function, and share your prompt (question to the LLM) using `.answer()`:
 
-```py
-async with rag.chat(
-    documents=[path],
-    source_storage=RagnaDemoSourceStorage,
-    assistant=RagnaDemoAssistant,
-) as chat:
-    prompt = "What is Ragna?"
-    answer = await chat.answer(prompt)
+```python
 
-print(answer)
+async def create_chat():
+    async with rag.chat(
+        documents=[path],
+        source_storage=RagnaDemoSourceStorage,
+        assistant=RagnaDemoAssistant,
+    ) as chat:
+        prompt = "What is Ragna?"
+        answer = await chat.answer(prompt)
+
+    print(answer)
 ```
 
 ## Complete example script

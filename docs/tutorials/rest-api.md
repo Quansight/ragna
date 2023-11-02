@@ -15,7 +15,9 @@ endpoint and cache location.
 
 To quickly try out Ragna, you can use the `demo` configuration:
 
-```py
+```python
+from ragna import Config
+
 config = Config.demo()
 ```
 
@@ -46,7 +48,9 @@ choice!
 
 Let's connect to the API with an `AsyncClient`:
 
-```py
+```python
+import httpx
+
 client = httpx.AsyncClient(base_url=config.api.url)
 ```
 
@@ -66,7 +70,7 @@ export RAGNA_DEMO_AUTHENTICATION_PASSWORD="*****"
 
 And, use this password with any username.
 
-```py
+```python
 USERNAME = "Ragnvaldr"
 
 token = (
@@ -98,7 +102,7 @@ Assistants (LLM)s.
 
 ### Create a document (optional)
 
-```py
+```python
 path = "document.txt"
 
 with open(path, "w") as file:
@@ -107,14 +111,14 @@ with open(path, "w") as file:
 
 ### Request upload information
 
-```py
+```python
 response = await client.get("/document", params={"name": path.name})
 document_info = response.json()
 ```
 
 ### Upload
 
-```py
+```python
 response = await client.post(
     document_info["url"],
     data=document_info["data"],
@@ -129,7 +133,7 @@ Model) you want to use for the chat.
 
 View options available as per your configuration:
 
-```py
+```python
 response = await client.get("/components")
 components = response.json()
 
@@ -148,7 +152,7 @@ components = response.json()
 Select your preferred options. As per the demo configuration, the following snippet
 selects the `RagnaDemoSourceStorage` and `RagnaDemoAssistant`.
 
-```py
+```python
 SOURCE_STORAGE = components["source_storages"][0]["title"]
 ASSISTANT = components["assistants"][0]["title"]
 ```
@@ -159,7 +163,7 @@ With selection and setup complete, you can start a Ragna chat.
 
 ### Create a new chat
 
-```py
+```python
 response = await client.post(
     "/chats",
     json={
@@ -175,7 +179,7 @@ chat = response.json()
 
 ### Prepare the chat
 
-```py
+```python
 CHAT_ID = chat["id"]
 
 response = await client.post(f"/chats/{CHAT_ID}/prepare")
@@ -184,7 +188,7 @@ chat = response.json()
 
 ### Share prompts and get answers
 
-```py
+```python
 response = await client.post(
     f"/chats/{CHAT_ID}/answer", params={"prompt": "What is Ragna?"}
 )
@@ -197,7 +201,7 @@ print(answer["message"])
 
 ### List available chats
 
-```py
+```python
 response = await client.get("/chats")
 chats = response.json()
 
@@ -206,6 +210,6 @@ print(chats)
 
 ### Delete chats
 
-```py
+```python
 await client.delete(f"/chats/{CHAT_ID}")
 ```

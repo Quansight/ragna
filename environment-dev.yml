@@ -22,3 +22,4 @@ dependencies:
       - mkdocstrings[python]
       - mkdocs-gen-files
       - material-plausible-plugin
+      - mktestdocs
