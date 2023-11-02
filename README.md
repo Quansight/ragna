@@ -41,19 +41,6 @@ A RAG orchestration framework.
     </td>
 </tr>
 <tr>
-    <th>CI</th>
-    <td>
-        <a href="https://github.com/Quansight/ragna/actions/workflows/test.yml">
-            <img src="https://github.com/Quansight/ragna/actions/workflows/test.yml/badge.svg"
-         alt="Tests" />
-        </a>
-    </td>
-    <td>
-        <a href="https://readthedocs.org/projects/ragna/">
-            <img src="https://img.shields.io/readthedocs/ragna"
-         alt="Docs build" />
-        </a>
-    </td>
 </tr>
 </table>
 
