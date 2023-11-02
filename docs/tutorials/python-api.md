@@ -97,12 +97,9 @@ Pick the demo assistant for this tutorial:
 from ragna.assistants import RagnaDemoAssistant
 ```
 
-!!! note
-    The RagnaDemoAssistant is not an assistant(LLM),
-    instead it replies with the your prompt and a static message.
-    It is only to understand the Ragna API.
-    You need to get API keys and set relevant environment variables
-    to use the supported assistants.
+!!! note The RagnaDemoAssistant is not an assistant(LLM), instead it replies with the
+your prompt and a static message. It is only to understand the Ragna API. You need to
+get API keys and set relevant environment variables to use the supported assistants.
 
 ## Step 5: Start a chat
 

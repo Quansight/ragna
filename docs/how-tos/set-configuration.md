@@ -12,7 +12,7 @@ file.
 Run the following command, and answer the questions when prompted:
 
 ```bash
-ragna config
+ragna init
 ```
 
 ![ragna config executed in the terminal showing questions and selections of the form: Which of the following statements describes best what you want to do? I want to try Ragna and its builtin components; How do you want to select the components? I want to manually select the builtin components I want to use. This continues to allow selecting the [Chroma] source storage and the [OpenAI/gpt-4] assistant.](images/ragna-config-wizard.png)
@@ -46,9 +46,10 @@ url = "http://127.0.0.1:31477"
 You can use `ragna.toml` for setting configurations in your applications:
 
 <!--
-Using py insted of python allows for syntax highlighting without doctesting.
+Using `py``` instesd of `python`` allows for syntax highlighting without doctesting.
 This is a work around until https://githsub.com/koaning/mktestdocs/issues/7 is implemented.
 -->
+
 ```py
 from ragna import Config
 
