@@ -1,11 +1,10 @@
 <!-- Logo: Original in light background and white-logo in dark background -->
-<div align="center">
-    <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Quansight/ragna/main/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical-white.png">
-        <img src="https://raw.githubusercontent.com/Quansight/ragna/main/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" alt="Ragna logo" width=30%/>
-    </picture>
-    <p>A RAG orchestration framework.</p>
-</div>
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Quansight/ragna/main/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical-white.png">
+    <img src="https://raw.githubusercontent.com/Quansight/ragna/main/docs/assets/brand/logo-lockup-vertical/logo-lockup-vertical.png" alt="Ragna logo" width=30%/>
+</picture>
+
+A RAG orchestration framework.
 
 ---
 
