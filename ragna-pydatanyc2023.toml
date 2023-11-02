@@ -1,13 +1,22 @@
 local_cache_root = "/var/ragna"
 
 [core]
-#document = "ragna_pydatanyc2023.S3Document"
-document = "ragna.core.LocalDocument"
-source_storages = ["ragna.source_storages.RagnaDemoSourceStorage", "ragna.source_storages.Chroma"]
-assistants = ["ragna.assistants.RagnaDemoAssistant", "ragna.assistants.Gpt35Turbo16k"]
+document = "ragna_pydatanyc2023.S3Document"
+#document = "ragna.core.LocalDocument"
+source_storages = [
+    "ragna.source_storages.RagnaDemoSourceStorage",
+    "ragna.source_storages.Chroma",
+    "ragna.source_storages.LanceDB"
+]
+assistants = [
+    "ragna.assistants.RagnaDemoAssistant",
+    "ragna.assistants.Gpt35Turbo16k",
+    "ragna.assistants.Gpt4",
+    "ragna.assistants.Claude",
+    "ragna.assistants.ClaudeInstant",
+]
 
 [api]
 authentication = "ragna.core.RagnaDemoAuthentication"
-upload_token_ttl = 300
 
 [ui]
