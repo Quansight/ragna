@@ -48,12 +48,12 @@ Learn more in [Set configuration](../how-tos/set-configuration.md).
 The RAG framework is powerful because it can maintain context from the information
 sources that you provide. In Ragna, you can use text files to share this information.
 
-Create a `demo_document.txt` and add some relevant text to it, for example:
+Create a `ragna.txt` and add some relevant text to it, for example:
 
 ```py
-document_path = "demo_document.txt"
+path = "ragna.txt"
 
-with open(document_path, "w") as file:
+with open(path, "w") as file:
     file.write("Ragna is an open-source RAG orchestration app.\n")
 ```
 
@@ -76,7 +76,7 @@ vector database[^1], and similar to assistants, Ragna has a few built-in options
 You select the demo source storage:
 
 ```py
-from ragna.source_storages import RagnaDemoSourceStorage,
+from ragna.source_storages import RagnaDemoSourceStorage
 ```
 
 ## Step 4: Select an assistant (LLM)
@@ -94,7 +94,7 @@ Ragna has the following built-in options:
 Pick the demo assistant for this tutorial:
 
 ```py
-from ragna.assistant import RagnaDemoAssistant
+from ragna.assistants import RagnaDemoAssistant
 ```
 
 !!! note
@@ -134,12 +134,12 @@ You can provide your assistant, document, and source storage selections to the
 
 ```py
 async with rag.chat(
-    documents=[document_path],
+    documents=[path],
     source_storage=RagnaDemoSourceStorage,
     assistant=RagnaDemoAssistant,
-) as new_chat:
+) as chat:
     prompt = "What is Ragna?"
-    answer = await new_chat.answer(prompt)
+    answer = await chat.answer(prompt)
 
 print(answer)
 ```
@@ -152,24 +152,25 @@ Putting together all the sections in this tutorial in a Python script:
 import asyncio
 
 from ragna import Rag
-from ragna.assistant import RagnaDemoAssistant
-from ragna.source_storage import RagnaDemoSourceStorage
+from ragna.assistants import RagnaDemoAssistant
+from ragna.source_storages import RagnaDemoSourceStorage
 
 
 async def main():
     rag = Rag()
 
     path = "ragna.txt"
-    with open(document_path, "w") as file:
-    file.write("Ragna is an open-source RAG orchestration app.\n")
+
+    with open(path, "w") as file:
+        file.write("Ragna is an open-source RAG orchestration app.\n")
 
     async with rag.chat(
-        documents=[document_path],
+        documents=[path],
         source_storage=RagnaDemoSourceStorage,
         assistant=RagnaDemoAssistant,
-    ) as new_chat:
+    ) as chat:
         prompt = "What is Ragna?"
-        answer = await new_chat.answer(prompt)
+        answer = await chat.answer(prompt)
 
     print(answer)
 
