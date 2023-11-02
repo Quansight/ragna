@@ -47,7 +47,7 @@ You can use `ragna.toml` for setting configurations in your applications:
 
 <!--
 Using `py``` instesd of `python`` allows for syntax highlighting without doctesting.
-This is a work around until https://githsub.com/koaning/mktestdocs/issues/7 is implemented.
+This is a work around until https://github.com/koaning/mktestdocs/issues/7 is implemented.
 -->
 
 ```py

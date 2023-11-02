@@ -35,7 +35,7 @@ The first step is to setup the configuration for components like the source stor
 For this minimal tutorial on basics, start with the default configuration:
 
 ```python
-from ragna.core import Config
+from ragna import Config
 
 config = Config()
 config
@@ -133,7 +133,7 @@ You can provide your assistant, document, and source storage selections to the
 
 ```python
 
-async def create_chat():
+async def main():
     async with rag.chat(
         documents=[path],
         source_storage=RagnaDemoSourceStorage,
