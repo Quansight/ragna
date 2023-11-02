@@ -57,11 +57,14 @@ class RagnaDemoAssistant(Assistant):
         return (
             textwrap.dedent(
                 """
-                I can't really help you with your prompt:
+                I'm a demo assistant and can be used to try Ragnas workflow. I will only
+                mirror back my inputs. 
+                
+                Your prompt was:
 
                 > {prompt}
 
-                I can at least show you the sources that I was given:
+                These are the sources I was given:
 
                 {sources}
                 """
