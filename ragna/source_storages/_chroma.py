@@ -90,7 +90,14 @@ class Chroma(VectorDatabaseSourceStorage):
                 # estimate how many sources we have to query. We overestimate by a
                 # factor of two to avoid retrieving to few sources and needed to query
                 # again.
-                int(num_tokens * 2 / chunk_size),
+                # ---
+                # FIXME: querying only a low number of documents can lead to not finding
+                #  the most relevant one.
+                #  See https://github.com/chroma-core/chroma/issues/1205 for details.
+                #  Instead of just querying more documents here, we should use the
+                #  appropriate index parameters when creating the collection. However,
+                #  they are undocumented for now.
+                max(int(num_tokens * 2 / chunk_size), 100),
                 collection.count(),
             ),
             include=["distances", "metadatas", "documents"],
