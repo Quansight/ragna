@@ -11,6 +11,7 @@ extra:
 
 theme:
   name: material
+  custom_dir: docs/overrides
   logo: assets/brand/logo-symbol/logo-symbol-white.png
   palette:
     primary: custom
@@ -26,6 +27,7 @@ theme:
     - search
     - search.suggest
     - search.highlight
+    - announce.dismiss
 
 markdown_extensions:
   - admonition

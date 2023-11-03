@@ -5,6 +5,7 @@ import time
 from typing import cast
 
 import jwt
+import rich
 from fastapi import HTTPException, Request, status
 from fastapi.security.utils import get_authorization_scheme_param
 
@@ -47,7 +48,13 @@ class RagnaDemoAuthentication(Authentication):
     """
 
     def __init__(self) -> None:
+        msg = f"INFO:\t{type(self).__name__}: You can log in with any username"
         self._password = os.environ.get("RAGNA_DEMO_AUTHENTICATION_PASSWORD")
+        if self._password is None:
+            msg = f"{msg} and a matching password."
+        else:
+            msg = f"{msg} and the password {self._password}"
+        rich.print(msg)
 
     _JWT_SECRET = os.environ.get(
         "RAGNA_DEMO_AUTHENTICATION_SECRET", secrets.token_urlsafe(32)[:32]
