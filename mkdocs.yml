@@ -27,6 +27,7 @@ theme:
     - search
     - search.suggest
     - search.highlight
+    - announce.dismiss
 
 markdown_extensions:
   - admonition
