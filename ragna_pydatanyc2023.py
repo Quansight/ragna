@@ -45,9 +45,7 @@ class S3Document(Document):
 
         bucket = os.environ["AWS_S3_BUCKET"]
         response = s3.generate_presigned_post(
-            Bucket=bucket,
-            Key=str(id),
-            ExpiresIn=config.api.upload_token_ttl,
+            Bucket=bucket, Key=str(id), ExpiresIn=5 * 60
         )
 
         url = response["url"]

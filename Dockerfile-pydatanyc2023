@@ -8,7 +8,7 @@ RUN pip install --progress-bar=off --requirement requirements-pydatanyc2023.lock
 COPY ragna ./ragna
 COPY pyproject.toml .
 RUN echo '[tool.setuptools.package-data]\n"*" = ["*"]' >> pyproject.toml
-RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=0.2.0rc0 pip install --progress-bar=off --no-deps .
+RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=0.1.1 pip install --progress-bar=off --no-deps .
 
 WORKDIR /var/ragna
 ENTRYPOINT []
