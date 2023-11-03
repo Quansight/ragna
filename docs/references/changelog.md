@@ -81,6 +81,9 @@
   [#157](https://github.com/Quansight/ragna/pull/157)
 - Up the number of queried documents by Chroma by [@pmeier](https://github.com/pmeier)
   in [#160](https://github.com/Quansight/ragna/pull/160)
+- Add announcement banner with link to blog by
+  [@pavithraes](https://github.com/pavithraes) in
+  [#164](https://github.com/Quansight/ragna/pull/164)
 
 ### New Contributors
 

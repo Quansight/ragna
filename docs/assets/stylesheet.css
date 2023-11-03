@@ -10,6 +10,14 @@
   background-color: #1f2636;
 }
 
+.md-banner {
+  background-color: #1f2636;
+  border-bottom-width: 2px;
+  border-bottom-style: solid;
+  border-color: #3c8d89;
+  text-align: center;
+}
+
 .icon {
   color: #df5538;
 }
