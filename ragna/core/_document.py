@@ -91,7 +91,7 @@ class LocalDocument(Document):
         id: Optional[uuid.UUID] = None,
         metadata: Optional[dict[str, Any]] = None,
         handler: Optional[DocumentHandler] = None,
-    ):
+    ) -> LocalDocument:
         """Create a [ragna.core.LocalDocument][] from a path.
 
         Args:
