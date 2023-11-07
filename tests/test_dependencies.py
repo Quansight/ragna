@@ -4,8 +4,6 @@ fixed upstream. If you see a test failing here, i.e. an unexpected success, feel
 remove the offending test after you have cleaned up our code.
 """
 
-import subprocess
-import sys
 
 import pytest
 
@@ -20,13 +18,3 @@ def test_pyarrow_dummy_module():
         if "pyarrow" in distribution_names
     }
     assert "__dummy__" not in module_names
-
-
-@pytest.mark.xfail
-def test_pymupdf_import_warning():
-    # See https://github.com/Quansight/ragna/issues/75
-    result = subprocess.run(
-        [sys.executable, "-c", "import fitz_new"], capture_output=True
-    )
-    assert not result.stdout
-    assert not result.stderr
