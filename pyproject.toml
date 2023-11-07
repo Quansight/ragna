@@ -56,7 +56,7 @@ all = [
     "chromadb>=0.4.13",
     "lancedb>=0.2",
     "pyarrow",
-    "pymupdf",
+    "pymupdf>=1.23.6",
     "tiktoken",
 ]
 
