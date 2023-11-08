@@ -17,6 +17,10 @@ import pydantic_core
 
 from ragna._compat import importlib_metadata_package_distributions
 
+importlib_metadata_package_distributions = functools.cache(
+    importlib_metadata_package_distributions
+)
+
 
 class RagnaExceptionHttpDetail(enum.Enum):
     EVENT = enum.auto()
