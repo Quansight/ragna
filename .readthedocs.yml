@@ -14,7 +14,7 @@ build:
       # Enable checking out git-lfs files on RTD
       # See https://docs.readthedocs.io/en/stable/build-customization.html#support-git-lfs-large-file-storage
       - wget
-        https://github.com/git-lfs/git-lfs/releases/download/v3.1.4/git-lfs-linux-amd64-v3.4.0.tar.gz
+        https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz
       - tar xvfz git-lfs-linux-amd64-v3.4.0.tar.gz
       - git config filter.lfs.process "`pwd`/git-lfs filter-process"
       - git config filter.lfs.smudge  "`pwd`/git-lfs smudge -- %f"
