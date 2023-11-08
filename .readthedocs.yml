@@ -16,6 +16,7 @@ build:
       - wget
         https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz
       - tar xvfz git-lfs-linux-amd64-v3.4.0.tar.gz
+      - ln -s git-lfs-3.4.0/git-lfs git-lfs
       - git config filter.lfs.process "`pwd`/git-lfs filter-process"
       - git config filter.lfs.smudge  "`pwd`/git-lfs smudge -- %f"
       - git config filter.lfs.clean "`pwd`/git-lfs clean -- %f"
