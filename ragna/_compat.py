@@ -1,7 +1,27 @@
 import sys
-from typing import Callable, Iterable, Iterator, Mapping, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Protocol,
+    TypeVar,
+)
 
-__all__ = ["itertools_pairwise", "importlib_metadata_package_distributions"]
+if TYPE_CHECKING:
+    if sys.version_info[:2] >= (3, 10):
+        from importlib.metadata import EntryPoints
+    else:
+        from importlib_metadata import EntryPoints
+
+
+__all__ = [
+    "itertools_pairwise",
+    "importlib_metadata_package_distributions",
+    "importlib_metadata_entry_points",
+]
 
 T = TypeVar("T")
 
@@ -38,3 +58,20 @@ def _importlib_metadata_package_distributions() -> (
 
 
 importlib_metadata_package_distributions = _importlib_metadata_package_distributions()
+
+
+class EntryPointsCallable(Protocol):
+    def __call__(self, **kwargs: Any) -> "EntryPoints":
+        ...
+
+
+def _importlib_metadata_entry_points() -> EntryPointsCallable:
+    if sys.version_info[:2] >= (3, 10):
+        from importlib.metadata import entry_points
+    else:
+        from importlib_metadata import entry_points
+
+    return entry_points
+
+
+importlib_metadata_entry_points = _importlib_metadata_entry_points()
