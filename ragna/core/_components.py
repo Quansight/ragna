@@ -34,6 +34,8 @@ class Component(RequirementsMixin):
         return cls.__name__
 
     def __init__(self, config: Optional[Config] = None) -> None:
+        from ._config import Config
+
         self.config = config or Config()
 
     def __repr__(self) -> str:
