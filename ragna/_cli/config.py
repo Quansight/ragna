@@ -11,6 +11,7 @@ import typer
 from rich.table import Table
 
 import ragna
+from ragna._compat import importlib_metadata_entry_points
 from ragna.core import (
     Assistant,
     Config,
@@ -236,6 +237,24 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
 
 def _wizard_common() -> Config:
     config = _wizard_builtin()
+
+    if questionary.confirm(
+        "Do you want to install any ragna assistant plugins?",
+        default=False,
+        qmark=QMARK,
+    ).unsafe_ask():
+        plugin_modules = [
+            plugin.load()
+            for plugin in importlib_metadata_entry_points(group="ragna.assistants")
+        ]
+        for plugin_module in plugin_modules:
+            plugin_assistants = _select_components(
+                "assistants",
+                plugin_module,
+                Assistant,  # type: ignore[type-abstract]
+            )
+            for assistant in plugin_assistants:
+                config.core.assistants.append(assistant)
 
     config.local_cache_root = Path(
         questionary.path(

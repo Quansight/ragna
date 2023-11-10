@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Union
+from typing import Union
 
 import tomlkit
 from pydantic import Field, ImportString, field_validator
 from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
 
 import ragna
-from ragna._compat import importlib_metadata_entry_points
 
 from ._authentication import Authentication
 from ._components import Assistant, SourceStorage
@@ -52,13 +51,6 @@ class CoreConfig(BaseSettings):
     assistants: list[ImportString[type[Assistant]]] = [
         "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
     ]
-
-    def model_post_init(self, __context: Any) -> None:
-        for val in importlib_metadata_entry_points(group="ragna.assistants"):
-            self.assistants.append(val.load())
-
-        for val in importlib_metadata_entry_points(group="ragna.sourcestorage"):
-            self.source_storages.append(val.load())
 
 
 class ApiConfig(BaseSettings):

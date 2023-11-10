@@ -4,7 +4,7 @@ description = "A collection of bearded and aggressive assistants."
 version = "0.1.0"
 
 [tool.setuptools.packages.find]
-where = ["src"]  # list of folders that contain the packages (["."] by default)
+where = ["src"]
 
 [project.entry-points."ragna.assistants"]
-ivar = "vikings.assistants:Ivar"
+assistants = "vikings.assistants"
