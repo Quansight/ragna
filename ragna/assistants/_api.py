@@ -1,5 +1,6 @@
 import abc
 import os
+from typing import Optional
 
 import ragna
 from ragna.core import (
@@ -19,7 +20,7 @@ class ApiAssistant(Assistant):
     def requirements(cls) -> list[Requirement]:
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Optional[Config] = None) -> None:
         super().__init__(config)
 
         import httpx
