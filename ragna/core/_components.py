@@ -4,7 +4,7 @@ import abc
 import enum
 import functools
 import inspect
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING, Optional, Type
 
 import pydantic
 import pydantic.utils
@@ -33,8 +33,8 @@ class Component(RequirementsMixin):
         """
         return cls.__name__
 
-    def __init__(self, config: Config) -> None:
-        self.config = config
+    def __init__(self, config: Optional[Config] = None) -> None:
+        self.config = config or Config()
 
     def __repr__(self) -> str:
         return self.display_name()
