@@ -34,7 +34,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         import lancedb
         import pyarrow as pa
 
-        self._db = lancedb.connect(config.local_cache_root / "lancedb")
+        self._db = lancedb.connect(self.config.local_cache_root / "lancedb")
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
