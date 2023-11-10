@@ -1,3 +1,5 @@
+__all__ = ["Ivar"]
+
 from ragna.core import Assistant, Source
 
 
