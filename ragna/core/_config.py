@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Union
+from typing import Type, Union
 
 import tomlkit
 from pydantic import Field, ImportString, field_validator
@@ -17,12 +17,14 @@ from ._document import Document
 from ._utils import RagnaException
 
 
-class ConfigBase:
+class ConfigBase(BaseSettings):
     @classmethod
-    def customise_sources(
+    def settings_customise_sources(
         cls,
+        settings_cls: Type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         # This order is needed to prioritize values from environment variables over
@@ -32,7 +34,7 @@ class ConfigBase:
         # explicitly passed to the constructor. For example, if the environment variable
         # 'RAGNA_RAG_DATABASE_URL' is set, any values passed to
         # `RagnaConfig(rag=RagConfig(database_url=...))` is ignored.
-        # TODO: Find a way to achieve the following priorities:
+        # FIXME: Find a way to achieve the following priorities:
         #  1. Explicitly passed to Python object
         #  2. Environment variable
         #  3. Configuration file
@@ -40,7 +42,7 @@ class ConfigBase:
         return env_settings, init_settings
 
 
-class CoreConfig(BaseSettings):
+class CoreConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_core_")
 
     queue_url: str = "memory"
@@ -54,7 +56,7 @@ class CoreConfig(BaseSettings):
     ]
 
 
-class ApiConfig(BaseSettings):
+class ApiConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_api_")
 
     url: str = "http://127.0.0.1:31476"
@@ -67,7 +69,7 @@ class ApiConfig(BaseSettings):
     ] = "ragna.core.RagnaDemoAuthentication"  # type: ignore[assignment]
 
 
-class UiConfig(BaseSettings):
+class UiConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_ui_")
 
     url: str = "http://127.0.0.1:31477"
@@ -75,7 +77,7 @@ class UiConfig(BaseSettings):
     origins: list[str] = ["http://127.0.0.1:31477"]
 
 
-class Config(BaseSettings):
+class Config(ConfigBase):
     """Ragna configuration"""
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
