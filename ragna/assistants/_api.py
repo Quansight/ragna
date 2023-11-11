@@ -1,5 +1,6 @@
 import abc
 import os
+from typing import Optional
 
 import ragna
 from ragna.core import (
@@ -19,14 +20,14 @@ class ApiAssistant(Assistant):
     def requirements(cls) -> list[Requirement]:
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Optional[Config] = None) -> None:
         super().__init__(config)
 
         import httpx
 
         self._client = httpx.Client(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
-            timeout=30,
+            timeout=60,
         )
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
