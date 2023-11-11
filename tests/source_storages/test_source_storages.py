@@ -17,14 +17,14 @@ def test_smoke(tmp_path, source_storage_cls):
         with open(path, "w") as file:
             file.write(f"This is irrelevant information for the {idx}. time!\n")
 
-        documents.append(LocalDocument(path))
+        documents.append(LocalDocument.from_path(path))
 
     secret = "Ragna"
     path = document_root / "secret.txt"
     with open(path, "w") as file:
         file.write(f"The secret is {secret}!\n")
 
-    documents.insert(len(documents) // 2, LocalDocument(path))
+    documents.insert(len(documents) // 2, LocalDocument.from_path(path))
 
     config = Config(local_cache_root=tmp_path)
     source_storage = source_storage_cls(config)
