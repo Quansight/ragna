@@ -96,6 +96,11 @@ testpaths = [
 ]
 filterwarnings = [
     "error",
+    # This is coming from the nested dependency
+    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
+    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:google.rpc",
 ]
 xfail_strict = true
 
