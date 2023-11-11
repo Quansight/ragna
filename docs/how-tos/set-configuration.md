@@ -46,8 +46,8 @@ url = "http://127.0.0.1:31477"
 You can use `ragna.toml` for setting configurations in your applications:
 
 <!--
-Using `py``` instesd of `python`` allows for syntax highlighting without doctesting.
-This is a work around until https://github.com/koaning/mktestdocs/issues/7 is implemented.
+Using `py``` instead of `python`` allows for syntax highlighting without doctesting.
+This is a workaround until https://github.com/koaning/mktestdocs/issues/7 is implemented.
 -->
 
 ```py
@@ -58,5 +58,4 @@ config = Config.from_file(config_path)
 ```
 
 !!! note
-
-    In the Python API, the `Rag.chat()` function also allows you to set certain RAG-specific configurations like `document` and `assistants`.
+    In the Python API, the [`Rag.chat()` function](../references/python-api.md#ragna.core.Chat) also allows you to set certain RAG-specific configurations like `document` and `assistants`.
