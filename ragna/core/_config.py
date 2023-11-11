@@ -5,9 +5,11 @@ from typing import Union
 
 import tomlkit
 from pydantic import Field, ImportString, field_validator
-from pydantic_settings import BaseSettings, PydanticBaseSettingsSource
-
-import ragna
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from ._authentication import Authentication
 from ._components import Assistant, SourceStorage
@@ -39,8 +41,7 @@ class ConfigBase:
 
 
 class CoreConfig(BaseSettings):
-    class Config(ConfigBase):
-        env_prefix = "ragna_rag_"
+    model_config = SettingsConfigDict(env_prefix="ragna_core_")
 
     queue_url: str = "memory"
 
@@ -54,8 +55,7 @@ class CoreConfig(BaseSettings):
 
 
 class ApiConfig(BaseSettings):
-    class Config(ConfigBase):
-        env_prefix = "ragna_api_"
+    model_config = SettingsConfigDict(env_prefix="ragna_api_")
 
     url: str = "http://127.0.0.1:31476"
     # FIXME: this needs to be dynamic for the UI url
@@ -68,8 +68,7 @@ class ApiConfig(BaseSettings):
 
 
 class UiConfig(BaseSettings):
-    class Config(ConfigBase):
-        env_prefix = "ragna_ui_"
+    model_config = SettingsConfigDict(env_prefix="ragna_ui_")
 
     url: str = "http://127.0.0.1:31477"
     # FIXME: this needs to be dynamic for the url
@@ -79,8 +78,7 @@ class UiConfig(BaseSettings):
 class Config(BaseSettings):
     """Ragna configuration"""
 
-    class Config(ConfigBase):
-        env_prefix = "ragna_"
+    model_config = SettingsConfigDict(env_prefix="ragna_")
 
     local_cache_root: Path = Field(
         default_factory=lambda: Path.home() / ".cache" / "ragna"
@@ -97,11 +95,8 @@ class Config(BaseSettings):
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 
-    # We need the awkward ragna.Config return annotation, because it otherwise uses the
-    # Config class we have defined above. Since that needs to be removed for
-    # pydantic==3, we can cleanup the annotation at the same time
     @classmethod
-    def from_file(cls, path: Union[str, Path]) -> ragna.Config:
+    def from_file(cls, path: Union[str, Path]) -> Config:
         path = Path(path).expanduser().resolve()
         if not path.is_file():
             raise RagnaException(f"{path} does not exist.")
