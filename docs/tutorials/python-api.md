@@ -97,6 +97,7 @@ from ragna.assistants import RagnaDemoAssistant
 ```
 
 !!! note
+
     You need to [get API keys](../references/faq.md#where-do-i-get-api-keys-for-the-builtin-assistants)
     and set relevant environment variables to use the supported assistants.
 
@@ -113,6 +114,7 @@ rag =  Rag(config)
 ```
 
 !!! note
+
     Setting the default configuration is not required. If you create the instance with
     no configuration: `rag = Rag()`, the default configuration is applied.
     This tutorial includes setting config because it's an important component of Ragna.
