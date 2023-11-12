@@ -92,6 +92,7 @@ client.headers["Authorization"] = f"Bearer {token}"
 <!-- Note: "Ragnvaldr" means advice/counsel/ruler in Old Norse. Using this as the username instead of "Ragna" to not overload the term.-->
 
 !!! tip
+
     Alternatively, you can make the username and password identical.
     This approach will also successfully authenticate you.
 
