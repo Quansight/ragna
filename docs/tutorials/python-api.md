@@ -29,7 +29,7 @@ And launch a new notebook.
 
 The first step is to setup the configuration for components like the source storage
 (vector database), API, assistant (LLM), and more. You can set this using a
-`config.toml` file.
+`ragna.toml` file.
 
 For this minimal tutorial on basics, start with the default configuration:
 
