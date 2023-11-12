@@ -58,4 +58,5 @@ config = Config.from_file(config_path)
 ```
 
 !!! note
+
     In the Python API, the [`Rag.chat()` function](../references/python-api.md#ragna.core.Chat) also allows you to set certain RAG-specific configurations like `document` and `assistants`.
