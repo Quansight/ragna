@@ -9,7 +9,7 @@ import pydantic
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._config import Config
-from ._document import Document
+from ._document import Document, LocalDocument
 from ._queue import Queue
 from ._utils import RagnaException, default_user, merge_models
 
@@ -46,14 +46,14 @@ class Rag:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. Items that are not [ragna.core.Document][]s are
-                passed as positional argument to the configured document class.
+            documents: Documents to use.
 
                 !!! note
 
-                    The default configuration uses [ragna.core.LocalDocument][] as
-                    document class. It accepts a path as positional input to create it.
-                    Thus, in this configuration you can pass paths as documents.
+                    The default configuration uses [ragna.core.LocalDocument][].  If
+                    that is the case, [ragna.core.LocalDocument.from_path][] is invoked
+                    on any non-[ragna.core.Document][] inputs. Thus, in this
+                    configuration you can pass paths directly.
             source_storage: Source storage to use. If [str][] can be the
                 [ragna.core.Component.display_name][] of any configured source
                 storage.
@@ -104,14 +104,14 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. Items that are not [ragna.core.Document][]s are
-            passed as positional argument to the configured document class.
+        documents: Documents to use.
 
             !!! note
 
-                The default configuration uses [ragna.core.LocalDocument][] as document
-                class. It accepts a path as positional input to create it. Thus, in
-                this configuration you can pass paths as documents.
+                The default configuration uses [ragna.core.LocalDocument][].  If that is
+                the case, [ragna.core.LocalDocument.from_path][] is invoked on any
+                non-[ragna.core.Document][] inputs. Thus, in this configuration you can
+                pass paths directly.
         source_storage: Source storage to use. If [str][] can be the
             [ragna.core.Component.display_name][] of any configured source storage.
         assistant: Assistant to use. If [str][] can be the
@@ -220,9 +220,10 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.core.document(
-                    document  # type: ignore[misc, call-arg]
-                )
+                if issubclass(self._rag.config.core.document, LocalDocument):
+                    document = LocalDocument.from_path(document)
+                else:
+                    raise RagnaException("Input is not a document", document=document)
 
             if not document.is_readable():
                 raise RagnaException(
