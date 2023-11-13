@@ -28,8 +28,8 @@ And launch a new notebook.
 ## Step 1: Setup RAG configuration
 
 The first step is to setup the configuration for components like the source storage
-(vector database), API, assistant (LLM), and more. You can set this using a
-`ragna.toml` file.
+(vector database), API, assistant (LLM), and more. You can set this using a `ragna.toml`
+file.
 
 For this minimal tutorial on basics, start with the default configuration:
 
