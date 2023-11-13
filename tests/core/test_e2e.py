@@ -41,11 +41,12 @@ def check_core(config):
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
         file.write("!\n")
+    document = ragna.core.LocalDocument.from_path(document_path)
 
     async def core():
         rag = Rag(config)
         chat = rag.chat(
-            documents=[document_path],
+            documents=[document],
             source_storage=RagnaDemoSourceStorage,
             assistant=RagnaDemoAssistant,
         )
@@ -56,4 +57,4 @@ def check_core(config):
 
     assert isinstance(answer, ragna.core.Message)
     assert answer.role is ragna.core.MessageRole.ASSISTANT
-    assert {source.document.name for source in answer.sources} == {document_path.name}
+    assert {source.document.name for source in answer.sources} == {document.name}
