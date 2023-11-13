@@ -1,8 +1,8 @@
 # Ragna 101: Minimal RAG+LLM chat in Python
 
-Ragna's Python API is the best place to get started with Ragna and understand it's key
-components. It's also the best way to continue experimenting with different LLMs and
-configurations for your particular use case.
+Ragna's [Python API](../references/python-api.md) is the best place to get started with
+Ragna and understand its key components. It's also the best way to continue
+experimenting with different LLMs and configurations for your particular use case.
 
 In this tutorial, you will build your first RAG chat application in a Jupyter Notebook.
 
@@ -23,14 +23,13 @@ Start JupyterLab:
 jupyter lab
 ```
 
-And, launch a new notebook.
+And launch a new notebook.
 
 ## Step 1: Setup RAG configuration
 
 The first step is to setup the configuration for components like the source storage
-(vector database), API, assistant (LLM), and more. You can set this using a
-`config.toml` file, learn more in the
-[how-to guide for setting configuration](../how-tos/set-configuration.md).
+(vector database), API, assistant (LLM), and more. You can set this using a `ragna.toml`
+file.
 
 For this minimal tutorial on basics, start with the default configuration:
 
@@ -60,20 +59,20 @@ with open(path, "w") as file:
 ## Step 3: Select source storage
 
 The sources and information (in our case the `demo_document.txt`) need be to stored in a
-vector database[^1], and similar to assistants, Ragna has a few built-in options:
+vector database[^1]. Similar to assistants, Ragna has a few built-in options:
 
-- `RagnaDemoSourceStorage` - Not an actual database, but stores tokens and sources in as
-  objects in memory. It provides a quick way to try out Ragna.
-- `Chroma` - Learn more in the [official website](https://www.trychroma.com/)
-- `LanceDB` - Learn more in the [official website](https://lancedb.com/)
+- **`RagnaDemoSourceStorage`** - Not an actual database. Instead stores tokens and
+  sources as objects in memory. It provides a quick way to try out Ragna.
+- **`Chroma`** - Learn more in the [official website](https://www.trychroma.com/)
+- **`LanceDB`** - Learn more in the [official website](https://lancedb.com/)
 
 [^1]:
-    Vector databases are databases at can effectively store
+    Vector databases can effectively store
     [embeddings (represented as vectors)](https://platform.openai.com/docs/guides/embeddings/what-are-embeddings)
-    that are created by deep learning models. Learn more in
+    created by deep learning models. Learn more in
     [this blog post by Cloudflare](https://www.cloudflare.com/en-gb/learning/ai/what-is-vector-database/).
 
-You select the demo source storage:
+Select the demo source storage:
 
 ```python
 from ragna.source_storages import RagnaDemoSourceStorage
@@ -85,8 +84,8 @@ Pick the Large Language Model you want to use as your chat assistant.
 
 Ragna has the following built-in options:
 
-- **`RagnaDemoAssistant`** - This is not actually an LLM, and will not provide useful
-  answers. It's a demo (toy) assistant so that you can quickly setup and use Ragna.
+- **`RagnaDemoAssistant`** - Not an actual LLM. Instead replies with your prompt and a
+  static message. It provides a quick way to setup and use Ragna.
 - **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
 - **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
 - **Anthropic's `ClaudeInstant` and `Claude`**
@@ -99,10 +98,8 @@ from ragna.assistants import RagnaDemoAssistant
 
 !!! note
 
-    The RagnaDemoAssistant is not an assistant(LLM), instead it replies with the
-    your prompt and a static message. It is only to understand the Ragna API. You need
-    to get API keys and set relevant environment variables to use the supported
-    assistants.
+    You need to [get API keys](../references/faq.md#where-do-i-get-api-keys-for-the-builtin-assistants)
+    and set relevant environment variables to use the supported assistants.
 
 ## Step 5: Start a chat
 
@@ -119,7 +116,7 @@ rag =  Rag(config)
 !!! note
 
     Setting the default configuration is not required. If you create the instance with
-    no configuration: `rag = Rag()`, the default configuration is applied by default.
+    no configuration: `rag = Rag()`, the default configuration is applied.
     This tutorial includes setting config because it's an important component of Ragna.
 
 ### Start an async chat
