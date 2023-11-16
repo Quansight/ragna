@@ -1,0 +1,10 @@
+[project]
+name = "vikings"
+description = "A collection of bearded and aggressive assistants."
+version = "0.1.0"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.entry-points."ragna.assistants"]
+assistants = "vikings.assistants"
