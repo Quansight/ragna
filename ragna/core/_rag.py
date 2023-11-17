@@ -6,7 +6,18 @@ import functools
 import inspect
 import itertools
 import uuid
-from typing import Any, Iterable, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    Awaitable,
+    Callable,
+    Generic,
+    Iterable,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import anyio
 import nest_asyncio
@@ -16,18 +27,23 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
-T = TypeVar("T", bound=Component)
+T = TypeVar("T")
+
+C = TypeVar("C", bound=Component)
 
 
-class Rag:
+class Rag(Generic[C]):
     """RAG workflow."""
 
-    def __init__(self):
-        self._components: dict[Type[Component], Optional[Component]] = {}
+    def __init__(self) -> None:
+        self._components: dict[Type[C], C] = {}
 
-    def _load_component(self, component: Union[Type[T], T]) -> T:
+    def _load_component(self, component: Union[Type[C], C]) -> C:
+        cls: Type[C]
+        instance: Optional[C]
+
         if isinstance(component, Component):
-            instance = component
+            instance = cast(C, component)
             cls = type(instance)
         elif isinstance(component, type) and issubclass(component, Component):
             cls = component
@@ -270,24 +286,18 @@ class Chat:
             )
         }
 
-    def _run_async(self, fn):
-        async def coro():
-            if inspect.iscoroutine(fn):
-                return await fn
-            else:
-                raise RuntimeError
-
+    def _run_async(self, fn: Awaitable[T]) -> T:
         nest_asyncio.apply()
-        return asyncio.run(coro())
+        return asyncio.run(fn)  # type: ignore[arg-type]
 
-    async def _run(self, fn, *args: Any):
+    async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
         # FIXME: we should store them on a bound method basis
-        kwargs = self._unpacked_params[(type(fn.__self__), fn.__name__)]
+        kwargs = self._unpacked_params[(type(fn.__self__), fn.__name__)]  # type: ignore[attr-defined]
         if inspect.iscoroutinefunction(fn):
-            return await fn(*args, **kwargs)
+            return await cast(Callable[[], Awaitable[T]], fn)(*args, **kwargs)
         else:
             return await anyio.to_thread.run_sync(
-                functools.partial(fn, *args, **kwargs)
+                cast(Callable[[], T], functools.partial(fn, *args, **kwargs))
             )
 
     def __enter__(self) -> Chat:

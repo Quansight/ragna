@@ -63,7 +63,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             PackageRequirement("tiktoken"),
         ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         import chromadb.api
         import chromadb.utils.embedding_functions
         import tiktoken

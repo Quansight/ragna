@@ -21,8 +21,8 @@ from . import database, schemas
 def app(config: Config) -> FastAPI:
     ragna.local_root(config.local_cache_root)
 
-    rag = Rag()
-    components_map = {
+    rag = Rag()  # type: ignore[var-annotated]
+    components_map: dict[str, Component] = {
         component.display_name(): rag._load_component(component)
         for component in itertools.chain(
             config.core.source_storages, config.core.assistants
@@ -166,8 +166,8 @@ def app(config: Config) -> FastAPI:
                 )
                 for document in chat.metadata.documents
             ],
-            source_storage=load_component(chat.metadata.source_storage),
-            assistant=load_component(chat.metadata.assistant),
+            source_storage=load_component(chat.metadata.source_storage),  # type: ignore[arg-type]
+            assistant=load_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,

@@ -137,6 +137,7 @@ disallow_incomplete_defs = false
 module = [
     "fitz",
     "lancedb",
+    "nest_asyncio",
     "param",
     "pyarrow",
     "sentence_transformers",
