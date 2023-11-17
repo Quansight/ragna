@@ -105,8 +105,7 @@ def ui(
 ) -> None:
     def check_api_available() -> bool:
         try:
-            httpx.get(config.api.url)
-            return True
+            return httpx.get(config.api.url).is_success
         except httpx.ConnectError:
             return False
 
