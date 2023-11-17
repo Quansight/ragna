@@ -1,9 +1,7 @@
 __all__ = [
     "Assistant",
-    "Authentication",
     "Chat",
     "Component",
-    "Config",
     "Document",
     "DocumentHandler",
     "EnvVarRequirement",
@@ -14,7 +12,6 @@ __all__ = [
     "Page",
     "PdfDocumentHandler",
     "Rag",
-    "RagnaDemoAuthentication",
     "RagnaException",
     "Requirement",
     "Source",
@@ -53,11 +50,6 @@ from ._components import (
 
 # isort: split
 
-from ._authentication import Authentication, RagnaDemoAuthentication
-
-# isort: split
-
-from ._config import Config
 from ._rag import Chat, Rag
 
 # isort: split

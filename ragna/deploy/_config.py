@@ -11,10 +11,9 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from ragna.core import Assistant, Document, RagnaException, SourceStorage
+
 from ._authentication import Authentication
-from ._components import Assistant, SourceStorage
-from ._document import Document
-from ._utils import RagnaException
 
 
 class ConfigBase(BaseSettings):
@@ -57,6 +56,7 @@ class CoreConfig(ConfigBase):
 
 
 class ApiConfig(ConfigBase):
+    # FIXME: check if we need these?
     model_config = SettingsConfigDict(env_prefix="ragna_api_")
 
     url: str = "http://127.0.0.1:31476"
@@ -66,7 +66,7 @@ class ApiConfig(ConfigBase):
 
     authentication: ImportString[
         type[Authentication]
-    ] = "ragna.core.RagnaDemoAuthentication"  # type: ignore[assignment]
+    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
 
 
 class UiConfig(ConfigBase):
@@ -82,6 +82,7 @@ class Config(ConfigBase):
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
 
+    # FIXME: make this local root and use that as default factory
     local_cache_root: Path = Field(
         default_factory=lambda: Path.home() / ".cache" / "ragna"
     )
@@ -89,6 +90,7 @@ class Config(ConfigBase):
     @field_validator("local_cache_root")
     @classmethod
     def _resolve_and_make_path(cls, path: Path) -> Path:
+        # FIXME: move this into the util
         path = path.expanduser().resolve()
         path.mkdir(parents=True, exist_ok=True)
         return path

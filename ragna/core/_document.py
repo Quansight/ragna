@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
 
 if TYPE_CHECKING:
-    from ._config import Config
+    from ragna.deploy import Config
 
 
 class Document(RequirementsMixin, abc.ABC):
