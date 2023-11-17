@@ -27,12 +27,12 @@ class OpenaiApiAssistant(ApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _call_api(
+    async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> str:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/object
-        response = self._client.post(
+        response = await self._client.post(
             "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",

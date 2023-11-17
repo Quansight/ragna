@@ -27,12 +27,12 @@ class MosaicmlApiAssistant(ApiAssistant):
         instruction += "\n\n".join(source.content for source in sources)
         return f"{instruction}### Instruction: {prompt}\n### Response:"
 
-    def _call_api(
+    async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> str:
         instruction = self._instructize_prompt(prompt, sources)
         # https://docs.mosaicml.com/en/latest/inference.html#text-completion-requests
-        response = self._client.post(
+        response = await self._client.post(
             f"https://models.hosted-on.mosaicml.hosting/{self._MODEL}/v1/predict",
             headers={
                 "Authorization": f"{self._api_key}",

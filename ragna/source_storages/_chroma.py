@@ -1,8 +1,6 @@
 import uuid
-from typing import Optional
 
 from ragna.core import (
-    Config,
     Document,
     Source,
 )
@@ -21,8 +19,8 @@ class Chroma(VectorDatabaseSourceStorage):
     # Note that this class has no extra requirements, since the chromadb package is
     # already required for the base class.
 
-    def __init__(self, config: Optional[Config] = None) -> None:
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
 
         import chromadb
 
