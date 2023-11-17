@@ -8,8 +8,8 @@ import mkdocs_gen_files
 import typer.rich_utils
 
 from ragna import Config
-from ragna._api import app as api_app
-from ragna._cli import app as cli_app
+from ragna.deploy._api import app as api_app
+from ragna.deploy._cli import app as cli_app
 
 
 def main():

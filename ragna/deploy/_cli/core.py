@@ -11,9 +11,9 @@ import typer
 import uvicorn
 
 import ragna
-from ragna._api import app as api_app
-from ragna._ui import app as ui_app
 from ragna._utils import timeout_after
+from ragna.deploy._api import app as api_app
+from ragna.deploy._ui import app as ui_app
 
 from .config import ConfigOption, check_config, init_config
 
