@@ -4,7 +4,6 @@ import asyncio
 import datetime
 import functools
 import inspect
-import itertools
 import uuid
 from typing import (
     Any,
@@ -252,15 +251,17 @@ class Chat:
 
     def _unpack_chat_params(
         self, params: dict[str, Any]
-    ) -> dict[tuple[Type[Component], str], dict[str, Any]]:
-        source_storage_models = self.source_storage._protocol_models()
-        assistant_models = self.assistant._protocol_models()
+    ) -> dict[Callable, dict[str, Any]]:
+        component_models = {
+            getattr(component, name): model
+            for component in [self.source_storage, self.assistant]
+            for (_, name), model in component._protocol_models().items()
+        }
 
         ChatModel = merge_models(
             str(self.params["chat_id"]),
             SpecialChatParams,
-            *source_storage_models.values(),
-            *assistant_models.values(),
+            *component_models.values(),
             config=pydantic.ConfigDict(extra="forbid"),
         )
 
@@ -268,10 +269,8 @@ class Chat:
             exclude_none=True
         )
         return {
-            component_and_action: model(**chat_params).model_dump()
-            for component_and_action, model in itertools.chain(
-                source_storage_models.items(), assistant_models.items()
-            )
+            fn: model(**chat_params).model_dump()
+            for fn, model in component_models.items()
         }
 
     def _run_async(self, fn: Awaitable[T]) -> T:
@@ -279,8 +278,7 @@ class Chat:
         return asyncio.run(fn)  # type: ignore[arg-type]
 
     async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
-        # FIXME: we should store them on a bound method basis
-        kwargs = self._unpacked_params[(type(fn.__self__), fn.__name__)]  # type: ignore[attr-defined]
+        kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
             return await cast(Callable[[], Awaitable[T]], fn)(*args, **kwargs)
         else:
