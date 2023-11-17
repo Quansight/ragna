@@ -41,12 +41,9 @@ class ConfigBase(BaseSettings):
         return env_settings, init_settings
 
 
-class CoreConfig(ConfigBase):
+class ComponentsConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_core_")
 
-    queue_url: str = "memory"
-
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [
         "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
     ]
@@ -63,10 +60,6 @@ class ApiConfig(ConfigBase):
     # FIXME: this needs to be dynamic for the UI url
     origins: list[str] = ["http://127.0.0.1:31477"]
     database_url: str = "memory"
-
-    authentication: ImportString[
-        type[Authentication]
-    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
 
 
 class UiConfig(ConfigBase):
@@ -87,6 +80,12 @@ class Config(ConfigBase):
         default_factory=lambda: Path.home() / ".cache" / "ragna"
     )
 
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
+
+    authentication: ImportString[
+        type[Authentication]
+    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+
     @field_validator("local_cache_root")
     @classmethod
     def _resolve_and_make_path(cls, path: Path) -> Path:
@@ -95,7 +94,7 @@ class Config(ConfigBase):
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    core: CoreConfig = Field(default_factory=CoreConfig)
+    components: ComponentsConfig = Field(default_factory=ComponentsConfig)
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 

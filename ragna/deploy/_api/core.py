@@ -11,9 +11,9 @@ from fastapi.responses import JSONResponse
 import ragna
 import ragna.core
 from ragna._utils import handle_localhost_origins
-from ragna.core import Config, Rag, RagnaException
-from ragna.core._components import Component
+from ragna.core import Component, Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
+from ragna.deploy import Config
 
 from . import database, schemas
 
@@ -25,11 +25,11 @@ def app(config: Config) -> FastAPI:
     components_map: dict[str, Component] = {
         component.display_name(): rag._load_component(component)
         for component in itertools.chain(
-            config.core.source_storages, config.core.assistants
+            config.components.source_storages, config.components.assistants
         )
     }
 
-    def load_component(display_name: str) -> Component:
+    def get_component(display_name: str) -> Component:
         component = components_map.get(display_name)
         if component is None:
             raise RagnaException("Unknown component", display_name=display_name)
@@ -64,7 +64,7 @@ def app(config: Config) -> FastAPI:
     async def version() -> str:
         return ragna.__version__
 
-    authentication = config.api.authentication()
+    authentication = config.authentication()
 
     @app.post("/token")
     async def create_token(request: Request) -> str:
@@ -91,14 +91,14 @@ def app(config: Config) -> FastAPI:
     @app.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
-            documents=sorted(config.core.document.supported_suffixes()),
+            documents=sorted(config.document.supported_suffixes()),
             source_storages=[
                 _get_component_json_schema(source_storage)
-                for source_storage in config.core.source_storages
+                for source_storage in config.components.source_storages
             ],
             assistants=[
                 _get_component_json_schema(assistant)
-                for assistant in config.core.assistants
+                for assistant in config.components.assistants
             ],
         )
 
@@ -119,7 +119,7 @@ def app(config: Config) -> FastAPI:
     ) -> schemas.DocumentUploadInfo:
         with get_session() as session:
             document = schemas.Document(name=name)
-            url, data, metadata = await config.core.document.get_upload_info(
+            url, data, metadata = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
             )
             database.add_document(
@@ -131,7 +131,7 @@ def app(config: Config) -> FastAPI:
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(config.core.document, ragna.core.LocalDocument):
+        if not issubclass(config.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
@@ -155,7 +155,7 @@ def app(config: Config) -> FastAPI:
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                config.core.document(
+                config.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
@@ -166,8 +166,8 @@ def app(config: Config) -> FastAPI:
                 )
                 for document in chat.metadata.documents
             ],
-            source_storage=load_component(chat.metadata.source_storage),  # type: ignore[arg-type]
-            assistant=load_component(chat.metadata.assistant),  # type: ignore[arg-type]
+            source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
+            assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,
