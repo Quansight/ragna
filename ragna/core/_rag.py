@@ -236,7 +236,6 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                # FIXME: adapt docstring
                 document = LocalDocument.from_path(document)
 
             if not document.is_readable():
