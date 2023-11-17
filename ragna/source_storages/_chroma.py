@@ -1,5 +1,6 @@
 import uuid
 
+import ragna
 from ragna.core import (
     Document,
     Source,
@@ -27,7 +28,7 @@ class Chroma(VectorDatabaseSourceStorage):
         self._client = chromadb.Client(
             chromadb.config.Settings(
                 is_persistent=True,
-                persist_directory=str(self.config.local_cache_root / "chroma"),
+                persist_directory=str(ragna.local_root() / "chroma"),
                 anonymized_telemetry=False,
             )
         )

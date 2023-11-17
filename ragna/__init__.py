@@ -9,4 +9,5 @@ except ModuleNotFoundError:
     __version__ = "UNKNOWN"
 
 from . import assistants, core, source_storages
+from ._utils import local_root
 from .core import Config, Rag

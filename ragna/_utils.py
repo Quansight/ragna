@@ -1,7 +1,21 @@
 import functools
+import os
 import threading
-from typing import Any, Callable
+from pathlib import Path
+from typing import Any, Callable, Optional, Union
 from urllib.parse import SplitResult, urlsplit, urlunsplit
+
+_LOCAL_ROOT = (
+    Path(os.environ.get("RAGNA_LOCAL_ROOT", "~/.cache/ragna")).expanduser().resolve()
+)
+
+
+def local_root(path: Optional[Union[str, Path]] = None) -> Path:
+    global _LOCAL_ROOT
+    if path is not None:
+        _LOCAL_ROOT = Path(path).expanduser().resolve()
+
+    return _LOCAL_ROOT
 
 
 def fix_module(globals: dict[str, Any]) -> None:

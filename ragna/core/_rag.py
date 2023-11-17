@@ -5,9 +5,7 @@ import datetime
 import functools
 import inspect
 import itertools
-import os
 import uuid
-from pathlib import Path
 from typing import Any, Iterable, Optional, Type, TypeVar, Union
 
 import anyio
@@ -22,27 +20,9 @@ T = TypeVar("T", bound=Component)
 
 
 class Rag:
-    """RAG workflow.
+    """RAG workflow."""
 
-    Args:
-        config: Ragna configuration.
-        load_components: Whether to load the configured components in the current
-            process. If omitted, components will be loaded if a memory queue is
-            configured.
-    """
-
-    def __init__(self, *, local_root=None):
-        # FIXME MOve this into a utility function
-        self.local_root = (
-            Path(
-                local_root
-                if local_root is not None
-                else os.environ.get("RAGNA_LOCAL_ROOT", "~/.cache/ragna")
-            )
-            .expanduser()
-            .resolve()
-        )
-
+    def __init__(self):
         self._components: dict[Type[Component], Optional[Component]] = {}
 
     def _load_component(self, component: Union[Type[T], T]) -> T:

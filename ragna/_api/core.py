@@ -1,4 +1,5 @@
 import contextlib
+import itertools
 import uuid
 from typing import Annotated, Any, Iterator, Type, cast
 
@@ -18,7 +19,22 @@ from . import database, schemas
 
 
 def app(config: Config) -> FastAPI:
-    rag = Rag(config)
+    ragna.local_root(config.local_cache_root)
+
+    rag = Rag()
+    components_map = {
+        component.display_name(): rag._load_component(component)
+        for component in itertools.chain(
+            config.core.source_storages, config.core.assistants
+        )
+    }
+
+    def load_component(display_name: str) -> Component:
+        component = components_map.get(display_name)
+        if component is None:
+            raise RagnaException("Unknown component", display_name=display_name)
+
+        return component
 
     app = FastAPI(title="ragna", version=ragna.__version__)
     app.add_middleware(
@@ -115,7 +131,7 @@ def app(config: Config) -> FastAPI:
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(rag.config.core.document, ragna.core.LocalDocument):
+        if not issubclass(config.core.document, ragna.core.LocalDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
@@ -139,7 +155,7 @@ def app(config: Config) -> FastAPI:
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
-                rag.config.core.document(
+                config.core.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
@@ -150,8 +166,8 @@ def app(config: Config) -> FastAPI:
                 )
                 for document in chat.metadata.documents
             ],
-            source_storage=chat.metadata.source_storage,
-            assistant=chat.metadata.assistant,
+            source_storage=load_component(chat.metadata.source_storage),
+            assistant=load_component(chat.metadata.assistant),
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,
@@ -199,7 +215,7 @@ def app(config: Config) -> FastAPI:
             chat = database.get_chat(session, user=user, id=id)
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
-            welcome = schemas.Message.from_core(await core_chat.prepare())
+            welcome = schemas.Message.from_core(await core_chat.aprepare())
             chat.prepared = True
             chat.messages.append(welcome)
 
@@ -219,7 +235,7 @@ def app(config: Config) -> FastAPI:
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-            answer = schemas.Message.from_core(await core_chat.answer(prompt))
+            answer = schemas.Message.from_core(await core_chat.aanswer(prompt))
             chat.messages.append(answer)
 
             database.update_chat(session, user=user, chat=chat)

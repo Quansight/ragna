@@ -20,7 +20,6 @@ __all__ = [
     "Source",
     "SourceStorage",
     "TxtDocumentHandler",
-    "task_config",
 ]
 
 from ._utils import (
@@ -59,7 +58,6 @@ from ._authentication import Authentication, RagnaDemoAuthentication
 # isort: split
 
 from ._config import Config
-from ._queue import task_config
 from ._rag import Chat, Rag
 
 # isort: split

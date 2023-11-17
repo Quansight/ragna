@@ -2,13 +2,7 @@ import abc
 import os
 
 import ragna
-from ragna.core import (
-    Assistant,
-    EnvVarRequirement,
-    Requirement,
-    Source,
-    task_config,
-)
+from ragna.core import Assistant, EnvVarRequirement, Requirement, Source
 
 
 class ApiAssistant(Assistant):
@@ -27,7 +21,6 @@ class ApiAssistant(Assistant):
         )
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
-    @task_config(retries=2, retry_delay=1)
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> str:
