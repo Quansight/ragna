@@ -27,7 +27,6 @@ from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
-
 C = TypeVar("C", bound=Component)
 
 
@@ -302,16 +301,24 @@ class Chat:
         }
 
     def _run_async(self, fn: Awaitable[T]) -> T:
+        # This is the best way I could come up with to be able to run an async function
+        # synchronously when there is already an event-loop running. This happens for
+        # example inside a jupyter notebook. Without this, it would be impossible to use
+        # synchronous methods in such a scenario.
+        # FIXME: That being said, it feels kinda hacky and is also causing issues in the
+        #  test suite. If anyone knows a better way to achieve this, please send a PR :)
         nest_asyncio.apply()
         return asyncio.run(fn)  # type: ignore[arg-type]
 
     async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
         kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
-            return await cast(Callable[[], Awaitable[T]], fn)(*args, **kwargs)
+            fn = cast(Callable[..., Awaitable[T]], fn)
+            return await fn(*args, **kwargs)
         else:
+            fn = cast(Callable[..., T], fn)
             return await anyio.to_thread.run_sync(
-                cast(Callable[[], T], functools.partial(fn, *args, **kwargs))
+                functools.partial(fn, *args, **kwargs)
             )
 
     def __enter__(self) -> Chat:
