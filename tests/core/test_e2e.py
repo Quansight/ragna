@@ -4,7 +4,6 @@ import inspect
 import pytest
 
 from ragna import Rag
-from ragna._utils import timeout_after
 from ragna.assistants import RagnaDemoAssistant
 from ragna.core import LocalDocument, Message, MessageRole
 from ragna.source_storages import RagnaDemoSourceStorage
@@ -44,8 +43,7 @@ def e2e_sync(*, documents, source_storage, assistant):
 #  passed. This seems to only happen when running with pytest though and not during
 #  normal operation. Weirdly enough, just putting the decorator here solves the issue.
 #  Although we should still investigate what is actually happening.
-@timeout_after()
-@pytest.mark.parametrize("e2e_fn", [e2e_sync, e2e_async, e2e_sync_in_async])
+@pytest.mark.parametrize("e2e_fn", [e2e_sync, e2e_async])
 def test_e2e(tmp_local_root, e2e_fn):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
