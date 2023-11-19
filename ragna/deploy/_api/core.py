@@ -215,7 +215,7 @@ def app(config: Config) -> FastAPI:
             chat = database.get_chat(session, user=user, id=id)
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
-            welcome = schemas.Message.from_core(await core_chat.aprepare())
+            welcome = schemas.Message.from_core(await core_chat.prepare())
             chat.prepared = True
             chat.messages.append(welcome)
 
@@ -235,7 +235,7 @@ def app(config: Config) -> FastAPI:
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-            answer = schemas.Message.from_core(await core_chat.aanswer(prompt))
+            answer = schemas.Message.from_core(await core_chat.answer(prompt))
             chat.messages.append(answer)
 
             database.update_chat(session, user=user, chat=chat)

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import datetime
 import functools
 import inspect
@@ -19,7 +18,6 @@ from typing import (
 )
 
 import anyio
-import nest_asyncio
 import pydantic
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
@@ -154,10 +152,7 @@ class Chat:
         self._prepared = False
         self._messages: list[Message] = []
 
-    def prepare(self) -> Message:
-        return self._run_async(self.aprepare())
-
-    async def aprepare(self) -> Message:
+    async def prepare(self) -> Message:
         """Prepare the chat.
 
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
@@ -188,10 +183,7 @@ class Chat:
         self._messages.append(welcome)
         return welcome
 
-    def answer(self, prompt: str) -> Message:
-        return self._run_async(self.aanswer(prompt))
-
-    async def aanswer(self, prompt: str) -> Message:
+    async def answer(self, prompt: str) -> Message:
         """Answer a prompt.
 
         Returns:
@@ -271,16 +263,6 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    def _run_async(self, fn: Awaitable[T]) -> T:
-        # This is the best way I could come up with to be able to run an async function
-        # synchronously when there is already an event-loop running. This happens for
-        # example inside a jupyter notebook. Without this, it would be impossible to use
-        # synchronous methods in such a scenario.
-        # FIXME: That being said, it feels kinda hacky and is also causing issues in the
-        #  test suite. If anyone knows a better way to achieve this, please send a PR :)
-        nest_asyncio.apply()
-        return asyncio.run(fn)  # type: ignore[arg-type]
-
     async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
         kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
@@ -292,20 +274,8 @@ class Chat:
                 functools.partial(fn, *args, **kwargs)
             )
 
-    def __enter__(self) -> Chat:
-        self.prepare()
-        return self
-
-    def __exit__(
-        self, exc_type: Type[Exception], exc: Exception, traceback: str
-    ) -> None:
-        pass
-
-    def __call__(self, prompt: str) -> Message:
-        return self.answer(prompt)
-
     async def __aenter__(self) -> Chat:
-        await self.aprepare()
+        await self.prepare()
         return self
 
     async def __aexit__(

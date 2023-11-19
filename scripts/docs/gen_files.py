@@ -7,7 +7,7 @@ import fastapi.openapi.utils
 import mkdocs_gen_files
 import typer.rich_utils
 
-from ragna import Config
+from ragna.deploy import Config
 from ragna.deploy._api import app as api_app
 from ragna.deploy._cli import app as cli_app
 
