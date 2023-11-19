@@ -1,7 +1,7 @@
 import uuid
-from typing import Optional
 
-from ragna.core import Config, Document, PackageRequirement, Requirement, Source
+import ragna
+from ragna.core import Document, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -28,13 +28,13 @@ class LanceDB(VectorDatabaseSourceStorage):
             ),
         ]
 
-    def __init__(self, config: Optional[Config] = None) -> None:
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
 
         import lancedb
         import pyarrow as pa
 
-        self._db = lancedb.connect(self.config.local_cache_root / "lancedb")
+        self._db = lancedb.connect(ragna.local_root() / "lancedb")
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),

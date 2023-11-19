@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from ragna import Config
+from ragna.deploy import Config
 
 
 @pytest.mark.xfail()

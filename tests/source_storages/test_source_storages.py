@@ -2,14 +2,13 @@ import uuid
 
 import pytest
 
-from ragna import Config
 from ragna.core import LocalDocument
 from ragna.source_storages import Chroma, LanceDB
 
 
 @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
-def test_smoke(tmp_path, source_storage_cls):
-    document_root = tmp_path / "documents"
+def test_smoke(tmp_local_root, source_storage_cls):
+    document_root = tmp_local_root / "documents"
     document_root.mkdir()
     documents = []
     for idx in range(10):
@@ -26,8 +25,7 @@ def test_smoke(tmp_path, source_storage_cls):
 
     documents.insert(len(documents) // 2, LocalDocument.from_path(path))
 
-    config = Config(local_cache_root=tmp_path)
-    source_storage = source_storage_cls(config)
+    source_storage = source_storage_cls()
 
     # Hardcoding a chat_id here only works because all tested source storages only
     # require this.

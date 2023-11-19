@@ -34,7 +34,7 @@ file.
 For this minimal tutorial on basics, start with the default configuration:
 
 ```python
-from ragna import Config
+from ragna.deploy import Config
 
 config = Config()
 config
@@ -110,7 +110,7 @@ That's all the setup, you can now use Ragna to create a chat app.
 ```python
 from ragna.core import Rag
 
-rag =  Rag(config)
+rag =  Rag()
 ```
 
 !!! note

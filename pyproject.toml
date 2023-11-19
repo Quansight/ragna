@@ -22,9 +22,9 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "aiofiles",
+    "anyio",
     "emoji",
     "fastapi",
-    "huey",
     "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
@@ -65,7 +65,7 @@ write_to = "ragna/_version.py"
 local_scheme = "node-and-timestamp"
 
 [project.scripts]
-ragna = "ragna._cli:app"
+ragna = "ragna.__main__:app"
 
 [tool.setuptools.packages.find]
 include = [
@@ -126,7 +126,7 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna._ui.*",
+    "ragna.deploy._ui.*",
 ]
 disallow_untyped_calls = false
 disallow_untyped_defs = false
@@ -135,7 +135,6 @@ disallow_incomplete_defs = false
 [[tool.mypy.overrides]]
 module = [
     "fitz",
-    "huey.*",
     "lancedb",
     "param",
     "pyarrow",
@@ -145,7 +144,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna._api.orm",
+    "ragna.deploy._api.orm",
 ]
 # Our ORM schema doesn't really work with mypy. There are some other ways to define it
 # to play ball. We should do that in the future.

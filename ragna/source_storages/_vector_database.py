@@ -12,7 +12,6 @@ from typing import (
 
 from ragna._compat import itertools_pairwise
 from ragna.core import (
-    Config,
     PackageRequirement,
     Page,
     Requirement,
@@ -64,9 +63,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             PackageRequirement("tiktoken"),
         ]
 
-    def __init__(self, config: Optional[Config] = None):
-        super().__init__(config)
-
+    def __init__(self) -> None:
         import chromadb.api
         import chromadb.utils.embedding_functions
         import tiktoken

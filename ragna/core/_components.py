@@ -4,16 +4,13 @@ import abc
 import enum
 import functools
 import inspect
-from typing import TYPE_CHECKING, Optional, Type
+from typing import Type
 
 import pydantic
 import pydantic.utils
 
 from ._document import Document
 from ._utils import RequirementsMixin, merge_models
-
-if TYPE_CHECKING:
-    from ._config import Config
 
 
 class Component(RequirementsMixin):
@@ -32,11 +29,6 @@ class Component(RequirementsMixin):
             Component name.
         """
         return cls.__name__
-
-    def __init__(self, config: Optional[Config] = None) -> None:
-        from ._config import Config
-
-        self.config = config or Config()
 
     def __repr__(self) -> str:
         return self.display_name()

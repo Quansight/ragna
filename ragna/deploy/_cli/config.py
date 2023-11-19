@@ -2,7 +2,7 @@ import itertools
 from collections import defaultdict
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Annotated, Iterable, Type, TypeVar, cast
+from typing import Annotated, Iterable, Type, TypeVar, cast
 
 import pydantic
 import questionary
@@ -13,14 +13,14 @@ from rich.table import Table
 import ragna
 from ragna.core import (
     Assistant,
-    Config,
+    Component,
     EnvVarRequirement,
     PackageRequirement,
     RagnaException,
     Requirement,
     SourceStorage,
 )
-from ragna.core._components import Component
+from ragna.deploy import Config
 
 
 def parse_config(value: str) -> Config:
@@ -46,7 +46,7 @@ def parse_config(value: str) -> Config:
 
 
 ConfigOption = Annotated[
-    ragna.Config,
+    Config,
     typer.Option(
         "-c",
         "--config",
@@ -132,19 +132,19 @@ def _wizard_builtin() -> Config:
         "If the requirements of a selected component are not met, "
         "I'll show you instructions how to meet them later."
     )
-    config.core.source_storages = _select_components(
+    config.components.source_storages = _select_components(
         "source storages",
         ragna.source_storages,
         SourceStorage,  # type: ignore[type-abstract]
     )
-    config.core.assistants = _select_components(
+    config.components.assistants = _select_components(
         "assistants",
         ragna.assistants,
         Assistant,  # type: ignore[type-abstract]
     )
 
     _handle_unmet_requirements(
-        itertools.chain(config.core.source_storages, config.core.assistants)
+        itertools.chain(config.components.source_storages, config.components.assistants)
     )
 
     return config
@@ -245,8 +245,6 @@ def _wizard_common() -> Config:
         ).unsafe_ask()
     )
 
-    config.core.queue_url = _select_queue_url(config)
-
     config.api.url = questionary.text(
         "At what URL do you want the ragna REST API to be served?",
         default=config.api.url,
@@ -273,65 +271,6 @@ def _wizard_common() -> Config:
     ).unsafe_ask()
 
     return config
-
-
-def _select_queue_url(config: Config) -> str:
-    queue = questionary.select(
-        (
-            "Ragna internally uses a task queue to perform the RAG workflow. "
-            "What kind of queue do you want to use?"
-        ),
-        # FIXME: include the descriptions as actual descriptions rather than as part
-        #  of the title as soon as https://github.com/tmbo/questionary/issues/269 is
-        #  resolved.
-        choices=[
-            questionary.Choice(
-                (
-                    "memory: Everything runs sequentially on the main thread "
-                    "as if there were no task queue."
-                ),
-                value="memory",
-            ),
-            questionary.Choice(
-                (
-                    "file system: The local file system is used to build the queue. "
-                    "Starting a ragna worker is required. "
-                    "Requires the worker to be run on the same machine as the main "
-                    "thread."
-                ),
-                value="file_system",
-            ),
-            questionary.Choice(
-                (
-                    "redis: Redis is used as queue. Starting a ragna worker is "
-                    "required."
-                ),
-                value="redis",
-            ),
-        ],
-        qmark=QMARK,
-    ).unsafe_ask()
-
-    if queue == "memory":
-        return "memory"
-    elif queue == "file_system":
-        return cast(
-            str,
-            questionary.path(
-                "Where do you want to store the queue files?",
-                default=str(config.local_cache_root / "queue"),
-                qmark=QMARK,
-            ).unsafe_ask(),
-        )
-    else:  # queue == "redis":
-        return cast(
-            str,
-            questionary.text(
-                "What is the URL of the Redis instance?",
-                default="redis://127.0.0.1:6379",
-                qmark=QMARK,
-            ).unsafe_ask(),
-        )
 
 
 def _handle_output_path(*, output_path: Path, force: bool) -> tuple[Path, bool]:
@@ -377,13 +316,10 @@ def check_config(config: Config) -> bool:
     fully_available = True
 
     for title, components in [
-        ("source storages", config.core.source_storages),
-        ("assistants", config.core.assistants),
+        ("source storages", config.components.source_storages),
+        ("assistants", config.components.assistants),
     ]:
-        if TYPE_CHECKING:
-            from ragna.core._components import Component
-
-            components = cast(list[Type[Component]], components)
+        components = cast(list[Type[Component]], components)
 
         table = Table(
             "",
