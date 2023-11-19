@@ -121,10 +121,8 @@ class Chat:
         rag: The RAG workflow this chat is associated with.
         documents: Documents to use. If any item is not a [ragna.core.Document][],
             [ragna.core.LocalDocument.from_path][] is invoked on it.
-        source_storage: Source storage to use. If [str][] can be the
-            [ragna.core.Component.display_name][] of any configured source storage.
-        assistant: Assistant to use. If [str][] can be the
-            [ragna.core.Component.display_name][] of any configured assistant.
+        source_storage: Source storage to use.
+        assistant: Assistant to use.
         **params: Additional parameters passed to the source storage and assistant.
     """
 
