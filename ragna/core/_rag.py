@@ -102,20 +102,11 @@ class Chat:
         This object is usually not instantiated manually, but rather through
         [ragna.core.Rag.chat][].
 
-    Prompts can be answered in a blocking
+    A chat needs to be [`prepare`][ragna.core.Chat.prepare]d before prompts can be
+    [`answer`][ragna.core.Chat.answer]ed.
 
-    ```python
-    rag = Rag()
-
-    with rag.chat(
-        documents=[path],
-        source_storage=ragna.core.RagnaDemoSourceStorage,
-        assistant=ragna.core.RagnaDemoAssistant,
-    ) as chat:
-        print(chat("What is Ragna?"))
-    ```
-
-    or non-blocking manner
+    Can be used as context manager to automatically invoke
+    [`prepare`][ragna.core.Chat.prepare]:
 
     ```python
     rag = Rag()
@@ -125,7 +116,7 @@ class Chat:
         source_storage=ragna.core.RagnaDemoSourceStorage,
         assistant=ragna.core.RagnaDemoAssistant,
     ) as chat:
-        print(await chat.aanswer("What is Ragna?"))
+        print(await chat.answer("What is Ragna?"))
     ```
 
     Args:
@@ -164,31 +155,13 @@ class Chat:
         self._messages: list[Message] = []
 
     def prepare(self) -> Message:
-        """Blocking variant of [ragna.core.Chat.aprepare][]
-
-        Preparation can also be achieved through a context manager
-
-        ```python
-        with Rag().chat(...) as chat:
-            answer = chat(...)
-        ```
-        """
-
         return self._run_async(self.aprepare())
 
     async def aprepare(self) -> Message:
         """Prepare the chat.
 
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
-        source storage. After preparation, prompts can be
-        [answered][ragna.core.Chat.aanswer].
-
-        Preparation can also be achieved through an async context manager
-
-        ```python
-        async with Rag().chat(...) as chat:
-            answer = await chat.aanswer(...)
-        ```
+        source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
 
         Returns:
             Welcome message.
@@ -216,8 +189,6 @@ class Chat:
         return welcome
 
     def answer(self, prompt: str) -> Message:
-        """Blocking variant of [ragna.core.Chat.aanswer][]"""
-
         return self._run_async(self.aanswer(prompt))
 
     async def aanswer(self, prompt: str) -> Message:
@@ -331,7 +302,6 @@ class Chat:
         pass
 
     def __call__(self, prompt: str) -> Message:
-        """Alias of [ragna.core.Chat.answer][]"""
         return self.answer(prompt)
 
     async def __aenter__(self) -> Chat:
