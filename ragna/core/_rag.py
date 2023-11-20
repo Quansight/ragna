@@ -6,10 +6,12 @@ import inspect
 import uuid
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
     Callable,
     Generic,
     Iterable,
+    Iterator,
     Optional,
     Type,
     TypeVar,
@@ -191,6 +193,11 @@ class Chat:
             ragna.core.RagnaException: If chat is not
                 [`prepare`][ragna.core.Chat.prepare]d.
         """
+        async for _ in self.answer_iter(prompt):
+            pass
+        return self._messages[-1]
+
+    async def answer_iter(self, prompt: str) -> AsyncIterator[Message]:
         if not self._prepared:
             raise RagnaException(
                 "Chat is not prepared",
@@ -205,21 +212,19 @@ class Chat:
         sources = await self._run(
             self.source_storage.retrieve, self.documents, prompt.content
         )
-        answer = Message(
-            content=await self._run(self.assistant.answer, prompt.content, sources),
-            role=MessageRole.ASSISTANT,
-            sources=sources,
+
+        chunks = []
+        async for chunk in self._run_gen(
+            self.assistant.answer, prompt.content, sources
+        ):
+            chunks.append(chunk)
+            yield Message(content=chunk, role=MessageRole.ASSISTANT, sources=sources)
+
+        self._messages.append(
+            Message(
+                content="".join(chunks), role=MessageRole.ASSISTANT, sources=sources
+            )
         )
-        self._messages.append(answer)
-
-        # FIXME: add error handling
-        # return (
-        #     "I'm sorry, but I'm having trouble helping you at this time. "
-        #     "Please retry later. "
-        #     "If this issue persists, please contact your administrator."
-        # )
-
-        return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
@@ -271,6 +276,25 @@ class Chat:
             return await anyio.to_thread.run_sync(
                 functools.partial(fn, *args, **kwargs)
             )
+
+    async def _run_gen(
+        self,
+        fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+        *args: Any,
+    ) -> AsyncIterator[T]:
+        kwargs = self._unpacked_params[fn]
+        if inspect.isasyncgenfunction(fn):
+            fn = cast(Callable[..., AsyncIterator[T]], fn)
+            async for item in fn(*args, **kwargs):
+                yield item
+        else:
+            fn = cast(Callable[..., Iterator[T]], fn)
+            # This does not run the generator on a separate thread as we do for regular
+            # synchronous functions in self._run. It is not easy to run a generator in
+            # such a setting. Until the immediate need arises, we are probably ok with
+            # keeping this.
+            for item in fn(*args, **kwargs):
+                yield item
 
     async def __aenter__(self) -> Chat:
         await self.prepare()

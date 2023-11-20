@@ -1,8 +1,17 @@
 import abc
 import os
+from typing import AsyncIterator
+
+import httpx
 
 import ragna
-from ragna.core import Assistant, EnvVarRequirement, Requirement, Source
+from ragna.core import (
+    Assistant,
+    EnvVarRequirement,
+    PackageRequirement,
+    Requirement,
+    Source,
+)
 
 
 class ApiAssistant(Assistant):
@@ -13,8 +22,6 @@ class ApiAssistant(Assistant):
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
     def __init__(self) -> None:
-        import httpx
-
         self._client = httpx.AsyncClient(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
@@ -23,11 +30,22 @@ class ApiAssistant(Assistant):
 
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ) -> str:
-        return await self._call_api(prompt, sources, max_new_tokens=max_new_tokens)
+    ) -> AsyncIterator[str]:
+        async for chunk in self._call_api(  # type: ignore[attr-defined, misc]
+            prompt, sources, max_new_tokens=max_new_tokens
+        ):
+            yield chunk
 
     @abc.abstractmethod
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> str:
+    ) -> AsyncIterator[str]:
         ...
+
+
+class StreamingApiAssistant(ApiAssistant):
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return super().requirements() + [
+            PackageRequirement("httpx_sse"),
+        ]

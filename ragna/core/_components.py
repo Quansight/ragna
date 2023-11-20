@@ -4,7 +4,7 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Type
+from typing import Any, Iterator, Type
 
 import pydantic
 import pydantic.utils
@@ -159,6 +159,14 @@ class Message(pydantic.BaseModel):
     def __str__(self) -> str:
         return self.content
 
+    def __add__(self, other: Any) -> Message:
+        if not isinstance(other, Message):
+            return NotImplemented
+
+        return Message(
+            content=self.content + other.content, role=self.role, sources=self.sources
+        )
+
 
 class Assistant(Component, abc.ABC):
     """Abstract base class for assistants used in [ragna.core.Chat][]"""
@@ -171,7 +179,7 @@ class Assistant(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def answer(self, prompt: str, sources: list[Source]) -> str:
+    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         """Answer a prompt given some sources.
 
         Args:
