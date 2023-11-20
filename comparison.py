@@ -32,13 +32,21 @@ async def main():
 
     experiments = make_experiments(rag=rag, prompt=prompt, document=document)
     pprint(
-        {name: await experiment for name, experiment in tqdm(experiments.items())},
+        {
+            name: await experiment
+            for name, experiment in tqdm(experiments.items(), desc="sync")
+        },
         sort_dicts=False,
     )
 
     experiments = make_experiments(rag=rag, prompt=prompt, document=document)
     pprint(
-        dict(zip(experiments.keys(), await tqdm_asyncio.gather(*experiments.values()))),
+        dict(
+            zip(
+                experiments.keys(),
+                await tqdm_asyncio.gather(*experiments.values(), desc="async"),
+            )
+        ),
         sort_dicts=False,
     )
 
