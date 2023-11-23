@@ -14,13 +14,16 @@ Presented using Swagger UI, ref: https://swagger.io/tools/swagger-ui/
 
 <!-- https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/ -->
 <script>
+const docs_root = window.location.pathname.split('/').slice(0, -3).join('/');
 const ui = SwaggerUIBundle({
-  url: '/references/openapi.json',
+  url: `${docs_root}/references/openapi.json`,
   dom_id: '#swagger-ui',
   presets: [
     SwaggerUIBundle.presets.apis,
     SwaggerUIBundle.SwaggerUIStandalonePreset
   ],
   layout: "BaseLayout",
+  tryItOutEnabled: false,
+  supportedSubmitMethods: [],
 });
 </script>

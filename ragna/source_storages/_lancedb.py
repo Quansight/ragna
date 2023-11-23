@@ -1,31 +1,40 @@
 import uuid
 
-from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
+import ragna
+from ragna.core import Document, PackageRequirement, Requirement, Source
+
+from ._vector_database import VectorDatabaseSourceStorage
 
 
-class LanceDB(SourceStorage):
+class LanceDB(VectorDatabaseSourceStorage):
+    """[LanceDB vector database](https://lancedb.com/)
+
+    !!! info "Required packages"
+
+        - `chromadb>=0.4.13`
+        - `lancedb>=0.2`
+        - `pyarrow`
+    """
+
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
+            *super().requirements(),
             PackageRequirement("lancedb>=0.2"),
             PackageRequirement(
                 "pyarrow",
                 # See https://github.com/apache/arrow/issues/38167
                 exclude_modules=["__dummy__"],
             ),
-            PackageRequirement("sentence-transformers"),
         ]
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
 
         import lancedb
         import pyarrow as pa
-        from sentence_transformers import SentenceTransformer
 
-        self._db = lancedb.connect(config.local_cache_root / "lancedb")
-        self._model = SentenceTransformer("paraphrase-albert-small-v2")
+        self._db = lancedb.connect(ragna.local_root() / "lancedb")
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -34,14 +43,11 @@ class LanceDB(SourceStorage):
                 pa.field("text", pa.string()),
                 pa.field(
                     self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._model[-1].word_embedding_dimension),
+                    pa.list_(pa.float32(), self._embedding_dimensions),
                 ),
                 pa.field("num_tokens", pa.int32()),
             ]
         )
-
-    def _embed(self, batch):
-        return [self._model.encode(sentence) for sentence in batch]
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
@@ -56,20 +62,23 @@ class LanceDB(SourceStorage):
         table = self._db.create_table(name=str(chat_id), schema=self._schema)
 
         for document in documents:
-            for chunk in chunk_pages(
+            for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._model.tokenizer,
             ):
                 table.add(
                     [
                         {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
-                            "page_numbers": page_numbers_to_str(chunk.page_numbers),
+                            "page_numbers": self._page_numbers_to_str(
+                                chunk.page_numbers
+                            ),
                             "text": chunk.text,
-                            self._VECTOR_COLUMN_NAME: self._model.encode(chunk.text),
+                            self._VECTOR_COLUMN_NAME: self._embedding_function(
+                                [chunk.text]
+                            )[0],
                             "num_tokens": chunk.num_tokens,
                         }
                     ]
@@ -91,27 +100,28 @@ class LanceDB(SourceStorage):
         # retrieving to few sources and needed to query again.
         limit = int(num_tokens * 2 / chunk_size)
         results = (
-            table.search(vector_column_name=self._VECTOR_COLUMN_NAME)
+            table.search(
+                self._embedding_function([prompt])[0],
+                vector_column_name=self._VECTOR_COLUMN_NAME,
+            )
             .limit(limit)
             .to_arrow()
         )
 
         document_map = {str(document.id): document for document in documents}
-        return list(
-            take_sources_up_to_max_tokens(
-                (
-                    Source(
-                        id=result["id"],
-                        document=document_map[result["document_id"]],
-                        # For some reason adding an empty string during store() results
-                        # in this field being None. Thus, we need to parse it back here.
-                        # TODO: See if there is a configuration option for this
-                        location=result["page_numbers"] or "",
-                        content=result["text"],
-                        num_tokens=result["num_tokens"],
-                    )
-                    for result in results.to_pylist()
-                ),
-                max_tokens=num_tokens,
-            )
+        return self._take_sources_up_to_max_tokens(
+            (
+                Source(
+                    id=result["id"],
+                    document=document_map[result["document_id"]],
+                    # For some reason adding an empty string during store() results
+                    # in this field being None. Thus, we need to parse it back here.
+                    # TODO: See if there is a configuration option for this
+                    location=result["page_numbers"] or "",
+                    content=result["text"],
+                    num_tokens=result["num_tokens"],
+                )
+                for result in results.to_pylist()
+            ),
+            max_tokens=num_tokens,
         )

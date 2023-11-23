@@ -7,9 +7,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Ragna"
+description = "RAG orchestration framework"
+license = {file = "LICENSE"}
 authors = [
     { name = "Ragna Development Team", email = "connect@quansight.com" },
 ]
+readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3.9",
@@ -18,58 +21,43 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "huey",
+    "aiofiles",
+    "anyio",
+    "emoji",
+    "fastapi",
+    "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
+    "panel>=1.3,<1.4",
     "pydantic>=2",
+    "pydantic-core",
     "pydantic-settings>=2",
+    "PyJWT",
+    "python-multipart",
     "redis",
+    "questionary",
     "rich",
+    "sqlalchemy>=2",
     "tomlkit",
     "typer",
+    "uvicorn",
 ]
 dynamic = ["version"]
 
+[project.urls]
+Homepage = "https://ragna.chat"
+Documentation = "https://ragna.chat"
+Changelog = "https://ragna.chat/en/latest/references/changelog/"
+Repository = "https://github.com/Quansight/ragna"
+
 [project.optional-dependencies]
-api = [
-    "aiofiles",
-    "fastapi",
-    "PyJWT",
-    "python-multipart",
-    "sqlalchemy>=2",
-    "uvicorn",
-]
-ui = [
-#    "panel ==1.3",
-#    "param",
-    "httpx",
-]
-# to update the entries below, run scripts/update_optional_dependencies.py
-builtin-document-handlers = [
-    "pymupdf",
-]
-builtin-components = [
-    "chromadb>=0.4",
-    "httpx",
+# to update the array below, run scripts/update_optional_dependencies.py
+all = [
+    "chromadb>=0.4.13",
     "lancedb>=0.2",
     "pyarrow",
-    "sentence-transformers",
+    "pymupdf>=1.23.6",
     "tiktoken",
-]
-complete = [
-    "aiofiles",
-    "chromadb>=0.4",
-    "fastapi",
-    "httpx",
-    "lancedb>=0.2",
-    "pyarrow",
-    "PyJWT",
-    "pymupdf",
-    "python-multipart",
-    "sentence-transformers",
-    "sqlalchemy>=2",
-    "tiktoken",
-    "uvicorn",
 ]
 
 [tool.setuptools_scm]
@@ -77,18 +65,20 @@ write_to = "ragna/_version.py"
 local_scheme = "node-and-timestamp"
 
 [project.scripts]
-ragna = "ragna._cli:app"
+ragna = "ragna.__main__:app"
 
 [tool.setuptools.packages.find]
 include = [
     "ragna*",
 ]
 
-[tool.usort.known]
-# TODO: remove this with usort>=1.1
-third_party = ["panel"]
-
 [tool.ruff]
+select = [
+    "E",
+    "F",
+    # import sorting
+    "I001"
+]
 # Ignore line too long, because due to black, the error can only occur for strings
 ignore = ["E501"]
 
@@ -97,6 +87,7 @@ ignore = ["E501"]
 "__init__.py" = ["F401", "E402"]
 # The examples often have imports below the top of the file to follow the narrative
 "docs/examples/**/*.py" = ["E402"]
+"*.ipynb" = ["E402"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -106,8 +97,11 @@ testpaths = [
 ]
 filterwarnings = [
     "error",
-    # FIXME: find a way to use the BaseSettings from pydantic-settings with ConfigDict
-    "ignore:Support for class-based `config` is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
+    # This is coming from the nested dependency
+    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
+    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:google.rpc",
 ]
 xfail_strict = true
 
@@ -117,6 +111,10 @@ files = "ragna"
 
 show_error_codes = true
 pretty = true
+
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
 
 allow_redefinition = true
 no_implicit_optional = true
@@ -129,6 +127,39 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = [
+    "ragna.deploy._ui.*",
+]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = [
     "fitz",
+    "lancedb",
+    "param",
+    "pyarrow",
+    "sentence_transformers",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ragna.deploy._api.orm",
+]
+# Our ORM schema doesn't really work with mypy. There are some other ways to define it
+# to play ball. We should do that in the future.
+disable_error_code = [
+    "var-annotated",
+]
+
+[[tool.mypy.overrides]]
+# It is a fundamental feature of the components to request more parameters than the base
+# class. Thus, we just silence mypy here.
+module = [
+    "ragna.source_storages.*",
+    "ragna.assistants.*"
+]
+disable_error_code = [
+    "override",
+]

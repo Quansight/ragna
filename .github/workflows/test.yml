@@ -6,7 +6,7 @@ on:
       - ".github/**"
       - "ragna/**"
       - "tests/**"
-      - "environment.yml"
+      - "environment-dev.yml"
       - "pyproject.toml"
 
 jobs:

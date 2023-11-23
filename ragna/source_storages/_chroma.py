@@ -1,35 +1,37 @@
 import uuid
 
-from ragna.core import Document, PackageRequirement, Requirement, Source, SourceStorage
-from ragna.utils import chunk_pages, page_numbers_to_str, take_sources_up_to_max_tokens
+import ragna
+from ragna.core import (
+    Document,
+    Source,
+)
+
+from ._vector_database import VectorDatabaseSourceStorage
 
 
-class Chroma(SourceStorage):
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [
-            PackageRequirement("chromadb >=0.4"),
-            PackageRequirement("tiktoken"),
-        ]
+class Chroma(VectorDatabaseSourceStorage):
+    """[Chroma vector database](https://www.trychroma.com/)
 
-    def __init__(self, config):
-        super().__init__(config)
+    !!! info "Required packages"
+
+        - `chromadb>=0.4.13`
+    """
+
+    # Note that this class has no extra requirements, since the chromadb package is
+    # already required for the base class.
+
+    def __init__(self) -> None:
+        super().__init__()
 
         import chromadb
-        import chromadb.utils.embedding_functions
-        import tiktoken
 
         self._client = chromadb.Client(
             chromadb.config.Settings(
                 is_persistent=True,
-                persist_directory=str(self.config.local_cache_root / "chroma"),
+                persist_directory=str(ragna.local_root() / "chroma"),
                 anonymized_telemetry=False,
             )
         )
-        self._embedding_function = (
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction()
-        )
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
 
     def store(
         self,
@@ -47,23 +49,26 @@ class Chroma(SourceStorage):
         texts = []
         metadatas = []
         for document in documents:
-            for chunk in chunk_pages(
+            for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                tokenizer=self._tokenizer,
             ):
                 ids.append(str(uuid.uuid4()))
                 texts.append(chunk.text)
                 metadatas.append(
                     {
                         "document_id": str(document.id),
-                        "page_numbers": page_numbers_to_str(chunk.page_numbers),
+                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
                         "num_tokens": chunk.num_tokens,
                     }
                 )
 
-        collection.add(ids=ids, documents=texts, metadatas=metadatas)
+        collection.add(
+            ids=ids,
+            documents=texts,
+            metadatas=metadatas,  # type: ignore[arg-type]
+        )
 
     def retrieve(
         self,
@@ -85,25 +90,32 @@ class Chroma(SourceStorage):
                 # estimate how many sources we have to query. We overestimate by a
                 # factor of two to avoid retrieving to few sources and needed to query
                 # again.
-                int(num_tokens * 2 / chunk_size),
+                # ---
+                # FIXME: querying only a low number of documents can lead to not finding
+                #  the most relevant one.
+                #  See https://github.com/chroma-core/chroma/issues/1205 for details.
+                #  Instead of just querying more documents here, we should use the
+                #  appropriate index parameters when creating the collection. However,
+                #  they are undocumented for now.
+                max(int(num_tokens * 2 / chunk_size), 100),
                 collection.count(),
             ),
             include=["distances", "metadatas", "documents"],
         )
 
-        num_results = len(result["ids"])
+        num_results = len(result["ids"][0])
         result = {
-            key: [None] * num_results if value is None else value[0]
+            key: [None] * num_results if value is None else value[0]  # type: ignore[index]
             for key, value in result.items()
         }
         # dict of lists -> list of dicts
         results = [
-            {key: value[idx] for key, value in result.items()}
+            {key[:-1]: value[idx] for key, value in result.items()}
             for idx in range(num_results)
         ]
 
         # That should be the default, but let's make extra sure here
-        results = sorted(results, key=lambda r: r["distances"])
+        results = sorted(results, key=lambda r: r["distance"])
 
         # TODO: we should have some functionality here to remove results with a high
         #  distance to keep only "valid" sources. However, there are two issues:
@@ -112,18 +124,16 @@ class Chroma(SourceStorage):
         #  Thus, we likely need to have a callable parameter for this class
 
         document_map = {str(document.id): document for document in documents}
-        return list(
-            take_sources_up_to_max_tokens(
-                (
-                    Source(
-                        id=result["ids"],
-                        document=document_map[result["metadatas"]["document_id"]],
-                        location=result["metadatas"]["page_numbers"],
-                        content=result["documents"],
-                        num_tokens=result["metadatas"]["num_tokens"],
-                    )
-                    for result in results
-                ),
-                max_tokens=num_tokens,
-            )
+        return self._take_sources_up_to_max_tokens(
+            (
+                Source(
+                    id=result["id"],
+                    document=document_map[result["metadata"]["document_id"]],
+                    location=result["metadata"]["page_numbers"],
+                    content=result["document"],
+                    num_tokens=result["metadata"]["num_tokens"],
+                )
+                for result in results
+            ),
+            max_tokens=num_tokens,
         )

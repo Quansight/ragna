@@ -1,0 +1,7 @@
+contact_links:
+  - name: Documentation
+    url: https://ragna.chat/
+  - name: User support forum (GitHub Discussions)
+    url: https://github.com/Quansight/ragna/discussions
+  - name: Blank issue (maintainers only)
+    url: https://github.com/Quansight/ragna/issues/new

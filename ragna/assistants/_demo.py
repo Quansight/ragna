@@ -6,8 +6,20 @@ from ragna.core import Assistant, Source
 
 
 class RagnaDemoAssistant(Assistant):
+    """Demo assistant without requirements.
+
+    !!! note
+
+        As the name implies, this assistant is just for demo purposes and cannot
+        answer any questions. By default it replies with the prompt and the given
+        sources.
+
+        If you include the phrase `"markdown"` into your prompt, it will return a
+        Markdown table including emojis.
+    """
+
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
 
     @property
@@ -20,7 +32,7 @@ class RagnaDemoAssistant(Assistant):
         else:
             return self._default_answer(prompt, sources)
 
-    def _markdown_answer(self):
+    def _markdown_answer(self) -> str:
         return textwrap.dedent(
             """
             | String | Integer  | Float | Emoji              |
@@ -45,11 +57,14 @@ class RagnaDemoAssistant(Assistant):
         return (
             textwrap.dedent(
                 """
-                I can't really help you with your prompt:
+                I'm a demo assistant and can be used to try Ragnas workflow. I will only
+                mirror back my inputs. 
+                
+                Your prompt was:
 
                 > {prompt}
 
-                I can at least show you the sources that I was given:
+                These are the sources I was given:
 
                 {sources}
                 """

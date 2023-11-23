@@ -5,12 +5,21 @@ from ragna.core import Document, Source, SourceStorage
 
 
 class RagnaDemoSourceStorage(SourceStorage):
+    """Demo assistant without requirements.
+
+    !!! note
+
+        As the name implies, this source storage is just for demo purposes and cannot
+        retrieve relevant sources for a given prompt. It returns a single
+        [ragna.core.Source][] per stored [ragna.core.Document][] with potentially
+        shortened text extracted from the first [ragna.core.Page][].
+    """
+
     @classmethod
-    def display_name(cls):
+    def display_name(cls) -> str:
         return "Ragna/DemoSourceStorage"
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self) -> None:
         self._storage: dict[uuid.UUID, list[Source]] = {}
 
     def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
