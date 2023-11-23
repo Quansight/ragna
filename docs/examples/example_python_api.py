@@ -6,10 +6,6 @@
 # %%
 # Let's look at the config
 
-from ragna import Config
-
-config = Config.demo()
-print(config)
 
 # %%
 # Let's create a document
@@ -25,13 +21,12 @@ with open(document_path, "w") as file:
 import asyncio
 
 from ragna.assistants import RagnaDemoAssistant
-
 from ragna.core import Rag
 from ragna.source_storages import RagnaDemoSourceStorage
 
 
 async def answer():
-    rag = Rag(config)
+    rag = Rag()
     chat = rag.chat(
         documents=[document_path],
         source_storage=RagnaDemoSourceStorage,
