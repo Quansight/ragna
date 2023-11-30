@@ -255,21 +255,9 @@ class CentralView(pn.viewable.Viewer):
 
             grid_height = len(self.current_chat["metadata"]["documents"]) // 3
 
-            advanced_config_data = {
-                "Chunk size": self.current_chat["metadata"]["params"]["chunk_size"],
-                "Chunk overlap": self.current_chat["metadata"]["params"][
-                    "chunk_overlap"
-                ],
-                "Max context tokens": self.current_chat["metadata"]["params"][
-                    "num_tokens"
-                ],
-                "Max new tokens": self.current_chat["metadata"]["params"][
-                    "max_new_tokens"
-                ],
-            }
-
             advanced_config_md = "\n".join(
-                [f"""- **{k}**: {v}""" for k, v in advanced_config_data.items()]
+                f"- **{key.replace('_', ' ').title()}**: {value}"
+                for key, value in self.current_chat["metadata"]["params"].items()
             )
 
             markdown = [
