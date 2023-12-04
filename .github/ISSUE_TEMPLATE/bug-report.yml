@@ -1,7 +1,7 @@
 name: "Bug report 🐛"
 description: "Create a report to help us fix something that is currently broken."
-title: "[BUG] - <title>"
-labels: ["type: bug 🐛"]
+title: "<title>"
+labels: ["type: bug"]
 
 body:
   - type: markdown
