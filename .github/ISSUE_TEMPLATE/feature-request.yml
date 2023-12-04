@@ -1,7 +1,6 @@
 name: "Feature request ✨"
 description: "Create a feature request to help Ragna improve"
-title: "<title>"
-labels: ["type: enhancement"]
+labels: ["type: enhancement 💅"]
 
 body:
   - type: markdown
