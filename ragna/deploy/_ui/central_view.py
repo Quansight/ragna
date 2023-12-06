@@ -588,7 +588,10 @@ class CentralView(pn.viewable.Viewer):
         ):
             doc_names = [d["name"] for d in self.current_chat["metadata"]["documents"]]
 
-            for doc_name in doc_names:
+            # FIXME: Instead of setting a hard limit of 20 documents here, this should
+            #  scale automatically with the width of page
+            #  See https://github.com/Quansight/ragna/issues/224
+            for doc_name in doc_names[:20]:
                 pill = pn.pane.HTML(
                     f"""<div class="chat_document_pill">{doc_name}</div>""",
                     stylesheets=[
