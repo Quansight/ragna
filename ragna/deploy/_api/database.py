@@ -50,13 +50,16 @@ def add_document(
             user_id=_get_user_id(session, user),
             name=document.name,
             metadata_=metadata,
+            prefixed_path=document.prefixed_path,
         )
     )
     session.commit()
 
 
 def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
-    return schemas.Document(id=document.id, name=document.name)
+    return schemas.Document(
+        id=document.id, name=document.name, prefixed_path=document.prefixed_path
+    )
 
 
 @functools.lru_cache(maxsize=1024)
@@ -100,7 +103,9 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
 
 def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
     documents = [
-        schemas.Document(id=document.id, name=document.name)
+        schemas.Document(
+            id=document.id, name=document.name, prefixed_path=document.prefixed_path
+        )
         for document in chat.documents
     ]
     messages = [

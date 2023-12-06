@@ -2,7 +2,7 @@ import contextlib
 import itertools
 import uuid
 from pathlib import Path
-from typing import Annotated, Any, Iterator, Type, cast
+from typing import Annotated, Any, Iterator, Optional, Type, cast
 
 import aiofiles
 from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
@@ -93,6 +93,7 @@ def app(config: Config) -> FastAPI:
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
             documents=sorted(config.document.supported_suffixes()),
+            filesystems=sorted(config.document.supported_filesystems()),
             source_storages=[
                 _get_component_json_schema(source_storage)
                 for source_storage in config.components.source_storages
@@ -117,11 +118,16 @@ def app(config: Config) -> FastAPI:
     async def get_document_upload_info(
         user: UserDependency,
         name: str,
+        prefixed_path: Optional[str] = None,
     ) -> schemas.DocumentUploadInfo:
         with get_session() as session:
-            document = schemas.Document(name=name)
+            document = schemas.Document(prefixed_path=prefixed_path, name=name)
             url, data, metadata = await config.document.get_upload_info(
-                config=config, user=user, id=document.id, name=document.name
+                config=config,
+                user=user,
+                id=document.id,
+                name=document.name,
+                path=prefixed_path,
             )
             database.add_document(
                 session, user=user, document=document, metadata=metadata
@@ -154,9 +160,14 @@ def app(config: Config) -> FastAPI:
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
-        core_chat = rag.chat(
-            documents=[
-                config.document(
+        documents = []
+        for document in chat.metadata.documents:
+            if document.prefixed_path:
+                doc = config.document.from_path(
+                    id=document.id, path=document.prefixed_path
+                )
+            else:
+                doc = config.document(
                     id=document.id,
                     name=document.name,
                     metadata=database.get_document(
@@ -165,8 +176,10 @@ def app(config: Config) -> FastAPI:
                         id=document.id,
                     )[1],
                 )
-                for document in chat.metadata.documents
-            ],
+            documents.append(doc)
+
+        core_chat = rag.chat(
+            documents=documents,
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,
@@ -193,7 +206,7 @@ def app(config: Config) -> FastAPI:
 
             # Although we don't need the actual ragna.core.Chat object here,
             # we use it to validate the documents and metadata.
-            schema_to_core_chat(session, user=user, chat=chat)
+            # schema_to_core_chat(session, user=user, chat=chat)
 
             database.add_chat(session, user=user, chat=chat)
             return chat

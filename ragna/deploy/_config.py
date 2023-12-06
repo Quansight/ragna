@@ -11,7 +11,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from ragna.core import Assistant, Document, RagnaException, SourceStorage
+from ragna.core import Assistant, FilesystemDocument, RagnaException, SourceStorage
 
 from ._authentication import Authentication
 
@@ -80,7 +80,7 @@ class Config(ConfigBase):
         default_factory=lambda: Path.home() / ".cache" / "ragna"
     )
 
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
+    document: ImportString[type[FilesystemDocument]] = "ragna.core.FilesystemDocument"  # type: ignore[assignment]
 
     authentication: ImportString[
         type[Authentication]

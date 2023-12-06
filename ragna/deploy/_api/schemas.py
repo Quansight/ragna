@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -10,6 +10,7 @@ import ragna.core
 
 
 class Components(BaseModel):
+    filesystems: list[str]
     documents: list[str]
     source_storages: list[dict[str, Any]]
     assistants: list[dict[str, Any]]
@@ -18,6 +19,7 @@ class Components(BaseModel):
 class Document(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
+    prefixed_path: Optional[str] = None
 
     @classmethod
     def from_core(cls, document: ragna.core.Document) -> Document:

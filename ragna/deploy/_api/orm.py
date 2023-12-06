@@ -32,6 +32,7 @@ class Document(Base):
     id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String)
+    prefixed_path = Column(types.String)
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
     # metadata without the underscore is reserved by SQLAlchemy
     metadata_ = Column(types.JSON)
