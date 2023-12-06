@@ -1,5 +1,4 @@
 import contextlib
-import inspect
 import socket
 import subprocess
 import sys
@@ -18,23 +17,6 @@ def background_subprocess(*args, stdout=sys.stdout, stderr=sys.stdout, **kwargs)
     finally:
         process.kill()
         process.communicate()
-
-
-# Vendored from pytest-timeout
-# https://github.com/pytest-dev/pytest-timeout/blob/d91e6d8d69ad706e38a2c9de461a72c4d19777ff/pytest_timeout.py#L218-L247
-def is_debugging():
-    trace_func = sys.gettrace()
-    trace_module = None
-    if trace_func:
-        trace_module = inspect.getmodule(trace_func) or inspect.getmodule(
-            trace_func.__class__
-        )
-    if trace_module:
-        parts = trace_module.__name__.split(".")
-        for name in {"pydevd", "bdb", "pydevd_frame_evaluator"}:
-            if any(part.startswith(name) for part in parts):
-                return True
-    return False
 
 
 def get_available_port():
