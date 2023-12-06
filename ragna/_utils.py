@@ -112,7 +112,7 @@ def timeout_after(
 
 # Vendored from pytest-timeout
 # https://github.com/pytest-dev/pytest-timeout/blob/d91e6d8d69ad706e38a2c9de461a72c4d19777ff/pytest_timeout.py#L218-L247
-def is_debugging():
+def is_debugging() -> bool:
     trace_func = sys.gettrace()
     trace_module = None
     if trace_func:
