@@ -5,7 +5,8 @@ __all__ = [
     "Document",
     "DocumentHandler",
     "EnvVarRequirement",
-    "LocalDocument",
+    "FilesystemDocument",
+    "filesystem_glob",
     "Message",
     "MessageRole",
     "PackageRequirement",
@@ -19,22 +20,18 @@ __all__ = [
     "TxtDocumentHandler",
 ]
 
-from ._utils import (
-    EnvVarRequirement,
-    PackageRequirement,
-    RagnaException,
-    Requirement,
-)
+from ._utils import EnvVarRequirement, PackageRequirement, RagnaException, Requirement
 
 # isort: split
 
 from ._document import (
     Document,
     DocumentHandler,
-    LocalDocument,
+    FilesystemDocument,
     Page,
     PdfDocumentHandler,
     TxtDocumentHandler,
+    filesystem_glob,
 )
 
 # isort: split

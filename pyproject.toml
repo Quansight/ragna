@@ -25,6 +25,7 @@ dependencies = [
     "anyio",
     "emoji",
     "fastapi",
+    "fsspec",
     "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
@@ -136,6 +137,7 @@ disallow_incomplete_defs = false
 [[tool.mypy.overrides]]
 module = [
     "fitz",
+    "fsspec",
     "lancedb",
     "param",
     "pyarrow",

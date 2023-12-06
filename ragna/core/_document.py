@@ -6,12 +6,19 @@ import secrets
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, cast
 
+import fsspec
 import jwt
 from pydantic import BaseModel
 
-from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
+from ._utils import (
+    EnvVarRequirement,
+    PackageRequirement,
+    RagnaException,
+    Requirement,
+    RequirementsMixin,
+)
 
 if TYPE_CHECKING:
     from ragna.deploy import Config
@@ -74,35 +81,164 @@ class Document(RequirementsMixin, abc.ABC):
         yield from self.handler.extract_pages(self)
 
 
-class LocalDocument(Document):
-    """Document class for files on the local file system.
+class FS(RequirementsMixin, abc.ABC):
+    "Abstract base class for all fsspec-like filesystems."
+
+    # Identifier for the filesystem, e.g. "local" or "github"
+    _prefix: str
+
+    @classmethod
+    @abc.abstractmethod
+    def create_fs_instance_from_key(
+        cls, key: str, asynchronous: bool
+    ) -> fsspec.AbstractFileSystem:
+        """Create a fsspec filesystem instance from a key."""
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def resolve_path(key: str) -> str:
+        """Resolve a key to an absolute path on a fsspec-supported filesystem."""
+        ...
+
+
+S = TypeVar("S", bound=FS)
+
+
+class FSRegistry(dict[str, Type[FS]]):
+    def check_available(self, cls: Type[S]) -> Type[S]:
+        if cls.is_available():
+            self[cls._prefix] = cls
+        return cls
+
+
+FS_REGISTRY = FSRegistry()
+
+
+@FS_REGISTRY.check_available
+class LocalFS(FS):
+    _prefix: str = "local"
+    _fs_cache: dict[str, fsspec.AbstractFileSystem] = {}
+
+    @classmethod
+    def create_fs_instance_from_key(
+        cls, key: str, asynchronous: bool
+    ) -> fsspec.AbstractFileSystem:
+        if key not in cls._fs_cache:
+            cls._fs_cache[key] = fsspec.filesystem(
+                cls._prefix, asynchronous=asynchronous
+            )
+        return cls._fs_cache[key]
+
+    @staticmethod
+    def resolve_path(key: str) -> str:
+        return str(Path(key).resolve())
+
+
+@FS_REGISTRY.check_available
+class GithubFS(FS):
+    _prefix: str = "github"
+    _fs_cache: dict[str, fsspec.AbstractFileSystem] = {}
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [
+            PackageRequirement("requests"),
+            EnvVarRequirement("GITHUB_USERNAME"),
+            EnvVarRequirement("GITHUB_TOKEN"),
+        ]
+
+    @classmethod
+    def create_fs_instance_from_key(
+        cls, key: str, asynchronous: bool
+    ) -> fsspec.AbstractFileSystem:
+        # org/repo/path/to/file
+        org, repo, *_ = key.split("/")
+        if f"{org}/{repo}" not in cls._fs_cache:
+            cls._fs_cache[f"{org}/{repo}"] = fsspec.filesystem(
+                cls._prefix,
+                org=org,
+                repo=repo,
+                username=os.environ["GITHUB_USERNAME"],
+                token=os.environ["GITHUB_TOKEN"],
+                asynchronous=asynchronous,
+            )
+        return cls._fs_cache[f"{org}/{repo}"]
+
+    @staticmethod
+    def resolve_path(key: str) -> str:
+        # GitHub 'absolute' paths are relative to the repo root
+        _, _, *ks = key.split("/")
+        return "/".join(ks)
+
+
+def filesystem_glob(path: str) -> list[str]:
+    """Glob for files on any filesystem supported by fsspec.
+
+    Args:
+        path: Path to glob for.
+
+    Returns:
+        List of paths matching the glob.
+    """
+    try:
+        prefix, key = path.split("://")
+    except ValueError:
+        prefix, key = "local", path
+
+    if prefix not in FS_REGISTRY:
+        raise RagnaException(f"Unavailable filesystem prefix: {prefix}")
+
+    kls = FS_REGISTRY[prefix]
+    fs = kls.create_fs_instance_from_key(key, asynchronous=False)
+    return cast(list[str], fs.glob(kls.resolve_path(key)))
+
+
+class FilesystemDocument(Document):
+    """Document class for files on any file system supported by fsspec.
 
     !!! tip
 
         This object is usually not instantiated manually, but rather through
-        [ragna.core.LocalDocument.from_path][].
+        [ragna.core.FilesystemDocument.from_path][].
     """
+
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        name: str,
+        metadata: dict[str, Any],
+        handler: Optional[DocumentHandler] = None,
+        fs: fsspec.AbstractFileSystem = None,
+    ):
+        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
+        if fs is None:
+            self.fs = fsspec.filesystem("local")
+        else:
+            self.fs = fs
 
     @classmethod
     def from_path(
         cls,
-        path: Union[str, Path],
+        path: str,
         *,
         id: Optional[uuid.UUID] = None,
         metadata: Optional[dict[str, Any]] = None,
         handler: Optional[DocumentHandler] = None,
-    ) -> LocalDocument:
-        """Create a [ragna.core.LocalDocument][] from a path.
+    ) -> FilesystemDocument:
+        """Create a [ragna.core.FilesystemDocument][] from a path.
 
         Args:
-            path: Local path to the file.
+            path: Path to the file on the filesystem, including filesystem prefix
             id: ID of the document. If omitted, one is generated.
             metadata: Optional metadata of the document.
             handler: Document handler. If omitted, a builtin handler is selected based
                 on the suffix of the `path`.
 
         Raises:
-            RagnaException: If `metadata` is passed and contains a `"path"` key.
+            RagnaException: If `metadata` is passed and contains a `"path"` key or
+            if the filesystem prefix is missing.
         """
         if metadata is None:
             metadata = {}
@@ -112,21 +248,36 @@ class LocalDocument(Document):
                 "Did you mean to instantiate the class directly?"
             )
 
-        path = Path(path).expanduser().resolve()
-        metadata["path"] = str(path)
+        try:
+            prefix, key = path.split("://")
+        except ValueError:
+            prefix, key = "local", path
 
-        return cls(id=id, name=path.name, metadata=metadata, handler=handler)
+        if prefix not in FS_REGISTRY:
+            raise RagnaException(f"Unavailable filesystem prefix: {prefix}")
+
+        # TODO: Determine if making filesystem operations async is beneficial
+        kls = FS_REGISTRY[prefix]
+        fs = kls.create_fs_instance_from_key(key, asynchronous=False)
+        metadata["path"] = kls.resolve_path(key)
+        name = os.path.basename(metadata["path"])
+
+        return cls(id=id, name=name, metadata=metadata, handler=handler, fs=fs)
+
+    @staticmethod
+    def supported_filesystems() -> set[str]:
+        return set(FS_REGISTRY.keys())
 
     @property
-    def path(self) -> Path:
-        return Path(self.metadata["path"])
+    def path(self) -> str:
+        return cast(str, self.metadata["path"])
 
     def is_readable(self) -> bool:
-        return self.path.exists()
+        return cast(bool, self.fs.exists(self.path))
 
     def read(self) -> bytes:
-        with open(self.path, "rb") as stream:
-            return stream.read()
+        with self.fs.open(self.path, "rb") as stream:
+            return cast(bytes, stream.read())
 
     _JWT_SECRET = os.environ.get(
         "RAGNA_API_DOCUMENT_UPLOAD_SECRET", secrets.token_urlsafe(32)[:32]
@@ -135,7 +286,13 @@ class LocalDocument(Document):
 
     @classmethod
     async def get_upload_info(
-        cls, *, config: Config, user: str, id: uuid.UUID, name: str
+        cls,
+        *,
+        config: Config,
+        user: str,
+        id: uuid.UUID,
+        name: str,
+        path: Optional[str] = None,
     ) -> tuple[str, dict[str, Any], dict[str, Any]]:
         url = f"{config.api.url}/document"
         data = {
@@ -149,7 +306,12 @@ class LocalDocument(Document):
                 algorithm=cls._JWT_ALGORITHM,
             )
         }
-        metadata = {"path": str(config.local_cache_root / "documents" / str(id))}
+        if path is not None:
+            metadata = {"path": path}
+        else:
+            metadata = {
+                "path": str(config.local_cache_root / "documents" / str(id)),
+            }
         return url, data, metadata
 
     @classmethod

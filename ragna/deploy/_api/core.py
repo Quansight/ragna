@@ -1,6 +1,7 @@
 import contextlib
 import itertools
 import uuid
+from pathlib import Path
 from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
@@ -131,19 +132,19 @@ def app(config: Config) -> FastAPI:
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
-        if not issubclass(config.document, ragna.core.LocalDocument):
+        if not issubclass(config.document, ragna.core.FilesystemDocument):
             raise HTTPException(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
         with get_session() as session:
-            user, id = ragna.core.LocalDocument.decode_upload_token(token)
+            user, id = ragna.core.FilesystemDocument.decode_upload_token(token)
             document, metadata = database.get_document(session, user=user, id=id)
 
-            core_document = ragna.core.LocalDocument(
+            core_document = ragna.core.FilesystemDocument(
                 id=document.id, name=document.name, metadata=metadata
             )
-            core_document.path.parent.mkdir(parents=True, exist_ok=True)
+            Path(core_document.path).parent.mkdir(parents=True, exist_ok=True)
             async with aiofiles.open(core_document.path, "wb") as document_file:
                 while content := await file.read(1024):
                     await document_file.write(content)

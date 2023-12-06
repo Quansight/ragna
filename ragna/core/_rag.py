@@ -21,7 +21,7 @@ import anyio
 import pydantic
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
-from ._document import Document, LocalDocument
+from ._document import Document, FilesystemDocument
 from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
@@ -71,7 +71,7 @@ class Rag(Generic[C]):
 
         Args:
             documents: Documents to use. If any item is not a [ragna.core.Document][],
-                [ragna.core.LocalDocument.from_path][] is invoked on it.
+                [ragna.core.FilesystemDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.
@@ -120,7 +120,7 @@ class Chat:
     Args:
         rag: The RAG workflow this chat is associated with.
         documents: Documents to use. If any item is not a [ragna.core.Document][],
-            [ragna.core.LocalDocument.from_path][] is invoked on it.
+            [ragna.core.FilesystemDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
         **params: Additional parameters passed to the source storage and assistant.
@@ -225,7 +225,7 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = LocalDocument.from_path(document)
+                document = FilesystemDocument.from_path(document)
 
             if not document.is_readable():
                 raise RagnaException(
