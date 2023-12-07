@@ -3,7 +3,7 @@ import uuid
 from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -96,10 +96,10 @@ def app(config: Config) -> FastAPI:
         with make_session() as session:  # type: ignore[attr-defined]
             yield session
 
-    @app.get("/document")
-    async def get_document_upload_info(
+    @app.post("/document")
+    async def create_document_upload_info(
         user: UserDependency,
-        name: str,
+        name: Annotated[str, Body(..., embed=True)],
     ) -> schemas.DocumentUploadInfo:
         with get_session() as session:
             document = schemas.Document(name=name)
@@ -111,7 +111,7 @@ def app(config: Config) -> FastAPI:
             )
             return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
-    @app.post("/document")
+    @app.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
