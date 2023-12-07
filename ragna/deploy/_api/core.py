@@ -116,16 +116,16 @@ def app(config: Config) -> FastAPI:
     async def create_document_upload_info(
         user: UserDependency,
         name: Annotated[str, Body(..., embed=True)],
-    ) -> schemas.DocumentUploadInfo:
+    ) -> schemas.DocumentUpload:
         with get_session() as session:
             document = schemas.Document(name=name)
-            url, data, metadata = await config.document.get_upload_info(
+            metadata, parameters = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
             )
             database.add_document(
                 session, user=user, document=document, metadata=metadata
             )
-            return schemas.DocumentUploadInfo(url=url, data=data, document=document)
+            return schemas.DocumentUpload(parameters=parameters, document=document)
 
     @app.put("/document")
     async def upload_document(

@@ -4,6 +4,7 @@ __all__ = [
     "Component",
     "Document",
     "DocumentHandler",
+    "DocumentUploadParameters",
     "EnvVarRequirement",
     "LocalDocument",
     "Message",
@@ -31,6 +32,7 @@ from ._utils import (
 from ._document import (
     Document,
     DocumentHandler,
+    DocumentUploadParameters,
     LocalDocument,
     Page,
     PdfDocumentHandler,
