@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import pprint
 
 import httpx
 
@@ -35,18 +34,17 @@ def main():
     documents = []
     for i in range(5):
         name = f"document{i}.txt"
-        document_info = (
+        document_upload = (
             client.post("/document", json={"name": name}).raise_for_status().json()
         )
-        pprint.pprint(document_info, sort_dicts=False)
-        response = httpx.put(
-            document_info["url"],
-            data=document_info["data"],
-            files={"file": f"Content of {name}\n".encode()},
-        )
-        print(response.status_code, response.content.decode())
-        response.raise_for_status()
-        documents.append(document_info["document"])
+        parameters = document_upload["parameters"]
+        client.request(
+            parameters["method"],
+            parameters["url"],
+            data=parameters["data"],
+            files={"file": f"Content of {name}".encode()},
+        ).raise_for_status()
+        documents.append(document_upload["document"])
 
     ## chat 1
 

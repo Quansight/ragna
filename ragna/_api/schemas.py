@@ -27,9 +27,8 @@ class Document(BaseModel):
         )
 
 
-class DocumentUploadInfo(BaseModel):
-    url: str
-    data: dict
+class DocumentUpload(BaseModel):
+    parameters: ragna.core.DocumentUploadParameters
     document: Document
 
 

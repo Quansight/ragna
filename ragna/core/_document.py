@@ -17,6 +17,12 @@ if TYPE_CHECKING:
     from ._config import Config
 
 
+class DocumentUploadParameters(BaseModel):
+    method: str
+    url: str
+    data: dict
+
+
 class Document(RequirementsMixin, abc.ABC):
     """Abstract base class for all documents."""
 
@@ -59,7 +65,7 @@ class Document(RequirementsMixin, abc.ABC):
     @abc.abstractmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
         pass
 
     @abc.abstractmethod
@@ -138,7 +144,7 @@ class LocalDocument(Document):
     @classmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
         url = f"{config.api.url}/document"
         data = {
             "token": jwt.encode(
@@ -152,7 +158,7 @@ class LocalDocument(Document):
             )
         }
         metadata = {"path": str(config.local_cache_root / "documents" / str(id))}
-        return url, data, metadata
+        return metadata, DocumentUploadParameters(method="PUT", url=url, data=data)
 
     @classmethod
     def decode_upload_token(cls, token: str) -> tuple[str, uuid.UUID]:
