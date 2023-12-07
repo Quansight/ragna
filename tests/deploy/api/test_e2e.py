@@ -50,7 +50,7 @@ def check_api(config):
         assert client.get("/chats").raise_for_status().json() == []
 
         document_info = (
-            client.get("/document", params={"name": document_path.name})
+            client.post("/document", json={"name": document_path.name})
             .raise_for_status()
             .json()
         )
@@ -58,7 +58,7 @@ def check_api(config):
         assert document["name"] == document_path.name
 
         with open(document_path, "rb") as file:
-            client.post(
+            client.put(
                 document_info["url"],
                 data=document_info["data"],
                 files={"file": file},

@@ -7,8 +7,10 @@ function upload(files, token, informationsEndpoint, final_callback) {
 }
 
 async function uploadFile(file, token, informationEndpoint) {
-  const response = await fetch(`${informationEndpoint}?name=${file.name}`, {
-    headers: { Authorization: `Bearer ${token}` },
+  const response = await fetch(informationEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name: file.name }),
   });
   const documentInfo = await response.json();
 
@@ -19,7 +21,7 @@ async function uploadFile(file, token, informationEndpoint) {
   body.append("file", file);
 
   await fetch(documentInfo.url, {
-    method: "POST",
+    method: "PUT",
     body: body,
   });
 
