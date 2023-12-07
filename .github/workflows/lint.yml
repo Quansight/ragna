@@ -2,6 +2,9 @@ name: lint
 
 on:
   pull_request:
+  push:
+    branches:
+      - release/*
 
 jobs:
   optional-dependencies:

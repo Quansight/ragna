@@ -99,7 +99,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         # retrieving to few sources and needed to query again.
         limit = int(num_tokens * 2 / chunk_size)
         results = (
-            table.search(vector_column_name=self._VECTOR_COLUMN_NAME)
+            table.search(
+                self._embedding_function([prompt])[0],
+                vector_column_name=self._VECTOR_COLUMN_NAME,
+            )
             .limit(limit)
             .to_arrow()
         )

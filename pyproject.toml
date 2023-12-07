@@ -56,12 +56,13 @@ all = [
     "chromadb>=0.4.13",
     "lancedb>=0.2",
     "pyarrow",
-    "pymupdf",
+    "pymupdf>=1.23.6",
     "tiktoken",
 ]
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
+version_scheme = "release-branch-semver"
 local_scheme = "node-and-timestamp"
 
 [project.scripts]
@@ -95,9 +96,7 @@ testpaths = [
     "tests",
 ]
 filterwarnings = [
-#    "error",
-    # FIXME: find a way to use the BaseSettings from pydantic-settings with ConfigDict
-    "ignore:Support for class-based `config` is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
+    "error",
 ]
 xfail_strict = true
 
