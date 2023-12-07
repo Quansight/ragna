@@ -5,7 +5,7 @@ import panel as pn
 import param
 
 from ragna._utils import handle_localhost_origins
-from ragna.core import Config
+from ragna.deploy import Config
 
 from . import js
 from . import styles as ui

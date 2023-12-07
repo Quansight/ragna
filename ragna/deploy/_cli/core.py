@@ -1,4 +1,3 @@
-import logging
 import subprocess
 import sys
 import time
@@ -12,10 +11,9 @@ import typer
 import uvicorn
 
 import ragna
-from ragna._api import app as api_app
-from ragna._ui import app as ui_app
 from ragna._utils import timeout_after
-from ragna.core._queue import Queue
+from ragna.deploy._api import app as api_app
+from ragna.deploy._ui import app as ui_app
 
 from .config import ConfigOption, check_config, init_config
 
@@ -77,72 +75,20 @@ def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assign
     raise typer.Exit(int(not is_available))
 
 
-@app.command(help="Start workers.")
-def worker(
-    *,
-    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    num_threads: Annotated[
-        int,
-        typer.Option("--num-threads", "-n", help="Number of worker threads to start."),
-    ] = 1,
-) -> None:
-    if config.core.queue_url == "memory":
-        rich.print(f"With {config.core.queue_url=} no worker is required!")
-        raise typer.Exit(1)
-
-    queue = Queue(config, load_components=True)
-    worker = queue.create_worker(num_threads)
-
-    # FIXME: we need to configure this properly
-    logging.basicConfig(level=logging.INFO)
-    worker.run()
-
-
 @app.command(help="Start the REST API.")
 def api(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    start_worker: Annotated[
-        Optional[bool],
-        typer.Option(
-            help="Start a ragna worker alongside the REST API in a subprocess.",
-            show_default="Start if a non-memory queue is configured.",
-        ),
-    ] = None,
 ) -> None:
-    if start_worker is None:
-        start_worker = config.core.queue_url != "memory"
-
     components = urlsplit(config.api.url)
     if components.hostname is None or components.port is None:
         # TODO: make this part of the config validation
         rich.print(f"Unable to extract hostname and port from {config.api.url}.")
         raise typer.Exit(1)
 
-    if start_worker:
-        process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "ragna",
-                "worker",
-                "--config",
-                config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
-            ],
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
-    else:
-        process = None
-
-    try:
-        uvicorn.run(
-            api_app(config), host=components.hostname, port=components.port or 31476
-        )
-    finally:
-        if process is not None:
-            process.kill()
-            process.communicate()
+    uvicorn.run(
+        api_app(config), host=components.hostname, port=components.port or 31476
+    )
 
 
 @app.command(help="Start the UI.")
@@ -159,8 +105,7 @@ def ui(
 ) -> None:
     def check_api_available() -> bool:
         try:
-            httpx.get(config.api.url)
-            return True
+            return httpx.get(config.api.url).is_success
         except httpx.ConnectError:
             return False
 
@@ -186,7 +131,7 @@ def ui(
     try:
         if process is not None:
 
-            @timeout_after(30)
+            @timeout_after()
             def wait_for_api() -> None:
                 while not check_api_available():
                     time.sleep(0.5)

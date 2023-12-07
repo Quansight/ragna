@@ -28,11 +28,11 @@ class AnthropicApiAssistant(ApiAssistant):
         instruction += "\n\n".join(source.content for source in sources)
         return f"{instruction}\n\nQuestion: {prompt}\n\nAssistant:"
 
-    def _call_api(
+    async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> str:
         # # See https://docs.anthropic.com/claude/reference/complete_post
-        response = self._client.post(
+        response = await self._client.post(
             "https://api.anthropic.com/v1/complete",
             headers={
                 "accept": "application/json",

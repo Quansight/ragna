@@ -1,6 +1,7 @@
 import uuid
 
-from ragna.core import Config, Document, PackageRequirement, Requirement, Source
+import ragna
+from ragna.core import Document, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -27,13 +28,13 @@ class LanceDB(VectorDatabaseSourceStorage):
             ),
         ]
 
-    def __init__(self, config: Config) -> None:
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
 
         import lancedb
         import pyarrow as pa
 
-        self._db = lancedb.connect(config.local_cache_root / "lancedb")
+        self._db = lancedb.connect(ragna.local_root() / "lancedb")
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -99,7 +100,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         # retrieving to few sources and needed to query again.
         limit = int(num_tokens * 2 / chunk_size)
         results = (
-            table.search(vector_column_name=self._VECTOR_COLUMN_NAME)
+            table.search(
+                self._embedding_function([prompt])[0],
+                vector_column_name=self._VECTOR_COLUMN_NAME,
+            )
             .limit(limit)
             .to_arrow()
         )

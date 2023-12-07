@@ -1,49 +1,25 @@
-import contextlib
 import os
 
 import httpx
 import pytest
 
-from ragna import Config
+from ragna._utils import timeout_after
 from ragna.core._utils import default_user
-from tests.utils import (
-    ragna_api,
-    ragna_worker,
-    redis_server,
-    skip_redis_on_windows,
-    timeout_after,
-)
+from ragna.deploy import Config
+from tests.utils import ragna_api
 
 
-@pytest.mark.parametrize(
-    "queue",
-    ["memory", "file_system", pytest.param("redis", marks=skip_redis_on_windows)],
-)
 @pytest.mark.parametrize("database", ["memory", "sqlite"])
-def test_e2e(tmp_path, queue, database):
-    if queue == "memory":
-        queue_cm = contextlib.nullcontext("memory")
-        worker_cm_fn = contextlib.nullcontext
-    elif queue == "file_system":
-        queue_cm = contextlib.nullcontext(str(tmp_path / "queue"))
-        worker_cm_fn = ragna_worker
-    elif queue == "redis":
-        queue_cm = redis_server()
-        worker_cm_fn = ragna_worker
-
+def test_e2e(tmp_local_root, database):
     if database == "memory":
         database_url = "memory"
     elif database == "sqlite":
-        database_url = f"sqlite:///{tmp_path / 'ragna.db'}"
+        database_url = f"sqlite:///{tmp_local_root / 'ragna.db'}"
 
-    with queue_cm as queue_url:
-        config = Config(
-            local_cache_root=tmp_path,
-            core=dict(queue_url=queue_url),
-            api=dict(database_url=database_url),
-        )
-        with worker_cm_fn(config):
-            check_api(config)
+    config = Config(
+        local_cache_root=tmp_local_root, api=dict(database_url=database_url)
+    )
+    check_api(config)
 
 
 @timeout_after()
@@ -54,9 +30,7 @@ def check_api(config):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with ragna_api(config, start_worker=False), httpx.Client(
-        base_url=config.api.url
-    ) as client:
+    with ragna_api(config), httpx.Client(base_url=config.api.url) as client:
         username = default_user()
         token = (
             client.post(
@@ -92,17 +66,17 @@ def check_api(config):
 
         components = client.get("/components").raise_for_status().json()
         documents = components["documents"]
-        assert set(documents) == config.core.document.supported_suffixes()
+        assert set(documents) == config.document.supported_suffixes()
         source_storages = [
             json_schema["title"] for json_schema in components["source_storages"]
         ]
         assert source_storages == [
             source_storage.display_name()
-            for source_storage in config.core.source_storages
+            for source_storage in config.components.source_storages
         ]
         assistants = [json_schema["title"] for json_schema in components["assistants"]]
         assert assistants == [
-            assistant.display_name() for assistant in config.core.assistants
+            assistant.display_name() for assistant in config.components.assistants
         ]
 
         source_storage = source_storages[0]

@@ -255,21 +255,9 @@ class CentralView(pn.viewable.Viewer):
 
             grid_height = len(self.current_chat["metadata"]["documents"]) // 3
 
-            advanced_config_data = {
-                "Chunk size": self.current_chat["metadata"]["params"]["chunk_size"],
-                "Chunk overlap": self.current_chat["metadata"]["params"][
-                    "chunk_overlap"
-                ],
-                "Max context tokens": self.current_chat["metadata"]["params"][
-                    "num_tokens"
-                ],
-                "Max new tokens": self.current_chat["metadata"]["params"][
-                    "max_new_tokens"
-                ],
-            }
-
             advanced_config_md = "\n".join(
-                [f"""- **{k}**: {v}""" for k, v in advanced_config_data.items()]
+                f"- **{key.replace('_', ' ').title()}**: {value}"
+                for key, value in self.current_chat["metadata"]["params"].items()
             )
 
             markdown = [
@@ -600,7 +588,10 @@ class CentralView(pn.viewable.Viewer):
         ):
             doc_names = [d["name"] for d in self.current_chat["metadata"]["documents"]]
 
-            for doc_name in doc_names:
+            # FIXME: Instead of setting a hard limit of 20 documents here, this should
+            #  scale automatically with the width of page
+            #  See https://github.com/Quansight/ragna/issues/224
+            for doc_name in doc_names[:20]:
                 pill = pn.pane.HTML(
                     f"""<div class="chat_document_pill">{doc_name}</div>""",
                     stylesheets=[
