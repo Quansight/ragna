@@ -127,7 +127,7 @@ def app(config: Config) -> FastAPI:
             )
             return schemas.DocumentUploadInfo(url=url, data=data, document=document)
 
-    @app.put("/document")
+    @app.post("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:

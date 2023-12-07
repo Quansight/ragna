@@ -37,7 +37,7 @@ def main():
         document_info = (
             client.post("/document", json={"name": name}).raise_for_status().json()
         )
-        client.put(
+        client.post(
             document_info["url"],
             data=document_info["data"],
             files={"file": f"Content of {name}".encode()},

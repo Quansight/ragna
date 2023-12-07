@@ -21,7 +21,7 @@ async function uploadFile(file, token, informationEndpoint) {
   body.append("file", file);
 
   await fetch(documentInfo.url, {
-    method: "PUT",
+    method: "POST",
     body: body,
   });
 
