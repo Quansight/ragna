@@ -119,14 +119,11 @@ def app(config: Config) -> FastAPI:
     ) -> schemas.DocumentUpload:
         with get_session() as session:
             document = schemas.Document(name=name)
-            (
-                document_metadata,
-                parameters,
-            ) = await config.document.get_upload_info(
+            metadata, parameters = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
             )
             database.add_document(
-                session, user=user, document=document, metadata=document_metadata
+                session, user=user, document=document, metadata=metadata
             )
             return schemas.DocumentUpload(parameters=parameters, document=document)
 
