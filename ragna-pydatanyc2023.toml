@@ -4,12 +4,10 @@ local_cache_root = "/var/ragna"
 document = "ragna_pydatanyc2023.S3Document"
 #document = "ragna.core.LocalDocument"
 source_storages = [
-    "ragna.source_storages.RagnaDemoSourceStorage",
     "ragna.source_storages.Chroma",
     "ragna.source_storages.LanceDB"
 ]
 assistants = [
-    "ragna.assistants.RagnaDemoAssistant",
     "ragna.assistants.Gpt35Turbo16k",
     "ragna.assistants.Gpt4",
     "ragna.assistants.Claude",
