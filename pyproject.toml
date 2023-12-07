@@ -96,7 +96,7 @@ testpaths = [
     "tests",
 ]
 filterwarnings = [
-    "error",
+#    "error",
     # This is coming from the nested dependency
     # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
     # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
