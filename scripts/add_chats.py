@@ -36,10 +36,10 @@ def main():
     for i in range(5):
         name = f"document{i}.txt"
         document_info = (
-            client.get("/document", params={"name": name}).raise_for_status().json()
+            client.post("/document", json={"name": name}).raise_for_status().json()
         )
         pprint.pprint(document_info, sort_dicts=False)
-        response = httpx.post(
+        response = httpx.put(
             document_info["url"],
             data=document_info["data"],
             files={"file": f"Content of {name}\n".encode()},
