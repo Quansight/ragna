@@ -5,6 +5,7 @@ from typing import Any
 from ragna.core import (
     Config,
     Document,
+    DocumentUploadParameters,
     EnvVarRequirement,
     PackageRequirement,
     RagnaException,
@@ -36,7 +37,7 @@ class S3Document(Document):
     @classmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
         if not PackageRequirement("boto3").is_available():
             raise RagnaException()
 
@@ -52,7 +53,7 @@ class S3Document(Document):
         data = response["fields"]
         metadata = {"bucket": bucket}
 
-        return url, data, metadata
+        return metadata, DocumentUploadParameters(method="POST", url=url, data=data)
 
     def is_readable(self) -> bool:
         session = self._session()
