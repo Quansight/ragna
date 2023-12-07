@@ -57,12 +57,12 @@ def check_api(config):
         document = document_upload["document"]
         assert document["name"] == document_path.name
 
-        request_parameters = document_upload["request_parameters"]
+        parameters = document_upload["parameters"]
         with open(document_path, "rb") as file:
             client.request(
-                request_parameters["method"],
-                request_parameters["url"],
-                data=request_parameters["data"],
+                parameters["method"],
+                parameters["url"],
+                data=parameters["data"],
                 files={"file": file},
             )
 
