@@ -1,5 +1,52 @@
 # Release notes
 
+## Version 0.1.2
+
+### What's Changed
+
+- pin pymupdf to latest release by [@pmeier](https://github.com/pmeier) in
+  [#169](https://github.com/Quansight/ragna/pull/169)
+- Update assistant timeout to accomodate longer response time. by
+  [@petrpan26](https://github.com/petrpan26) in
+  [#184](https://github.com/Quansight/ragna/pull/184)
+- cache importlib_metadata_package_distributions by [@pmeier](https://github.com/pmeier)
+  in [#188](https://github.com/Quansight/ragna/pull/188)
+- fix LanceDB retrieval by [@pmeier](https://github.com/pmeier) in
+  [#195](https://github.com/Quansight/ragna/pull/195)
+- use model_config over Config class by [@pmeier](https://github.com/pmeier) in
+  [#199](https://github.com/Quansight/ragna/pull/199)
+- special case LocalDocument more by [@pmeier](https://github.com/pmeier) in
+  [#170](https://github.com/Quansight/ragna/pull/170)
+- docs: small improvements to "Set Configuration" how-to by
+  [@agilgur5](https://github.com/agilgur5) in
+  [#197](https://github.com/Quansight/ragna/pull/197)
+- docs: various improvements to Python API tutorial by
+  [@agilgur5](https://github.com/agilgur5) in
+  [#196](https://github.com/Quansight/ragna/pull/196)
+- fix chat info by [@pmeier](https://github.com/pmeier) in
+  [#220](https://github.com/Quansight/ragna/pull/220)
+- change version scheme to increase the minor instead of patch version by
+  [@pmeier](https://github.com/pmeier) in
+  [#221](https://github.com/Quansight/ragna/pull/221)
+- run CI on release branches by [@pmeier](https://github.com/pmeier) in
+  [#222](https://github.com/Quansight/ragna/pull/222)
+- mark as PEP561 compatible by [@pmeier](https://github.com/pmeier) in
+  [#232](https://github.com/Quansight/ragna/pull/232)
+- set hard limit of visible document pills by [@pmeier](https://github.com/pmeier) in
+  [#235](https://github.com/Quansight/ragna/pull/235)
+- supply document name as part of the request body rather than query by
+  [@pmeier](https://github.com/pmeier) in
+  [#186](https://github.com/Quansight/ragna/pull/186)
+- Make document upload method flexible by [@pmeier](https://github.com/pmeier) in
+  [#238](https://github.com/Quansight/ragna/pull/238)
+
+### New Contributors
+
+- [@petrpan26](https://github.com/petrpan26) made their first contribution in
+  [#184](https://github.com/Quansight/ragna/pull/184)
+- [@agilgur5](https://github.com/agilgur5) made their first contribution in
+  [#197](https://github.com/Quansight/ragna/pull/197)
+
 ## Version 0.1.1
 
 ### Feature changes and enhancements
