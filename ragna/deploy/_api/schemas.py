@@ -27,9 +27,8 @@ class Document(BaseModel):
         )
 
 
-class DocumentUploadInfo(BaseModel):
-    url: str
-    data: dict
+class DocumentUpload(BaseModel):
+    parameters: ragna.core.DocumentUploadParameters
     document: Document
 
 
@@ -79,8 +78,3 @@ class Chat(BaseModel):
     metadata: ChatMetadata
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False
-
-
-class MessageOutput(BaseModel):
-    message: Message
-    chat: Chat
