@@ -63,7 +63,7 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def answer(self, chat_id, prompt):
-        json_data = (
+        return self.improve_message(
             (
                 await self.client.post(
                     f"/chats/{chat_id}/answer",
@@ -74,13 +74,6 @@ class ApiWrapper(param.Parameterized):
             .raise_for_status()
             .json()
         )
-
-        json_data["message"] = self.improve_message(json_data["message"])
-        json_data["chat"]["messages"] = [
-            self.improve_message(msg) for msg in json_data["chat"]["messages"]
-        ]
-
-        return json_data
 
     async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()

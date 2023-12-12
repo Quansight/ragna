@@ -360,12 +360,12 @@ class CentralView(pn.viewable.Viewer):
         try:
             answer = await self.api_wrapper.answer(self.current_chat["id"], contents)
 
-            self.current_chat["messages"].append(answer["message"])
+            self.current_chat["messages"].append(answer)
 
             yield {
                 "user": "Ragna",
                 "avatar": "🤖",
-                "value": answer["message"]["content"],
+                "value": answer["content"],
             }
         except Exception as e:
             print(e)

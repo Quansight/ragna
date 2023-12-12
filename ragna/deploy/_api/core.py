@@ -208,25 +208,24 @@ def app(config: Config) -> FastAPI:
             return database.get_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/prepare")
-    async def prepare_chat(
-        user: UserDependency, id: uuid.UUID
-    ) -> schemas.MessageOutput:
+    async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
+
             welcome = schemas.Message.from_core(await core_chat.prepare())
+
             chat.prepared = True
             chat.messages.append(welcome)
-
             database.update_chat(session, user=user, chat=chat)
 
-            return schemas.MessageOutput(message=welcome, chat=chat)
+            return welcome
 
     @app.post("/chats/{id}/answer")
     async def answer(
         user: UserDependency, id: uuid.UUID, prompt: str
-    ) -> schemas.MessageOutput:
+    ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
@@ -236,11 +235,11 @@ def app(config: Config) -> FastAPI:
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
-            chat.messages.append(answer)
 
+            chat.messages.append(answer)
             database.update_chat(session, user=user, chat=chat)
 
-            return schemas.MessageOutput(message=answer, chat=chat)
+            return answer
 
     @app.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:
