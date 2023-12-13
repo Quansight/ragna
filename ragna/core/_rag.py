@@ -184,6 +184,15 @@ class Chat:
         return welcome
 
     async def answer(self, prompt: str) -> Message:
+        """Answer a prompt.
+
+        Returns:
+            Answer.
+
+        Raises:
+            ragna.core.RagnaException: If chat is not
+                [`prepare`][ragna.core.Chat.prepare]d.
+        """
         if not self._prepared:
             raise RagnaException(
                 "Chat is not prepared",
