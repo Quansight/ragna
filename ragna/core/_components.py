@@ -4,7 +4,7 @@ import abc
 import enum
 import functools
 import inspect
-from typing import AsyncIterator, Iterator, Optional, Type, Union, cast
+from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
 
 import pydantic
 import pydantic.utils
@@ -153,52 +153,55 @@ class Message:
 
     def __init__(
         self,
-        content: Union[str, AsyncIterator[str]],
+        content: Union[str, AsyncIterable[str]],
         role: MessageRole = MessageRole.SYSTEM,
         sources: Optional[list[Source]] = None,
     ) -> None:
-        self._content: Optional[str]
-        self._content_stream: Optional[AsyncIterator[str]]
         if isinstance(content, str):
-            self._content = content
-            self._content_stream = None
+            self._content: str = content
         else:
-            self._content = None
-            self._content_stream = content
+            self._content_stream: AsyncIterable[str] = content
 
         self.role = role
         self.sources = sources or []
 
     async def __aiter__(self) -> AsyncIterator[str]:
-        if self._content is not None:
-            raise RuntimeError(
-                "The message was either constructed without a content stream or it is "
-                "already consumed. Please use Message.content() instead."
-            )
+        if hasattr(self, "_content"):
+            yield self._content
+            return
 
         chunks = []
-        async for chunk in cast(AsyncIterator[str], self._content_stream):
+        async for chunk in self._content_stream:
             chunks.append(chunk)
             yield chunk
 
         self._content = "".join(chunks)
 
-    async def content(self) -> str:
-        if self._content is None:
-            # Since self.__iter__ is already setting the self._content attribute, we
-            # only need to exhaust the iterator here.
+    async def read(self) -> str:
+        if not hasattr(self, "_content"):
+            # Since self.__aiter__ is already setting the self._content attribute, we
+            # only need to exhaust the content stream here.
             async for _ in self:
                 pass
+        return self._content
 
-        return cast(str, self._content)
+    @property
+    def content(self) -> str:
+        if not hasattr(self, "_content"):
+            raise RuntimeError(
+                "Message content cannot be accessed without having iterated over it, "
+                "e.g. `async for chunk in message`, or reading the content, e.g. "
+                "`await message.read()`, first."
+            )
+        return self._content
 
     def __str__(self) -> str:
-        return self._content or "..."
+        return self.content
 
     def __repr__(self) -> str:
         return (
             f"{type(self).__name__}("
-            f"content={self}, role={self.role}, sources={self.sources}"
+            f"content={self.content}, role={self.role}, sources={self.sources}"
             f")"
         )
 

@@ -183,7 +183,7 @@ class Chat:
         self._messages.append(welcome)
         return welcome
 
-    async def answer(self, prompt: str) -> Message:
+    async def answer(self, prompt: str, *, stream: bool = False) -> Message:
         """Answer a prompt.
 
         Returns:
@@ -210,6 +210,9 @@ class Chat:
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
+        if not stream:
+            await answer.read()
+
         self._messages.append(answer)
 
         return answer
