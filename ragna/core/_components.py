@@ -154,6 +154,7 @@ class Message:
     def __init__(
         self,
         content: Union[str, AsyncIterable[str]],
+        *,
         role: MessageRole = MessageRole.SYSTEM,
         sources: Optional[list[Source]] = None,
     ) -> None:
