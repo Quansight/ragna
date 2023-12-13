@@ -4,7 +4,7 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Any, Iterator, Type
+from typing import AsyncIterator, Iterator, Optional, Type, Union, cast
 
 import pydantic
 import pydantic.utils
@@ -138,11 +138,10 @@ class MessageRole(enum.Enum):
     ASSISTANT = "assistant"
 
 
-class Message(pydantic.BaseModel):
+class Message:
     """Data class for messages.
 
     Attributes:
-        content: The content of the message.
         role: The message producer.
         sources: The sources used to produce the message.
 
@@ -152,19 +151,55 @@ class Message(pydantic.BaseModel):
         - [ragna.core.Chat.answer][]
     """
 
-    content: str
-    role: MessageRole
-    sources: list[Source] = pydantic.Field(default_factory=list)
+    def __init__(
+        self,
+        content: Union[str, AsyncIterator[str]],
+        role: MessageRole = MessageRole.SYSTEM,
+        sources: Optional[list[Source]] = None,
+    ) -> None:
+        self._content: Optional[str]
+        self._content_stream: Optional[AsyncIterator[str]]
+        if isinstance(content, str):
+            self._content = content
+            self._content_stream = None
+        else:
+            self._content = None
+            self._content_stream = content
+
+        self.role = role
+        self.sources = sources or []
+
+    async def __aiter__(self) -> AsyncIterator[str]:
+        if self._content is not None:
+            raise RuntimeError(
+                "The message was either constructed without a content stream or it is "
+                "already consumed. Please use Message.content() instead."
+            )
+
+        chunks = []
+        async for chunk in cast(AsyncIterator[str], self._content_stream):
+            chunks.append(chunk)
+            yield chunk
+
+        self._content = "".join(chunks)
+
+    async def content(self) -> str:
+        if self._content is None:
+            # Since self.__iter__ is already setting the self._content attribute, we
+            # only need to exhaust the iterator here.
+            async for _ in self:
+                pass
+
+        return cast(str, self._content)
 
     def __str__(self) -> str:
-        return self.content
+        return self._content or "..."
 
-    def __add__(self, other: Any) -> Message:
-        if not isinstance(other, Message):
-            return NotImplemented
-
-        return Message(
-            content=self.content + other.content, role=self.role, sources=self.sources
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            f"content={self}, role={self.role}, sources={self.sources}"
+            f")"
         )
 
 

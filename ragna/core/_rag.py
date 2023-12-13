@@ -184,20 +184,6 @@ class Chat:
         return welcome
 
     async def answer(self, prompt: str) -> Message:
-        """Answer a prompt.
-
-        Returns:
-            Answer.
-
-        Raises:
-            ragna.core.RagnaException: If chat is not
-                [`prepare`][ragna.core.Chat.prepare]d.
-        """
-        async for _ in self.answer_iter(prompt):
-            pass
-        return self._messages[-1]
-
-    async def answer_iter(self, prompt: str) -> AsyncIterator[Message]:
         if not self._prepared:
             raise RagnaException(
                 "Chat is not prepared",
@@ -206,25 +192,18 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        prompt = Message(content=prompt, role=MessageRole.USER)
-        self._messages.append(prompt)
+        self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(
-            self.source_storage.retrieve, self.documents, prompt.content
+        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+
+        answer = Message(
+            content=self._run_gen(self.assistant.answer, prompt, sources),
+            role=MessageRole.ASSISTANT,
+            sources=sources,
         )
+        self._messages.append(answer)
 
-        chunks = []
-        async for chunk in self._run_gen(
-            self.assistant.answer, prompt.content, sources
-        ):
-            chunks.append(chunk)
-            yield Message(content=chunk, role=MessageRole.ASSISTANT, sources=sources)
-
-        self._messages.append(
-            Message(
-                content="".join(chunks), role=MessageRole.ASSISTANT, sources=sources
-            )
-        )
+        return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
