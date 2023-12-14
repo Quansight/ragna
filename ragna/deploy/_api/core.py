@@ -229,7 +229,7 @@ def app(config: Config) -> FastAPI:
         id: uuid.UUID,
         prompt: Annotated[str, Body(..., embed=True)],
         stream: Annotated[bool, Body(..., embed=True)] = False,
-    ):
+    ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
@@ -248,7 +248,7 @@ def app(config: Config) -> FastAPI:
                 ],
             )
 
-            async def message_chunks() -> AsyncIterator[str]:
+            async def message_chunks() -> AsyncIterator[sse_starlette.ServerSentEvent]:
                 chunks = []
                 async for chunk in core_answer:
                     chunks.append(chunk)
@@ -261,7 +261,9 @@ def app(config: Config) -> FastAPI:
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
 
-            return sse_starlette.EventSourceResponse(message_chunks())
+            return sse_starlette.EventSourceResponse(  # type: ignore[return-value]
+                message_chunks()  # type: ignore[arg-type]
+            )
         else:
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
 
