@@ -232,15 +232,15 @@ def app(config: Config) -> FastAPI:
     ):
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-        chat.messages.append(
-            schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
-        )
+            chat.messages.append(
+                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
+            )
+            core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-        core_chat = schema_to_core_chat(session, user=user, chat=chat)
         core_answer = await core_chat.answer(prompt, stream=True)
 
         if stream:
-            message = schemas.Message(
+            message_chunk = schemas.Message(
                 content="",
                 role=core_answer.role,
                 sources=[
@@ -249,16 +249,25 @@ def app(config: Config) -> FastAPI:
             )
 
             async def message_chunks() -> AsyncIterator[str]:
+                chunks = []
                 async for chunk in core_answer:
-                    message.content = chunk
-                    yield sse_starlette.ServerSentEvent(message.model_dump_json())
+                    chunks.append(chunk)
+                    message_chunk.content = chunk
+                    yield sse_starlette.ServerSentEvent(message_chunk.model_dump_json())
+
+                with get_session() as session:
+                    answer = message_chunk
+                    answer.content = "".join(chunks)
+                    chat.messages.append(answer)
+                    database.update_chat(session, user=user, chat=chat)
 
             return sse_starlette.EventSourceResponse(message_chunks())
         else:
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
 
-            chat.messages.append(answer)
-            database.update_chat(session, user=user, chat=chat)
+            with get_session() as session:
+                chat.messages.append(answer)
+                database.update_chat(session, user=user, chat=chat)
 
             return answer
 

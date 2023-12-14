@@ -1,6 +1,17 @@
+import asyncio
+import functools
+
 import pytest
 
 from ragna.core import Message
+
+
+def sync(async_test_fn):
+    @functools.wraps(async_test_fn)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(async_test_fn(*args, **kwargs))
+
+    return wrapper
 
 
 class TestMessage:
@@ -11,14 +22,14 @@ class TestMessage:
         assert message.content == content
         assert str(message) == content
 
-    @pytest.mark.asyncio
+    @sync
     async def test_fixed_content_read(self):
         content = "content"
         message = Message(content)
 
         assert (await message.read()) == content
 
-    @pytest.mark.asyncio
+    @sync
     async def test_fixed_content_iter(self):
         content = "content"
         message = Message(content)
@@ -50,7 +61,7 @@ class TestMessage:
         with pytest.raises(RuntimeError):
             content_access(message)
 
-    @pytest.mark.asyncio
+    @sync
     async def test_stream_content_iter(self):
         content = "content"
         message = Message(self.make_content_stream(*content))
@@ -62,7 +73,7 @@ class TestMessage:
 
         assert message.content == content
 
-    @pytest.mark.asyncio
+    @sync
     async def test_stream_content_read(self):
         content = "content"
         message = Message(self.make_content_stream(*content))

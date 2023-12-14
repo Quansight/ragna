@@ -1,7 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-from httpx_sse import aconnect_sse
+import httpx_sse
 
 from ragna.core import RagnaException, Source
 
@@ -35,7 +35,7 @@ class AnthropicApiAssistant(ApiAssistant):
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/streaming
-        async with aconnect_sse(
+        async with httpx_sse.aconnect_sse(
             self._client,
             "POST",
             "https://api.anthropic.com/v1/complete",

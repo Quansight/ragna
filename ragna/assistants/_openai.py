@@ -1,7 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-from httpx_sse import aconnect_sse
+import httpx_sse
 
 from ragna.core import Source
 
@@ -35,7 +35,7 @@ class OpenaiApiAssistant(ApiAssistant):
     ) -> AsyncIterator[str]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
-        async with aconnect_sse(
+        async with httpx_sse.aconnect_sse(
             self._client,
             "POST",
             "https://api.openai.com/v1/chat/completions",
