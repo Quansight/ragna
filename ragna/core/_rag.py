@@ -261,9 +261,11 @@ class Chat:
     ) -> T:
         kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
-            coro = cast(Callable[..., Awaitable[T]], fn)(*args, **kwargs)
+            fn = cast(Callable[..., Awaitable[T]], fn)
+            coro = fn(*args, **kwargs)
         else:
-            coro = run_in_threadpool(cast(Callable[..., T], fn), *args, **kwargs)
+            fn = cast(Callable[..., T], fn)
+            coro = run_in_threadpool(fn, *args, **kwargs)
 
         return await coro
 
@@ -274,11 +276,11 @@ class Chat:
     ) -> AsyncIterator[T]:
         kwargs = self._unpacked_params[fn]
         if inspect.isasyncgenfunction(fn):
-            async_gen = cast(Callable[..., AsyncIterator[T]], fn)(*args, **kwargs)
+            fn = cast(Callable[..., AsyncIterator[T]], fn)
+            async_gen = fn(*args, **kwargs)
         else:
-            async_gen = iterate_in_threadpool(
-                cast(Callable[..., Iterator[T]], fn)(*args, **kwargs)
-            )
+            fn = cast(Callable[..., Iterator[T]], fn)
+            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
 
         async for item in async_gen:
             yield item
