@@ -1,11 +1,12 @@
 function upload(files, token, informationEndpoint, final_callback) {
 
   async function uploadBatches() {
-    const queue = Array.from(files)
 
-    const batchSize = 500;
     let index = 0;
     let uploaded = [];
+
+    const batchSize = 500;
+    const queue = Array.from(files);
 
     while(index < files.length) {
       const batch = queue.splice(0, batchSize);
