@@ -262,7 +262,7 @@ def app(config: Config) -> FastAPI:
                     database.update_chat(session, user=user, chat=chat)
 
             return sse_starlette.EventSourceResponse(  # type: ignore[return-value]
-                message_chunks()  # type: ignore[arg-type]
+                message_chunks()
             )
         else:
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
