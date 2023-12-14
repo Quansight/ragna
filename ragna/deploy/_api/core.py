@@ -1,9 +1,10 @@
 import contextlib
 import itertools
 import uuid
-from typing import Annotated, Any, Iterator, Type, cast
+from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
+import sse_starlette
 from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -224,16 +225,36 @@ def app(config: Config) -> FastAPI:
 
     @app.post("/chats/{id}/answer")
     async def answer(
-        user: UserDependency, id: uuid.UUID, prompt: str
-    ) -> schemas.Message:
+        user: UserDependency,
+        id: uuid.UUID,
+        prompt: Annotated[str, Body(..., embed=True)],
+        stream: Annotated[bool, Body(..., embed=True)] = False,
+    ):
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-            chat.messages.append(
-                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
+        chat.messages.append(
+            schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
+        )
+
+        core_chat = schema_to_core_chat(session, user=user, chat=chat)
+        core_answer = await core_chat.answer(prompt, stream=True)
+
+        if stream:
+            message = schemas.Message(
+                content="",
+                role=core_answer.role,
+                sources=[
+                    schemas.Source.from_core(source) for source in core_answer.sources
+                ],
             )
 
-            core_chat = schema_to_core_chat(session, user=user, chat=chat)
+            async def message_chunks() -> AsyncIterator[str]:
+                async for chunk in core_answer:
+                    message.content = chunk
+                    yield sse_starlette.ServerSentEvent(message.model_dump_json())
 
+            return sse_starlette.EventSourceResponse(message_chunks())
+        else:
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
 
             chat.messages.append(answer)
