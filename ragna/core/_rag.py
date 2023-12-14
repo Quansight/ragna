@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import inspect
 import uuid
 from typing import (
@@ -19,8 +18,8 @@ from typing import (
     cast,
 )
 
-import anyio
 import pydantic
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
@@ -257,16 +256,16 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
+    async def _run(
+        self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
+    ) -> T:
         kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
-            fn = cast(Callable[..., Awaitable[T]], fn)
-            return await fn(*args, **kwargs)
+            coro = cast(Callable[..., Awaitable[T]], fn)(*args, **kwargs)
         else:
-            fn = cast(Callable[..., T], fn)
-            return await anyio.to_thread.run_sync(
-                functools.partial(fn, *args, **kwargs)
-            )
+            coro = run_in_threadpool(cast(Callable[..., T], fn), *args, **kwargs)
+
+        return await coro
 
     async def _run_gen(
         self,
@@ -275,17 +274,14 @@ class Chat:
     ) -> AsyncIterator[T]:
         kwargs = self._unpacked_params[fn]
         if inspect.isasyncgenfunction(fn):
-            fn = cast(Callable[..., AsyncIterator[T]], fn)
-            async for item in fn(*args, **kwargs):
-                yield item
+            async_gen = cast(Callable[..., AsyncIterator[T]], fn)(*args, **kwargs)
         else:
-            fn = cast(Callable[..., Iterator[T]], fn)
-            # This does not run the generator on a separate thread as we do for regular
-            # synchronous functions in self._run. It is not easy to run a generator in
-            # such a setting. Until the immediate need arises, we are probably ok with
-            # keeping this.
-            for item in fn(*args, **kwargs):
-                yield item
+            async_gen = iterate_in_threadpool(
+                cast(Callable[..., Iterator[T]], fn)(*args, **kwargs)
+            )
+
+        async for item in async_gen:
+            yield item
 
     async def __aenter__(self) -> Chat:
         await self.prepare()

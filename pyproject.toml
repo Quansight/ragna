@@ -22,7 +22,6 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     "aiofiles",
-    "anyio",
     "emoji",
     "fastapi",
     "httpx",
@@ -38,8 +37,9 @@ dependencies = [
     "redis",
     "questionary",
     "rich",
-    "sse-starlette",
     "sqlalchemy>=2",
+    "sse-starlette",
+    "starlette",
     "tomlkit",
     "typer",
     "uvicorn",
