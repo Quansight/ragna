@@ -5,13 +5,7 @@ from typing import AsyncIterator
 import httpx
 
 import ragna
-from ragna.core import (
-    Assistant,
-    EnvVarRequirement,
-    PackageRequirement,
-    Requirement,
-    Source,
-)
+from ragna.core import Assistant, EnvVarRequirement, Requirement, Source
 
 
 class ApiAssistant(Assistant):
@@ -41,11 +35,3 @@ class ApiAssistant(Assistant):
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
         ...
-
-
-class StreamingApiAssistant(ApiAssistant):
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return super().requirements() + [
-            PackageRequirement("httpx_sse"),
-        ]

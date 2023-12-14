@@ -1,12 +1,14 @@
 import json
 from typing import AsyncIterator, cast
 
+from httpx_sse import aconnect_sse
+
 from ragna.core import Source
 
-from ._api import StreamingApiAssistant
+from ._api import ApiAssistant
 
 
-class OpenaiApiAssistant(StreamingApiAssistant):
+class OpenaiApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int
@@ -31,8 +33,6 @@ class OpenaiApiAssistant(StreamingApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
-        from httpx_sse import aconnect_sse
-
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         async with aconnect_sse(
