@@ -1,4 +1,3 @@
-import re
 from datetime import datetime
 
 import emoji
@@ -63,7 +62,7 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def answer(self, chat_id, prompt):
-        json_data = (
+        return self.improve_message(
             (
                 await self.client.post(
                     f"/chats/{chat_id}/answer",
@@ -75,13 +74,6 @@ class ApiWrapper(param.Parameterized):
             .json()
         )
 
-        json_data["message"] = self.improve_message(json_data["message"])
-        json_data["chat"]["messages"] = [
-            self.improve_message(msg) for msg in json_data["chat"]["messages"]
-        ]
-
-        return json_data
-
     async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()
 
@@ -91,57 +83,27 @@ class ApiWrapper(param.Parameterized):
             "informations_endpoint": f"{self.client.base_url}/document",
         }
 
-    async def start_chat(self, name, documents, source_storage, assistant, params={}):
-        return (
-            (
-                await self.client.post(
-                    "/chats",
-                    json={
-                        "name": name,
-                        "documents": documents,
-                        "source_storage": source_storage,
-                        "assistant": assistant,
-                        "params": params,
-                    },
-                )
-            )
-            .raise_for_status()
-            .json()
-        )
-
     async def start_and_prepare(
-        self, name, documents, source_storage, assistant, params={}
+        self, name, documents, source_storage, assistant, params
     ):
-        chat = await self.start_chat(name, documents, source_storage, assistant, params)
+        response = await self.client.post(
+            "/chats",
+            json={
+                "name": name,
+                "documents": documents,
+                "source_storage": source_storage,
+                "assistant": assistant,
+                "params": params,
+            },
+        )
+        chat = response.raise_for_status().json()
 
-        (
-            await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
-        ).raise_for_status()
+        response = await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
+        response.raise_for_status()
 
         return chat["id"]
 
-    # Helpers
-
     def improve_message(self, msg):
-        # convert timestamps to datetime
-
         msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f")
-
-        msg["content"] = self.replace_emoji_shortcodes_with_emoji(msg["content"])
-
+        msg["content"] = emoji.emojize(msg["content"], language="alias")
         return msg
-
-    def replace_emoji_shortcodes_with_emoji(self, markdown_string):
-        # Define a regular expression pattern to find emoji shortcodes
-        shortcode_pattern = r":\w+:"
-
-        # Find all matches of emoji shortcodes in the input string
-        shortcodes = re.findall(shortcode_pattern, markdown_string)
-
-        # Iterate through the found shortcodes and replace them with emojis
-        for shortcode in shortcodes:
-            emoji_name = shortcode.strip(":")
-            emoji_unicode = emoji.emojize(f":{emoji_name}:", language="alias")
-            markdown_string = markdown_string.replace(shortcode, emoji_unicode)
-
-        return markdown_string
