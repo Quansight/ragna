@@ -390,7 +390,7 @@ class TxtDocumentHandler(DocumentHandler):
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
-        return [".txt"]
+        return [".txt", ".md"]
 
     def extract_pages(self, document: Document) -> Iterator[Page]:
         yield Page(text=document.read().decode())
