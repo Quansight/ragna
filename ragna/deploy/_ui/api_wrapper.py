@@ -85,6 +85,18 @@ class ApiWrapper(param.Parameterized):
     async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()
 
+    async def get_document(self, name, prefixed_path=None):
+        if prefixed_path is None:
+            params = {"name": name}
+        else:
+            params = {"name": name, "prefixed_path": prefixed_path}
+
+        return (
+            (await self.client.get("/document", params=params))
+            .raise_for_status()
+            .json()
+        )
+
     # Upload and related functions
     def upload_endpoints(self):
         return {
@@ -113,7 +125,6 @@ class ApiWrapper(param.Parameterized):
         self, name, documents, source_storage, assistant, params={}
     ):
         chat = await self.start_chat(name, documents, source_storage, assistant, params)
-
         (
             await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
         ).raise_for_status()

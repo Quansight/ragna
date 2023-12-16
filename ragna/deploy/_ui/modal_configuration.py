@@ -1,5 +1,9 @@
+import asyncio
+import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
+import fsspec
 import panel as pn
 import param
 
@@ -18,6 +22,7 @@ def get_default_chat_name(timezone_offset=None):
 
 class ChatConfig(param.Parameterized):
     allowed_documents = param.List(default=["TXT"])
+    available_filesystems = param.List(default=["local"])
 
     source_storage_name = param.Selector()
     assistant_name = param.Selector()
@@ -70,6 +75,8 @@ class ChatConfig(param.Parameterized):
 
 class ModalConfiguration(pn.viewable.Viewer):
     chat_name = param.String()
+    github_repo = param.String(default="Quansight/ragna/docs")
+    github_file_formats = param.String(default="md,mdx")
 
     config = param.ClassSelector(class_=ChatConfig, default=None)
     new_chat_ready_callback = param.Callable()
@@ -83,6 +90,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.api_wrapper = api_wrapper
 
         upload_endpoints = self.api_wrapper.upload_endpoints()
+
+        self.github_documents = list()
 
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
@@ -101,7 +110,9 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.cancel_button.on_click(self.cancel_button_callback)
 
         self.start_chat_button = pn.widgets.Button(
-            name="Start Conversation", button_type="primary", min_width=375
+            name="Start Conversation",
+            button_type="primary",
+            min_width=375,
         )
         self.start_chat_button.on_click(self.did_click_on_start_chat_button)
 
@@ -116,27 +127,108 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
-    def did_click_on_start_chat_button(self, event):
-        if not self.document_uploader.can_proceed_to_upload():
+        self.add_repo_button = pn.widgets.Button(
+            name="Add", button_type="default", height=30
+        )
+
+        self.add_repo_button.on_click(self.add_github_repo_metadata)
+
+    async def add_github_repo_metadata(self, event):
+        # disable call to 'prepare' endpoint until metadata created
+        self.start_chat_button.disabled = True
+        self.start_chat_button.name = "Loading..."
+
+        if self.github_repo:
+            try:
+                org, repo, *ks = self.github_repo.split("/")
+            except ValueError:
+                print("Need to implement error handling...")
+                self.start_chat_button.disabled = False
+                self.start_chat_button.name = "Start Conversation"
+                return
+
+            key = "/".join(ks)
+            loop = asyncio.get_event_loop()
+            # necessary to prevent UI from freezing
+            with ThreadPoolExecutor() as executor:
+                filepaths = await loop.run_in_executor(
+                    executor, self.get_filepaths, org, repo, key
+                )
+
+            for f in filepaths:
+                metadata = await self.api_wrapper.get_document(
+                    name=os.path.basename(f),
+                    prefixed_path=f"github://{org}/{repo}/{f}",
+                )
+                self.github_documents.append(metadata["document"])
+
+        self.start_chat_button.disabled = False
+        self.start_chat_button.name = "Start Conversation"
+
+    def get_filepaths(self, org, repo, key):
+        fs = fsspec.filesystem(
+            "github",
+            org=org,
+            repo=repo,
+            username=os.environ["GITHUB_USERNAME"],
+            token=os.environ["GITHUB_TOKEN"],
+        )
+
+        if fs.isfile(key):
+            filepaths = [key]
+        elif fs.isdir(key):
+            # Expected format is comma separated list of file extensions
+            file_format_string = self.github_file_formats.replace(" ", "")
+            if key:
+                pattern = f"{key}/**"
+                glob = fs.glob(pattern)
+            else:  # root of repo
+                pattern = "**"
+                glob = fs.glob(pattern)
+            filepaths = [
+                g for g in glob if g.split(".")[-1] in file_format_string.split(",")
+            ]
+        else:
+            print("Need to implement error handling...")
+            # TODO: remove this return statement after error handling is implemented
+            filepaths = []
+
+        return filepaths
+
+    async def did_click_on_start_chat_button(self, event):
+        if (
+            not self.document_uploader.can_proceed_to_upload()
+            and not self.github_documents
+        ):
             self.change_upload_files_label("missing_file")
         else:
             self.start_chat_button.disabled = True
-            self.document_uploader.perform_upload(event, self.did_finish_upload)
+            self.add_repo_button.disabled = True
+            self.document_uploader.perform_upload(
+                event,
+                self.did_finish_upload,
+            )
 
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
 
+        if self.github_documents is not None:
+            documents = uploaded_documents + self.github_documents
+        else:
+            documents = uploaded_documents
+
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
-                documents=uploaded_documents,
+                documents=documents,
                 source_storage=self.config.source_storage_name,
                 assistant=self.config.assistant_name,
                 params=self.config.to_params_dict(),
             )
 
             self.start_chat_button.disabled = False
+            self.add_repo_button.disabled = False
 
             if self.new_chat_ready_callback is not None:
                 await self.new_chat_ready_callback(new_chat_id)
@@ -145,16 +237,17 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.change_upload_files_label("upload_error")
             self.document_uploader.loading = False
             self.start_chat_button.disabled = False
+            self.add_repo_button.disabled = False
 
     def change_upload_files_label(self, mode="normal"):
         if mode == "upload_error":
-            self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+            self.upload_files_label.object = "<b>Upload files</b> <span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
         elif mode == "missing_file":
             self.upload_files_label.object = (
-                "<span style='color:red;'><b>Upload files</b> (required)</span>"
+                "<span style='color:red;'><b>Upload files</b></span>"
             )
         else:
-            self.upload_files_label.object = "<b>Upload files</b> (required)"
+            self.upload_files_label.object = "<b>Upload files</b>"
 
     async def model_section(self):
         # prevents re-rendering the section
@@ -167,6 +260,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             config.allowed_documents = [
                 ext[1:].upper() for ext in components["documents"]
             ]
+            config.available_filesystems = [fs for fs in components["filesystems"]]
 
             assistants = [component["title"] for component in components["assistants"]]
 
@@ -317,6 +411,43 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         return pn.Column(toggle_button, card)
 
+    @pn.depends("config", "config.available_filesystems")
+    async def github_section(self):
+        if self.config is None:
+            return
+
+        if "github" not in self.config.available_filesystems:
+            return
+        else:
+            return pn.Row(
+                pn.Column(
+                    pn.pane.HTML(
+                        "<img src='/imgs/github-mark.svg' width'24px' height='24px' /><b> GitHub repository</b>",
+                        height=30,
+                    ),
+                    pn.widgets.TextInput.from_param(
+                        self.param.github_repo,
+                        name="",
+                        stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                    ),
+                ),
+                pn.Column(
+                    pn.pane.HTML(
+                        "<img src='/imgs/github-mark.svg' width'24px' height='24px' /><b> File formats</b>",
+                        height=30,
+                    ),
+                    pn.widgets.TextInput.from_param(
+                        self.param.github_file_formats,
+                        name="",
+                        stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                    ),
+                ),
+                pn.Column(
+                    pn.pane.HTML("", height=30),
+                    self.add_repo_button,
+                ),
+            )
+
     def __panel__(self):
         return pn.Column(
             pn.pane.HTML(
@@ -333,6 +464,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             ui.divider(),
             self.advanced_config_ui,
             ui.divider(),
+            self.github_section,
             self.upload_files_label,
             self.upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),

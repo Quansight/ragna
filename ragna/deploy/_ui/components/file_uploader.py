@@ -42,7 +42,9 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     @param.depends("uploaded_documents_json", watch=True)
     async def did_finish_upload(self):
         if self.after_upload_callback is not None:
-            await self.after_upload_callback(json.loads(self.uploaded_documents_json))
+            await self.after_upload_callback(
+                uploaded_documents=json.loads(self.uploaded_documents_json),
+            )
 
     def perform_upload(self, event=None, after_upload_callback=None):
         self.after_upload_callback = after_upload_callback
