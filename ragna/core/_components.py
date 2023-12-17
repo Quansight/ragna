@@ -4,13 +4,13 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Type
+from typing import Type, get_type_hints
 
 import pydantic
 import pydantic.utils
 
 from ._document import Document
-from ._utils import RequirementsMixin, merge_models
+from ._utils import RagnaException, RequirementsMixin, merge_models
 
 
 class Component(RequirementsMixin):
@@ -56,17 +56,30 @@ class Component(RequirementsMixin):
             ).parameters
             extra_param_names = concrete_params.keys() - protocol_params.keys()
 
+            # We can't rely on inspect.Param.annotation, since that might be str. This
+            # happens if the annotation was either explicitly provided as str, or there
+            # is a top-level from __future__ import annotations in the module.
+            annotations = get_type_hints(method, include_extras=True)
+
+            field_definitions = {}
+            for param_name in extra_param_names:
+                annotation = annotations.get(param_name)
+                if annotation is None:
+                    # FIXME: can we live with typing.Any here?
+                    raise RagnaException("Missing annotation")
+
+                default = concrete_params[param_name].default
+                if default is inspect.Parameter.empty:
+                    default = ...
+
+                field_info = pydantic.fields.FieldInfo.from_annotated_attribute(
+                    annotation, default
+                )
+
+                field_definitions[param_name] = (annotation, field_info)
+
             models[(cls, method_name)] = pydantic.create_model(  # type: ignore[call-overload]
-                f"{cls.__name__}.{method_name}",
-                **{
-                    (param := concrete_params[param_name]).name: (
-                        param.annotation,
-                        param.default
-                        if param.default is not inspect.Parameter.empty
-                        else ...,
-                    )
-                    for param_name in extra_param_names
-                },
+                f"{cls.__name__}.{method_name}", **field_definitions
             )
         return models
 
