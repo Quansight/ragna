@@ -242,6 +242,14 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         self.api_wrapper = api_wrapper
+        self.chat_info_button = pn.widgets.Button(
+            # The name will be filled at runtime in self.header
+            name="",
+            on_click=self.on_click_chat_info_wrapper,
+            button_style="outline",
+            icon="info-circle",
+            stylesheets=[":host { margin-top:10px; }"],
+        )
         self.on_click_chat_info = None
 
     def on_click_chat_info_wrapper(self, event):
@@ -613,26 +621,12 @@ class CentralView(pn.viewable.Viewer):
 
                 chat_documents_pills.append(pill)
 
-        chat_info_button = None
-        if self.current_chat is not None:
-            button_name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
-            chat_info_button = pn.widgets.Button(
-                name=button_name, button_style="outline", icon="info-circle"
-            )
-            chat_info_button.stylesheets.append(
-                """
-                                        :host {  
-                                                    margin-top:10px;
-                                        }
-                                        
-                                    """
-            )
-            chat_info_button.on_click(self.on_click_chat_info_wrapper)
+        self.chat_info_button.name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
 
         return pn.Row(
             chat_name_header,
             *chat_documents_pills,
-            chat_info_button,
+            self.chat_info_button,
             stylesheets=[
                 """:host {  
                                     background-color: #F9F9F9;
