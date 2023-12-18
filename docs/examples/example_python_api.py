@@ -4,10 +4,6 @@
 """
 
 # %%
-# Let's look at the config
-
-
-# %%
 # Let's create a document
 
 from pathlib import Path
@@ -18,23 +14,18 @@ with open(document_path, "w") as file:
 
 # %%
 # Let's ask a question
-import asyncio
+#
+# !!! note
+#
+#     We can write default markdown here!
 
-from ragna.assistants import RagnaDemoAssistant
-from ragna.core import Rag
-from ragna.source_storages import RagnaDemoSourceStorage
+from ragna import Rag, assistants, source_storages
 
-
-async def answer():
-    rag = Rag()
-    chat = rag.chat(
-        documents=[document_path],
-        source_storage=RagnaDemoSourceStorage,
-        assistant=RagnaDemoAssistant,
-    )
-    async with chat:
-        return await chat.answer("?")
-
-
-answer = asyncio.run(answer())
+rag = Rag()
+async with rag.chat(
+    documents=[document_path],
+    source_storage=source_storages.RagnaDemoSourceStorage,
+    assistant=assistants.RagnaDemoAssistant,
+) as chat:
+    answer = await chat.answer("?")
 print(answer)

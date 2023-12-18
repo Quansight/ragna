@@ -21,4 +21,5 @@ dependencies:
       - mkdocs-gen-files
       - material-plausible-plugin
       - mktestdocs
-      - mkdocs-gallery
+      # FIXME: replace this with a stable release when available
+      - mkdocs-gallery @ git+https://github.com/pmeier/mkdocs-gallery@async-gallery
