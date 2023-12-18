@@ -59,9 +59,9 @@ plugins:
       examples_dirs: docs/examples
       gallery_dirs: docs/generated/gallery
       filename_pattern: /example_
-  - gen-files:
-      scripts:
-        - scripts/docs/gen_files.py
+  #  - gen-files:
+  #      scripts:
+  #        - scripts/docs/gen_files.py
   - material-plausible
 
 hooks:
