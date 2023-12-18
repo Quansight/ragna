@@ -243,17 +243,14 @@ class CentralView(pn.viewable.Viewer):
 
         self.api_wrapper = api_wrapper
         self.chat_info_button = pn.widgets.Button(
-            name="", button_style="outline", icon="info-circle"
+            # The name will be filled at runtime in self.header
+            name="",
+            on_click=self.on_click_chat_info_wrapper,
+            button_style="outline",
+            icon="info-circle",
+            stylesheets=[":host { margin-top:10px; }"],
         )
         self.on_click_chat_info = None
-        self.chat_info_button.stylesheets.append(
-            """ 
-            :host {  
-                margin-top:10px;
-                }                    
-            """
-        )
-        self.chat_info_button.on_click(self.on_click_chat_info_wrapper)
 
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is not None:
