@@ -49,20 +49,22 @@ def check_api(config):
 
         assert client.get("/chats").raise_for_status().json() == []
 
-        document_info = (
-            client.get("/document", params={"name": document_path.name})
+        document_upload = (
+            client.post("/document", json={"name": document_path.name})
             .raise_for_status()
             .json()
         )
-        document = document_info["document"]
+        document = document_upload["document"]
         assert document["name"] == document_path.name
 
+        parameters = document_upload["parameters"]
         with open(document_path, "rb") as file:
-            client.post(
-                document_info["url"],
-                data=document_info["data"],
+            client.request(
+                parameters["method"],
+                parameters["url"],
+                data=parameters["data"],
                 files={"file": file},
-            ).raise_for_status()
+            )
 
         components = client.get("/components").raise_for_status().json()
         documents = components["documents"]
@@ -97,25 +99,27 @@ def check_api(config):
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
-        json = client.post(f"/chats/{chat['id']}/prepare").raise_for_status().json()
-        message, chat = json["message"], json["chat"]
+        message = client.post(f"/chats/{chat['id']}/prepare").raise_for_status().json()
         assert message["role"] == "system"
         assert message["sources"] == []
+
+        chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
         assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
 
         prompt = "?"
-        json = (
+        message = (
             client.post(f"/chats/{chat['id']}/answer", params={"prompt": prompt})
             .raise_for_status()
             .json()
         )
-        message, chat = json["message"], json["chat"]
         assert message["role"] == "assistant"
         assert {source["document"]["name"] for source in message["sources"]} == {
             document_path.name
         }
+
+        chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
         assert len(chat["messages"]) == 3
         assert (
             chat["messages"][-2]["role"] == "user"

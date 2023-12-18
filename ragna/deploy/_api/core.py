@@ -4,7 +4,7 @@ import uuid
 from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -112,22 +112,22 @@ def app(config: Config) -> FastAPI:
         with make_session() as session:  # type: ignore[attr-defined]
             yield session
 
-    @app.get("/document")
-    async def get_document_upload_info(
+    @app.post("/document")
+    async def create_document_upload_info(
         user: UserDependency,
-        name: str,
-    ) -> schemas.DocumentUploadInfo:
+        name: Annotated[str, Body(..., embed=True)],
+    ) -> schemas.DocumentUpload:
         with get_session() as session:
             document = schemas.Document(name=name)
-            url, data, metadata = await config.document.get_upload_info(
+            metadata, parameters = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
             )
             database.add_document(
                 session, user=user, document=document, metadata=metadata
             )
-            return schemas.DocumentUploadInfo(url=url, data=data, document=document)
+            return schemas.DocumentUpload(parameters=parameters, document=document)
 
-    @app.post("/document")
+    @app.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
@@ -208,25 +208,24 @@ def app(config: Config) -> FastAPI:
             return database.get_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/prepare")
-    async def prepare_chat(
-        user: UserDependency, id: uuid.UUID
-    ) -> schemas.MessageOutput:
+    async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
 
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
+
             welcome = schemas.Message.from_core(await core_chat.prepare())
+
             chat.prepared = True
             chat.messages.append(welcome)
-
             database.update_chat(session, user=user, chat=chat)
 
-            return schemas.MessageOutput(message=welcome, chat=chat)
+            return welcome
 
     @app.post("/chats/{id}/answer")
     async def answer(
         user: UserDependency, id: uuid.UUID, prompt: str
-    ) -> schemas.MessageOutput:
+    ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
@@ -236,11 +235,11 @@ def app(config: Config) -> FastAPI:
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
-            chat.messages.append(answer)
 
+            chat.messages.append(answer)
             database.update_chat(session, user=user, chat=chat)
 
-            return schemas.MessageOutput(message=answer, chat=chat)
+            return answer
 
     @app.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:

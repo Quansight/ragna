@@ -242,6 +242,14 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         self.api_wrapper = api_wrapper
+        self.chat_info_button = pn.widgets.Button(
+            # The name will be filled at runtime in self.header
+            name="",
+            on_click=self.on_click_chat_info_wrapper,
+            button_style="outline",
+            icon="info-circle",
+            stylesheets=[":host { margin-top:10px; }"],
+        )
         self.on_click_chat_info = None
 
     def on_click_chat_info_wrapper(self, event):
@@ -255,21 +263,9 @@ class CentralView(pn.viewable.Viewer):
 
             grid_height = len(self.current_chat["metadata"]["documents"]) // 3
 
-            advanced_config_data = {
-                "Chunk size": self.current_chat["metadata"]["params"]["chunk_size"],
-                "Chunk overlap": self.current_chat["metadata"]["params"][
-                    "chunk_overlap"
-                ],
-                "Max context tokens": self.current_chat["metadata"]["params"][
-                    "num_tokens"
-                ],
-                "Max new tokens": self.current_chat["metadata"]["params"][
-                    "max_new_tokens"
-                ],
-            }
-
             advanced_config_md = "\n".join(
-                [f"""- **{k}**: {v}""" for k, v in advanced_config_data.items()]
+                f"- **{key.replace('_', ' ').title()}**: {value}"
+                for key, value in self.current_chat["metadata"]["params"].items()
             )
 
             markdown = [
@@ -372,12 +368,12 @@ class CentralView(pn.viewable.Viewer):
         try:
             answer = await self.api_wrapper.answer(self.current_chat["id"], contents)
 
-            self.current_chat["messages"].append(answer["message"])
+            self.current_chat["messages"].append(answer)
 
             yield {
                 "user": "Ragna",
                 "avatar": "🤖",
-                "value": answer["message"]["content"],
+                "value": answer["content"],
             }
         except Exception as e:
             print(e)
@@ -600,7 +596,10 @@ class CentralView(pn.viewable.Viewer):
         ):
             doc_names = [d["name"] for d in self.current_chat["metadata"]["documents"]]
 
-            for doc_name in doc_names:
+            # FIXME: Instead of setting a hard limit of 20 documents here, this should
+            #  scale automatically with the width of page
+            #  See https://github.com/Quansight/ragna/issues/224
+            for doc_name in doc_names[:20]:
                 pill = pn.pane.HTML(
                     f"""<div class="chat_document_pill">{doc_name}</div>""",
                     stylesheets=[
@@ -622,26 +621,12 @@ class CentralView(pn.viewable.Viewer):
 
                 chat_documents_pills.append(pill)
 
-        chat_info_button = None
-        if self.current_chat is not None:
-            button_name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
-            chat_info_button = pn.widgets.Button(
-                name=button_name, button_style="outline", icon="info-circle"
-            )
-            chat_info_button.stylesheets.append(
-                """
-                                        :host {  
-                                                    margin-top:10px;
-                                        }
-                                        
-                                    """
-            )
-            chat_info_button.on_click(self.on_click_chat_info_wrapper)
+        self.chat_info_button.name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
 
         return pn.Row(
             chat_name_header,
             *chat_documents_pills,
-            chat_info_button,
+            self.chat_info_button,
             stylesheets=[
                 """:host {  
                                     background-color: #F9F9F9;
