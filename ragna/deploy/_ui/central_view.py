@@ -1,4 +1,4 @@
-import uuid
+from __future__ import annotations
 
 import panel as pn
 import param
@@ -213,6 +213,45 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         )
 
 
+class NewChatMessage(pn.chat.ChatMessage):
+    def __init__(
+        self, show_reaction_icons=False, show_user=False, show_copy_icon=False, **kwargs
+    ):
+        super().__init__(
+            show_reaction_icons=show_reaction_icons,
+            show_user=show_user,
+            show_copy_icon=show_copy_icon,
+            **kwargs,
+        )
+
+    @classmethod
+    def from_system(cls, content: str):
+        return cls(object=content, user="system", avatar="imgs/ragna_logo.svg")
+
+    @classmethod
+    def from_user(cls, content: str, *, user: str) -> NewChatMessage:
+        pass
+
+    @staticmethod
+    def _assistant_avatar(assistant: str) -> str:
+        if assistant.startswith("Ragna"):
+            return "imgs/ragna_logo.svg"
+        elif assistant.startswith("OpenAI"):
+            model = assistant.split("/", 1)[-1]
+            if model.startswith("gpt-3"):
+                return pn.chat.message.GPT_3_LOGO
+            elif model.startswith("gpt-4"):
+                return pn.chat.message.GPT_4_LOGO
+
+        return ""
+
+    @classmethod
+    def from_assistant(cls, content: str, *, assistant: str) -> NewChatMessage:
+        return cls(
+            object=content, user="assistant", avatar=cls._assistant_avatar(assistant)
+        )
+
+
 class RagnaChatInterface(pn.chat.ChatInterface):
     def __init__(self, *objects, **params):
         super().__init__(*objects, **params)
@@ -236,7 +275,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
-    trigger_scroll_to_latest = param.Integer(default=0)
+    # trigger_scroll_to_latest = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
@@ -366,37 +405,29 @@ class CentralView(pn.viewable.Viewer):
 
             self.current_chat["messages"].append(answer)
 
-            yield {
-                "user": "Ragna",
-                "avatar": "🤖",
-                "value": answer["content"],
-            }
-        except Exception as e:
-            print(e)
+            yield NewChatMessage.from_assistant(answer["content"], assistant=user)
+        except Exception:
+            yield NewChatMessage.from_system(
+                "Sorry, something went wrong. If this problem persists, please contact your administrator."
+            )
 
-            yield {
-                "user": "Ragna",
-                "avatar": RagnaChatMessage.get_avatar("system", None),
-                "value": "Sorry, something went wrong. If this problem persists, please contact your administrator.",
-            }
-
-    def get_chat_messages(self):
-        chat_entries = []
-
-        if self.current_chat is not None:
-            assistant = self.current_chat["metadata"]["assistant"]
-            # FIXME: user needs to be dynamic based on the username that was logged in with
-            username = "User"
-
-            for m in self.current_chat["messages"]:
-                chat_entry = RagnaChatMessage(
-                    m,
-                    username if m["role"] == "user" else assistant,
-                    on_click_source_info_callback=self.on_click_source_info_wrapper,
-                )
-                chat_entries.append(chat_entry)
-
-        return chat_entries
+    # def get_chat_messages(self):
+    #     chat_entries = []
+    #
+    #     if self.current_chat is not None:
+    #         assistant = self.current_chat["metadata"]["assistant"]
+    #         # FIXME: user needs to be dynamic based on the username that was logged in with
+    #         username = "User"
+    #
+    #         for m in self.current_chat["messages"]:
+    #             chat_entry = RagnaChatMessage(
+    #                 m,
+    #                 username if m["role"] == "user" else assistant,
+    #                 on_click_source_info_callback=self.on_click_source_info_wrapper,
+    #             )
+    #             chat_entries.append(chat_entry)
+    #
+    #     return chat_entries
 
     @pn.depends("current_chat")
     def chat_interface(self):
@@ -405,7 +436,7 @@ class CentralView(pn.viewable.Viewer):
 
         chat_interface = RagnaChatInterface(
             callback=self.chat_callback,
-            callback_user="Ragna",
+            callback_user=self.current_chat["metadata"]["assistant"],
             show_rerun=False,
             show_undo=False,
             show_clear=False,
@@ -413,140 +444,139 @@ class CentralView(pn.viewable.Viewer):
             view_latest=True,
             sizing_mode="stretch_width",
             auto_send_types=[],
-            widgets=[
-                pn.widgets.TextInput(
-                    placeholder="Ask Ragna...",
-                    stylesheets=[
-                        """:host input[type="text"] { 
-                                                                border:none !important;
-                                                                box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
-                                                                padding: 10px 10px 10px 15px;
-                                                            }
-                                                        
-                                                            :host input[type="text"]:focus { 
-                                                                box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
-                                                            }
-
-                                                         """
-                    ],
-                )
-            ],
-            renderers=[
-                lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=None)
-            ],
-            message_params={
-                "show_reaction_icons": False,
-                "show_user": False,
-                "show_copy_icon": False,
-                "show_timestamp": False,
-                # the proper avatar for the assistant is not when replacing the default ChatMessage objects
-                # with RagnaChatMessage objects.
-                "avatar_lookup": lambda user: "👤" if user == "User" else None,
-            },
+            # widgets=[
+            #     pn.widgets.TextInput(
+            #         placeholder="Ask Ragna...",
+            #         stylesheets=[
+            #             """:host input[type="text"] {
+            #                                                     border:none !important;
+            #                                                     box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
+            #                                                     padding: 10px 10px 10px 15px;
+            #                                                 }
+            #
+            #                                                 :host input[type="text"]:focus {
+            #                                                     box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
+            #                                                 }
+            #
+            #                                              """
+            #         ],
+            #     )
+            # ],
+            # renderers=[
+            #     lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=None)
+            # ],
+            # message_params={
+            #     "show_reaction_icons": False,
+            #     "show_user": False,
+            #     "show_copy_icon": False,
+            #     "show_timestamp": True,
+            # },
         )
-
-        chat_interface._card.stylesheets += [
-            """ 
-                                             
-                                            :host { 
-                                                border:none !important;
-                                            }
-
-                                            .chat-feed-log {  
-                                                padding-right: 18%;
-                                                margin-left: 18% ;
-                                                padding-top:25px !important;
-                                                
-                                            }
-                                             
-                                            .chat-interface-input-container {
-                                                margin-left:19%;
-                                                margin-right:20%;
-                                                margin-bottom: 20px;
-                                            }
-
-
-                                            """
-        ]
-
-        """
-        By default, each new message is a ChatMessage object. 
-        But for new messages from the AI, we want to have a RagnaChatMessage, that contains the msg data, the sources, etc.
-        I haven't found a better way than to watch for the `objects` param of chat_interface, 
-            and replace the ChatMessage objects with RagnaChatMessage object.
-        We do it only for the new messages from the rag, not for the existing messages, neither for the messages from the user.
-        """
-
-        def messages_changed(event):
-            if len(chat_interface.objects) != len(self.current_chat["messages"]):
-                return
-
-            assistant = self.current_chat["metadata"]["assistant"]
-            # FIXME: user needs to be dynamic based on the username that was logged in with
-            username = "User"
-
-            needs_refresh = False
-            for i in range(len(chat_interface.objects)):
-                msg = chat_interface.objects[i]
-
-                if not isinstance(msg, RagnaChatMessage) and msg.user != "User":
-                    chat_interface.objects[i] = RagnaChatMessage(
-                        self.current_chat["messages"][i],
-                        username
-                        if self.current_chat["messages"][i]["role"] == "user"
-                        else assistant,
-                        on_click_source_info_callback=self.on_click_source_info_wrapper,
-                    )
-                    msg = chat_interface.objects[i]
-                    needs_refresh = True
-
-            if needs_refresh:
-                chat_interface._chat_log.param.trigger("objects")
-
-        chat_interface.param.watch(
-            messages_changed,
-            ["objects"],
-        )
-
-        # Here, we build a list of RagnaChatMessages from the existing messages of this chat,
-        # and set them as the content of the chat interface
-        chat_interface.objects = self.get_chat_messages()
-
-        # Now that setting all the objects is done, we can watch the change of objects,
-        # ie new messages being appended to the chat. When that happens,
-        # make sure we scroll to the latest msg.
-        chat_interface.param.watch(
-            lambda event: self.param.trigger("trigger_scroll_to_latest"),
-            ["objects"],
-        )
+        #
+        # chat_interface._card.stylesheets += [
+        #     """
+        #
+        #                                     :host {
+        #                                         border:none !important;
+        #                                     }
+        #
+        #                                     .chat-feed-log {
+        #                                         padding-right: 18%;
+        #                                         margin-left: 18% ;
+        #                                         padding-top:25px !important;
+        #
+        #                                     }
+        #
+        #                                     .chat-interface-input-container {
+        #                                         margin-left:19%;
+        #                                         margin-right:20%;
+        #                                         margin-bottom: 20px;
+        #                                     }
+        #
+        #
+        #                                     """
+        # ]
+        #
+        # """
+        # By default, each new message is a ChatMessage object.
+        # But for new messages from the AI, we want to have a RagnaChatMessage, that contains the msg data, the sources, etc.
+        # I haven't found a better way than to watch for the `objects` param of chat_interface,
+        #     and replace the ChatMessage objects with RagnaChatMessage object.
+        # We do it only for the new messages from the rag, not for the existing messages, neither for the messages from the user.
+        # """
+        #
+        # def messages_changed(event):
+        #     if len(chat_interface.objects) != len(self.current_chat["messages"]):
+        #         return
+        #
+        #     assistant = self.current_chat["metadata"]["assistant"]
+        #     # FIXME: user needs to be dynamic based on the username that was logged in with
+        #     username = "User"
+        #
+        #     needs_refresh = False
+        #     for i in range(len(chat_interface.objects)):
+        #         msg = chat_interface.objects[i]
+        #
+        #         if not isinstance(msg, RagnaChatMessage) and msg.user != "User":
+        #             chat_interface.objects[i] = RagnaChatMessage(
+        #                 self.current_chat["messages"][i],
+        #                 username
+        #                 if self.current_chat["messages"][i]["role"] == "user"
+        #                 else assistant,
+        #                 on_click_source_info_callback=self.on_click_source_info_wrapper,
+        #             )
+        #             msg = chat_interface.objects[i]
+        #             needs_refresh = True
+        #
+        #     if needs_refresh:
+        #         chat_interface._chat_log.param.trigger("objects")
+        #
+        # chat_interface.param.watch(
+        #     messages_changed,
+        #     ["objects"],
+        # )
+        #
+        # # Here, we build a list of RagnaChatMessages from the existing messages of this chat,
+        # # and set them as the content of the chat interface
+        # chat_interface.objects = self.get_chat_messages()
+        #
+        # # Now that setting all the objects is done, we can watch the change of objects,
+        # # ie new messages being appended to the chat. When that happens,
+        # # make sure we scroll to the latest msg.
+        # chat_interface.param.watch(
+        #     lambda event: self.param.trigger("trigger_scroll_to_latest"),
+        #     ["objects"],
+        # )
 
         return chat_interface
 
-    @pn.depends("current_chat", "trigger_scroll_to_latest")
-    def scroll_to_latest_fix(self):
-        """
-        This snippet needs to be re-rendered many times so the scroll-to-latest happens:
-            - each time the current chat changes, hence the pn.depends on current_chat
-            - each time a message is appended to the chat, hence the pn.depends on trigger_scroll_to_latest.
-                trigger_scroll_to_latest is triggered in the chat_interface method, when chat_interface.objects changes.
-
-        Twist : the HTML script node needs to have a different ID each time it is rendered,
-                otherwise the browser doesn't re-render it / doesn't execute the JS part.
-                Hence the random ID.
-        """
-
-        random_id = str(uuid.uuid4())
-
-        return pn.pane.HTML(
-            """<script id="{{RANDOM_ID}}" type="text/javascript">
-
-                            setTimeout(() => {
-                                    var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
-                                    chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
-                            }, 150);
-                            
-            </script>""".replace("{{RANDOM_ID}}", random_id)
-        )
+    # @pn.depends("current_chat", "trigger_scroll_to_latest")
+    # def scroll_to_latest_fix(self):
+    #     """
+    #     This snippet needs to be re-rendered many times so the scroll-to-latest happens:
+    #         - each time the current chat changes, hence the pn.depends on current_chat
+    #         - each time a message is appended to the chat, hence the pn.depends on trigger_scroll_to_latest.
+    #             trigger_scroll_to_latest is triggered in the chat_interface method, when chat_interface.objects changes.
+    #
+    #     Twist : the HTML script node needs to have a different ID each time it is rendered,
+    #             otherwise the browser doesn't re-render it / doesn't execute the JS part.
+    #             Hence the random ID.
+    #     """
+    #
+    #     random_id = str(uuid.uuid4())
+    #
+    #     return pn.pane.HTML(
+    #         """<script id="{{RANDOM_ID}}" type="text/javascript">
+    #
+    #                         setTimeout(() => {
+    #                                 var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
+    #                                 chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
+    #                         }, 150);
+    #
+    #         </script>""".replace(
+    #             "{{RANDOM_ID}}", random_id
+    #         )
+    #     )
 
     @pn.depends("current_chat")
     def header(self):
@@ -657,7 +687,7 @@ class CentralView(pn.viewable.Viewer):
         self.main_column = pn.Column(
             self.header,
             self.chat_interface,
-            self.scroll_to_latest_fix,
+            # self.scroll_to_latest_fix,
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
