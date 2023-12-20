@@ -55,7 +55,7 @@ class AnthropicApiAssistant(ApiAssistant):
         ) as event_source:
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
-                if not data:
+                if data["type"] != "completion":
                     continue
                 elif "error" in data:
                     raise RagnaException(data["error"].pop("message"), **data["error"])
