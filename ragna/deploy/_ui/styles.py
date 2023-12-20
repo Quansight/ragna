@@ -1,6 +1,8 @@
 """
 UI Helpers
 """
+from typing import Optional
+
 import panel as pn
 
 
@@ -11,6 +13,26 @@ def divider():
 """
 CSS constants
 """
+
+
+def stylesheets(*class_selectors: tuple[str, dict[str, str]]) -> Optional[list[str]]:
+    if not class_selectors:
+        return None
+
+    return [
+        "\n".join(
+            [
+                f"{selector} {{",
+                *[
+                    f"    {property}: {value};"
+                    for property, value in declarations.items()
+                ],
+                "}",
+            ]
+        )
+        for selector, declarations in class_selectors
+    ]
+
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 

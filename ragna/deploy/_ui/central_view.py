@@ -293,39 +293,35 @@ class CentralView(pn.viewable.Viewer):
                         dedent=True,
                         # debug
                         # pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
-                        stylesheets=[
-                            """ :host {  width: 100%; } 
-                                                 
-                                                .pills_list {
-                                                    /*background-color:gold;*/
-                                                    display: grid;
-                                                    grid-auto-flow: row;
-                                                    row-gap: 10px;
-                                                    grid-template: repeat({{GRID_HEIGHT}}, 1fr) / repeat(3, 1fr);
-                                                    max-height: 200px;
-                                                    overflow: scroll;
-                                                }
-                                                 
-                                                .chat_document_pill {
-                                                                    background-color: rgb(241,241,241);
-                                                                    
-                                                                    margin-left: 5px;   
-                                                                    margin-right: 5px;
-                                                                    padding: 5px 15px;
-                                                                    border-radius: 10px;
-                                                                    color:var(--accent-color);
-                                                                    width:fit-content;
-                                                                    grid-column: span 1;
-                                                                    
-                                                                }   
-                                                ul {
-                                                    list-style-type: none
-                                                }                                                 
-
-                                                """.replace(
-                                "{{GRID_HEIGHT}}", str(grid_height)
-                            )
-                        ],
+                        stylesheets=ui.stylesheets(
+                            (":host", {"width": "100%"}),
+                            (
+                                ".pills_list",
+                                {
+                                    # "background-color": "gold",
+                                    "display": "grid",
+                                    "grid-auto-flow": "row",
+                                    "row-gap": "10px",
+                                    "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
+                                    "max-height": "200px",
+                                    "overflow": "scroll",
+                                },
+                            ),
+                            (
+                                ".chat_document_pill",
+                                {
+                                    "background-color": "rgb(241,241,241)",
+                                    "margin-left": "5px",
+                                    "margin-right": "5px",
+                                    "padding": "5px 15px",
+                                    "border-radius": "10px",
+                                    "color": "var(--accent-color)",
+                                    "width": "fit-content",
+                                    "grid-column": "span 1",
+                                },
+                            ),
+                            ("ul", {"list-style-type": "none"}),
+                        ),
                     ),
                 ],
             )
