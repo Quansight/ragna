@@ -1,7 +1,7 @@
 """
 UI Helpers
 """
-from typing import Optional
+from typing import Iterable, Optional, Union
 
 import panel as pn
 
@@ -15,14 +15,16 @@ CSS constants
 """
 
 
-def stylesheets(*class_selectors: tuple[str, dict[str, str]]) -> Optional[list[str]]:
+def stylesheets(
+    *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]]
+) -> Optional[list[str]]:
     if not class_selectors:
         return None
 
     return [
         "\n".join(
             [
-                f"{selector} {{",
+                f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
                 *[
                     f"    {property}: {value};"
                     for property, value in declarations.items()
