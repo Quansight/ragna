@@ -400,24 +400,27 @@ class CentralView(pn.viewable.Viewer):
             # TODO: @panel hitting enter to send a message is fine, but clicking
             #  somewhere else should not send the message.
             auto_send_types=[],
-            # widgets=[
-            #     pn.widgets.TextInput(
-            #         placeholder="Ask Ragna...",
-            #         stylesheets=[
-            #             """:host input[type="text"] {
-            #                                                     border:none !important;
-            #                                                     box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
-            #                                                     padding: 10px 10px 10px 15px;
-            #                                                 }
-            #
-            #                                                 :host input[type="text"]:focus {
-            #                                                     box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
-            #                                                 }
-            #
-            #                                              """
-            #         ],
-            #     )
-            # ],
+            widgets=[
+                pn.widgets.TextInput(
+                    placeholder="Ask a question about the documents",
+                    stylesheets=ui.stylesheets(
+                        (
+                            ":host input[type='text']",
+                            {
+                                "border": "none !important",
+                                "box-shadow": "0px 0px 6px 0px rgba(0, 0, 0, 0.2)",
+                                "padding": "10px 10px 10px 15px",
+                            },
+                        ),
+                        (
+                            ":host input[type='text']:focus",
+                            {
+                                "box-shadow": "0px 0px 8px 0px rgba(0, 0, 0, 0.3)",
+                            },
+                        ),
+                    ),
+                )
+            ],
         )
 
         # TODO: @panel ChatFeed has a card_params parameter, but this isn't used
