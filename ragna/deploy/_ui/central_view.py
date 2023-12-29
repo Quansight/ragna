@@ -123,7 +123,7 @@ class CopyToClipboardButton(ReactiveHTML):
 class RagnaChatMessage(pn.chat.ChatMessage):
     role: str = param.Selector(objects=["system", "user", "assistant"])
     sources = param.List(allow_None=True)
-    on_click_source_info_callback = param.Callable(default=None)
+    on_click_source_info_callback = param.Callable(allow_None=True)
 
     def __init__(
         self,
@@ -133,6 +133,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         user: str,
         sources: Optional[list[dict]] = None,
         on_click_source_info_callback: Optional[Callable] = None,
+        show_timestamp=True,
     ):
         super().__init__(
             object=content,
@@ -140,6 +141,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             user=user,
             sources=sources,
             on_click_source_info_callback=on_click_source_info_callback,
+            show_timestamp=show_timestamp,
             show_reaction_icons=False,
             show_user=False,
             show_copy_icon=False,
@@ -211,22 +213,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
-    # FIXME: we need this!
-    # @param.depends("placeholder_text", watch=True, on_init=True)
-    # def _update_placeholder(self):
-    #     loading_avatar = RagnaChatMessage.get_avatar("system", None)
-    #
-    #     self._placeholder = NewChatMessage(
-    #         {
-    #             "role": "system",
-    #             "content": ui.message_loading_indicator,
-    #         },
-    #         user=" ",
-    #         show_timestamp=False,
-    #         avatar=loading_avatar,
-    #         reaction_icons={},
-    #         show_copy_icon=False,
-    #     )
+    @param.depends("placeholder_text", watch=True, on_init=True)
+    def _update_placeholder(self):
+        self._placeholder = RagnaChatMessage(
+            ui.message_loading_indicator,
+            role="system",
+            user="system",
+            show_timestamp=False,
+        )
 
     def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
         message = super()._build_message(*args, **kwargs)
@@ -363,6 +357,9 @@ class CentralView(pn.viewable.Viewer):
     async def chat_callback(
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
+        import asyncio
+
+        await asyncio.sleep(10)
         try:
             answer = await self.api_wrapper.answer(self.current_chat["id"], content)
 
