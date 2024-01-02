@@ -10,7 +10,7 @@ from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
 
-chat_entry_stylesheets = [
+chat_message_stylesheets = [
     """ 
             :host .right, :host .center, :host .chat-entry {
                     width:100% !important;
@@ -28,7 +28,7 @@ chat_entry_stylesheets = [
             }
     """,
     """
-            :host .chat-entry-user {
+            :host .chat-message {
                 background-color: rgba(243, 243, 243);
                 border: 1px solid rgb(238, 238, 238);
                 margin-bottom: 20px;
@@ -36,7 +36,7 @@ chat_entry_stylesheets = [
     """,
     # The padding bottom is used to give some space for the copy and source info buttons
     """
-            :host .chat-entry-ragna, :host .chat-entry-system,  :host .chat-entry-assistant{
+            :host .chat-message {
                 background-color: white;
                 border: 1px solid rgb(234, 234, 234);
                 padding-bottom: 30px;
@@ -61,9 +61,6 @@ chat_entry_stylesheets = [
             }
     """,
 ]
-pn.chat.ChatMessage._stylesheets = (
-    pn.chat.ChatMessage._stylesheets + chat_entry_stylesheets
-)
 
 markdown_table_stylesheet = """
 
@@ -73,8 +70,6 @@ markdown_table_stylesheet = """
                 margin-bottom:10px;
             }
             """
-
-# subclass pn.chat.icon.ChatCopyIcon
 
 
 class CopyToClipboardButton(ReactiveHTML):
@@ -133,6 +128,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         user: str,
         sources: Optional[list[dict]] = None,
         on_click_source_info_callback: Optional[Callable] = None,
+        timestamp=None,
         show_timestamp=True,
     ):
         super().__init__(
@@ -141,12 +137,15 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             user=user,
             sources=sources,
             on_click_source_info_callback=on_click_source_info_callback,
+            timestamp=timestamp,
             show_timestamp=show_timestamp,
             show_reaction_icons=False,
             show_user=False,
             show_copy_icon=False,
+            css_classes=["chat-message", f"chat-message-{role}"],
             renderers=[self._render],
         )
+        self._stylesheets.extend(chat_message_stylesheets)
 
         if self.sources:
             self._update_object_pane()
@@ -189,7 +188,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         try:
             organization, model = user.split("/")
         except ValueError:
-            organization = None
+            organization = ""
             model = user
 
         if organization == "Ragna":
@@ -213,12 +212,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
+    get_user_from_role = param.Callable(allow_None=True)
+
     @param.depends("placeholder_text", watch=True, on_init=True)
     def _update_placeholder(self):
         self._placeholder = RagnaChatMessage(
             ui.message_loading_indicator,
             role="system",
-            user="system",
+            user=self.get_user_from_role("system"),
             show_timestamp=False,
         )
 
@@ -354,19 +355,26 @@ class CentralView(pn.viewable.Viewer):
     def set_current_chat(self, chat):
         self.current_chat = chat
 
+    def get_user_from_role(self, role: Literal["system", "user", "assistant"]) -> str:
+        if role == "system":
+            return "Ragna"
+        elif role == "user":
+            return self.user
+        elif role == "assistant":
+            return self.current_chat["metadata"]["assistant"]
+        else:
+            raise RuntimeError
+
     async def chat_callback(
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
-        import asyncio
-
-        await asyncio.sleep(10)
         try:
             answer = await self.api_wrapper.answer(self.current_chat["id"], content)
 
             yield RagnaChatMessage(
                 answer["content"],
                 role="assistant",
-                user=self.current_chat["metadata"]["assistant"],
+                user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
             )
@@ -377,7 +385,7 @@ class CentralView(pn.viewable.Viewer):
                     "If this problem persists, please contact your administrator."
                 ),
                 role="system",
-                user="system",
+                user=self.get_user_from_role("system"),
             )
 
     @pn.depends("current_chat")
@@ -386,8 +394,19 @@ class CentralView(pn.viewable.Viewer):
             return
 
         chat_interface = RagnaChatInterface(
+            *[
+                RagnaChatMessage(
+                    message["content"],
+                    role=message["role"],
+                    user=self.get_user_from_role(message["role"]),
+                    sources=message["sources"],
+                    timestamp=message["timestamp"],
+                )
+                for message in self.current_chat["messages"]
+            ],
             callback=self.chat_callback,
             user=self.user,
+            get_user_from_role=self.get_user_from_role,
             show_rerun=False,
             show_undo=False,
             show_clear=False,

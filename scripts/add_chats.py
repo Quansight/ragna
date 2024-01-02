@@ -1,10 +1,7 @@
 import datetime
 import json
-import os
 
 import httpx
-
-from ragna.core._utils import default_user
 
 
 def main():
@@ -13,15 +10,13 @@ def main():
 
     ## authentication
 
-    username = default_user()
+    username = "foo"
     token = (
         client.post(
             "/token",
             data={
                 "username": username,
-                "password": os.environ.get(
-                    "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", username
-                ),
+                "password": username,
             },
         )
         .raise_for_status()
