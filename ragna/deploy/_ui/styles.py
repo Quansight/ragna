@@ -116,9 +116,6 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
     color: gray;
 }
 
-:host {
-    transform: translate(14px, -56px); 
-}
 
 .bk-btn {
     border-radius: 0;

@@ -12,7 +12,7 @@ from . import styles as ui
 
 chat_message_stylesheets = [
     """ 
-            :host .right, :host .center, :host .chat-entry {
+            :host .right, :host .center {
                     width:100% !important;
             }
     """,
@@ -36,7 +36,7 @@ chat_message_stylesheets = [
     """,
     # The padding bottom is used to give some space for the copy and source info buttons
     """
-            :host .chat-message {
+            :host .message-content-assistant {
                 background-color: white;
                 border: 1px solid rgb(234, 234, 234);
                 padding-bottom: 30px;
@@ -53,11 +53,6 @@ chat_message_stylesheets = [
             :host .left {
                 height: unset !important;
                 min-height: unset !important;
-            }
-    """,
-    """ 
-            :host .right {
-                
             }
     """,
 ]
@@ -138,7 +133,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             sources=sources,
             on_click_source_info_callback=on_click_source_info_callback,
             timestamp=timestamp,
-            show_timestamp=show_timestamp,
+            # FIXME:
+            show_timestamp=False,
+            # show_timestamp=show_timestamp,
             show_reaction_icons=False,
             show_user=False,
             show_copy_icon=False,
@@ -146,6 +143,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             renderers=[self._render],
         )
         self._stylesheets.extend(chat_message_stylesheets)
+        # import pprint
+        #
+        # pprint.pprint(self._stylesheets)
 
         if self.sources:
             self._update_object_pane()
@@ -206,9 +206,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     def _render(self, content: str) -> pn.viewable.Viewable:
         return pn.pane.Markdown(
             content,
-            css_classes=["chat-message", f"chat-message-{self.role}"],
-            stylesheets=[markdown_table_stylesheet],
+            css_classes=["message-content", f"message-content-{self.role}"],
+            stylesheets=[markdown_table_stylesheet, *chat_message_stylesheets],
         )
+
+
+# pn.chat.ChatMessage._stylesheets = (
+#     pn.chat.ChatMessage._stylesheets + chat_message_stylesheets
+# )
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
