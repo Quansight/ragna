@@ -1,0 +1,19 @@
+.chat-feed {
+  display: grid;
+}
+
+.message {
+  border-style: solid;
+}
+
+.message-system {
+  background: red;
+}
+
+.message-user {
+  background: blue;
+}
+
+.message-assistant {
+  background: green;
+}

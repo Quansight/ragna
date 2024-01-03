@@ -1,12 +1,14 @@
 import contextlib
 import itertools
 import uuid
+from pathlib import Path
 from typing import Annotated, Any, Iterator, Type, cast
 
 import aiofiles
 from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 import ragna
 import ragna.core
@@ -15,7 +17,7 @@ from ragna.core import Component, Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
-from . import database, schemas
+from . import database, schemas, ui
 
 
 def app(config: Config) -> FastAPI:
@@ -43,6 +45,14 @@ def app(config: Config) -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+    )
+
+    app.include_router(ui.router, prefix="/ui", include_in_schema=False)
+    # TODO: https://github.com/tiangolo/fastapi/issues/10180
+    app.mount(
+        "/static",
+        StaticFiles(directory=Path(__file__).parent / "static"),
+        name="static",
     )
 
     @app.exception_handler(RagnaException)

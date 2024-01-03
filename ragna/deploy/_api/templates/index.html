@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ragna</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/ragna_logo.svg" />
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css" />
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10/dist/ext/sse.js"
+      integrity="sha384-jlVlI/i5K5APUIz8cxowC1/FsCEZgsrg126wue89Np9N75pQdAzqkYYP+jsUi43W"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <script>
+      document.body.addEventListener("htmx:configRequest", (event) => {
+        event.detail.path = `/ui${event.detail.path}`;
+      });
+    </script>
+    <button
+      hx-get="/chats"
+      hx-trigger="click"
+      hx-target="#messages-foo"
+      hx-swap="beforeend"
+    >
+      Click Me!
+    </button>
+    <div id="messages-foo"></div>
+    <form hx-post="/messages" hx-target="#results-box">
+      <input type="text" name="prompt" placeholder="Ask a question" />
+      <input type="submit" value="Send" />
+    </form>
+    <div id="results-box"></div>
+    <div
+      hx-ext="sse"
+      sse-connect="/ui/event-source"
+      sse-swap="message"
+      hx-swap="innerHTML"
+    ></div>
+  </body>
+</html>
