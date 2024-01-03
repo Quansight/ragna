@@ -10,10 +10,16 @@ from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
 
-chat_message_stylesheets = [
+message_stylesheets = [
     """ 
             :host .right, :host .center {
                     width:100% !important;
+            }
+    """,
+    """ 
+            :host .left {
+                height: unset !important;
+                min-height: unset !important;
             }
     """,
     """
@@ -28,43 +34,12 @@ chat_message_stylesheets = [
             }
     """,
     """
-            :host .chat-message {
-                background-color: rgba(243, 243, 243);
-                border: 1px solid rgb(238, 238, 238);
-                margin-bottom: 20px;
-            }
-    """,
-    # The padding bottom is used to give some space for the copy and source info buttons
-    """
-            :host .message-content-assistant {
-                background-color: white;
-                border: 1px solid rgb(234, 234, 234);
-                padding-bottom: 30px;
-                margin-bottom: 20px;
-            }
-    """,
-    """
             :host .avatar {
                 margin-top:0px;
                 box-shadow: unset;
             }
     """,
-    """ 
-            :host .left {
-                height: unset !important;
-                min-height: unset !important;
-            }
-    """,
 ]
-
-markdown_table_stylesheet = """
-
-            /* Better rendering of the markdown tables */
-            table { 
-                margin-top:10px;
-                margin-bottom:10px;
-            }
-            """
 
 
 class CopyToClipboardButton(ReactiveHTML):
@@ -133,19 +108,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             sources=sources,
             on_click_source_info_callback=on_click_source_info_callback,
             timestamp=timestamp,
-            # FIXME:
-            show_timestamp=False,
-            # show_timestamp=show_timestamp,
+            show_timestamp=show_timestamp,
             show_reaction_icons=False,
             show_user=False,
             show_copy_icon=False,
-            css_classes=["chat-message", f"chat-message-{role}"],
+            css_classes=[f"message-{role}"],
             renderers=[self._render],
         )
-        self._stylesheets.extend(chat_message_stylesheets)
-        # import pprint
-        #
-        # pprint.pprint(self._stylesheets)
+        self._stylesheets.extend(message_stylesheets)
 
         if self.sources:
             self._update_object_pane()
@@ -176,7 +146,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                     event, self.sources
                 ),
             ),
-            height=0,
         )
 
     def avatar_lookup(self, user: str) -> str:
@@ -203,17 +172,36 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         else:
             return model[0].upper()
 
-    def _render(self, content: str) -> pn.viewable.Viewable:
+    def _render(self, content: str) -> pn.pane.Markdown:
         return pn.pane.Markdown(
             content,
             css_classes=["message-content", f"message-content-{self.role}"],
-            stylesheets=[markdown_table_stylesheet, *chat_message_stylesheets],
+            stylesheets=ui.stylesheets(
+                (
+                    "table",
+                    {
+                        "margin-top": "10px",
+                        "margin-bottom": "10px",
+                    },
+                ),
+                (
+                    (
+                        ":host .message-content-system",
+                        ":host .message-content-assistant",
+                    ),
+                    {
+                        "background": "none",
+                        "border": "lightgray",
+                        "border-style": "solid",
+                        "border-width": "thin",
+                    },
+                ),
+                (
+                    ":host .message-content-assistant",
+                    {"background": "lightgray"},
+                ),
+            ),
         )
-
-
-# pn.chat.ChatMessage._stylesheets = (
-#     pn.chat.ChatMessage._stylesheets + chat_message_stylesheets
-# )
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
@@ -247,7 +235,7 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
-        self.user = "RagnaUser"
+        self.user = "User"
         self.api_wrapper = api_wrapper
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
@@ -468,53 +456,7 @@ class CentralView(pn.viewable.Viewer):
             )
         )
 
-        #
-        # chat_interface.param.watch(
-        #     messages_changed,
-        #     ["objects"],
-        # )
-        #
-        # # Here, we build a list of RagnaChatMessages from the existing messages of this chat,
-        # # and set them as the content of the chat interface
-        # chat_interface.objects = self.get_chat_messages()
-        #
-        # # Now that setting all the objects is done, we can watch the change of objects,
-        # # ie new messages being appended to the chat. When that happens,
-        # # make sure we scroll to the latest msg.
-        # chat_interface.param.watch(
-        #     lambda event: self.param.trigger("trigger_scroll_to_latest"),
-        #     ["objects"],
-        # )
-
         return chat_interface
-
-    # @pn.depends("current_chat", "trigger_scroll_to_latest")
-    # def scroll_to_latest_fix(self):
-    #     """
-    #     This snippet needs to be re-rendered many times so the scroll-to-latest happens:
-    #         - each time the current chat changes, hence the pn.depends on current_chat
-    #         - each time a message is appended to the chat, hence the pn.depends on trigger_scroll_to_latest.
-    #             trigger_scroll_to_latest is triggered in the chat_interface method, when chat_interface.objects changes.
-    #
-    #     Twist : the HTML script node needs to have a different ID each time it is rendered,
-    #             otherwise the browser doesn't re-render it / doesn't execute the JS part.
-    #             Hence the random ID.
-    #     """
-    #
-    #     random_id = str(uuid.uuid4())
-    #
-    #     return pn.pane.HTML(
-    #         """<script id="{{RANDOM_ID}}" type="text/javascript">
-    #
-    #                         setTimeout(() => {
-    #                                 var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
-    #                                 chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
-    #                         }, 150);
-    #
-    #         </script>""".replace(
-    #             "{{RANDOM_ID}}", random_id
-    #         )
-    #     )
 
     @pn.depends("current_chat")
     def header(self):

@@ -129,12 +129,6 @@ BK_INPUT_GRAY_BORDER = (
 )
 
 
-SS_MULTI_SELECT_STYLE = """
-option:hover, option:checked, option:focus {
-    color:white !important;
-}
-"""
-
 SS_LABEL_STYLE = """
 :host {
     margin-top:20px;
