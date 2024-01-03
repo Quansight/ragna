@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Literal, Optional
+from typing import Callable, Literal, Optional, cast
 
 import panel as pn
 import param
@@ -169,8 +169,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                 return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"
         elif organization == "Anthropic":
             return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
-        else:
-            return model[0].upper()
+
+        return model[0].upper()
 
     def _render(self, content: str) -> pn.pane.Markdown:
         return pn.pane.Markdown(
@@ -352,9 +352,9 @@ class CentralView(pn.viewable.Viewer):
         if role == "system":
             return "Ragna"
         elif role == "user":
-            return self.user
+            return cast(str, self.user)
         elif role == "assistant":
-            return self.current_chat["metadata"]["assistant"]
+            return cast(str, self.current_chat["metadata"]["assistant"])
         else:
             raise RuntimeError
 
@@ -554,20 +554,9 @@ class CentralView(pn.viewable.Viewer):
         self.main_column.loading = is_loading
 
     def __panel__(self):
-        """
-        The ChatInterface.view_latest option doesn't seem to work.
-        So to scroll to the latest message, we use some JS trick.
-
-        There might be a more elegant solution than running this after a timeout of 200ms,
-        but without it, the $$$ function isn't available yet.
-        And even if I add the $$$ here, the fix itself doesn't work and the chat doesn't scroll
-        to the bottom.
-        """
-
         self.main_column = pn.Column(
             self.header,
             self.chat_interface,
-            # self.scroll_to_latest_fix,
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
