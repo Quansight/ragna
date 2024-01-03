@@ -1,5 +1,23 @@
 # Release notes
 
+## Version 0.1.3
+
+### What's Changed
+
+- fix large upload by [@peachkeel](https://github.com/peachkeel) in
+  [#244](https://github.com/Quansight/ragna/pull/244)
+- Fix rendering of chat info button [@nenb](https://github.com/nenb) in
+  [#252](https://github.com/Quansight/ragna/pull/252)
+- Bump panel minimum version by [@nenb](https://github.com/nenb) in
+  [#259](https://github.com/Quansight/ragna/pull/259)
+
+### New Contributors
+
+- [@peachkeel](https://github.com/peachkeel) made their first contribution in
+  [#184](https://github.com/Quansight/ragna/pull/244)
+- [@nenb](https://github.com/nenb) made their first contribution in
+  [#252](https://github.com/Quansight/ragna/pull/252)
+
 ## Version 0.1.2
 
 ### What's Changed
