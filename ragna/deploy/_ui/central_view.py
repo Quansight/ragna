@@ -152,7 +152,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         if self.role == "system":
             return "imgs/ragna_logo.svg"
         elif self.role == "user":
-            return user[0].upper()
+            return "👤"
 
         try:
             organization, model = user.split("/")
@@ -235,7 +235,7 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
-        self.user = "User"
+        self.user = ""
         self.api_wrapper = api_wrapper
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
