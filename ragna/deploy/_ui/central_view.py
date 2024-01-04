@@ -201,6 +201,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             )
         ]
         if self.role != "assistant":
+            # The styling for the assistant messages is applied self._update_object_pane
+            # since it needs to apply to the content as well as the buttons.
             class_selectors.append(
                 (":host(.message-content)", self._content_style_declarations)
             )
