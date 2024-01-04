@@ -186,8 +186,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                 ),
                 (
                     (
-                        ":host .message-content-system",
-                        ":host .message-content-assistant",
+                        ":host(.message-content-system)",
+                        ":host(.message-content-assistant)",
                     ),
                     {
                         "background": "none",
@@ -197,7 +197,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                     },
                 ),
                 (
-                    ":host .message-content-assistant",
+                    ":host(.message-content-assistant)",
                     {"background": "lightgray"},
                 ),
             ),
