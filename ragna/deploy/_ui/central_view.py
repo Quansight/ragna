@@ -415,8 +415,10 @@ class CentralView(pn.viewable.Viewer):
             show_button_name=False,
             view_latest=True,
             sizing_mode="stretch_width",
-            # TODO: @panel hitting enter to send a message is fine, but clicking
-            #  somewhere else should not send the message.
+            # TODO: Remove the parameter when
+            #  https://github.com/holoviz/panel/issues/6115 is merged and released. We
+            #  currently need it to avoid sending a message when the text input is
+            #  de-focussed. But this also means we can't hit enter to send.
             auto_send_types=[],
             widgets=[
                 pn.widgets.TextInput(
@@ -441,8 +443,8 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
-        # TODO: @panel ChatFeed has a card_params parameter, but this isn't used
-        #  anywhere. I assume we should be able to use it here.
+        # TODO: Pass as regular parameters when
+        #  https://github.com/holoviz/panel/pull/6154 is merged and released.
         chat_interface._card.stylesheets.extend(
             ui.stylesheets(
                 (":host", {"border": "none !important"}),
