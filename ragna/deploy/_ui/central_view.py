@@ -6,6 +6,8 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
+from ragna._compat import anext
+
 from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
@@ -370,15 +372,21 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer = await self.api_wrapper.answer(self.current_chat["id"], content)
+            answer_stream = self.api_wrapper.answer(self.current_chat["id"], content)
+            answer = await anext(answer_stream)
 
-            yield RagnaChatMessage(
+            message = RagnaChatMessage(
                 answer["content"],
                 role="assistant",
                 user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
             )
+            yield message
+
+            async for chunk in answer_stream:
+                message.object += chunk["content"]
+
         except Exception:
             yield RagnaChatMessage(
                 (

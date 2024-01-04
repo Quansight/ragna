@@ -1,6 +1,7 @@
 import re
 import sys
 import textwrap
+from typing import Iterator
 
 from ragna.core import Assistant, Source
 
@@ -26,11 +27,11 @@ class RagnaDemoAssistant(Assistant):
     def max_input_size(self) -> int:
         return sys.maxsize
 
-    def answer(self, prompt: str, sources: list[Source]) -> str:
+    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         if re.search("markdown", prompt, re.IGNORECASE):
-            return self._markdown_answer()
+            yield self._markdown_answer()
         else:
-            return self._default_answer(prompt, sources)
+            yield self._default_answer(prompt, sources)
 
     def _markdown_answer(self) -> str:
         return textwrap.dedent(

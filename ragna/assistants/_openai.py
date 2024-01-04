@@ -1,6 +1,9 @@
-from typing import cast
+import json
+from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+import httpx_sse
+
+from ragna.core import Source
 
 from ._api import ApiAssistant
 
@@ -29,10 +32,12 @@ class OpenaiApiAssistant(ApiAssistant):
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> str:
+    ) -> AsyncIterator[str]:
         # See https://platform.openai.com/docs/api-reference/chat/create
-        # and https://platform.openai.com/docs/api-reference/chat/object
-        response = await self._client.post(
+        # and https://platform.openai.com/docs/api-reference/chat/streaming
+        async with httpx_sse.aconnect_sse(
+            self._client,
+            "POST",
             "https://api.openai.com/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",
@@ -52,13 +57,16 @@ class OpenaiApiAssistant(ApiAssistant):
                 "model": self._MODEL,
                 "temperature": 0.0,
                 "max_tokens": max_new_tokens,
+                "stream": True,
             },
-        )
-        if response.is_error:
-            raise RagnaException(
-                status_code=response.status_code, response=response.json()
-            )
-        return cast(str, response.json()["choices"][0]["message"]["content"])
+        ) as event_source:
+            async for sse in event_source.aiter_sse():
+                data = json.loads(sse.data)
+                choice = data["choices"][0]
+                if choice["finish_reason"] is not None:
+                    break
+
+                yield cast(str, choice["delta"]["content"])
 
 
 class Gpt35Turbo16k(OpenaiApiAssistant):
@@ -71,9 +79,6 @@ class Gpt35Turbo16k(OpenaiApiAssistant):
 
     _MODEL = "gpt-3.5-turbo-16k"
     _CONTEXT_SIZE = 16_384
-
-
-Gpt35Turbo16k.__doc__ = "OOPS"
 
 
 class Gpt4(OpenaiApiAssistant):

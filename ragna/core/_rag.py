@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import inspect
 import uuid
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
     Callable,
     Generic,
     Iterable,
+    Iterator,
     Optional,
     Type,
     TypeVar,
@@ -17,8 +18,8 @@ from typing import (
     cast,
 )
 
-import anyio
 import pydantic
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
@@ -181,7 +182,7 @@ class Chat:
         self._messages.append(welcome)
         return welcome
 
-    async def answer(self, prompt: str) -> Message:
+    async def answer(self, prompt: str, *, stream: bool = False) -> Message:
         """Answer a prompt.
 
         Returns:
@@ -199,25 +200,19 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        prompt = Message(content=prompt, role=MessageRole.USER)
-        self._messages.append(prompt)
+        self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(
-            self.source_storage.retrieve, self.documents, prompt.content
-        )
+        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+
         answer = Message(
-            content=await self._run(self.assistant.answer, prompt.content, sources),
+            content=self._run_gen(self.assistant.answer, prompt, sources),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
-        self._messages.append(answer)
+        if not stream:
+            await answer.read()
 
-        # FIXME: add error handling
-        # return (
-        #     "I'm sorry, but I'm having trouble helping you at this time. "
-        #     "Please retry later. "
-        #     "If this issue persists, please contact your administrator."
-        # )
+        self._messages.append(answer)
 
         return answer
 
@@ -261,16 +256,34 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
+    async def _run(
+        self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
+    ) -> T:
         kwargs = self._unpacked_params[fn]
         if inspect.iscoroutinefunction(fn):
             fn = cast(Callable[..., Awaitable[T]], fn)
-            return await fn(*args, **kwargs)
+            coro = fn(*args, **kwargs)
         else:
             fn = cast(Callable[..., T], fn)
-            return await anyio.to_thread.run_sync(
-                functools.partial(fn, *args, **kwargs)
-            )
+            coro = run_in_threadpool(fn, *args, **kwargs)
+
+        return await coro
+
+    async def _run_gen(
+        self,
+        fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+        *args: Any,
+    ) -> AsyncIterator[T]:
+        kwargs = self._unpacked_params[fn]
+        if inspect.isasyncgenfunction(fn):
+            fn = cast(Callable[..., AsyncIterator[T]], fn)
+            async_gen = fn(*args, **kwargs)
+        else:
+            fn = cast(Callable[..., Iterator[T]], fn)
+            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
+
+        async for item in async_gen:
+            yield item
 
     async def __aenter__(self) -> Chat:
         await self.prepare()

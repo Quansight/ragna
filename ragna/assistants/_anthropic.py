@@ -1,4 +1,7 @@
-from typing import cast
+import json
+from typing import AsyncIterator, cast
+
+import httpx_sse
 
 from ragna.core import RagnaException, Source
 
@@ -30,9 +33,11 @@ class AnthropicApiAssistant(ApiAssistant):
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> str:
-        # # See https://docs.anthropic.com/claude/reference/complete_post
-        response = await self._client.post(
+    ) -> AsyncIterator[str]:
+        # See https://docs.anthropic.com/claude/reference/streaming
+        async with httpx_sse.aconnect_sse(
+            self._client,
+            "POST",
             "https://api.anthropic.com/v1/complete",
             headers={
                 "accept": "application/json",
@@ -45,13 +50,19 @@ class AnthropicApiAssistant(ApiAssistant):
                 "prompt": self._instructize_prompt(prompt, sources),
                 "max_tokens_to_sample": max_new_tokens,
                 "temperature": 0.0,
+                "stream": True,
             },
-        )
-        if response.is_error:
-            raise RagnaException(
-                status_code=response.status_code, response=response.json()
-            )
-        return cast(str, response.json()["completion"])
+        ) as event_source:
+            async for sse in event_source.aiter_sse():
+                data = json.loads(sse.data)
+                if data["type"] != "completion":
+                    continue
+                elif "error" in data:
+                    raise RagnaException(data["error"].pop("message"), **data["error"])
+                elif data["stop_reason"] is not None:
+                    break
+
+                yield cast(str, data["completion"])
 
 
 class ClaudeInstant(AnthropicApiAssistant):
