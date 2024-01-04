@@ -1,6 +1,14 @@
 import builtins
 import sys
-from typing import AsyncIterator, Callable, Iterable, Iterator, Mapping, TypeVar
+from typing import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    TypeVar,
+)
 
 __all__ = ["itertools_pairwise", "importlib_metadata_package_distributions", "anext"]
 
@@ -41,7 +49,7 @@ def _importlib_metadata_package_distributions() -> (
 importlib_metadata_package_distributions = _importlib_metadata_package_distributions()
 
 
-def _anext() -> Callable[[AsyncIterator[T]], T]:
+def _anext() -> Callable[[AsyncIterator[T]], Awaitable[T]]:
     if sys.version_info[:2] >= (3, 10):
         anext = builtins.anext
     else:
