@@ -1,7 +1,7 @@
 """
 UI Helpers
 """
-from typing import Optional
+from typing import Iterable, Optional, Union
 
 import panel as pn
 
@@ -15,14 +15,16 @@ CSS constants
 """
 
 
-def stylesheets(*class_selectors: tuple[str, dict[str, str]]) -> Optional[list[str]]:
+def stylesheets(
+    *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]]
+) -> Optional[list[str]]:
     if not class_selectors:
         return None
 
     return [
         "\n".join(
             [
-                f"{selector} {{",
+                f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
                 *[
                     f"    {property}: {value};"
                     for property, value in declarations.items()
@@ -114,9 +116,6 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
     color: gray;
 }
 
-:host {
-    transform: translate(14px, -56px); 
-}
 
 .bk-btn {
     border-radius: 0;
@@ -129,12 +128,6 @@ BK_INPUT_GRAY_BORDER = (
     """ .bk-input {border-color: var(--neutral-color) !important;} """
 )
 
-
-SS_MULTI_SELECT_STYLE = """
-option:hover, option:checked, option:focus {
-    color:white !important;
-}
-"""
 
 SS_LABEL_STYLE = """
 :host {
