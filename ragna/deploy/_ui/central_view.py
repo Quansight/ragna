@@ -31,6 +31,8 @@ message_stylesheets = [
             :host .message {
                 width: calc(100% - 15px);
                 box-shadow: unset;
+                font-size: unset;
+                background-color: unset;
             }
     """,
     """
@@ -89,6 +91,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     role: str = param.Selector(objects=["system", "user", "assistant"])
     sources = param.List(allow_None=True)
     on_click_source_info_callback = param.Callable(allow_None=True)
+    _content_style_declarations = param.Dict(constant=True)
 
     def __init__(
         self,
@@ -114,6 +117,17 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
             renderers=[self._render],
+            _content_style_declarations={
+                "background-color": "rgb(243, 243, 243) !important"
+            }
+            if role == "user"
+            else {
+                "background-color": "none",
+                "border": "rgb(234, 234, 234)",
+                "border-style": "solid",
+                "border-width": "1.2px",
+                "border-radius": "5px",
+            },
         )
         self._stylesheets.extend(message_stylesheets)
 
@@ -123,8 +137,15 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     def _update_object_pane(self, event=None):
         super()._update_object_pane(event)
         if self.sources:
+            assert self.role == "assistant"
+            css_class = "message-content-assistant-with-buttons"
             self._object_panel = self._center_row[0] = pn.Column(
-                self._object_panel, self._copy_and_source_view_buttons()
+                self._object_panel,
+                self._copy_and_source_view_buttons(),
+                css_classes=[css_class],
+                stylesheets=ui.stylesheets(
+                    (f":host(.{css_class})", self._content_style_declarations)
+                ),
             )
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
@@ -173,34 +194,20 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         return model[0].upper()
 
     def _render(self, content: str) -> pn.pane.Markdown:
+        class_selectors = [
+            (
+                "table",
+                {"margin-top": "10px", "margin-bottom": "10px"},
+            )
+        ]
+        if self.role != "assistant":
+            class_selectors.append(
+                (":host(.message-content)", self._content_style_declarations)
+            )
         return pn.pane.Markdown(
             content,
             css_classes=["message-content", f"message-content-{self.role}"],
-            stylesheets=ui.stylesheets(
-                (
-                    "table",
-                    {
-                        "margin-top": "10px",
-                        "margin-bottom": "10px",
-                    },
-                ),
-                (
-                    (
-                        ":host(.message-content-system)",
-                        ":host(.message-content-assistant)",
-                    ),
-                    {
-                        "background": "none",
-                        "border": "lightgray",
-                        "border-style": "solid",
-                        "border-width": "thin",
-                    },
-                ),
-                (
-                    ":host(.message-content-assistant)",
-                    {"background": "lightgray"},
-                ),
-            ),
+            stylesheets=ui.stylesheets(*class_selectors),
         )
 
 
