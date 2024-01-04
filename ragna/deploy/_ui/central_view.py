@@ -142,7 +142,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             self._object_panel = self._center_row[0] = pn.Column(
                 self._object_panel,
                 self._copy_and_source_view_buttons(),
-                css_classes=[css_class],
+                css_classes=["message", css_class],
                 stylesheets=ui.stylesheets(
                     (f":host(.{css_class})", self._content_style_declarations)
                 ),
