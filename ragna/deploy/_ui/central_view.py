@@ -549,6 +549,7 @@ class CentralView(pn.viewable.Viewer):
                                     width: 100% !important;
                                     margin:0px;
                                     height:54px;
+                                    overflow:hidden;
                                 }
 
                                 :host div {
