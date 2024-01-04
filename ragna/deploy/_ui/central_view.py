@@ -238,7 +238,6 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
-    # trigger_scroll_to_latest = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
