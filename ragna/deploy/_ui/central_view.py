@@ -1,4 +1,6 @@
-import uuid
+from __future__ import annotations
+
+from typing import Callable, Literal, Optional, cast
 
 import panel as pn
 import param
@@ -8,10 +10,16 @@ from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
 
-chat_entry_stylesheets = [
+message_stylesheets = [
     """ 
-            :host .right, :host .center, :host .chat-entry {
+            :host .right, :host .center {
                     width:100% !important;
+            }
+    """,
+    """ 
+            :host .left {
+                height: unset !important;
+                min-height: unset !important;
             }
     """,
     """
@@ -23,22 +31,8 @@ chat_entry_stylesheets = [
             :host .message {
                 width: calc(100% - 15px);
                 box-shadow: unset;
-            }
-    """,
-    """
-            :host .chat-entry-user {
-                background-color: rgba(243, 243, 243);
-                border: 1px solid rgb(238, 238, 238);
-                margin-bottom: 20px;
-            }
-    """,
-    # The padding bottom is used to give some space for the copy and source info buttons
-    """
-            :host .chat-entry-ragna, :host .chat-entry-system,  :host .chat-entry-assistant{
-                background-color: white;
-                border: 1px solid rgb(234, 234, 234);
-                padding-bottom: 30px;
-                margin-bottom: 20px;
+                font-size: unset;
+                background-color: unset;
             }
     """,
     """
@@ -47,33 +41,10 @@ chat_entry_stylesheets = [
                 box-shadow: unset;
             }
     """,
-    """ 
-            :host .left {
-                height: unset !important;
-                min-height: unset !important;
-            }
-    """,
-    """ 
-            :host .right {
-                
-            }
-    """,
 ]
-pn.chat.ChatMessage._stylesheets = (
-    pn.chat.ChatMessage._stylesheets + chat_entry_stylesheets
-)
-
-markdown_table_stylesheet = """
-
-            /* Better rendering of the markdown tables */
-            table { 
-                margin-top:10px;
-                margin-bottom:10px;
-            }
-            """
 
 
-class RagnaChatCopyIcon(ReactiveHTML):
+class CopyToClipboardButton(ReactiveHTML):
     title = param.String(default=None, doc="The title of the button ")
     value = param.String(default=None, doc="The text to copy to the clipboard.")
 
@@ -117,150 +88,188 @@ class RagnaChatCopyIcon(ReactiveHTML):
 
 
 class RagnaChatMessage(pn.chat.ChatMessage):
-    msg_data = param.Dict(default={})
-    on_click_source_info_callback = param.Callable(default=None)
+    role: str = param.Selector(objects=["system", "user", "assistant"])
+    sources = param.List(allow_None=True)
+    on_click_source_info_callback = param.Callable(allow_None=True)
+    _content_style_declarations = param.Dict(constant=True)
 
-    def __init__(self, msg_data, user, on_click_source_info_callback=None, **kwargs):
-        self.role = msg_data["role"]
+    def __init__(
+        self,
+        content: str,
+        *,
+        role: Literal["system", "user", "assistant"],
+        user: str,
+        sources: Optional[list[dict]] = None,
+        on_click_source_info_callback: Optional[Callable] = None,
+        timestamp=None,
+        show_timestamp=True,
+    ):
+        super().__init__(
+            object=content,
+            role=role,
+            user=user,
+            sources=sources,
+            on_click_source_info_callback=on_click_source_info_callback,
+            timestamp=timestamp,
+            show_timestamp=show_timestamp,
+            show_reaction_icons=False,
+            show_user=False,
+            show_copy_icon=False,
+            css_classes=[f"message-{role}"],
+            renderers=[self._render],
+            _content_style_declarations={
+                "background-color": "rgb(243, 243, 243) !important"
+            }
+            if role == "user"
+            else {
+                "background-color": "none",
+                "border": "rgb(234, 234, 234)",
+                "border-style": "solid",
+                "border-width": "1.2px",
+                "border-radius": "5px",
+            },
+        )
+        self._stylesheets.extend(message_stylesheets)
 
-        params = {
-            "msg_data": msg_data,
-            # user is the name of the assistant (eg 'Ragna/DemoAssistant')
-            # or the name of the user, depending on the role
-            "user": user,
-            "on_click_source_info_callback": on_click_source_info_callback,
-            "object": msg_data["content"],
-            "renderers": [
-                lambda txt: RagnaChatMessage.chat_entry_value_renderer(
-                    txt, role=self.role
-                )
-            ],
-            "show_timestamp": False,
-            "show_reaction_icons": False,
-            "show_copy_icon": False,
-            "show_user": False,
-        }
+        if self.sources:
+            self._update_object_pane()
 
-        params["avatar"] = RagnaChatMessage.get_avatar(self.role, user)
-
-        super().__init__(**(params | kwargs))
-
-        self.update_css_classes()
-        self.chat_copy_icon.visible = False
-
-        if self.role == "assistant":
-            source_info_button = pn.widgets.Button(
-                name="Source Info",
-                icon="info-circle",
-                stylesheets=[
-                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                ],
+    def _update_object_pane(self, event=None):
+        super()._update_object_pane(event)
+        if self.sources:
+            assert self.role == "assistant"
+            css_class = "message-content-assistant-with-buttons"
+            self._object_panel = self._center_row[0] = pn.Column(
+                self._object_panel,
+                self._copy_and_source_view_buttons(),
+                css_classes=["message", css_class],
+                stylesheets=ui.stylesheets(
+                    (f":host(.{css_class})", self._content_style_declarations)
+                ),
             )
 
-            source_info_button.on_click(self.trigger_on_click_source_info_callback)
-
-            copy_button = RagnaChatCopyIcon(
+    def _copy_and_source_view_buttons(self) -> pn.Row:
+        return pn.Row(
+            CopyToClipboardButton(
                 value=self.object,
                 title="Copy",
                 stylesheets=[
                     ui.CHAT_INTERFACE_CUSTOM_BUTTON,
                 ],
-            )
+            ),
+            pn.widgets.Button(
+                name="Source Info",
+                icon="info-circle",
+                stylesheets=[
+                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                ],
+                on_click=lambda event: self.on_click_source_info_callback(
+                    event, self.sources
+                ),
+            ),
+        )
 
-            self._composite[1].append(pn.Row(copy_button, source_info_button, height=0))
-
-    def trigger_on_click_source_info_callback(self, event):
-        if self.on_click_source_info_callback is not None:
-            self.on_click_source_info_callback(event, self)
-
-    def update_css_classes(self):
-        role = self.msg_data["role"] if "role" in self.msg_data else None
-        self.css_classes = ["chat-entry", f"chat-entry-{role}"]
-
-    @classmethod
-    def get_avatar(cls, role, user) -> str:
-        if role == "system":
+    def avatar_lookup(self, user: str) -> str:
+        if self.role == "system":
             return "imgs/ragna_logo.svg"
-        elif role == "user":
-            # FIXME: user needs to be dynamic based on the username that was logged in with
+        elif self.role == "user":
             return "👤"
-        elif role == "assistant":
-            # FIXME: This needs to represent the assistant somehow
-            if user == "Ragna/DemoAssistant":
-                return "imgs/ragna_logo.svg"
-            elif user.startswith("OpenAI/gpt-3.5"):
-                return pn.chat.message.GPT_3_LOGO
-            elif user == "OpenAI/gpt-4":
-                return pn.chat.message.GPT_4_LOGO
 
-            return "🤖"
+        try:
+            organization, model = user.split("/")
+        except ValueError:
+            organization = ""
+            model = user
 
-        # should never happen
-        return "?"
+        if organization == "Ragna":
+            return "imgs/ragna_logo.svg"
+        elif organization == "OpenAI":
+            if model.startswith("gpt-3"):
+                return "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png?20230318122128"
+            elif model.startswith("gpt-4"):
+                return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"
+        elif organization == "Anthropic":
+            return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
 
-    @classmethod
-    def chat_entry_value_renderer(cls, txt, role):
-        markdown_css_classes = []
-        if role is not None:
-            markdown_css_classes = [
-                f"chat-entry-{role}",
-            ]
+        return model[0].upper()
 
+    def _render(self, content: str) -> pn.pane.Markdown:
+        class_selectors = [
+            (
+                "table",
+                {"margin-top": "10px", "margin-bottom": "10px"},
+            )
+        ]
+        if self.role != "assistant":
+            # The styling for the assistant messages is applied self._update_object_pane
+            # since it needs to apply to the content as well as the buttons.
+            class_selectors.append(
+                (":host(.message-content)", self._content_style_declarations)
+            )
         return pn.pane.Markdown(
-            txt,
-            css_classes=markdown_css_classes,
-            stylesheets=[markdown_table_stylesheet],
+            content,
+            css_classes=["message-content", f"message-content-{self.role}"],
+            stylesheets=ui.stylesheets(*class_selectors),
         )
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
-    def __init__(self, *objects, **params):
-        super().__init__(*objects, **params)
+    get_user_from_role = param.Callable(allow_None=True)
 
     @param.depends("placeholder_text", watch=True, on_init=True)
     def _update_placeholder(self):
-        loading_avatar = RagnaChatMessage.get_avatar("system", None)
-
         self._placeholder = RagnaChatMessage(
-            {
-                "role": "system",
-                "content": ui.message_loading_indicator,
-            },
-            user=" ",
+            ui.message_loading_indicator,
+            role="system",
+            user=self.get_user_from_role("system"),
             show_timestamp=False,
-            avatar=loading_avatar,
-            reaction_icons={},
-            show_copy_icon=False,
         )
+
+    def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
+        message = super()._build_message(*args, **kwargs)
+        if message is None:
+            return None
+
+        # We only ever hit this function for user inputs, since we control the
+        # generation of the system and assistant messages manually. Thus, we can
+        # unconditionally create a user message here.
+        return RagnaChatMessage(message.object, role="user", user=self.user)
 
 
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
-    trigger_scroll_to_latest = param.Integer(default=0)
 
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
 
+        # FIXME: make this dynamic from the login
+        self.user = ""
         self.api_wrapper = api_wrapper
+        self.chat_info_button = pn.widgets.Button(
+            # The name will be filled at runtime in self.header
+            name="",
+            on_click=self.on_click_chat_info_wrapper,
+            button_style="outline",
+            icon="info-circle",
+            stylesheets=[":host { margin-top:10px; }"],
+        )
         self.on_click_chat_info = None
 
     def on_click_chat_info_wrapper(self, event):
-        if self.on_click_chat_info is not None:
-            pills = "".join(
-                [
-                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                    for d in self.current_chat["metadata"]["documents"]
-                ]
-            )
+        if self.on_click_chat_info is None:
+            return
 
-            grid_height = len(self.current_chat["metadata"]["documents"]) // 3
+        pills = "".join(
+            [
+                f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                for d in self.current_chat["metadata"]["documents"]
+            ]
+        )
 
-            advanced_config_md = "\n".join(
-                f"- **{key.replace('_', ' ').title()}**: {value}"
-                for key, value in self.current_chat["metadata"]["params"].items()
-            )
+        grid_height = len(self.current_chat["metadata"]["documents"]) // 3
 
-            markdown = [
+        markdown = "\n".join(
+            [
                 "To change configurations, start a new chat.\n",
                 "**Uploaded Files**",
                 f"<div class='pills_list'>{pills}</div><br />\n\n",
@@ -271,128 +280,114 @@ class CentralView(pn.viewable.Viewer):
                 "**Assistant**",
                 f"""<span>{self.current_chat['metadata']['assistant']}</span>\n""",
                 "**Advanced configuration**",
-                advanced_config_md,
+                *[
+                    f"- **{key.replace('_', ' ').title()}**: {value}"
+                    for key, value in self.current_chat["metadata"]["params"].items()
+                ],
             ]
+        )
 
-            markdown = "\n".join(markdown)
-
-            self.on_click_chat_info(
-                event,
-                "Chat Config",
-                [
-                    pn.pane.Markdown(
-                        markdown,
-                        dedent=True,
-                        # debug
-                        # pn.pane.Markdown(f"Chat ID: {self.current_chat['id']}"),
-                        stylesheets=[
-                            """ :host {  width: 100%; } 
-                                                 
-                                                .pills_list {
-                                                    /*background-color:gold;*/
-                                                    display: grid;
-                                                    grid-auto-flow: row;
-                                                    row-gap: 10px;
-                                                    grid-template: repeat({{GRID_HEIGHT}}, 1fr) / repeat(3, 1fr);
-                                                    max-height: 200px;
-                                                    overflow: scroll;
-                                                }
-                                                 
-                                                .chat_document_pill {
-                                                                    background-color: rgb(241,241,241);
-                                                                    
-                                                                    margin-left: 5px;   
-                                                                    margin-right: 5px;
-                                                                    padding: 5px 15px;
-                                                                    border-radius: 10px;
-                                                                    color:var(--accent-color);
-                                                                    width:fit-content;
-                                                                    grid-column: span 1;
-                                                                    
-                                                                }   
-                                                ul {
-                                                    list-style-type: none
-                                                }                                                 
-
-                                                """.replace(
-                                "{{GRID_HEIGHT}}", str(grid_height)
-                            )
-                        ],
+        self.on_click_chat_info(
+            event,
+            "Chat Info",
+            [
+                pn.pane.Markdown(
+                    markdown,
+                    dedent=True,
+                    stylesheets=ui.stylesheets(
+                        (":host", {"width": "100%"}),
+                        (
+                            ".pills_list",
+                            {
+                                # "background-color": "gold",
+                                "display": "grid",
+                                "grid-auto-flow": "row",
+                                "row-gap": "10px",
+                                "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
+                                "max-height": "200px",
+                                "overflow": "scroll",
+                            },
+                        ),
+                        (
+                            ".chat_document_pill",
+                            {
+                                "background-color": "rgb(241,241,241)",
+                                "margin-left": "5px",
+                                "margin-right": "5px",
+                                "padding": "5px 15px",
+                                "border-radius": "10px",
+                                "color": "var(--accent-color)",
+                                "width": "fit-content",
+                                "grid-column": "span 1",
+                            },
+                        ),
+                        ("ul", {"list-style-type": "none"}),
                     ),
-                ],
-            )
+                ),
+            ],
+        )
 
-    def on_click_source_info_wrapper(self, event, msg):
-        if self.on_click_chat_info is not None:
-            markdown = "This response was generated using the following data from the uploaded files: <br />\n"
+    def on_click_source_info_wrapper(self, event, sources):
+        if self.on_click_chat_info is None:
+            return
 
-            for i in range(len(msg.msg_data["sources"])):
-                source = msg.msg_data["sources"][i]
+        markdown = [
+            "This response was generated using the following data from the uploaded files: <br />"
+        ]
+        for rank, source in enumerate(sources, 1):
+            location = source["location"]
+            if location:
+                location = f": {location}"
+            markdown.append(f"{rank}. **{source['document']['name']}**{location}")
+            markdown.append("----")
 
-                location = ""
-                if source["location"] != "":
-                    location = f": {source['location']}"
-                markdown += (
-                    f"""{(i+1)}. **{source['document']['name']}** {location}\n"""
-                )
-                markdown += "----\n"
-
-            self.on_click_chat_info(
-                event,
-                "Source Info",
-                [
-                    pn.pane.Markdown(
-                        markdown,
-                        dedent=True,
-                        stylesheets=[""" hr { width: 94%; height:1px;  }  """],
-                    ),
-                ],
-            )
+        self.on_click_chat_info(
+            event,
+            "Source Info",
+            [
+                pn.pane.Markdown(
+                    "\n".join(markdown),
+                    dedent=True,
+                    stylesheets=[""" hr { width: 94%; height:1px;  }  """],
+                ),
+            ],
+        )
 
     def set_current_chat(self, chat):
         self.current_chat = chat
 
+    def get_user_from_role(self, role: Literal["system", "user", "assistant"]) -> str:
+        if role == "system":
+            return "Ragna"
+        elif role == "user":
+            return cast(str, self.user)
+        elif role == "assistant":
+            return cast(str, self.current_chat["metadata"]["assistant"])
+        else:
+            raise RuntimeError
+
     async def chat_callback(
-        self, contents: str, user: str, instance: pn.chat.ChatInterface
+        self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
-        self.current_chat["messages"].append({"role": "user", "content": contents})
-
         try:
-            answer = await self.api_wrapper.answer(self.current_chat["id"], contents)
+            answer = await self.api_wrapper.answer(self.current_chat["id"], content)
 
-            self.current_chat["messages"].append(answer)
-
-            yield {
-                "user": "Ragna",
-                "avatar": "🤖",
-                "value": answer["content"],
-            }
-        except Exception as e:
-            print(e)
-
-            yield {
-                "user": "Ragna",
-                "avatar": RagnaChatMessage.get_avatar("system", None),
-                "value": "Sorry, something went wrong. If this problem persists, please contact your administrator.",
-            }
-
-    def get_chat_messages(self):
-        chat_entries = []
-
-        if self.current_chat is not None:
-            assistant = self.current_chat["metadata"]["assistant"]
-            # FIXME: user needs to be dynamic based on the username that was logged in with
-            username = "User"
-
-            for m in self.current_chat["messages"]:
-                chat_entry = RagnaChatMessage(
-                    m,
-                    username if m["role"] == "user" else assistant,
-                    on_click_source_info_callback=self.on_click_source_info_wrapper,
-                )
-                chat_entries.append(chat_entry)
-
-        return chat_entries
+            yield RagnaChatMessage(
+                answer["content"],
+                role="assistant",
+                user=self.get_user_from_role("assistant"),
+                sources=answer["sources"],
+                on_click_source_info_callback=self.on_click_source_info_wrapper,
+            )
+        except Exception:
+            yield RagnaChatMessage(
+                (
+                    "Sorry, something went wrong. "
+                    "If this problem persists, please contact your administrator."
+                ),
+                role="system",
+                user=self.get_user_from_role("system"),
+            )
 
     @pn.depends("current_chat")
     def chat_interface(self):
@@ -400,149 +395,78 @@ class CentralView(pn.viewable.Viewer):
             return
 
         chat_interface = RagnaChatInterface(
+            *[
+                RagnaChatMessage(
+                    message["content"],
+                    role=message["role"],
+                    user=self.get_user_from_role(message["role"]),
+                    sources=message["sources"],
+                    timestamp=message["timestamp"],
+                )
+                for message in self.current_chat["messages"]
+            ],
             callback=self.chat_callback,
-            callback_user="Ragna",
+            user=self.user,
+            get_user_from_role=self.get_user_from_role,
             show_rerun=False,
             show_undo=False,
             show_clear=False,
             show_button_name=False,
             view_latest=True,
             sizing_mode="stretch_width",
+            # TODO: Remove the parameter when
+            #  https://github.com/holoviz/panel/issues/6115 is merged and released. We
+            #  currently need it to avoid sending a message when the text input is
+            #  de-focussed. But this also means we can't hit enter to send.
             auto_send_types=[],
             widgets=[
                 pn.widgets.TextInput(
-                    placeholder="Ask Ragna...",
-                    stylesheets=[
-                        """:host input[type="text"] { 
-                                                                border:none !important;
-                                                                box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
-                                                                padding: 10px 10px 10px 15px;
-                                                            }
-                                                        
-                                                            :host input[type="text"]:focus { 
-                                                                box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
-                                                            }
-
-                                                         """
-                    ],
+                    placeholder="Ask a question about the documents",
+                    stylesheets=ui.stylesheets(
+                        (
+                            ":host input[type='text']",
+                            {
+                                "border": "none !important",
+                                "box-shadow": "0px 0px 6px 0px rgba(0, 0, 0, 0.2)",
+                                "padding": "10px 10px 10px 15px",
+                            },
+                        ),
+                        (
+                            ":host input[type='text']:focus",
+                            {
+                                "box-shadow": "0px 0px 8px 0px rgba(0, 0, 0, 0.3)",
+                            },
+                        ),
+                    ),
                 )
             ],
-            renderers=[
-                lambda txt: RagnaChatMessage.chat_entry_value_renderer(txt, role=None)
-            ],
-            message_params={
-                "show_reaction_icons": False,
-                "show_user": False,
-                "show_copy_icon": False,
-                "show_timestamp": False,
-                # the proper avatar for the assistant is not when replacing the default ChatMessage objects
-                # with RagnaChatMessage objects.
-                "avatar_lookup": lambda user: "👤" if user == "User" else None,
-            },
         )
 
-        chat_interface._card.stylesheets += [
-            """ 
-                                             
-                                            :host { 
-                                                border:none !important;
-                                            }
-
-                                            .chat-feed-log {  
-                                                padding-right: 18%;
-                                                margin-left: 18% ;
-                                                padding-top:25px !important;
-                                                
-                                            }
-                                             
-                                            .chat-interface-input-container {
-                                                margin-left:19%;
-                                                margin-right:20%;
-                                                margin-bottom: 20px;
-                                            }
-
-
-                                            """
-        ]
-
-        """
-        By default, each new message is a ChatMessage object. 
-        But for new messages from the AI, we want to have a RagnaChatMessage, that contains the msg data, the sources, etc.
-        I haven't found a better way than to watch for the `objects` param of chat_interface, 
-            and replace the ChatMessage objects with RagnaChatMessage object.
-        We do it only for the new messages from the rag, not for the existing messages, neither for the messages from the user.
-        """
-
-        def messages_changed(event):
-            if len(chat_interface.objects) != len(self.current_chat["messages"]):
-                return
-
-            assistant = self.current_chat["metadata"]["assistant"]
-            # FIXME: user needs to be dynamic based on the username that was logged in with
-            username = "User"
-
-            needs_refresh = False
-            for i in range(len(chat_interface.objects)):
-                msg = chat_interface.objects[i]
-
-                if not isinstance(msg, RagnaChatMessage) and msg.user != "User":
-                    chat_interface.objects[i] = RagnaChatMessage(
-                        self.current_chat["messages"][i],
-                        username
-                        if self.current_chat["messages"][i]["role"] == "user"
-                        else assistant,
-                        on_click_source_info_callback=self.on_click_source_info_wrapper,
-                    )
-                    msg = chat_interface.objects[i]
-                    needs_refresh = True
-
-            if needs_refresh:
-                chat_interface._chat_log.param.trigger("objects")
-
-        chat_interface.param.watch(
-            messages_changed,
-            ["objects"],
-        )
-
-        # Here, we build a list of RagnaChatMessages from the existing messages of this chat,
-        # and set them as the content of the chat interface
-        chat_interface.objects = self.get_chat_messages()
-
-        # Now that setting all the objects is done, we can watch the change of objects,
-        # ie new messages being appended to the chat. When that happens,
-        # make sure we scroll to the latest msg.
-        chat_interface.param.watch(
-            lambda event: self.param.trigger("trigger_scroll_to_latest"),
-            ["objects"],
+        # TODO: Pass as regular parameters when
+        #  https://github.com/holoviz/panel/pull/6154 is merged and released.
+        chat_interface._card.stylesheets.extend(
+            ui.stylesheets(
+                (":host", {"border": "none !important"}),
+                (
+                    ".chat-feed-log",
+                    {
+                        "padding-right": "18%",
+                        "margin-left": "18%",
+                        "padding-top": "25px !important",
+                    },
+                ),
+                (
+                    ".chat-interface-input-container",
+                    {
+                        "margin-left": "19%",
+                        "margin-right": "20%",
+                        "margin-bottom": "20px",
+                    },
+                ),
+            )
         )
 
         return chat_interface
-
-    @pn.depends("current_chat", "trigger_scroll_to_latest")
-    def scroll_to_latest_fix(self):
-        """
-        This snippet needs to be re-rendered many times so the scroll-to-latest happens:
-            - each time the current chat changes, hence the pn.depends on current_chat
-            - each time a message is appended to the chat, hence the pn.depends on trigger_scroll_to_latest.
-                trigger_scroll_to_latest is triggered in the chat_interface method, when chat_interface.objects changes.
-
-        Twist : the HTML script node needs to have a different ID each time it is rendered,
-                otherwise the browser doesn't re-render it / doesn't execute the JS part.
-                Hence the random ID.
-        """
-
-        random_id = str(uuid.uuid4())
-
-        return pn.pane.HTML(
-            """<script id="{{RANDOM_ID}}" type="text/javascript">
-
-                            setTimeout(() => {
-                                    var chatbox_scrolldiv = $$$('.chat-feed-log')[0];
-                                    chatbox_scrolldiv.scrollTop = chatbox_scrolldiv.scrollHeight;
-                            }, 150);
-                            
-            </script>""".replace("{{RANDOM_ID}}", random_id)
-        )
 
     @pn.depends("current_chat")
     def header(self):
@@ -613,26 +537,12 @@ class CentralView(pn.viewable.Viewer):
 
                 chat_documents_pills.append(pill)
 
-        chat_info_button = None
-        if self.current_chat is not None:
-            button_name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
-            chat_info_button = pn.widgets.Button(
-                name=button_name, button_style="outline", icon="info-circle"
-            )
-            chat_info_button.stylesheets.append(
-                """
-                                        :host {  
-                                                    margin-top:10px;
-                                        }
-                                        
-                                    """
-            )
-            chat_info_button.on_click(self.on_click_chat_info_wrapper)
+        self.chat_info_button.name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
 
         return pn.Row(
             chat_name_header,
             *chat_documents_pills,
-            chat_info_button,
+            self.chat_info_button,
             stylesheets=[
                 """:host {  
                                     background-color: #F9F9F9;
@@ -640,6 +550,7 @@ class CentralView(pn.viewable.Viewer):
                                     width: 100% !important;
                                     margin:0px;
                                     height:54px;
+                                    overflow:hidden;
                                 }
 
                                 :host div {
@@ -654,20 +565,9 @@ class CentralView(pn.viewable.Viewer):
         self.main_column.loading = is_loading
 
     def __panel__(self):
-        """
-        The ChatInterface.view_latest option doesn't seem to work.
-        So to scroll to the latest message, we use some JS trick.
-
-        There might be a more elegant solution than running this after a timeout of 200ms,
-        but without it, the $$$ function isn't available yet.
-        And even if I add the $$$ here, the fix itself doesn't work and the chat doesn't scroll
-        to the bottom.
-        """
-
         self.main_column = pn.Column(
             self.header,
             self.chat_interface,
-            self.scroll_to_latest_fix,
             sizing_mode="stretch_width",
             stylesheets=[
                 """                    :host { 
