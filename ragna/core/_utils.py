@@ -13,7 +13,6 @@ from typing import Any, Collection, Optional, Type, Union, cast
 
 import packaging.requirements
 import pydantic
-import pydantic_core
 
 from ragna._compat import importlib_metadata_package_distributions
 
@@ -140,24 +139,28 @@ def merge_models(
     *models: Type[pydantic.BaseModel],
     config: Optional[pydantic.ConfigDict] = None,
 ) -> Type[pydantic.BaseModel]:
-    raw_field_definitions = defaultdict(list)
+    field_infoss = defaultdict(list)
     for model_cls in models:
-        for name, field in model_cls.model_fields.items():
-            type_ = field.annotation
-
-            default: Any
-            if field.is_required():
-                default = ...
-            elif field.default is pydantic_core.PydanticUndefined:
-                default = field.default_factory()  # type: ignore[misc]
-            else:
-                default = field.default
-
-            raw_field_definitions[name].append((type_, default))
+        for name, field_info in model_cls.model_fields.items():
+            field_infoss[name].append(field_info)
 
     field_definitions = {}
-    for name, definitions in raw_field_definitions.items():
-        types, defaults = zip(*definitions)
+    for name, field_infos in field_infoss.items():
+        # data = defaultdict(set)
+        # for field_info in field_infos:
+        #     data["annotation"].add(field_info.annotation)
+        #     data["default"].add(field_info.get_default(call_default_factory=True))
+        #     data["title"].add()
+
+        types, defaults = zip(
+            *(
+                (
+                    field_info.annotation,
+                    field_info.get_default(call_default_factory=True),
+                )
+                for field_info in field_infos
+            )
+        )
 
         types = set(types)
         if len(types) > 1:
@@ -172,7 +175,12 @@ def merge_models(
         else:
             default = None
 
-        field_definitions[name] = (type_, default)
+        # FIXME: We need a way to also check / merge the additional metadata instead of
+        #  just taking the first at face value.
+        field_info = field_infos[0]
+        field_info.default = default
+
+        field_definitions[name] = (type_, field_info)
 
     return cast(
         Type[pydantic.BaseModel],
