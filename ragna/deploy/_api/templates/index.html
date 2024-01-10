@@ -31,38 +31,35 @@
       integrity="sha384-jlVlI/i5K5APUIz8cxowC1/FsCEZgsrg126wue89Np9N75pQdAzqkYYP+jsUi43W"
       crossorigin="anonymous"
     ></script>
-    <script>
-      document.body.addEventListener("htmx:configRequest", (event) => {
-        event.detail.path = `/ui${event.detail.path}`;
-      });
-    </script>
+    <!--    <script>-->
+    <!--      document.body.addEventListener("htmx:configRequest", (event) => {-->
+    <!--        event.detail.path = `/ui${event.detail.path}`;-->
+    <!--      });-->
+    <!--    </script>-->
   </head>
   <body>
-    <div class="container-xxl vh-100 d-flex flex-column overflow-hidden bg-primary">
-      <div
-        id="chat-feed"
-        class="row flex-fill p-3 bg-danger"
-        hx-ext="sse"
-        sse-connect="/ui/events"
-      >
-        foamsda,sac
+    <div class="container-xxl vh-100 d-flex flex-column overflow-hidden">
+      <div class="row flex-fill p-3">
+        <ul
+          id="chat-feed"
+          style="list-style-type: none"
+          hx-ext="sse"
+          sse-connect="/ui/events"
+        ></ul>
       </div>
-      <form
-        class="row d-flex flex-row p-3 bg-secondary"
-        hx-post="/ui/answer"
-        hx-target="#chat-feed"
-        hx-swap="beforeend"
-      >
-        <input
-          type="text"
-          name="prompt"
-          class="form-control flex-grow-1"
-          placeholder="Ask a question"
-        />
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-arrow-right-short"></i>
-        </button>
-      </form>
+      <div class="row bg-success d-flex flex-row">
+        <form hx-post="/ui/answer" hx-target="#chat-feed" hx-swap="beforeend">
+          <input
+            type="text"
+            name="prompt"
+            class="form-control flex-grow-1"
+            placeholder="Ask a question"
+          />
+          <button type="submit" class="btn btn-primary w-25">
+            <i class="bi bi-arrow-right-short"></i>
+          </button>
+        </form>
+      </div>
     </div>
   </body>
 </html>
