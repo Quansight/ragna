@@ -7,7 +7,7 @@ from typing import Annotated, Any, Iterator, Type, cast
 import aiofiles
 from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 import ragna
@@ -48,12 +48,17 @@ def app(config: Config) -> FastAPI:
     )
 
     app.include_router(ui.router, prefix="/ui", include_in_schema=False)
-    # TODO: https://github.com/tiangolo/fastapi/issues/10180
+    # TODO: Preferrably, this would be mounted from the UI router. Unfortunately, this
+    #  is currently not possible. See https://github.com/tiangolo/fastapi/issues/10180
     app.mount(
         "/static",
         StaticFiles(directory=Path(__file__).parent / "static"),
         name="static",
     )
+
+    @app.get("/")
+    async def ui_redirect() -> RedirectResponse:
+        return RedirectResponse("/ui")
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
@@ -69,10 +74,6 @@ def app(config: Config) -> FastAPI:
             status_code=exc.http_status_code,
             content={"error": {"message": detail}},
         )
-
-    @app.get("/")
-    async def version() -> str:
-        return ragna.__version__
 
     authentication = config.authentication()
 
