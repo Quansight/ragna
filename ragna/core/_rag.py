@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import functools
 import inspect
-import uuid
 from typing import (
     Any,
     Awaitable,
@@ -26,6 +25,17 @@ from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
+
+
+async def _run(
+    fn: Callable[..., Union[T, Awaitable[T]]], *args: Any, **kwargs: Any
+) -> T:
+    if inspect.iscoroutinefunction(fn):
+        fn = cast(Callable[..., Awaitable[T]], fn)
+        return await fn(*args, **kwargs)
+    else:
+        fn = cast(Callable[..., T], fn)
+        return await anyio.to_thread.run_sync(functools.partial(fn, *args, **kwargs))
 
 
 class Rag(Generic[C]):
@@ -59,71 +69,64 @@ class Rag(Generic[C]):
 
         return self._components[cls]
 
-    def chat(
+    def corpus(
         self,
         *,
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
+        corpus_name: str,
+        **params: Any,
+    ) -> Corpus:
+        """Create a new [ragna.core.Corpus][].
+
+        Args:
+            documents: Documents to use.
+            source_storage: Source storage to use.
+            corpus_name: Name of the corpus.
+            **params: Additional parameters passed to the source storage.
+        """
+        return Corpus(
+            self,
+            documents=documents,
+            source_storage=source_storage,
+            corpus_name=corpus_name,
+            **params,
+        )
+
+    def chat(
+        self,
+        *,
+        corpus: Corpus,
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. If any item is not a [ragna.core.Document][],
-                [ragna.core.LocalDocument.from_path][] is invoked on it.
-            source_storage: Source storage to use.
+            corpus: Corpus to use.
             assistant: Assistant to use.
-            **params: Additional parameters passed to the source storage and assistant.
+            **params: Additional parameters passed to the assistant.
         """
         return Chat(
             self,
-            documents=documents,
-            source_storage=source_storage,
+            corpus=corpus,
             assistant=assistant,
             **params,
         )
 
 
-class SpecialChatParams(pydantic.BaseModel):
-    user: str = pydantic.Field(default_factory=default_user)
-    chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
-    chat_name: str = pydantic.Field(
-        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
-    )
-
-
-class Chat:
+class Corpus:
     """
     !!! tip
 
         This object is usually not instantiated manually, but rather through
-        [ragna.core.Rag.chat][].
+        [ragna.core.Rag.corpus][].
 
-    A chat needs to be [`prepare`][ragna.core.Chat.prepare]d before prompts can be
-    [`answer`][ragna.core.Chat.answer]ed.
-
-    Can be used as context manager to automatically invoke
-    [`prepare`][ragna.core.Chat.prepare]:
-
-    ```python
-    rag = Rag()
-
-    async with rag.chat(
-        documents=[path],
-        source_storage=ragna.core.RagnaDemoSourceStorage,
-        assistant=ragna.core.RagnaDemoAssistant,
-    ) as chat:
-        print(await chat.answer("What is Ragna?"))
-    ```
-
-    Args:
-        rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. If any item is not a [ragna.core.Document][],
-            [ragna.core.LocalDocument.from_path][] is invoked on it.
+        Args:
+        rag: The RAG workflow this corpus is associated with.
+        documents: Documents to use.
         source_storage: Source storage to use.
-        assistant: Assistant to use.
-        **params: Additional parameters passed to the source storage and assistant.
+        **params: Additional parameters passed to the source storage.
     """
 
     def __init__(
@@ -132,94 +135,24 @@ class Chat:
         *,
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
-        assistant: Union[Type[Assistant], Assistant],
+        corpus_name: str,
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
         self.source_storage = self._rag._load_component(source_storage)
-        self.assistant = self._rag._load_component(assistant)
-
-        special_params = SpecialChatParams().model_dump()
-        special_params.update(params)
-        params = special_params
+        self.corpus_name = corpus_name
         self.params = params
-        self._unpacked_params = self._unpack_chat_params(params)
 
-        self._prepared = False
-        self._messages: list[Message] = []
-
-    async def prepare(self) -> Message:
-        """Prepare the chat.
-
-        This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
-        source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
-
-        Returns:
-            Welcome message.
-
-        Raises:
-            ragna.core.RagnaException: If chat is already
-                [`prepare`][ragna.core.Chat.prepare]d.
-        """
-        if self._prepared:
-            raise RagnaException(
-                "Chat is already prepared",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-
-        await self._run(self.source_storage.store, self.documents)
-        self._prepared = True
-
-        welcome = Message(
-            content="How can I help you with the documents?",
-            role=MessageRole.SYSTEM,
+    async def prepare(self) -> None:
+        """Prepare the documents."""
+        await _run(
+            self.source_storage.store,
+            self.documents,
+            corpus_name=self.corpus_name,
+            **self.params,
         )
-        self._messages.append(welcome)
-        return welcome
-
-    async def answer(self, prompt: str) -> Message:
-        """Answer a prompt.
-
-        Returns:
-            Answer.
-
-        Raises:
-            ragna.core.RagnaException: If chat is not
-                [`prepare`][ragna.core.Chat.prepare]d.
-        """
-        if not self._prepared:
-            raise RagnaException(
-                "Chat is not prepared",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-
-        prompt = Message(content=prompt, role=MessageRole.USER)
-        self._messages.append(prompt)
-
-        sources = await self._run(
-            self.source_storage.retrieve, self.documents, prompt.content
-        )
-        answer = Message(
-            content=await self._run(self.assistant.answer, prompt.content, sources),
-            role=MessageRole.ASSISTANT,
-            sources=sources,
-        )
-        self._messages.append(answer)
-
-        # FIXME: add error handling
-        # return (
-        #     "I'm sorry, but I'm having trouble helping you at this time. "
-        #     "Please retry later. "
-        #     "If this issue persists, please contact your administrator."
-        # )
-
-        return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
@@ -237,17 +170,99 @@ class Chat:
             documents_.append(document)
         return documents_
 
+
+class SpecialChatParams(pydantic.BaseModel):
+    user: str = pydantic.Field(default_factory=default_user)
+    chat_name: str = pydantic.Field(
+        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+    )
+
+
+class Chat:
+    """
+    !!! tip
+
+        This object is usually not instantiated manually, but rather through
+        [ragna.core.Rag.chat][].
+
+    Args:
+        rag: The RAG workflow this chat is associated with.
+        corpus: Corpus to use.
+        assistant: Assistant to use.
+        **params: Additional parameters passed to the source storage and assistant.
+    """
+
+    def __init__(
+        self,
+        rag: Rag,
+        *,
+        corpus: Corpus,
+        assistant: Union[Type[Assistant], Assistant],
+        **params: Any,
+    ) -> None:
+        self._rag = rag
+
+        self.corpus = corpus
+        self.assistant = self._rag._load_component(assistant)
+
+        special_params = SpecialChatParams().model_dump()
+        special_params.update(params)
+        params = special_params
+        self.params = params
+        self._unpacked_params = self._unpack_chat_params(params)
+
+        self._messages: list[Message] = []
+
+    async def answer(self, prompt: str) -> Message:
+        """Answer a prompt.
+
+        Returns:
+            Answer.
+        """
+
+        # TODO: Add welcome message if message list is empty
+
+        prompt = Message(content=prompt, role=MessageRole.USER)
+        self._messages.append(prompt)
+
+        kwargs = self._unpacked_params[self.corpus.source_storage.retrieve]
+        sources = await _run(
+            self.corpus.source_storage.retrieve,
+            self.corpus.documents,
+            prompt.content,
+            corpus_name=self.corpus.corpus_name,
+            **kwargs,
+        )
+        kwargs = self._unpacked_params[self.assistant.answer]
+        answer = Message(
+            content=await _run(
+                self.assistant.answer, prompt.content, sources, **kwargs
+            ),
+            role=MessageRole.ASSISTANT,
+            sources=sources,
+        )
+        self._messages.append(answer)
+
+        # FIXME: add error handling
+        # return (
+        #     "I'm sorry, but I'm having trouble helping you at this time. "
+        #     "Please retry later. "
+        #     "If this issue persists, please contact your administrator."
+        # )
+
+        return answer
+
     def _unpack_chat_params(
         self, params: dict[str, Any]
     ) -> dict[Callable, dict[str, Any]]:
         component_models = {
             getattr(component, name): model
-            for component in [self.source_storage, self.assistant]
+            for component in [self.corpus.source_storage, self.assistant]
             for (_, name), model in component._protocol_models().items()
         }
 
         ChatModel = merge_models(
-            str(self.params["chat_id"]),
+            str(self.params["chat_name"]),
             SpecialChatParams,
             *component_models.values(),
             config=pydantic.ConfigDict(extra="forbid"),
@@ -261,22 +276,12 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    async def _run(self, fn: Callable[..., Union[T, Awaitable[T]]], *args: Any) -> T:
-        kwargs = self._unpacked_params[fn]
-        if inspect.iscoroutinefunction(fn):
-            fn = cast(Callable[..., Awaitable[T]], fn)
-            return await fn(*args, **kwargs)
-        else:
-            fn = cast(Callable[..., T], fn)
-            return await anyio.to_thread.run_sync(
-                functools.partial(fn, *args, **kwargs)
-            )
+    # TODO: Do we need this?
+    # async def __aenter__(self) -> Chat:
+    #     await self.prepare()
+    #     return self
 
-    async def __aenter__(self) -> Chat:
-        await self.prepare()
-        return self
-
-    async def __aexit__(
-        self, exc_type: Type[Exception], exc: Exception, traceback: str
-    ) -> None:
-        pass
+    # async def __aexit__(
+    #     self, exc_type: Type[Exception], exc: Exception, traceback: str
+    # ) -> None:
+    #     pass
