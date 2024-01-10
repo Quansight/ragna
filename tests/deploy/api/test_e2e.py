@@ -93,24 +93,31 @@ def check_api(config):
         }
         chat = client.post("/chats", json=chat_metadata).raise_for_status().json()
         assert chat["metadata"] == chat_metadata
-        assert not chat["prepared"]
         assert chat["messages"] == []
 
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
-        message = client.post(f"/chats/{chat['id']}/prepare").raise_for_status().json()
+        message = (
+            client.post(
+                f"/chats/{chat['id']}/prepare", params={"corpus_id": "fake_corpus"}
+            )
+            .raise_for_status()
+            .json()
+        )
         assert message["role"] == "system"
         assert message["sources"] == []
 
         chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
-        assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
 
         prompt = "?"
         message = (
-            client.post(f"/chats/{chat['id']}/answer", params={"prompt": prompt})
+            client.post(
+                f"/chats/{chat['id']}/answer",
+                params={"prompt": prompt, "corpus_id": "fake_corpus"},
+            )
             .raise_for_status()
             .json()
         )

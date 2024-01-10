@@ -18,6 +18,7 @@ def test_e2e(tmp_local_root):
     async def main(*, documents, source_storage, assistant):
         async with Rag().chat(
             documents=documents,
+            corpus_id="fake-corpus-name",
             source_storage=source_storage,
             assistant=assistant,
         ) as chat:

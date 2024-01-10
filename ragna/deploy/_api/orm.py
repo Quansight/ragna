@@ -61,7 +61,6 @@ class Chat(Base):
     assistant = Column(types.String)
     params = Column(types.JSON)
     messages = relationship("Message", cascade="all, delete")
-    prepared = Column(types.Boolean)
 
 
 source_message_association_table = Table(

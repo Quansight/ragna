@@ -62,11 +62,15 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def answer(self, chat_id, prompt):
+        # FIXME: Add UI support for providing an actual corpus name
         return self.improve_message(
             (
                 await self.client.post(
                     f"/chats/{chat_id}/answer",
-                    params={"prompt": prompt},
+                    params={
+                        "prompt": prompt,
+                        "corpus_id": chat_id,
+                    },
                     timeout=None,
                 )
             )
@@ -98,7 +102,13 @@ class ApiWrapper(param.Parameterized):
         )
         chat = response.raise_for_status().json()
 
-        response = await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
+        # FIXME: Add UI support for providing an actual corpus name
+        response = await self.client.post(
+            f"/chats/{chat['id']}/prepare",
+            params={"corpus_id": chat["id"]},
+            timeout=None,
+        )
+
         response.raise_for_status()
 
         return chat["id"]

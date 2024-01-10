@@ -17,6 +17,7 @@ class TestChat:
     def chat(self, documents, **params):
         return Rag().chat(
             documents=documents,
+            corpus_id="fake-corpus-name",
             source_storage=source_storages.RagnaDemoSourceStorage,
             assistant=assistants.RagnaDemoAssistant,
             **params,

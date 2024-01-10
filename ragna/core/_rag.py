@@ -63,6 +63,7 @@ class Rag(Generic[C]):
         self,
         *,
         documents: Iterable[Any],
+        corpus_id: str,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -72,6 +73,7 @@ class Rag(Generic[C]):
         Args:
             documents: Documents to use. If any item is not a [ragna.core.Document][],
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
+            corpus_id: A unique identifier for the corpus the documents belong to.
             source_storage: Source storage to use.
             assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.
@@ -79,6 +81,7 @@ class Rag(Generic[C]):
         return Chat(
             self,
             documents=documents,
+            corpus_id=corpus_id,
             source_storage=source_storage,
             assistant=assistant,
             **params,
@@ -111,6 +114,7 @@ class Chat:
 
     async with rag.chat(
         documents=[path],
+        corpus_id="fake_corpus",
         source_storage=ragna.core.RagnaDemoSourceStorage,
         assistant=ragna.core.RagnaDemoAssistant,
     ) as chat:
@@ -121,6 +125,7 @@ class Chat:
         rag: The RAG workflow this chat is associated with.
         documents: Documents to use. If any item is not a [ragna.core.Document][],
             [ragna.core.LocalDocument.from_path][] is invoked on it.
+        corpus_id: Unique identifier for the corpus the documents belong to.
         source_storage: Source storage to use.
         assistant: Assistant to use.
         **params: Additional parameters passed to the source storage and assistant.
@@ -131,6 +136,7 @@ class Chat:
         rag: Rag,
         *,
         documents: Iterable[Any],
+        corpus_id: str,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -138,6 +144,7 @@ class Chat:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
+        self.corpus_id = corpus_id
         self.source_storage = self._rag._load_component(source_storage)
         self.assistant = self._rag._load_component(assistant)
 
@@ -147,7 +154,6 @@ class Chat:
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
-        self._prepared = False
         self._messages: list[Message] = []
 
     async def prepare(self) -> Message:
@@ -158,21 +164,8 @@ class Chat:
 
         Returns:
             Welcome message.
-
-        Raises:
-            ragna.core.RagnaException: If chat is already
-                [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if self._prepared:
-            raise RagnaException(
-                "Chat is already prepared",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-
-        await self._run(self.source_storage.store, self.documents)
-        self._prepared = True
+        await self._run(self.source_storage.store, self.documents, self.corpus_id)
 
         welcome = Message(
             content="How can I help you with the documents?",
@@ -186,24 +179,15 @@ class Chat:
 
         Returns:
             Answer.
-
-        Raises:
-            ragna.core.RagnaException: If chat is not
-                [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if not self._prepared:
-            raise RagnaException(
-                "Chat is not prepared",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-
         prompt = Message(content=prompt, role=MessageRole.USER)
         self._messages.append(prompt)
 
         sources = await self._run(
-            self.source_storage.retrieve, self.documents, prompt.content
+            self.source_storage.retrieve,
+            self.documents,
+            self.corpus_id,
+            prompt.content,
         )
         answer = Message(
             content=await self._run(self.assistant.answer, prompt.content, sources),

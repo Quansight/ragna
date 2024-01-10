@@ -92,7 +92,6 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
             source_storage=chat.metadata.source_storage,
             assistant=chat.metadata.assistant,
             params=chat.metadata.params,
-            prepared=chat.prepared,
         )
     )
     session.commit()
@@ -130,7 +129,6 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             params=chat.params,  # type: ignore[arg-type]
         ),
         messages=messages,
-        prepared=chat.prepared,
     )
 
 
@@ -206,7 +204,6 @@ def _schema_to_orm_message(
 def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
     orm_chat = _get_orm_chat(session, user=user, id=chat.id)
 
-    orm_chat.prepared = chat.prepared
     orm_chat.messages = [
         _schema_to_orm_message(session, chat_id=chat.id, message=message)
         for message in chat.messages

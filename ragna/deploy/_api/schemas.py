@@ -77,4 +77,3 @@ class Chat(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     metadata: ChatMetadata
     messages: list[Message] = Field(default_factory=list)
-    prepared: bool = False

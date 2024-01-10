@@ -151,7 +151,7 @@ def app(config: Config) -> FastAPI:
             return document
 
     def schema_to_core_chat(
-        session: database.Session, *, user: str, chat: schemas.Chat
+        session: database.Session, *, user: str, chat: schemas.Chat, corpus_id: str
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
@@ -166,6 +166,7 @@ def app(config: Config) -> FastAPI:
                 )
                 for document in chat.metadata.documents
             ],
+            corpus_id=corpus_id,
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,
@@ -178,7 +179,6 @@ def app(config: Config) -> FastAPI:
         #  if we implement a chat history feature, i.e. passing past messages to
         #  the assistant, this becomes crucial.
         core_chat._messages = []
-        core_chat._prepared = chat.prepared
 
         return core_chat
 
@@ -192,7 +192,7 @@ def app(config: Config) -> FastAPI:
 
             # Although we don't need the actual ragna.core.Chat object here,
             # we use it to validate the documents and metadata.
-            schema_to_core_chat(session, user=user, chat=chat)
+            schema_to_core_chat(session, user=user, chat=chat, corpus_id="fake-corpus")
 
             database.add_chat(session, user=user, chat=chat)
             return chat
@@ -208,15 +208,18 @@ def app(config: Config) -> FastAPI:
             return database.get_chat(session, user=user, id=id)
 
     @app.post("/chats/{id}/prepare")
-    async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
+    async def prepare_chat(
+        user: UserDependency, id: uuid.UUID, corpus_id: str
+    ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
 
-            core_chat = schema_to_core_chat(session, user=user, chat=chat)
+            core_chat = schema_to_core_chat(
+                session, user=user, chat=chat, corpus_id=corpus_id
+            )
 
             welcome = schemas.Message.from_core(await core_chat.prepare())
 
-            chat.prepared = True
             chat.messages.append(welcome)
             database.update_chat(session, user=user, chat=chat)
 
@@ -224,7 +227,10 @@ def app(config: Config) -> FastAPI:
 
     @app.post("/chats/{id}/answer")
     async def answer(
-        user: UserDependency, id: uuid.UUID, prompt: str
+        user: UserDependency,
+        id: uuid.UUID,
+        prompt: str,
+        corpus_id: str,
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
@@ -232,7 +238,9 @@ def app(config: Config) -> FastAPI:
                 schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
             )
 
-            core_chat = schema_to_core_chat(session, user=user, chat=chat)
+            core_chat = schema_to_core_chat(
+                session, user=user, chat=chat, corpus_id=corpus_id
+            )
 
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
 

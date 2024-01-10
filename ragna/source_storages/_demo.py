@@ -20,10 +20,12 @@ class RagnaDemoSourceStorage(SourceStorage):
         return "Ragna/DemoSourceStorage"
 
     def __init__(self) -> None:
-        self._storage: dict[uuid.UUID, list[Source]] = {}
+        self._storage: dict[str, list[Source]] = {}
 
-    def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
-        self._storage[chat_id] = [
+    def store(
+        self, documents: list[Document], corpus_id: str, *, chat_id: uuid.UUID
+    ) -> None:
+        self._storage[corpus_id] = [
             Source(
                 id=str(uuid.uuid4()),
                 document=document,
@@ -37,6 +39,11 @@ class RagnaDemoSourceStorage(SourceStorage):
         ]
 
     def retrieve(
-        self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
+        self,
+        documents: list[Document],
+        corpus_id: str,
+        prompt: str,
+        *,
+        chat_id: uuid.UUID,
     ) -> list[Source]:
-        return self._storage[chat_id]
+        return self._storage[corpus_id]

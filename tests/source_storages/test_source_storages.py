@@ -33,9 +33,11 @@ def test_smoke(tmp_local_root, source_storage_cls):
     #  parametrization.
     chat_id = uuid.uuid4()
 
-    source_storage.store(documents, chat_id=chat_id)
+    source_storage.store(documents, "fake-corpus-name", chat_id=chat_id)
 
     prompt = "What is the secret?"
-    sources = source_storage.retrieve(documents, prompt, chat_id=chat_id)
+    sources = source_storage.retrieve(
+        documents, "fake-corpus-name", prompt, chat_id=chat_id
+    )
 
     assert secret in sources[0].content
