@@ -1,7 +1,7 @@
 import uuid
 
 import ragna
-from ragna.core import Document, PackageRequirement, Requirement, Source
+from ragna.core import Corpus, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -53,15 +53,15 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        documents: list[Document],
+        corpus: Corpus,
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
+        table = self._db.create_table(name=corpus.name, schema=self._schema)
 
-        for document in documents:
+        for document in corpus.documents:
             for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
@@ -86,14 +86,14 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def retrieve(
         self,
-        documents: list[Document],
+        corpus: Corpus,
         prompt: str,
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        table = self._db.open_table(str(chat_id))
+        table = self._db.open_table(corpus.name)
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
@@ -108,7 +108,7 @@ class LanceDB(VectorDatabaseSourceStorage):
             .to_arrow()
         )
 
-        document_map = {str(document.id): document for document in documents}
+        document_map = {str(document.id): document for document in corpus.documents}
         return self._take_sources_up_to_max_tokens(
             (
                 Source(

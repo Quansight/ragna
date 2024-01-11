@@ -10,4 +10,4 @@ except ModuleNotFoundError:
 
 from . import assistants, core, deploy, source_storages
 from ._utils import local_root
-from .core import Rag
+from .core import Corpus, Rag

@@ -2,6 +2,7 @@ __all__ = [
     "Assistant",
     "Chat",
     "Component",
+    "Corpus",
     "Document",
     "DocumentHandler",
     "DocumentUploadParameters",
@@ -20,16 +21,12 @@ __all__ = [
     "TxtDocumentHandler",
 ]
 
-from ._utils import (
-    EnvVarRequirement,
-    PackageRequirement,
-    RagnaException,
-    Requirement,
-)
+from ._utils import EnvVarRequirement, PackageRequirement, RagnaException, Requirement
 
 # isort: split
 
 from ._document import (
+    Corpus,
     Document,
     DocumentHandler,
     DocumentUploadParameters,

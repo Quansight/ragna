@@ -9,7 +9,6 @@ from typing import (
     Awaitable,
     Callable,
     Generic,
-    Iterable,
     Optional,
     Type,
     TypeVar,
@@ -21,7 +20,7 @@ import anyio
 import pydantic
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
-from ._document import Document, LocalDocument
+from ._document import Corpus
 from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
@@ -62,7 +61,7 @@ class Rag(Generic[C]):
     def chat(
         self,
         *,
-        documents: Iterable[Any],
+        corpus: Corpus,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -70,15 +69,14 @@ class Rag(Generic[C]):
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. If any item is not a [ragna.core.Document][],
-                [ragna.core.LocalDocument.from_path][] is invoked on it.
+            corpus: Corpus to use.
             source_storage: Source storage to use.
             assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
             self,
-            documents=documents,
+            corpus=corpus,
             source_storage=source_storage,
             assistant=assistant,
             **params,
@@ -119,8 +117,7 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. If any item is not a [ragna.core.Document][],
-            [ragna.core.LocalDocument.from_path][] is invoked on it.
+        corpus: Corpus to use.
         source_storage: Source storage to use.
         assistant: Assistant to use.
         **params: Additional parameters passed to the source storage and assistant.
@@ -130,14 +127,14 @@ class Chat:
         self,
         rag: Rag,
         *,
-        documents: Iterable[Any],
+        corpus: Corpus,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
     ) -> None:
         self._rag = rag
 
-        self.documents = self._parse_documents(documents)
+        self.corpus = corpus
         self.source_storage = self._rag._load_component(source_storage)
         self.assistant = self._rag._load_component(assistant)
 
@@ -163,7 +160,7 @@ class Chat:
             ragna.core.RagnaException: If chat is already
                 [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if self._prepared:
+        if self.corpus.prepared:
             raise RagnaException(
                 "Chat is already prepared",
                 chat=self,
@@ -171,8 +168,8 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
-        self._prepared = True
+        await self._run(self.source_storage.store, self.corpus)
+        self.corpus.prepared = True
 
         welcome = Message(
             content="How can I help you with the documents?",
@@ -191,7 +188,7 @@ class Chat:
             ragna.core.RagnaException: If chat is not
                 [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if not self._prepared:
+        if not self.corpus.prepared:
             raise RagnaException(
                 "Chat is not prepared",
                 chat=self,
@@ -203,7 +200,7 @@ class Chat:
         self._messages.append(prompt)
 
         sources = await self._run(
-            self.source_storage.retrieve, self.documents, prompt.content
+            self.source_storage.retrieve, self.corpus, prompt.content
         )
         answer = Message(
             content=await self._run(self.assistant.answer, prompt.content, sources),
@@ -220,22 +217,6 @@ class Chat:
         # )
 
         return answer
-
-    def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
-        documents_ = []
-        for document in documents:
-            if not isinstance(document, Document):
-                document = LocalDocument.from_path(document)
-
-            if not document.is_readable():
-                raise RagnaException(
-                    "Document not readable",
-                    document=document,
-                    http_status_code=404,
-                )
-
-            documents_.append(document)
-        return documents_
 
     def _unpack_chat_params(
         self, params: dict[str, Any]

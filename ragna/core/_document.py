@@ -6,7 +6,16 @@ import secrets
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import jwt
 from pydantic import BaseModel
@@ -267,3 +276,35 @@ class PdfDocumentHandler(DocumentHandler):
         ) as document:
             for number, page in enumerate(document, 1):
                 yield Page(text=page.get_text(sort=True), number=number)
+
+
+class Corpus:
+    """Collection of documents.
+
+    Attributes:
+        documents: Documents in the corpus.
+        name: Name of the corpus.
+        prepared: Whether the corpus is prepared ie stored in a vector database.
+    """
+
+    def __init__(self, documents: Iterable[Any], *, name: str, prepared: bool):
+        self.documents = parse_documents(documents)
+        self.name = name
+        self.prepared = prepared
+
+
+def parse_documents(documents: Iterable[Any]) -> list[Document]:
+    documents_ = []
+    for document in documents:
+        if not isinstance(document, Document):
+            document = LocalDocument.from_path(document)
+
+        if not document.is_readable():
+            raise RagnaException(
+                "Document not readable",
+                document=document,
+                http_status_code=404,
+            )
+
+        documents_.append(document)
+    return documents_

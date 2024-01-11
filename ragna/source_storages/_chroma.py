@@ -2,7 +2,7 @@ import uuid
 
 import ragna
 from ragna.core import (
-    Document,
+    Corpus,
     Source,
 )
 
@@ -35,20 +35,20 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        documents: list[Document],
+        corpus: Corpus,
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
         collection = self._client.create_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            corpus.name, embedding_function=self._embedding_function
         )
 
         ids = []
         texts = []
         metadatas = []
-        for document in documents:
+        for document in corpus.documents:
             for chunk in self._chunk_pages(
                 document.extract_pages(),
                 chunk_size=chunk_size,
@@ -72,7 +72,7 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def retrieve(
         self,
-        documents: list[Document],
+        corpus: Corpus,
         prompt: str,
         *,
         chat_id: uuid.UUID,
@@ -80,7 +80,7 @@ class Chroma(VectorDatabaseSourceStorage):
         num_tokens: int = 1024,
     ) -> list[Source]:
         collection = self._client.get_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            corpus.name, embedding_function=self._embedding_function
         )
 
         result = collection.query(
@@ -123,7 +123,7 @@ class Chroma(VectorDatabaseSourceStorage):
         #  2. Whatever threshold we use is very much dependent on the encoding method
         #  Thus, we likely need to have a callable parameter for this class
 
-        document_map = {str(document.id): document for document in documents}
+        document_map = {str(document.id): document for document in corpus.documents}
         return self._take_sources_up_to_max_tokens(
             (
                 Source(

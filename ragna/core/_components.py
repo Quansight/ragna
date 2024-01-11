@@ -9,7 +9,7 @@ from typing import Type
 import pydantic
 import pydantic.utils
 
-from ._document import Document
+from ._document import Corpus, Document
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -100,20 +100,20 @@ class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod
-    def store(self, documents: list[Document]) -> None:
+    def store(self, corpus: Corpus) -> None:
         """Store content of documents.
 
         Args:
-            documents: Documents to store.
+            corpus: Corpus to store.
         """
         ...
 
     @abc.abstractmethod
-    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+    def retrieve(self, corpus: Corpus, prompt: str) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
-            documents: Documents to retrieve sources from.
+            corpus: Corpus to retrieve sources from.
             prompt: Prompt to retrieve sources for.
 
         Returns:
