@@ -113,6 +113,8 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
                     id=source.id,
                     document=_orm_to_schema_document(source.document),
                     location=source.location,
+                    content=source.content,
+                    num_tokens=source.num_tokens,
                 )
                 for source in message.sources
             ],
