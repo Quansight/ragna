@@ -1,7 +1,10 @@
 import uuid
 
 import ragna
-from ragna.core import Document, Source
+from ragna.core import (
+    Document,
+    Source,
+)
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -34,12 +37,12 @@ class Chroma(VectorDatabaseSourceStorage):
         self,
         documents: list[Document],
         *,
-        corpus_name: str,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
         collection = self._client.create_collection(
-            corpus_name, embedding_function=self._embedding_function
+            str(chat_id), embedding_function=self._embedding_function
         )
 
         ids = []
@@ -72,12 +75,12 @@ class Chroma(VectorDatabaseSourceStorage):
         documents: list[Document],
         prompt: str,
         *,
-        corpus_name: str,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
         collection = self._client.get_collection(
-            corpus_name, embedding_function=self._embedding_function
+            str(chat_id), embedding_function=self._embedding_function
         )
 
         result = collection.query(

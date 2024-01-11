@@ -55,11 +55,11 @@ class LanceDB(VectorDatabaseSourceStorage):
         self,
         documents: list[Document],
         *,
-        corpus_name: str,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        table = self._db.create_table(name=corpus_name, schema=self._schema)
+        table = self._db.create_table(name=str(chat_id), schema=self._schema)
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -89,11 +89,11 @@ class LanceDB(VectorDatabaseSourceStorage):
         documents: list[Document],
         prompt: str,
         *,
-        corpus_name: str,
+        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        table = self._db.open_table(corpus_name)
+        table = self._db.open_table(str(chat_id))
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
