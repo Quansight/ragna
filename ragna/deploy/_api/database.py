@@ -170,6 +170,8 @@ def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Sourc
             id=source.id,
             document_id=source.document.id,
             location=source.location,
+            content=source.content,
+            num_tokens=source.num_tokens,
         )
         session.add(orm_source)
         session.commit()
