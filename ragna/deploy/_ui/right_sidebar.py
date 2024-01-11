@@ -64,7 +64,7 @@ class RightSidebar(pn.viewable.Viewer):
                                         height:100%;
                                         min-width: unset;
                                         width: 0px;
-                                        overflow:hidden;
+                                        overflow:auto;
 
                                         margin-left: min(15px, 2%);
                                         border-left: 1px solid #EEEEEE;
