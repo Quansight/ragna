@@ -1,0 +1,50 @@
+version: "3"
+
+services:
+  api.localhost:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=0.0.0
+    env_file: .env
+    environment: # overrides config in ragna-docker.toml
+      - "RAGNA_API_URL=http://0.0.0.0:31476"
+      - 'RAGNA_API_ORIGINS=["http://localhost:31477", "http://ui:31477"]'
+    command:
+      - ragna
+      - api
+    ports:
+      - "31476:31476"
+    healthcheck:
+      test: ["CMD", "curl", "http://0.0.0.0:31476"]
+      interval: 5s
+      timeout: 2s
+      retries: 6
+#    volumes:
+#      - "/tmp/ragna/documents:/var/ragna/documents"
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=0.0.0
+    depends_on:
+      api.localhost:
+        condition: service_healthy
+    environment: # overrides config in ragna-docker.toml
+      - "RAGNA_API_URL=http://api.localhost:31476"
+      - "RAGNA_UI_URL=http://0.0.0.0:31477"
+      - 'RAGNA_UI_ORIGINS=["http://localhost:31477"]'
+    env_file: .env
+    command:
+      - ragna
+      - ui
+    ports:
+      - "31477:31477"
+    healthcheck:
+      test: ["CMD", "curl", "http://0.0.0.0:31477/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 6

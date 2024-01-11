@@ -52,13 +52,18 @@ Repository = "https://github.com/Quansight/ragna"
 
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
-all = [
+vectordb = [
     "chromadb>=0.4.13",
-    "lancedb>=0.2",
-    "pyarrow",
-    "pymupdf>=1.23.6",
     "tiktoken",
 ]
+lancedb = [
+    "lancedb>=0.2",
+    "pyarrow",
+]
+pdf = [
+    "pymupdf>=1.23.6",
+]
+all = ["ragna[vectordb,lancedb,pdf]"]
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
