@@ -2,44 +2,49 @@ from pathlib import Path
 from typing import cast
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import ragna
 from ragna.core import RagnaException
 
 from . import _api as api
-from . import _session as session
+from . import _auth
 from . import _ui as ui
+from ._session import SessionMiddleware
+from ._utils import redirect_response
 
 
-def app(config):
+def make_app(config, *, deploy_api: bool, deploy_ui: bool):
     app = FastAPI(title="Ragna", version=ragna.__version__)
 
-    app.include_router(api.router, prefix="/api")
-    app.include_router(ui.router, prefix="/ui", include_in_schema=False)
+    app.add_middleware(SessionMiddleware)
 
-    @app.get("/")
-    async def ui_redirect() -> RedirectResponse:
-        return RedirectResponse("/ui")
+    # from config
+    config = object()
+    config.auth = _auth.DummyBasicAuth()
 
-    # TODO: Preferrably, this would be mounted from the UI router. Unfortunately, this
-    #  is currently not possible. See https://github.com/tiangolo/fastapi/issues/10180
-    app.mount(
-        "/static",
-        StaticFiles(directory=Path(__file__).parent / "static"),
-        name="static",
-    )
+    if deploy_ui:
+        prefix = "/ui"
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=handle_localhost_origins(config.api.origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    app.add_middleware(session.Middleware)
+        app.include_router(
+            ui.make_router(config), prefix=prefix, include_in_schema=False
+        )
+
+        # TODO: Preferably, this would be mounted from the UI router. Unfortunately, this
+        #  is currently not possible. See https://github.com/tiangolo/fastapi/issues/10180
+        app.mount(
+            f"{prefix}/static",
+            StaticFiles(directory=Path(__file__).parent / "static"),
+            name="static",
+        )
+
+        @app.get("/")
+        async def ui_redirect(request: Request) -> Response:
+            return redirect_response(prefix, htmx=request)
+
+    if deploy_api:
+        app.include_router(api.make_router(config), prefix="/api")
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
