@@ -1,44 +1,27 @@
-from fastapi import APIRouter
-import uuid
+from fastapi import APIRouter, Request
 
-from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Optional
-
+from . import _constants as constants
+from ._session import Session
 from ._utils import redirect_response
 
 
-def make_router():
+def make_router(auth):
     router = APIRouter()
 
-    router.add_middleware(SessionMiddleware)
+    @router.get("/login", response_class=HTMLResponse)
+    async def login_page(request: Request):
+        # FIXME: async run
+        return auth.login_page()
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=handle_localhost_origins(config.api.origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    @router.post("/login")
+    async def login(request: Request):
+        user = auth.login(request)
+        if user:
+            request.state.session = Session(user=user)
+        # we only define the happy path here. if the login request comes back without a session,
+        # the middleware handles the redirect to the login page
+        return redirect_response(constants.UI_PREFIX)
 
-@app.get("/login", response_class=HTMLResponse)
-        async def login(request: Request):
-            return templates.TemplateResponse(
-                request=request,
-                name="login.html",
-                context={"session": request.state.session},
-            )
-
-        @app.post("/login")
-        async def login(request: Request):
-            form = await request.form()
-            username = form.get("username")
-            if not username:
-                return HTMLResponse("No username provided! Try again.")
-
-            request.state.session = schema.SessionData(username=username)
-
-            return HTMLResponse("", headers={"HX-Redirect": "/"}, status_code=303)
 
 # def add_auth(app, *, auth: Auth, prefix: str):
 #     @app.get(f"{prefix}/login")

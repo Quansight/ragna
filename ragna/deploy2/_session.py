@@ -167,6 +167,9 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
         request.state.session = self._sessions[session_id] if not is_auth else None
         response = await call_next(request)
+
+        # FIXME: what happens when the login attempt fails
+
         self._sessions[session_id] = request.state.session
 
         if is_auth:

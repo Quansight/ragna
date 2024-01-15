@@ -42,6 +42,14 @@ def make_app(config, *, deploy_api: bool, deploy_ui: bool):
             name="static",
         )
 
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=handle_localhost_origins(config.api.origins),
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
         @app.get("/")
         async def ui_redirect(request: Request) -> Response:
             return redirect_response(constants.API_PREFIX, htmx=request)
