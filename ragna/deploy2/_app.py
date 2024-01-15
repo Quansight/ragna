@@ -10,6 +10,7 @@ from ragna.core import RagnaException
 
 from . import _api as api
 from . import _auth
+from . import _constants as constants
 from . import _ui as ui
 from ._session import SessionMiddleware
 from ._utils import redirect_response
@@ -24,27 +25,26 @@ def make_app(config, *, deploy_api: bool, deploy_ui: bool):
     config = object()
     config.auth = _auth.DummyBasicAuth()
 
-    if deploy_ui:
-        prefix = "/ui"
+    if deploy_api:
+        app.include_router(api.make_router(config), prefix="/api")
 
+    if deploy_ui:
         app.include_router(
-            ui.make_router(config), prefix=prefix, include_in_schema=False
+            ui.make_router(config), prefix=constants.UI_PREFIX, include_in_schema=False
         )
 
-        # TODO: Preferably, this would be mounted from the UI router. Unfortunately, this
-        #  is currently not possible. See https://github.com/tiangolo/fastapi/issues/10180
+        # TODO: Preferably, this would be mounted from the UI router directly.
+        #  Unfortunately, this is currently not possible.
+        #  See https://github.com/tiangolo/fastapi/issues/10180.
         app.mount(
-            f"{prefix}/static",
+            f"{constants.UI_PREFIX}/static",
             StaticFiles(directory=Path(__file__).parent / "static"),
             name="static",
         )
 
         @app.get("/")
         async def ui_redirect(request: Request) -> Response:
-            return redirect_response(prefix, htmx=request)
-
-    if deploy_api:
-        app.include_router(api.make_router(config), prefix="/api")
+            return redirect_response(constants.API_PREFIX, htmx=request)
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(

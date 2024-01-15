@@ -1,0 +1,6 @@
+API_PREFIX = "/api"
+API_TOKEN_ENDPOINT = f"{API_PREFIX}/token"
+
+UI_PREFIX = "/ui"
+UI_LOGIN_ENDPOINT = f"{UI_PREFIX}/login"
+UI_LOGOUT_ENDPOINT = f"{UI_PREFIX}/logout"

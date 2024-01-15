@@ -6,8 +6,6 @@ from fastapi.responses import Response
 
 from ragna.core import RagnaException
 
-from ._utils import redirect_response
-
 
 class Auth:
     def login_page(self) -> Union[str, Response]:
@@ -20,21 +18,21 @@ class Auth:
         pass
 
 
-def add_auth(app, *, auth: Auth, prefix: str):
-    @app.get(f"{prefix}/login")
-    async def login() -> Response:
-        return auth.login_page()
-
-    @app.post(f"{prefix}/login")
-    async def login(request: Request):
-        user_data = auth.login(request)
-        # put it into the session
-        return redirect_response(prefix, status_code=303)
-
-    @app.post(f"{prefix}/logout")
-    async def logout(request: Request):
-        request.state.session = None
-        return redirect_response(f"{prefix}/login", htmx=request, status_code=303)
+# def add_auth(app, *, auth: Auth, prefix: str):
+#     @app.get(f"{prefix}/login")
+#     async def login() -> Response:
+#         return auth.login_page()
+#
+#     @app.post(f"{prefix}/login")
+#     async def login(request: Request):
+#         user_data = auth.login(request)
+#         # put it into the session
+#         return redirect_response(prefix, status_code=303)
+#
+#     @app.post(f"{prefix}/logout")
+#     async def logout(request: Request):
+#         request.state.session = None
+#         return redirect_response(f"{prefix}/login", htmx=request, status_code=303)
 
 
 class NoAuth(Auth):
@@ -56,7 +54,7 @@ class DummyBasicAuth(Auth):
     def login_page(self) -> Union[str, Response]:
         pass
 
-    async def login(self, request: Request) -> str:
+    async def login(self, request: Request) -> Optional[str]:
         async with request.form() as form:
             username = form.get("username")
             password = form.get("password")
