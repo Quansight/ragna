@@ -338,7 +338,7 @@ class CentralView(pn.viewable.Viewer):
             location = source["location"]
             if location:
                 location = f": {location}"
-            markdown.append(f"{rank}. **{source['document']['name']}**{location}")
+            markdown.append(f"{rank}. **page(s) {source['document']['name']}**{location}")
             markdown.append("----")
 
         self.on_click_chat_info(
