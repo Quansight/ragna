@@ -402,6 +402,7 @@ class CentralView(pn.viewable.Viewer):
                     user=self.get_user_from_role(message["role"]),
                     sources=message["sources"],
                     timestamp=message["timestamp"],
+                    on_click_source_info_callback=self.on_click_source_info_wrapper,
                 )
                 for message in self.current_chat["messages"]
             ],
