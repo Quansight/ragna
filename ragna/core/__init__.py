@@ -17,7 +17,7 @@ __all__ = [
     "Requirement",
     "Source",
     "SourceStorage",
-    "TxtDocumentHandler",
+    "PlainTextDocumentHandler",
 ]
 
 from ._utils import (
@@ -36,7 +36,7 @@ from ._document import (
     LocalDocument,
     Page,
     PdfDocumentHandler,
-    TxtDocumentHandler,
+    PlainTextDocumentHandler,
 )
 
 # isort: split
