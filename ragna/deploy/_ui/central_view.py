@@ -336,9 +336,16 @@ class CentralView(pn.viewable.Viewer):
         ]
         for rank, source in enumerate(sources, 1):
             location = source["location"]
+            pages = source["document"].get("pages")
+            
             if location:
                 location = f": {location}"
-            markdown.append(f"{rank}. **page(s) {source['document']['name']}**{location}")
+            
+            if pages:
+                pages_str = ', '.join(f"Page(s) {page}" for page in pages)
+                markdown.append(f"{rank}. **{source['document']['name']}**: {pages_str}{location}")
+            else:
+                markdown.append(f"{rank}. **{source['document']['name']}**{location}")
             markdown.append("----")
 
         self.on_click_chat_info(
