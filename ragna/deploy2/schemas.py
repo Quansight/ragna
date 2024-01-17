@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 
 import ragna.core
 
+# FIXME: why is this module public?
+
 
 class User(BaseModel):
     username: str

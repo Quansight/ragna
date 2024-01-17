@@ -1,5 +1,4 @@
 import abc
-import json
 import os
 import secrets
 import time
@@ -8,8 +7,8 @@ from typing import Annotated, Awaitable, Callable, Optional, cast
 
 import jwt
 import pydantic
-from fastapi import Depends, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.responses import Response
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -91,28 +90,18 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
     async def _api_dispatch(self, request: Request, call_next: CallNext) -> Response:
         session_id = self._extract_session_id_from_token(request)
+        session = self._sessions.get(session_id) if session_id is not None else None
 
-        if session_id is None:
-            is_auth = request.url.path == constants.API_TOKEN_ENDPOINT
-            if not is_auth:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Not authenticated",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-            session_id = str(uuid.uuid4())
-        else:
-            is_auth = False
-
-        request.state.session = self._sessions[session_id] if not is_auth else None
+        request.state.session = session
         response = await call_next(request)
         self._sessions[session_id] = request.state.session
-
-        if is_auth:
-            # The token endpoint only returns a dummy response that we overwrite here.
-            # We do this to have token generation and validation in one place.
-            response = JSONResponse(json.dumps(self._forge_token(session_id)))
 
         return response
 
