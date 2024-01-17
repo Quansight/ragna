@@ -4,8 +4,22 @@ import os
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterator,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+)
 from urllib.parse import SplitResult, urlsplit, urlunsplit
+
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
+
+T = TypeVar("T")
 
 _LOCAL_ROOT = (
     Path(os.environ.get("RAGNA_LOCAL_ROOT", "~/.cache/ragna")).expanduser().resolve()
@@ -125,3 +139,31 @@ def is_debugging() -> bool:
             if any(part.startswith(name) for part in parts):
                 return True
     return False
+
+
+def as_awaitable(
+    fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any, **kwargs: Any
+) -> Awaitable[T]:
+    if inspect.iscoroutinefunction(fn):
+        fn = cast(Callable[..., Awaitable[T]], fn)
+        awaitable = fn(*args, **kwargs)
+    else:
+        fn = cast(Callable[..., T], fn)
+        awaitable = run_in_threadpool(fn, *args, **kwargs)
+
+    return awaitable
+
+
+def as_async_iterator(
+    fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+    *args: Any,
+    **kwargs: Any,
+) -> AsyncIterator[T]:
+    if inspect.isasyncgenfunction(fn):
+        fn = cast(Callable[..., AsyncIterator[T]], fn)
+        async_iterator = fn(*args, **kwargs)
+    else:
+        fn = cast(Callable[..., Iterator[T]], fn)
+        async_iterator = iterate_in_threadpool(fn(*args, **kwargs))
+
+    return async_iterator
