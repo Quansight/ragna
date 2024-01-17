@@ -11,6 +11,7 @@ from . import js
 from . import styles as ui
 from .api_wrapper import ApiWrapper, RagnaAuthTokenExpiredException
 from .auth_page import AuthPage
+from .js_utils import redirect_script
 from .logout_page import LogoutPage
 from .main_page import MainPage
 
@@ -64,17 +65,8 @@ class App(param.Parameterized):
     def index_page(self):
         if "auth_token" not in pn.state.cookies:
             print("auth_token not found in pn.state.cookies")
-            return pn.pane.HTML(
-                """
-                <script>
-                var currentPath = window.location.pathname; // Get the current path
-                var redirectTo = currentPath + 'auth';
-                console.log("Redirecting to auth page: " + redirectTo)
-                window.location.href = redirectTo;
-                </script>
-                
-                """
-            )
+            rs = redirect_script(remove="", append="auth")
+            return pn.pane.HTML(rs)
 
         try:
             api_wrapper = ApiWrapper(
@@ -84,15 +76,8 @@ class App(param.Parameterized):
             # If the token has expired / is invalid, we redirect to the logout page.
             # The logout page will delete the cookie and redirect to the auth page.
             print("auth_token expired redirecting to logout page")
-            return pn.pane.HTML(
-                """<script>
-                var currentPath = window.location.pathname; // Get the current path
-                var redirectTo = currentPath + 'logout';
-                console.log("Redirecting to logout page: " + redirectTo)
-                window.location.href = redirectTo;
-                </script>                
-                """
-            )
+            rs = redirect_script(remove="", append="logout")
+            return pn.pane.HTML(rs)
 
         print("all good, going to main page")
         template = self.get_template()
@@ -109,25 +94,8 @@ class App(param.Parameterized):
             # >>> pn.state.location.param.update(reload=True, pathname="/")
             # But it only works once the page is fully loaded.
             # So we render a javascript redirect instead.
-            return pn.pane.HTML(
-                r"""
-                <script>
-                var currentPath = window.location.pathname; // Get the current path
-
-                    // Check if the current path contains '/auth'
-                    if (currentPath.includes('/auth')) {
-                      // Remove '/auth' from the current path
-                      var redirectTo = currentPath.replace(/\/auth(\/)?$/, '') + '/';
-                        console.log("redirectTo")
-                        console.log(redirectTo)
-                        console.log("redirectTo end")
-                        console.log("Redirecting to home page " + redirectTo)
-                      // Redirect the user to the new URL
-                      window.location.href = redirectTo;
-                    }
-                </script>
-                """
-            )
+            rs = redirect_script(remove="auth")
+            return pn.pane.HTML(rs)
 
         template = self.get_template()
         auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
