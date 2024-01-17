@@ -141,9 +141,13 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                 
             </style>
             <script>
-                                                                    
+                var basePath = window.location.pathname
                 var scr = document.createElement("script");
-                scr.src = "/resources/upload.js" + "?ts=" + new Date().getTime();
+                console.log("basePath: " + "basePath")
+                scr.src = basePath + "resources/upload.js" + "?ts=" + new Date().getTime();
+                console.log("scr.src")
+                console.log(scr.src)
+                console.log("scr.src end")
                 document.getElementsByTagName("head")[0].appendChild(scr);
 
             </script>
