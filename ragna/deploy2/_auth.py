@@ -1,6 +1,6 @@
 import abc
 import os
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 from fastapi import Request, status
 from fastapi.responses import Response
@@ -49,12 +49,11 @@ class DummyBasicAuth(Auth):
         self, request: Request, *, fail_reason: Optional[str] = None
     ) -> Union[str, Response]:
         return TemplateResponse(
-            request=request,
             name="login.html",
-            context={"session": request.state.session},
+            context={"request": request},
         )
 
-    async def login(self, request: Request) -> Any:
+    async def login(self, request: Request) -> Union[User, str, Response]:
         async with request.form() as form:
             username = form.get("username")
             password = form.get("password")

@@ -3,6 +3,8 @@ from typing import Union
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
+from ragna._utils import as_awaitable
+
 from . import _constants as constants
 from ._session import Session, SessionDependency
 from ._utils import redirect_response
@@ -22,16 +24,14 @@ def make_router(config):
     auth = config.authentication()
 
     @router.get("/login", response_class=HTMLResponse)
-    async def login_page():
-        # FIXME: async run
-        return handle_page_output(auth.login_page())
+    async def login_page(request: Request):
+        return handle_page_output(await as_awaitable(auth.login_page, request))
 
     @router.post("/login")
     async def login(request: Request):
-        result = auth.login(request)
+        result = await as_awaitable(auth.login, request)
         if not isinstance(result, User):
-            # FIXME: async run
-            return handle_page_output(auth.failed_login_page(result))
+            return handle_page_output(result)
 
         request.state.session = Session(user=result)
         return redirect_response(constants.UI_PREFIX, htmx=request)
@@ -43,4 +43,6 @@ def make_router(config):
 
     @router.get("/")
     async def main_page(session: SessionDependency):
-        pass
+        return HTMLResponse("Hello World!")
+
+    return router
