@@ -16,9 +16,21 @@ class LogoutPage(pn.viewable.Viewer, param.Parameterized):
         # So we render a javascript redirect instead.
 
         # To remove the token from the cookie, we have to force its expiry date to the past.
+        print("logging out")
         return pn.pane.HTML(
             """<script>
-                            document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
-                            window.location.href = '/'; 
-                            </script> """
+                // Get the current path
+                var currentPath = window.location.pathname;
+                    // Check if the current path contains '/logout'
+                    if (currentPath.includes('/logout')) {
+                      // Remove '/auth' from the current path
+                      var redirectTo = currentPath.replace(/\/logout(\/)?$/, '');
+                      console.log("Redirecting from logout page to home " + redirectTo)
+                      // Redirect the user to the new URL
+                      window.location.href = redirectTo;
+                      document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${redirectTo}";
+                    }
+
+            </script>                
+            """
         )
