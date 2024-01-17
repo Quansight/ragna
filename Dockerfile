@@ -2,8 +2,9 @@ FROM python:3.9
 
 WORKDIR /opt/ragna
 
-COPY requirements-docker.lock .
-RUN pip install --progress-bar=off --no-deps --no-cache --requirement requirements-docker.lock
+ARG TARGETARCH
+COPY requirements-docker-$TARGETARCH.lock requirements.lock
+RUN pip install --progress-bar=off --no-deps --no-cache --requirement requirements.lock
 
 # Pre-download the default embedding model
 RUN python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()._download_model_if_not_exists()"
@@ -30,4 +31,4 @@ ENTRYPOINT ["ragna"]
 CMD ["ui"]
 
 # linux/amd64 -> linux-x86_64
-# linux/arm64/v8 -> macosx-11.0-arm64
+# linux/arm64 -> linux-arm64
