@@ -14,6 +14,7 @@ import ragna
 from ragna._utils import timeout_after
 from ragna.deploy._api import app as api_app
 from ragna.deploy._ui import app as ui_app
+from ragna.deploy2._app import make_app
 
 from .config import ConfigOption, check_config, init_config
 
@@ -88,6 +89,20 @@ def api(
 
     uvicorn.run(
         api_app(config), host=components.hostname, port=components.port or 31476
+    )
+
+
+@app.command(help="Deploy the REST API and web UI.")
+def deploy(
+    *,
+    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
+    deploy_api: bool = True,
+    deploy_ui: bool = True,
+) -> None:
+    uvicorn.run(
+        make_app(config, deploy_api=deploy_api, deploy_ui=deploy_ui),
+        host="localhost",
+        port=31476,
     )
 
 

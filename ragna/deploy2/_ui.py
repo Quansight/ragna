@@ -16,8 +16,10 @@ def handle_page_output(page: Union[str, HTMLResponse]) -> HTMLResponse:
     return page
 
 
-def make_router(auth):
+def make_router(config):
     router = APIRouter()
+
+    auth = config.authentication()
 
     @router.get("/login", response_class=HTMLResponse)
     async def login_page():

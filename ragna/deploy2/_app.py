@@ -1,7 +1,9 @@
 from pathlib import Path
+from types import SimpleNamespace
 from typing import cast
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -22,8 +24,7 @@ def make_app(config, *, deploy_api: bool, deploy_ui: bool):
     app.add_middleware(SessionMiddleware)
 
     # from config
-    config = object()
-    config.auth = _auth.DummyBasicAuth()
+    config = SimpleNamespace(authentication=_auth.DummyBasicAuth)
 
     if deploy_api:
         app.include_router(api.make_router(config), prefix="/api")
@@ -44,15 +45,16 @@ def make_app(config, *, deploy_api: bool, deploy_ui: bool):
 
         app.add_middleware(
             CORSMiddleware,
-            allow_origins=handle_localhost_origins(config.api.origins),
+            # FIXME
+            allow_origins="http://localhost:31476",
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
 
-        @app.get("/")
-        async def ui_redirect(request: Request) -> Response:
-            return redirect_response(constants.API_PREFIX, htmx=request)
+    @app.get("/")
+    async def redirect(request: Request) -> Response:
+        return redirect_response("/ui" if deploy_ui else "/api/docs", htmx=request)
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
