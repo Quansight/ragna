@@ -4,7 +4,7 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Type
+from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
 
 import pydantic
 import pydantic.utils
@@ -138,11 +138,10 @@ class MessageRole(enum.Enum):
     ASSISTANT = "assistant"
 
 
-class Message(pydantic.BaseModel):
+class Message:
     """Data class for messages.
 
     Attributes:
-        content: The content of the message.
         role: The message producer.
         sources: The sources used to produce the message.
 
@@ -152,12 +151,60 @@ class Message(pydantic.BaseModel):
         - [ragna.core.Chat.answer][]
     """
 
-    content: str
-    role: MessageRole
-    sources: list[Source] = pydantic.Field(default_factory=list)
+    def __init__(
+        self,
+        content: Union[str, AsyncIterable[str]],
+        *,
+        role: MessageRole = MessageRole.SYSTEM,
+        sources: Optional[list[Source]] = None,
+    ) -> None:
+        if isinstance(content, str):
+            self._content: str = content
+        else:
+            self._content_stream: AsyncIterable[str] = content
+
+        self.role = role
+        self.sources = sources or []
+
+    async def __aiter__(self) -> AsyncIterator[str]:
+        if hasattr(self, "_content"):
+            yield self._content
+            return
+
+        chunks = []
+        async for chunk in self._content_stream:
+            chunks.append(chunk)
+            yield chunk
+
+        self._content = "".join(chunks)
+
+    async def read(self) -> str:
+        if not hasattr(self, "_content"):
+            # Since self.__aiter__ is already setting the self._content attribute, we
+            # only need to exhaust the content stream here.
+            async for _ in self:
+                pass
+        return self._content
+
+    @property
+    def content(self) -> str:
+        if not hasattr(self, "_content"):
+            raise RuntimeError(
+                "Message content cannot be accessed without having iterated over it, "
+                "e.g. `async for chunk in message`, or reading the content, e.g. "
+                "`await message.read()`, first."
+            )
+        return self._content
 
     def __str__(self) -> str:
         return self.content
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}("
+            f"content={self.content}, role={self.role}, sources={self.sources}"
+            f")"
+        )
 
 
 class Assistant(Component, abc.ABC):
@@ -171,7 +218,7 @@ class Assistant(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def answer(self, prompt: str, sources: list[Source]) -> str:
+    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         """Answer a prompt given some sources.
 
         Args:
