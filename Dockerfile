@@ -28,3 +28,6 @@ COPY ragna-docker.toml ragna.toml
 
 ENTRYPOINT ["ragna"]
 CMD ["ui"]
+
+# linux/amd64 -> linux-x86_64
+# linux/arm64/v8 -> macosx-11.0-arm64
