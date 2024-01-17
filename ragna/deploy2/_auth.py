@@ -1,6 +1,6 @@
 import abc
 import os
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from fastapi import Request, status
 from fastapi.responses import Response
@@ -8,6 +8,7 @@ from fastapi.responses import Response
 from ragna.core import RagnaException
 
 from . import _constants as constants
+from ._templates import TemplateResponse
 from ._utils import redirect_response
 from .schemas import User
 
@@ -44,8 +45,14 @@ class DummyBasicAuth(Auth):
     def __init__(self) -> None:
         self._password = os.environ.get("RAGNA_DUMMY_BASIC_AUTH_PASSWORD")
 
-    def login_page(self, request: Request) -> Union[str, Response]:
-        pass
+    def login_page(
+        self, request: Request, *, fail_reason: Optional[str] = None
+    ) -> Union[str, Response]:
+        return TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"session": request.state.session},
+        )
 
     async def login(self, request: Request) -> Any:
         async with request.form() as form:
@@ -65,6 +72,6 @@ class DummyBasicAuth(Auth):
         if (self._password is not None and password != self._password) or (
             self._password is None and password != username
         ):
-            return None
+            return self.login_page(request, fail_reason="Unauthorized")
 
         return User(username=username)

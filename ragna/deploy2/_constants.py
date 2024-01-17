@@ -1,3 +1,5 @@
+# FIXME: REMOVE THIS
+
 API_PREFIX = "/api"
 API_TOKEN_ENDPOINT = f"{API_PREFIX}/token"
 
