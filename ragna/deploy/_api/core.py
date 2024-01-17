@@ -1,5 +1,6 @@
 import contextlib
 import itertools
+import os
 import uuid
 from typing import Annotated, Any, Iterator, Type, cast
 
@@ -36,7 +37,9 @@ def app(config: Config) -> FastAPI:
 
         return component
 
-    app = FastAPI(title="ragna", version=ragna.__version__)
+    app = FastAPI(
+        title="ragna", version=ragna.__version__, root_path=os.environ.get("RAGNA_API_ROOT_PATH")
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=handle_localhost_origins(config.api.origins),
