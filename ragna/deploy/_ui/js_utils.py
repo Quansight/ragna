@@ -16,7 +16,7 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
             var currentPath = window.location.pathname; // Get the current path
             if (currentPath.includes('/{{remove}}')) {
               console.log("Removing {{remove}} from " + currentPath)
-              if ({{remove}}) {
+              if ("{{remove}}") {
                 currentPath = currentPath.replace(/\/{{remove}}(\/)?$/, '')
               }
               var redirectTo = currentPath + '{{append}}';
@@ -31,7 +31,7 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
         """)
 
     return js_script.format(
-        remove=remove or "false",
+        remove=remove,
         append=append,
         remove_auth_cookie=str(remove_auth_cookie).lower()
     )
