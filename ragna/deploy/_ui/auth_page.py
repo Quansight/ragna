@@ -47,6 +47,7 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
     async def perform_login(self, event=None):
         self.main_layout.loading = True
 
+        home_path = pn.state.location.pathname.rstrip('/').rstrip('auth')
         try:
             authed = await self.api_wrapper.auth(
                 self.login_input.value, self.password_input.value
@@ -54,14 +55,14 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
 
             if authed:
                 # Sets the cookie on the JS side
-                self.custom_js = f""" document.cookie = "auth_token={self.api_wrapper.auth_token}; path:/";  """
+                self.custom_js = f""" document.cookie = "auth_token={self.api_wrapper.auth_token}; path:{home_path}";  """
 
         except Exception:
             authed = False
 
         if authed:
             # perform redirect
-            pn.state.location.param.update(reload=True, pathname="/")
+            pn.state.location.param.update(reload=True, pathname=home_path)
         else:
             self.feedback_message = "Authentication failed. Please retry."
 
