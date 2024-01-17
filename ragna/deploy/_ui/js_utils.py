@@ -32,7 +32,7 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
     # so /foo/bar/car/auth becomes /foo/bar/car/
     >>> redirect_script(remove="auth", append="/")
     """
-    js_script = preformat("""
+    js_script = preformat(r"""
         <script>
             var currentPath = window.location.pathname; // Get the current path
             if (currentPath.includes('/{{remove}}')) {
