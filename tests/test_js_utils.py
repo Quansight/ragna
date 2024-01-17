@@ -1,5 +1,6 @@
-from ragna.deploy._ui.js_utils import preformat, redirect_script
 from textwrap import dedent
+
+from ragna.deploy._ui.js_utils import preformat, redirect_script
 
 
 def test_preformat_basic():
@@ -8,7 +9,9 @@ def test_preformat_basic():
 
 
 def test_preformat_multivars():
-    output = preformat("{ {{var1}} This is awesome {{var2}} }").format(var1="test1", var2="test2")
+    output = preformat("{ {{var1}} This is awesome {{var2}} }").format(
+        var1="test1", var2="test2"
+    )
     assert output == "{ test1 This is awesome test2 }"
 
 
@@ -19,7 +22,8 @@ def test_preformat_unsubs():
 
 def test_redirect_script():
     output = redirect_script(remove="foo", append="bar")
-    expected = dedent(r"""
+    expected = dedent(
+        r"""
         <script>
             var currentPath = window.location.pathname; // Get the current path
             if (currentPath.includes('/foo')) {
@@ -36,5 +40,6 @@ def test_redirect_script():
               }
             }
         </script>
-    """)
+    """
+    )
     assert dedent(output) == expected

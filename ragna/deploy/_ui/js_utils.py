@@ -3,13 +3,13 @@ def preformat(text):
     curly braces.  First switch this into something else, replace curlies
     with double curlies, and then switch back to regular braces
     """
-    text = text.replace('{{', '<<<').replace('}}', '>>>')
-    text = text.replace('{', '{{').replace('}', '}}')
-    text = text.replace('<<<', '{').replace('>>>', '}')
+    text = text.replace("{{", "<<<").replace("}}", ">>>")
+    text = text.replace("{", "{{").replace("}", "}}")
+    text = text.replace("<<<", "{").replace(">>>", "}")
     return text
 
 
-def redirect_script(remove, append='/', remove_auth_cookie=False):
+def redirect_script(remove, append="/", remove_auth_cookie=False):
     """
     This function returns a js script to redirect to correct url.
     :param remove: string to remove from the end of the url
@@ -32,7 +32,8 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
     # so /foo/bar/car/auth becomes /foo/bar/car/
     >>> redirect_script(remove="auth", append="/")
     """
-    js_script = preformat(r"""
+    js_script = preformat(
+        r"""
         <script>
             var currentPath = window.location.pathname; // Get the current path
             if (currentPath.includes('/{{remove}}')) {
@@ -49,10 +50,9 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
               }
             }
         </script>
-        """)
+        """
+    )
 
     return js_script.format(
-        remove=remove,
-        append=append,
-        remove_auth_cookie=str(remove_auth_cookie).lower()
+        remove=remove, append=append, remove_auth_cookie=str(remove_auth_cookie).lower()
     )

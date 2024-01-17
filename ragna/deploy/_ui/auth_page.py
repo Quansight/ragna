@@ -47,7 +47,7 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
     async def perform_login(self, event=None):
         self.main_layout.loading = True
 
-        home_path = pn.state.location.pathname.rstrip('/').rstrip('auth')
+        home_path = pn.state.location.pathname.rstrip("/").rstrip("auth")
         try:
             authed = await self.api_wrapper.auth(
                 self.login_input.value, self.password_input.value
