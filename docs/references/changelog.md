@@ -17,43 +17,43 @@
 ### What's Changed
 
 - fix note in Ragna 101 by [@pmeier](https://github.com/pmeier) in
-  [#187](https://github.com/Quansight/ragna/pull/187
+  [#187](https://github.com/Quansight/ragna/pull/187)
 - make config optional when creating a component by [@pmeier](https://github.com/pmeier)
-  in [#194](https://github.com/Quansight/ragna/pull/194
+  in [#194](https://github.com/Quansight/ragna/pull/194)
 - fix Config source priority and add tests by [@pmeier](https://github.com/pmeier) in
-  [#200](https://github.com/Quansight/ragna/pull/200
+  [#200](https://github.com/Quansight/ragna/pull/200)
 - add smoke tests for source storages by [@pmeier](https://github.com/pmeier) in
-  [#201](https://github.com/Quansight/ragna/pull/201
+  [#201](https://github.com/Quansight/ragna/pull/201)
 - docs: improvements to REST API tutorial by [@agilgur5](https://github.com/agilgur5) in
-  [#198](https://github.com/Quansight/ragna/pull/198
+  [#198](https://github.com/Quansight/ragna/pull/198)
 - remove task queue by [@pmeier](https://github.com/pmeier) in
-  [#205](https://github.com/Quansight/ragna/pull/205
+  [#205](https://github.com/Quansight/ragna/pull/205)
 - remove [BUG] and [ENH] classifier from issue templates by
   [@pmeier](https://github.com/pmeier) in
-  [#228](https://github.com/Quansight/ragna/pull/228
+  [#228](https://github.com/Quansight/ragna/pull/228)
 - Fix timeouts by [@pmeier](https://github.com/pmeier) in
-  [#234](https://github.com/Quansight/ragna/pull/234
+  [#234](https://github.com/Quansight/ragna/pull/234)
 - set hard limit of visible document pills by [@pmeier](https://github.com/pmeier) in
-  [#235](https://github.com/Quansight/ragna/pull/235
+  [#235](https://github.com/Quansight/ragna/pull/235)
 - supply document name as part of the request body rather than query by
   [@pmeier](https://github.com/pmeier) in
-  [#186](https://github.com/Quansight/ragna/pull/186
+  [#186](https://github.com/Quansight/ragna/pull/186)
 - Make document upload method flexible by [@pmeier](https://github.com/pmeier) in
-  [#238](https://github.com/Quansight/ragna/pull/238
+  [#238](https://github.com/Quansight/ragna/pull/238)
 - don't return full chat as part of message output by
   [@pmeier](https://github.com/pmeier) in
-  [#249](https://github.com/Quansight/ragna/pull/249
+  [#249](https://github.com/Quansight/ragna/pull/249)
 - code quality improvements of the API wrapper by [@pmeier](https://github.com/pmeier)
-  in [#250](https://github.com/Quansight/ragna/pull/250
+  in [#250](https://github.com/Quansight/ragna/pull/250)
 - add functionality to format CSS stylesheets by [@pmeier](https://github.com/pmeier) in
-  [#257](https://github.com/Quansight/ragna/pull/257
+  [#257](https://github.com/Quansight/ragna/pull/257)
 - Cleanup UI code by [@pmeier](https://github.com/pmeier) in
-  [#261](https://github.com/Quansight/ragna/pull/261
+  [#261](https://github.com/Quansight/ragna/pull/261)
 - Add support for markdown files (#210) by [@paskett](https://github.com/paskett) in
-  [#270](https://github.com/Quansight/ragna/pull/270
+  [#270](https://github.com/Quansight/ragna/pull/270)
 - fix source view on messages that were generated in a previous session by
   [@pmeier](https://github.com/pmeier) in
-  [#273](https://github.com/Quansight/ragna/pull/273
+  [#273](https://github.com/Quansight/ragna/pull/273)
 
 ### New Contributors
 
