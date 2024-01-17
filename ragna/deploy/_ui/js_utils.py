@@ -1,8 +1,7 @@
 def preformat(text):
-    """ allow {{key}} to be used for formatting in text
-    that already uses curly braces.  First switch this into
-    something else, replace curlies with double curlies, and then
-    switch back to regular braces
+    """Allows {{key}} to be used for formatting in textcthat already uses
+    curly braces.  First switch this into something else, replace curlies
+    with double curlies, and then switch back to regular braces
     """
     text = text.replace('{{', '<<<').replace('}}', '>>>')
     text = text.replace('{', '{{').replace('}', '}}')
@@ -11,6 +10,28 @@ def preformat(text):
 
 
 def redirect_script(remove, append='/', remove_auth_cookie=False):
+    """
+    This function returns a js script to redirect to correct url.
+    :param remove: string to remove from the end of the url
+    :param append: string to append at the end of the url
+    :param remove_auth_cookie: boolean, will clear auth_token cookie when true.
+    :return: string javascript script
+
+    Examples:
+    =========
+
+    # This will remove nothing from the end of the url and will
+    # add auth to it, so /foo/bar/car/ becomes /foo/bar/car/auth
+    >>> redirect_script(remove="", append="auth")
+
+    # This will remove nothing from the end of the url and will
+    # add auth to it, so /foo/bar/car/ becomes /foo/bar/car/logout
+    >>> rs = redirect_script(remove="", append="logout")
+
+    # This will remove "auth" from the end of the url and will add / to it
+    # so /foo/bar/car/auth becomes /foo/bar/car/
+    >>> redirect_script(remove="auth", append="/")
+    """
     js_script = preformat("""
         <script>
             var currentPath = window.location.pathname; // Get the current path
