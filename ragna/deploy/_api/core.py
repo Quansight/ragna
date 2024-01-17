@@ -2,9 +2,10 @@ import contextlib
 import itertools
 import uuid
 from pathlib import Path
-from typing import Annotated, Any, Iterator, Type, cast
+from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
+import sse_starlette
 from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -235,20 +236,51 @@ def app(config: Config) -> FastAPI:
 
     @app.post("/chats/{id}/answer")
     async def answer(
-        user: UserDependency, id: uuid.UUID, prompt: str
+        user: UserDependency,
+        id: uuid.UUID,
+        prompt: Annotated[str, Body(..., embed=True)],
+        stream: Annotated[bool, Body(..., embed=True)] = False,
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
                 schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
             )
-
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
+        core_answer = await core_chat.answer(prompt, stream=True)
+
+        if stream:
+            message_chunk = schemas.Message(
+                content="",
+                role=core_answer.role,
+                sources=[
+                    schemas.Source.from_core(source) for source in core_answer.sources
+                ],
+            )
+
+            async def message_chunks() -> AsyncIterator[sse_starlette.ServerSentEvent]:
+                chunks = []
+                async for chunk in core_answer:
+                    chunks.append(chunk)
+                    message_chunk.content = chunk
+                    yield sse_starlette.ServerSentEvent(message_chunk.model_dump_json())
+
+                with get_session() as session:
+                    answer = message_chunk
+                    answer.content = "".join(chunks)
+                    chat.messages.append(answer)
+                    database.update_chat(session, user=user, chat=chat)
+
+            return sse_starlette.EventSourceResponse(  # type: ignore[return-value]
+                message_chunks()
+            )
+        else:
             answer = schemas.Message.from_core(await core_chat.answer(prompt))
 
-            chat.messages.append(answer)
-            database.update_chat(session, user=user, chat=chat)
+            with get_session() as session:
+                chat.messages.append(answer)
+                database.update_chat(session, user=user, chat=chat)
 
             return answer
 
