@@ -26,7 +26,7 @@ def redirect_script(remove, append='/', remove_auth_cookie=False):
 
     # This will remove nothing from the end of the url and will
     # add auth to it, so /foo/bar/car/ becomes /foo/bar/car/logout
-    >>> rs = redirect_script(remove="", append="logout")
+    >>> redirect_script(remove="", append="logout")
 
     # This will remove "auth" from the end of the url and will add / to it
     # so /foo/bar/car/auth becomes /foo/bar/car/

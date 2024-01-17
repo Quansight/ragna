@@ -64,9 +64,7 @@ class App(param.Parameterized):
 
     def index_page(self):
         if "auth_token" not in pn.state.cookies:
-            print("auth_token not found in pn.state.cookies")
-            rs = redirect_script(remove="", append="auth")
-            return pn.pane.HTML(rs)
+            return pn.pane.HTML(redirect_script(remove="", append="auth"))
 
         try:
             api_wrapper = ApiWrapper(
@@ -75,11 +73,8 @@ class App(param.Parameterized):
         except RagnaAuthTokenExpiredException:
             # If the token has expired / is invalid, we redirect to the logout page.
             # The logout page will delete the cookie and redirect to the auth page.
-            print("auth_token expired redirecting to logout page")
-            rs = redirect_script(remove="", append="logout")
-            return pn.pane.HTML(rs)
+            return pn.pane.HTML(redirect_script(remove="", append="logout"))
 
-        print("all good, going to main page")
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
         template.main.append(main_page)
@@ -89,13 +84,11 @@ class App(param.Parameterized):
         # If the user is already authenticated, we receive the auth token in the cookie.
         # in that case, redirect to the index page.
         if "auth_token" in pn.state.cookies:
-            print("auth token found in cookies")
             # Usually, we do a redirect this way :
             # >>> pn.state.location.param.update(reload=True, pathname="/")
             # But it only works once the page is fully loaded.
             # So we render a javascript redirect instead.
-            rs = redirect_script(remove="auth")
-            return pn.pane.HTML(rs)
+            return pn.pane.HTML(redirect_script(remove="auth"))
 
         template = self.get_template()
         auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
@@ -133,7 +126,6 @@ class App(param.Parameterized):
             profiler="pyinstrument",
             allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
             static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
-            # prefix="/user/aktech/custom-2-ragna-36d1e87"
         )
 
 
