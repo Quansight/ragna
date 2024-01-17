@@ -1,41 +1,44 @@
+from typing import Union
+
 from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 
 from . import _constants as constants
-from ._session import Session
+from ._session import Session, SessionDependency
 from ._utils import redirect_response
 from .schemas import User
+
+
+def handle_page_output(page: Union[str, HTMLResponse]) -> HTMLResponse:
+    if isinstance(page, str):
+        page = HTMLResponse(page)
+
+    return page
 
 
 def make_router(auth):
     router = APIRouter()
 
     @router.get("/login", response_class=HTMLResponse)
-    async def login_page(request: Request):
+    async def login_page():
         # FIXME: async run
-        return auth.login_page()
+        return handle_page_output(auth.login_page())
 
     @router.post("/login")
     async def login(request: Request):
         result = auth.login(request)
         if not isinstance(result, User):
-            return auth.failed_login_page(result)
+            # FIXME: async run
+            return handle_page_output(auth.failed_login_page(result))
 
         request.state.session = Session(user=result)
-        return redirect_response(constants.UI_PREFIX)
+        return redirect_response(constants.UI_PREFIX, htmx=request)
 
     @router.post("/logout")
     async def logout(request: Request):
         request.state.session = None
-        return redirect_response(constants.UI_LOGIN_ENDPOINT)
+        return redirect_response(constants.UI_LOGIN_ENDPOINT, htmx=request)
 
-
-# def add_auth(app, *, auth: Auth, prefix: str):
-#     @app.get(f"{prefix}/login")
-#     async def login() -> Response:
-#         return auth.login_page()
-#
-#     @app.post(f"{prefix}/login")
-#     async def login(request: Request):
-#         user_data = auth.login(request)
-#         # put it into the session
-#         return redirect_response(prefix, status_code=303)
+    @router.get("/")
+    async def main_page(session: SessionDependency):
+        pass

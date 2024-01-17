@@ -8,16 +8,13 @@ from ragna.core import RagnaException
 
 
 class Auth:
+    def login(self, request: Request) -> Any:
+        pass
+
     def login_page(self) -> Union[str, Response]:
         pass
 
     def failed_login_page(self, context: Any) -> Union[str, Response]:
-        pass
-
-    def login(self, request: Request) -> Any:
-        pass
-
-    def token(self, request: Request):
         pass
 
 
@@ -51,12 +48,6 @@ class DummyBasicAuth(Auth):
         not be used in production.
     """
 
-    def __init__(self) -> None:
-        self._password = os.environ.get("RAGNA_DUMMY_BASIC_AUTH_PASSWORD")
-
-    def login_page(self) -> Union[str, Response]:
-        pass
-
     async def login(self, request: Request) -> Optional[str]:
         async with request.form() as form:
             username = form.get("username")
@@ -82,11 +73,8 @@ class DummyBasicAuth(Auth):
 
         return username
 
-    async def token(self, request: Request) -> str:
-        pass
+    def __init__(self) -> None:
+        self._password = os.environ.get("RAGNA_DUMMY_BASIC_AUTH_PASSWORD")
 
-    _JWT_SECRET = os.environ.get(
-        "RAGNA_DEMO_AUTHENTICATION_SECRET", secrets.token_urlsafe(32)[:32]
-    )
-    _JWT_ALGORITHM = "HS256"
-    _JWT_TTL = int(os.environ.get("RAGNA_DEMO_AUTHENTICATION_TTL", 60 * 60 * 24 * 7))
+    def login_page(self) -> Union[str, Response]:
+        pass
