@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request
 from . import _constants as constants
 from ._session import Session
 from ._utils import redirect_response
+from .schemas import User
 
 
 def make_router(auth):
@@ -15,12 +16,17 @@ def make_router(auth):
 
     @router.post("/login")
     async def login(request: Request):
-        user = auth.login(request)
-        if user:
-            request.state.session = Session(user=user)
-        # we only define the happy path here. if the login request comes back without a session,
-        # the middleware handles the redirect to the login page
+        result = auth.login(request)
+        if not isinstance(result, User):
+            return auth.failed_login_page(result)
+
+        request.state.session = Session(user=result)
         return redirect_response(constants.UI_PREFIX)
+
+    @router.post("/logout")
+    async def logout(request: Request):
+        request.state.session = None
+        return redirect_response(constants.UI_LOGIN_ENDPOINT)
 
 
 # def add_auth(app, *, auth: Auth, prefix: str):

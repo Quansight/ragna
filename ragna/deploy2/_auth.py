@@ -1,5 +1,5 @@
 import os
-from typing import Union
+from typing import Any, Union
 
 from fastapi import Request
 from fastapi.responses import Response
@@ -11,7 +11,10 @@ class Auth:
     def login_page(self) -> Union[str, Response]:
         pass
 
-    def login(self, request: Request):
+    def failed_login_page(self, context: Any) -> Union[str, Response]:
+        pass
+
+    def login(self, request: Request) -> Any:
         pass
 
     def token(self, request: Request):
