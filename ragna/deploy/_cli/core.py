@@ -96,11 +96,9 @@ def api(
 def deploy(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    deploy_api: bool = True,
-    deploy_ui: bool = True,
 ) -> None:
     uvicorn.run(
-        make_app(config, deploy_api=deploy_api, deploy_ui=deploy_ui),
+        make_app(config),
         host="localhost",
         port=31476,
     )

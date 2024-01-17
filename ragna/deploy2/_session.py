@@ -12,7 +12,6 @@ from fastapi.responses import Response
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from . import _constants as constants
 from ._utils import redirect_response
 from .schemas import User
 
@@ -67,93 +66,43 @@ CallNext = Callable[[Request], Awaitable[Response]]
 
 
 class SessionMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, *, config, deploy_api: bool, deploy_ui: bool):
+    def __init__(self, app, *, config):
         super().__init__(app)
         self._sessions = InMemorySessionStorage(config.deploy.session_storage_url)
         self._config = config
-        self._deploy_api = deploy_api
-        self._deploy_ui = deploy_ui
 
     async def dispatch(self, request: Request, call_next: CallNext) -> Response:
         path = request.url.path
-        if self._deploy_api and path.startswith(constants.API_PREFIX):
-            return await self._api_dispatch(request, call_next)
-        elif self._deploy_ui and path.startswith(constants.UI_PREFIX):
+        if path.startswith("/ui"):
             return await self._ui_dispatch(request, call_next)
+        elif path.startswith("/api"):
+            return await self._api_dispatch(request, call_next)
         else:
-            # Either an unknown route or something on the root router. In any case, this
-            # doesn't need a session so we can let it pass.
+            # Either an unknown route or something on the default router. In any case,
+            # this doesn't need a session so we let it pass.
             return await call_next(request)
-
-    _JWT_SECRET = os.environ.get("RAGNA_TOKEN_SECRET", secrets.token_urlsafe(32)[:32])
-    _JWT_ALGORITHM = "HS256"
-
-    async def _api_dispatch(self, request: Request, call_next: CallNext) -> Response:
-        session_id = self._extract_session_id_from_token(request)
-        session = self._sessions.get(session_id) if session_id is not None else None
-
-        if session is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        request.state.session = session
-        response = await call_next(request)
-        self._sessions[session_id] = request.state.session
-
-        return response
-
-    def _extract_session_id_from_token(self, request: Request) -> Optional[str]:
-        authorization = request.headers.get("Authorization")
-        if not authorization:
-            return None
-
-        scheme, token = get_authorization_scheme_param(authorization)
-        if scheme.lower() != "bearer":
-            return None
-
-        try:
-            payload = jwt.decode(
-                token, key=self._JWT_SECRET, algorithms=[self._JWT_ALGORITHM]
-            )
-        except (jwt.InvalidSignatureError, jwt.ExpiredSignatureError):
-            return None
-
-        return cast(str, payload["session-id"])
-
-    def _forge_token(self, session_id: str) -> str:
-        return jwt.encode(
-            payload={
-                "session-id": session_id,
-                "exp": time.time() + self._config.deploy.token_expires,
-            },
-            key=self._JWT_SECRET,
-            algorithm=self._JWT_ALGORITHM,
-        )
 
     _COOKIE_NAME = "Ragna"
 
     async def _ui_dispatch(self, request: Request, call_next: CallNext) -> Response:
         session_id = request.cookies.get(self._COOKIE_NAME)
         cookie_available = session_id is not None
-        session = self._sessions.get(session_id) if cookie_available else None
-        session_available = session is not None
 
-        if not cookie_available:
-            if request.url.path != constants.UI_LOGIN_ENDPOINT:
-                return redirect_response(
-                    constants.UI_LOGIN_ENDPOINT, htmx=request, status_code=303
-                )
+        if cookie_available:
+            session = self._sessions.get(session_id)
+            session_available = session is not None
+
+            if not session_available:
+                response = redirect_response("/ui/login", htmx=request, status_code=303)
+                self._delete_cookie(response)
+                return response
+        else:
+            if request.url.path not in {"/ui/login", "/ui/oauth-callback"}:
+                return redirect_response("/ui/login", htmx=request, status_code=303)
 
             session_id = str(uuid.uuid4())
-        elif not session_available:
-            response = redirect_response(
-                constants.UI_LOGIN_ENDPOINT, htmx=request, status_code=303
-            )
-            self._delete_cookie(response)
-            return response
+            session = None
+            session_available = False
 
         request.state.session = session
         response = await call_next(request)
@@ -184,13 +133,72 @@ class SessionMiddleware(BaseHTTPMiddleware):
         response.set_cookie(
             key=self._COOKIE_NAME,
             value=session_id,
-            expires=self._config.deploy.cookie_expires,
+            max_age=self._config.deploy.cookie_expires,
             httponly=True,
             samesite="strict",
         )
 
     def _delete_cookie(self, response: Response):
-        response.delete_cookie(key=self._COOKIE_NAME, httponly=True, samesite="strict")
+        response.delete_cookie(
+            key=self._COOKIE_NAME,
+            httponly=True,
+            samesite="strict",
+        )
+
+    _JWT_SECRET = os.environ.get("RAGNA_TOKEN_SECRET", secrets.token_urlsafe(32)[:32])
+    _JWT_ALGORITHM = "HS256"
+    _NOT_AUTHENTICATED = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    async def _api_dispatch(self, request: Request, call_next: CallNext) -> Response:
+        if request.url.path in {"/api/", "/api/docs", "/api/openapi.json"}:
+            return await call_next(request)
+
+        session_id = self._extract_session_id_from_token(request)
+        if session_id is None:
+            raise self._NOT_AUTHENTICATED
+
+        session = self._sessions.get(session_id)
+        if session is None:
+            raise self._NOT_AUTHENTICATED
+
+        request.state.session = session
+        response = await call_next(request)
+        self._sessions[session_id] = request.state.session
+
+        return response
+
+    def _extract_session_id_from_token(self, request: Request) -> Optional[str]:
+        authorization = request.headers.get("Authorization")
+        if not authorization:
+            return None
+
+        scheme, token = get_authorization_scheme_param(authorization)
+        if scheme.lower() != "bearer":
+            return None
+
+        try:
+            payload = jwt.decode(
+                token, key=self._JWT_SECRET, algorithms=[self._JWT_ALGORITHM]
+            )
+        except (jwt.InvalidSignatureError, jwt.ExpiredSignatureError):
+            return None
+
+        return cast(str, payload["session-id"])
+
+    # FIXME: move this to the UI
+    def _forge_token(self, session_id: str) -> str:
+        return jwt.encode(
+            payload={
+                "session-id": session_id,
+                "exp": time.time() + self._config.deploy.token_expires,
+            },
+            key=self._JWT_SECRET,
+            algorithm=self._JWT_ALGORITHM,
+        )
 
 
 async def get_session(request: Request) -> Session:

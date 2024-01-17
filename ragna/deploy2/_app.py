@@ -10,13 +10,12 @@ from ragna.core import RagnaException
 
 from . import _api as api
 from . import _auth
-from . import _constants as constants
 from . import _ui as ui
 from ._session import SessionMiddleware
 from ._utils import redirect_response
 
 
-def make_app(config, *, deploy_api: bool, deploy_ui: bool):
+def make_app(config):
     # FIXME: remove the optional deploy_ui
     app = FastAPI(title="Ragna", version=ragna.__version__)
 
@@ -45,39 +44,22 @@ def make_app(config, *, deploy_api: bool, deploy_ui: bool):
             content={"error": {"message": detail}},
         )
 
+    app.add_middleware(SessionMiddleware, config=config)
     app.add_middleware(
-        SessionMiddleware, config=config, deploy_api=deploy_api, deploy_ui=deploy_ui
+        CORSMiddleware,
+        # FIXME
+        allow_origins="http://localhost:31476",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    if deploy_api:
-        app.include_router(api.make_router(config), prefix="/api")
+    app.include_router(ui.make_router(config), prefix="/ui", include_in_schema=False)
+    app.include_router(api.make_router(config), prefix="/api")
 
-    if deploy_ui:
-        app.include_router(
-            ui.make_router(config), prefix=constants.UI_PREFIX, include_in_schema=False
-        )
-
-        # # TODO: Preferably, this would be mounted from the UI router directly.
-        # #  Unfortunately, this is currently not possible.
-        # #  See https://github.com/tiangolo/fastapi/issues/10180.
-        # app.mount(
-        #     f"{constants.UI_PREFIX}/static",
-        #     StaticFiles(directory=Path(__file__).parent / "static"),
-        #     name="static",
-        # )
-
-        app.add_middleware(
-            CORSMiddleware,
-            # FIXME
-            allow_origins="http://localhost:31476",
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
-    @app.get("/")
-    async def redirect(request: Request) -> Response:
-        return redirect_response("/ui" if deploy_ui else "/api/docs", htmx=request)
+    @app.get("/", include_in_schema=False)
+    async def ui_redirect(request: Request) -> Response:
+        return redirect_response("/ui", htmx=request)
 
     @app.get("/version")
     async def version():
