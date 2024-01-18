@@ -6,13 +6,14 @@
 
 - remove task queue
 - direct result: async components
-- direct result: streaming?
-- support for markdown doc?
+- direct result: streaming
+- support for markdown / docx
 
 ### Breaking Changes
 
 - ragna worker was removed and the `--start-worker` option of `ragna api`
-- TODO: check the config structure. Something might have changed
+- config structure
+- DB scheme
 
 ### What's Changed
 
