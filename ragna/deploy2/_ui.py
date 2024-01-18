@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Request, status
+import asyncio
+from typing import Annotated
+
+import sse_starlette
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse
 
 from ragna._utils import as_awaitable
@@ -23,7 +27,7 @@ def make_router(config):
         if not isinstance(result, User):
             return result
 
-        request.state.session = Session(user=result)
+        request.state.session = Session(id=request.state.session_id, user=result)
         return redirect_response(
             "/ui", htmx=request, status_code=status.HTTP_303_SEE_OTHER
         )
@@ -49,5 +53,22 @@ def make_router(config):
             name="main.html",
             context={"request": request, "user": session.user},
         )
+
+    events: dict[str, asyncio.Queue] = {}
+
+    def _get_event_queue(session: SessionDependency) -> asyncio.Queue:
+        return events.setdefault(session.id, asyncio.Queue())
+
+    EventQueueDependency = Annotated[asyncio.Queue, Depends(_get_event_queue)]
+
+    @router.get("/events")
+    async def events(
+        event_queue: EventQueueDependency,
+    ) -> sse_starlette.EventSourceResponse:
+        async def event_stream():
+            while True:
+                yield await event_queue.get()
+
+        return sse_starlette.EventSourceResponse(event_stream())
 
     return router

@@ -17,6 +17,7 @@ from .schemas import User
 
 
 class Session(pydantic.BaseModel):
+    id: str
     user: User
     current_chat_id: Optional[uuid.UUID] = None
 
@@ -104,6 +105,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             session = None
             session_available = False
 
+        request.state.session_id = session_id
         request.state.session = session
         response = await call_next(request)
         session = request.state.session
@@ -201,8 +203,8 @@ class SessionMiddleware(BaseHTTPMiddleware):
         )
 
 
-async def get_session(request: Request) -> Session:
+async def _get_session(request: Request) -> Session:
     return request.state.session
 
 
-SessionDependency = Annotated[Session, Depends(get_session)]
+SessionDependency = Annotated[Session, Depends(_get_session)]
