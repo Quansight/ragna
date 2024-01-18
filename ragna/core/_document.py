@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import io
 import os
 import secrets
 import time
@@ -269,3 +270,32 @@ class PdfDocumentHandler(DocumentHandler):
         ) as document:
             for number, page in enumerate(document, 1):
                 yield Page(text=page.get_text(sort=True), number=number)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class DocxDocumentHandler(DocumentHandler):
+    """Document handler for `.docx` documents.
+
+    Note: this does *not* extract text from headers or footers.
+
+    !!! info "Package requirements"
+
+        - [`python-docx`](https://github.com/python-openxml/python-docx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-docx>=1.1.0")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".docx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import docx
+
+        document_docx = docx.Document(io.BytesIO(document.read()))
+        for paragraph in document_docx.paragraphs:
+            text = paragraph.text
+            if len(text) > 0:  # skip empty paragraphs
+                yield Page(text=text)
