@@ -276,7 +276,9 @@ class PdfDocumentHandler(DocumentHandler):
 class DocxDocumentHandler(DocumentHandler):
     """Document handler for `.docx` documents.
 
-    Note: this does *not* extract text from headers or footers.
+    !!! note
+    
+        This does *not* extract text from headers or footers.
 
     !!! info "Package requirements"
 
