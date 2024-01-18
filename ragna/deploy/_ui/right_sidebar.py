@@ -83,6 +83,7 @@ class RightSidebar(pn.viewable.Viewer):
 
                                 :host(.visible_sidebar) {
                                         animation: 0.25s ease-in forwards show_right_sidebar;
+                                        background-color: white;
                                 }
 
                                 @keyframes show_right_sidebar {
