@@ -324,24 +324,31 @@ class CentralView(pn.viewable.Viewer):
         if self.on_click_chat_info is None:
             return
 
-        markdown = [
-            "This response was generated using the following data from the uploaded files: <br />"
-        ]
+        source_infos = []
         for rank, source in enumerate(sources, 1):
             location = source["location"]
             if location:
-                location = f": {location}"
-            markdown.append(f"{rank}. **{source['document']['name']}**{location}")
-            markdown.append("----")
+                location = f": page(s) {location}"
+            source_infos.append(
+                (
+                    f"<b>{rank}. {source['document']['name']}</b> {location}",
+                    pn.pane.Markdown(source["content"], css_classes=["source-content"]),
+                )
+            )
 
         self.on_click_chat_info(
             event,
             "Source Info",
             [
                 pn.pane.Markdown(
-                    "\n".join(markdown),
+                    "This response was generated using the following data from the uploaded files: <br />",
                     dedent=True,
                     stylesheets=[""" hr { width: 94%; height:1px;  }  """],
+                ),
+                pn.layout.Accordion(
+                    *source_infos,
+                    header_background="transparent",
+                    stylesheets=ui.stylesheets((":host", {"width": "100%"})),
                 ),
             ],
         )

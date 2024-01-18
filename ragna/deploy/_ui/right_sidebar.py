@@ -64,7 +64,7 @@ class RightSidebar(pn.viewable.Viewer):
                                         height:100%;
                                         min-width: unset;
                                         width: 0px;
-                                        overflow:hidden;
+                                        overflow:auto;
 
                                         margin-left: min(15px, 2%);
                                         border-left: 1px solid #EEEEEE;
@@ -83,6 +83,7 @@ class RightSidebar(pn.viewable.Viewer):
 
                                 :host(.visible_sidebar) {
                                         animation: 0.25s ease-in forwards show_right_sidebar;
+                                        background-color: white;
                                 }
 
                                 @keyframes show_right_sidebar {
