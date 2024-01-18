@@ -1,0 +1,9 @@
+{% extends "base.html" %} {% block content %}
+<div
+  class="container-xxl vh-100 d-flex flex-column overflow-hidden"
+  hx-ext="sse"
+  sse-connect="/ui/events"
+>
+  {% include 'main.html' %}
+</div>
+{% endblock %}

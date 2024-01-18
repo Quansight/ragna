@@ -1,4 +1,22 @@
-{% extends "base.html" %} {% block content %}
-<div>User {{ user.username }}</div>
-<button class="btn btn-primary" hx-post="/ui/logout">Logout</button>
-{% endblock %}
+<div class="col">
+  <div>User {{ user.username }}</div>
+  <button class="btn btn-primary" hx-post="/ui/logout">Logout</button>
+</div>
+<div class="col">
+  <div class="row flex-fill p-3">
+    <ul id="chat-feed" style="list-style-type: none"></ul>
+  </div>
+  <div class="row bg-success d-flex flex-row">
+    <form hx-post="/ui/answer" hx-target="#chat-feed" hx-swap="beforeend">
+      <input
+        type="text"
+        name="prompt"
+        class="form-control flex-grow-1"
+        placeholder="Ask a question"
+      />
+      <button type="submit" class="btn btn-primary w-25">
+        <i class="bi bi-arrow-right-short"></i>
+      </button>
+    </form>
+  </div>
+</div>

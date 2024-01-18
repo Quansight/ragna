@@ -50,14 +50,14 @@ def make_router(config):
     @router.get("")
     async def main_page(request: Request, session: SessionDependency):
         return TemplateResponse(
-            name="main.html",
+            name="index.html",
             context={"request": request, "user": session.user},
         )
 
-    events: dict[str, asyncio.Queue] = {}
+    event_queues: dict[str, asyncio.Queue] = {}
 
-    def _get_event_queue(session: SessionDependency) -> asyncio.Queue:
-        return events.setdefault(session.id, asyncio.Queue())
+    async def _get_event_queue(session: SessionDependency) -> asyncio.Queue:
+        return event_queues.setdefault(session.id, asyncio.Queue())
 
     EventQueueDependency = Annotated[asyncio.Queue, Depends(_get_event_queue)]
 
