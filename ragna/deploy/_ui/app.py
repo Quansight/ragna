@@ -109,8 +109,8 @@ class App(param.Parameterized):
     def serve(self):
         all_pages = {
             "/": self.index_page,
-            "auth": self.auth_page,
-            "logout": self.logout_page,
+            "/auth": self.auth_page,
+            "/logout": self.logout_page,
             "/health": self.health_page,
         }
         titles = {"/": "Home"}

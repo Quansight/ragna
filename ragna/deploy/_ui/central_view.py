@@ -6,6 +6,8 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
+from ragna._compat import anext
+
 from . import styles as ui
 
 # TODO : move all the CSS rules in a dedicated file
@@ -91,7 +93,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     role: str = param.Selector(objects=["system", "user", "assistant"])
     sources = param.List(allow_None=True)
     on_click_source_info_callback = param.Callable(allow_None=True)
-    _content_style_declarations = param.Dict(constant=True)
 
     def __init__(
         self,
@@ -104,8 +105,48 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         timestamp=None,
         show_timestamp=True,
     ):
+        css_class = f"message-content-{self.role}"
+        self.content_pane = pn.pane.Markdown(
+            content,
+            css_classes=["message-content", css_class],
+            stylesheets=ui.stylesheets(
+                (
+                    "table",
+                    {"margin-top": "10px", "margin-bottom": "10px"},
+                )
+            ),
+        )
+
+        if role == "assistant":
+            assert sources is not None
+            css_class = "message-content-assistant-with-buttons"
+            object = pn.Column(
+                self.content_pane,
+                self._copy_and_source_view_buttons(),
+                css_classes=[css_class],
+            )
+        else:
+            object = self.content_pane
+
+        object.stylesheets.extend(
+            ui.stylesheets(
+                (
+                    f":host(.{css_class})",
+                    {"background-color": "rgb(243, 243, 243) !important"}
+                    if role == "user"
+                    else {
+                        "background-color": "none",
+                        "border": "rgb(234, 234, 234)",
+                        "border-style": "solid",
+                        "border-width": "1.2px",
+                        "border-radius": "5px",
+                    },
+                )
+            ),
+        )
+
         super().__init__(
-            object=content,
+            object=object,
             role=role,
             user=user,
             sources=sources,
@@ -116,42 +157,13 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
-            renderers=[self._render],
-            _content_style_declarations={
-                "background-color": "rgb(243, 243, 243) !important"
-            }
-            if role == "user"
-            else {
-                "background-color": "none",
-                "border": "rgb(234, 234, 234)",
-                "border-style": "solid",
-                "border-width": "1.2px",
-                "border-radius": "5px",
-            },
         )
         self._stylesheets.extend(message_stylesheets)
-
-        if self.sources:
-            self._update_object_pane()
-
-    def _update_object_pane(self, event=None):
-        super()._update_object_pane(event)
-        if self.sources:
-            assert self.role == "assistant"
-            css_class = "message-content-assistant-with-buttons"
-            self._object_panel = self._center_row[0] = pn.Column(
-                self._object_panel,
-                self._copy_and_source_view_buttons(),
-                css_classes=["message", css_class],
-                stylesheets=ui.stylesheets(
-                    (f":host(.{css_class})", self._content_style_declarations)
-                ),
-            )
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
         return pn.Row(
             CopyToClipboardButton(
-                value=self.object,
+                value=self.content_pane.object,
                 title="Copy",
                 stylesheets=[
                     ui.CHAT_INTERFACE_CUSTOM_BUTTON,
@@ -192,25 +204,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
 
         return model[0].upper()
-
-    def _render(self, content: str) -> pn.pane.Markdown:
-        class_selectors = [
-            (
-                "table",
-                {"margin-top": "10px", "margin-bottom": "10px"},
-            )
-        ]
-        if self.role != "assistant":
-            # The styling for the assistant messages is applied self._update_object_pane
-            # since it needs to apply to the content as well as the buttons.
-            class_selectors.append(
-                (":host(.message-content)", self._content_style_declarations)
-            )
-        return pn.pane.Markdown(
-            content,
-            css_classes=["message-content", f"message-content-{self.role}"],
-            stylesheets=ui.stylesheets(*class_selectors),
-        )
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
@@ -377,15 +370,21 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer = await self.api_wrapper.answer(self.current_chat["id"], content)
+            answer_stream = self.api_wrapper.answer(self.current_chat["id"], content)
+            answer = await anext(answer_stream)
 
-            yield RagnaChatMessage(
+            message = RagnaChatMessage(
                 answer["content"],
                 role="assistant",
                 user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
             )
+            yield message
+
+            async for chunk in answer_stream:
+                message.content_pane.object += chunk["content"]
+
         except Exception:
             yield RagnaChatMessage(
                 (
