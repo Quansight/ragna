@@ -338,21 +338,10 @@ class CentralView(pn.viewable.Viewer):
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{source['document']['name']}</b> {location}",
+                    f"<b>{rank}. {source['document']['name']}</b> {location}",
                     pn.pane.Markdown(source["content"], css_classes=["source-content"]),
                 )
             )
-
-        accordion = pn.layout.Accordion(
-            *source_infos,
-            header_background="transparent",
-            stylesheets=[
-                """:host { 
-                                                            width: 100%;
-                                                        }
-                                 """
-            ],
-        )
 
         self.on_click_chat_info(
             event,
@@ -363,7 +352,11 @@ class CentralView(pn.viewable.Viewer):
                     dedent=True,
                     stylesheets=[""" hr { width: 94%; height:1px;  }  """],
                 ),
-                accordion,
+                pn.layout.Accordion(
+                    *source_infos,
+                    header_background="transparent",
+                    stylesheets=ui.stylesheets((":host", {"width": "100%"})),
+                ),
             ],
         )
 
