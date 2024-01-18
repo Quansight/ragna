@@ -25,8 +25,10 @@ class Auth(abc.ABC):
 
 class NoAuth(Auth):
     def login_page(self, request: Request) -> Response:
+        # Although this has nothing to do with OAuth, we can re-use the endpoint to our
+        # advantage here. Hitting it triggers the login function below.
         return redirect_response(
-            "/ui", htmx=request, status_code=status.HTTP_303_SEE_OTHER
+            "/ui/oauth-callback", htmx=request, status_code=status.HTTP_303_SEE_OTHER
         )
 
     def login(self, request: Request) -> User:
@@ -49,7 +51,7 @@ class DummyBasicAuth(Auth):
         self, request: Request, *, fail_reason: Optional[str] = None
     ) -> Union[str, Response]:
         return TemplateResponse(
-            name="login.html",
+            name="basic_auth.html",
             context={"request": request},
         )
 
@@ -82,7 +84,14 @@ class GithubOauth(Auth):
         self._client_secret = os.environ["RAGNA_GITHUB_OAUTH_CLIENT_SECRET"]
 
     def login_page(self, request) -> Response:
-        pass
+        return TemplateResponse(
+            name="oauth.html",
+            context={
+                "request": request,
+                "service": "Github",
+                "url": f"https://github.com/login/oauth/authorize?client_id={self._client_id}",
+            },
+        )
 
     async def login(self, request):
         async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:

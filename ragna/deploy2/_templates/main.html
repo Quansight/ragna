@@ -1,0 +1,4 @@
+{% extends "base.html" %} {% block content %}
+<div>User {{ user.username }}</div>
+<button class="btn btn-primary" hx-post="/ui/logout">Logout</button>
+{% endblock %}

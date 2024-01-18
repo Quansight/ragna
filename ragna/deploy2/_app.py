@@ -1,9 +1,11 @@
+from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 import ragna
 from ragna.core import RagnaException
@@ -21,7 +23,7 @@ def make_app(config):
 
     # from config
     config = SimpleNamespace(
-        authentication=_auth.DummyBasicAuth,
+        authentication=_auth.NoAuth,
         deploy=SimpleNamespace(
             session_storage_url="",
             token_expires=3600,
@@ -56,6 +58,12 @@ def make_app(config):
 
     app.include_router(ui.make_router(config), prefix="/ui", include_in_schema=False)
     app.include_router(api.make_router(config), prefix="/api")
+
+    app.mount(
+        "/static",
+        StaticFiles(directory=Path(__file__).parent / "static"),
+        name="static",
+    )
 
     @app.get("/", include_in_schema=False)
     async def ui_redirect(request: Request) -> Response:

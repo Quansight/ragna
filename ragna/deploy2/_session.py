@@ -47,16 +47,16 @@ class _SessionStorageBase(abc.ABC):
 class InMemorySessionStorage(_SessionStorageBase):
     def __init__(self, url: str) -> None:
         super().__init__(url)
-        self._dct: dict[str, Session] = {}
+        self._storage: dict[str, Session] = {}
 
     def __setitem__(self, session_id: str, session: Session):
-        self._dct[session_id] = session
+        self._storage[session_id] = session
 
     def __getitem__(self, session_id: str) -> Session:
-        return self._dct[session_id]
+        return self._storage[session_id]
 
     def __delitem__(self, session_id: str) -> None:
-        del self._dct[session_id]
+        del self._storage[session_id]
 
 
 # TODO: add a redis variant for proper deployments
@@ -135,14 +135,14 @@ class SessionMiddleware(BaseHTTPMiddleware):
             value=session_id,
             max_age=self._config.deploy.cookie_expires,
             httponly=True,
-            samesite="strict",
+            samesite="lax",
         )
 
     def _delete_cookie(self, response: Response):
         response.delete_cookie(
             key=self._COOKIE_NAME,
             httponly=True,
-            samesite="strict",
+            samesite="lax",
         )
 
     _JWT_SECRET = os.environ.get("RAGNA_TOKEN_SECRET", secrets.token_urlsafe(32)[:32])
