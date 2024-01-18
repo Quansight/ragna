@@ -55,12 +55,11 @@
 - fix source view on messages that were generated in a previous session by
   [@pmeier](https://github.com/pmeier) in
   [#273](https://github.com/Quansight/ragna/pull/273)
-
-* add forward slashes to the auth and logout endpoints by @pmeier in
+- add forward slashes to the auth and logout endpoints by @pmeier in
   https://github.com/Quansight/ragna/pull/276
-* implement streaming for assistants by @pmeier in
+- implement streaming for assistants by @pmeier in
   https://github.com/Quansight/ragna/pull/215
-* return source content from the REST API by @pmeier in
+- return source content from the REST API by @pmeier in
   https://github.com/Quansight/ragna/pull/264
 
 ### New Contributors
