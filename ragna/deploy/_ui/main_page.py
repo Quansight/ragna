@@ -63,6 +63,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     def open_modal(self):
         self.modal = ModalConfiguration(
             api_wrapper=self.api_wrapper,
+            clicked_on_upload_files=self.left_sidebar.clicked_on_upload_files,
             new_chat_ready_callback=self.open_new_chat,
             cancel_button_callback=self.on_click_cancel_button,
         )
@@ -83,9 +84,11 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.current_chat_id = new_chat_id
         await self.refresh_data()
 
+        self.left_sidebar.clicked_on_upload_files = False
         self.template.close_modal()
 
     def on_click_cancel_button(self, event):
+        self.left_sidebar.clicked_on_upload_files = False
         self.template.close_modal()
 
     # Left sidebar callbacks

@@ -15,6 +15,8 @@ class LeftSidebar(pn.viewable.Viewer):
         self.on_click_chat = None
         self.on_click_new_chat = None
 
+        self.clicked_on_upload_files = False
+
         self.chat_buttons = []
 
         pn.state.location.sync(
@@ -26,6 +28,15 @@ class LeftSidebar(pn.viewable.Viewer):
     def trigger_on_click_new_chat(self, event):
         if event.old > event.new:
             return
+
+        if self.on_click_new_chat is not None:
+            self.on_click_new_chat(event)
+
+    def trigger_on_click_upload_files(self, event):
+        if event.old > event.new:
+            return
+
+        self.clicked_on_upload_files = True
 
         if self.on_click_new_chat is not None:
             self.on_click_new_chat(event)
@@ -154,6 +165,26 @@ class LeftSidebar(pn.viewable.Viewer):
             ],
         )
 
+        upload_files_button = pn.widgets.Button(
+            name="Upload Files",
+            button_type="default",
+            icon="plus",
+            stylesheets=[
+                """ 
+                        :host { 
+                            width: 90%;
+                            margin-left: 10px;
+                            margin-top: 10px;
+                        }
+                        :host div button { 
+                            text-align: left;
+                        }
+                """
+            ],
+        )
+
+        upload_files_button.on_click(self.trigger_on_click_upload_files)
+
         new_chat_button = pn.widgets.Button(
             name="New Chat",
             button_type="primary",
@@ -176,7 +207,7 @@ class LeftSidebar(pn.viewable.Viewer):
         new_chat_button.on_click(self.trigger_on_click_new_chat)
 
         objects = (
-            [header, new_chat_button]
+            [header, upload_files_button, new_chat_button]
             + self.chat_buttons
             + [
                 pn.layout.VSpacer(),

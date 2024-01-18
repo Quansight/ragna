@@ -77,10 +77,12 @@ class ModalConfiguration(pn.viewable.Viewer):
 
     advanced_config_collapsed = param.Boolean(default=True)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, api_wrapper, clicked_on_upload_files, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
         self.api_wrapper = api_wrapper
+
+        self.clicked_on_upload_files = clicked_on_upload_files
 
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
@@ -93,6 +95,8 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.api_wrapper.auth_token,
             upload_endpoints["informations_endpoint"],
         )
+
+        self.file_widget = pn.widgets.FileSelector()
 
         # Most widgets (including those that use from_param) should be placed after the super init call
         self.cancel_button = pn.widgets.Button(
@@ -108,15 +112,18 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.upload_files_label = pn.pane.HTML()
         self.change_upload_files_label()
 
-        self.upload_row = pn.Row(
-            self.document_uploader,
-            sizing_mode="stretch_width",
-            stylesheets=[""" :host { margin-bottom: 20px; } """],
-        )
-
         self.got_timezone = False
 
     def did_click_on_start_chat_button(self, event):
+        if self.clicked_on_upload_files:
+            # close your eyes and pray
+            files = {}
+            files["name"] = self.file_widget.value
+            files["size"] = "0"
+            files["type"] = "text/plain"
+            files["lastModified"] = "1519211809934"
+            self.document_uploader.file_list = [files]
+
         if not self.document_uploader.can_proceed_to_upload():
             self.change_upload_files_label("missing_file")
         else:
@@ -127,24 +134,28 @@ class ModalConfiguration(pn.viewable.Viewer):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
 
-        try:
-            new_chat_id = await self.api_wrapper.start_and_prepare(
-                name=self.chat_name,
-                documents=uploaded_documents,
-                source_storage=self.config.source_storage_name,
-                assistant=self.config.assistant_name,
-                params=self.config.to_params_dict(),
-            )
+        if not self.clicked_on_upload_files:
+            try:
+                new_chat_id = await self.api_wrapper.start_and_prepare(
+                    name=self.chat_name,
+                    documents=uploaded_documents,
+                    source_storage=self.config.source_storage_name,
+                    assistant=self.config.assistant_name,
+                    params=self.config.to_params_dict(),
+                )
+                self.start_chat_button.disabled = False
 
-            self.start_chat_button.disabled = False
-
-            if self.new_chat_ready_callback is not None:
                 await self.new_chat_ready_callback(new_chat_id)
 
-        except Exception:
-            self.change_upload_files_label("upload_error")
-            self.document_uploader.loading = False
+            except Exception:
+                if not self.clicked_on_upload_files:
+                    self.change_upload_files_label("upload_error")
+                    self.document_uploader.loading = False
+                    self.start_chat_button.disabled = False
+
+        else:
             self.start_chat_button.disabled = False
+            await self.new_chat_ready_callback("")
 
     def change_upload_files_label(self, mode="normal"):
         if mode == "upload_error":
@@ -184,24 +195,29 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.config = config
             self.document_uploader.allowed_documents = config.allowed_documents
 
-        return pn.Row(
-            pn.Column(
-                pn.pane.HTML("<b>Assistants</b>"),
-                pn.widgets.Select.from_param(
-                    self.config.param.assistant_name,
-                    name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+        # the config is currently coupled to this function, so we need to call it
+        # for the upload file modal even though we don't need a model section there
+        if self.clicked_on_upload_files:
+            return
+        else:
+            return pn.Row(
+                pn.Column(
+                    pn.pane.HTML("<b>Assistants</b>"),
+                    pn.widgets.Select.from_param(
+                        self.config.param.assistant_name,
+                        name="",
+                        stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                    ),
                 ),
-            ),
-            pn.Column(
-                pn.pane.HTML("<b>Source storage</b>"),
-                pn.widgets.Select.from_param(
-                    self.config.param.source_storage_name,
-                    name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                pn.Column(
+                    pn.pane.HTML("<b>Source storage</b>"),
+                    pn.widgets.Select.from_param(
+                        self.config.param.source_storage_name,
+                        name="",
+                        stylesheets=[ui.BK_INPUT_GRAY_BORDER],
+                    ),
                 ),
-            ),
-        )
+            )
 
     @pn.depends("config", "config.assistant_name", "config.source_storage_name")
     def advanced_config_ui(self):
@@ -318,26 +334,55 @@ class ModalConfiguration(pn.viewable.Viewer):
         return pn.Column(toggle_button, card)
 
     def __panel__(self):
-        return pn.Column(
-            pn.pane.HTML(
-                f"""<h2>Start a new chat</h2>
-                         Let's set up the configurations for your new chat !<br />
-                         <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
-                         """,
-            ),
-            ui.divider(),
-            pn.pane.HTML("<b>Chat name</b>"),
-            self.chat_name_input,
-            ui.divider(),
-            self.model_section,
-            ui.divider(),
-            self.advanced_config_ui,
-            ui.divider(),
-            self.upload_files_label,
-            self.upload_row,
-            pn.Row(self.cancel_button, self.start_chat_button),
-            min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
-            min_width=ui.CONFIG_MODAL_WIDTH,
-            sizing_mode="stretch_both",
-            height_policy="max",
-        )
+        # side-effect nirvana
+        not_visible = pn.Row(self.document_uploader)
+        not_visible.visible = False
+
+        if self.clicked_on_upload_files:
+            self.start_chat_button.name = "Select Files"
+            return pn.Column(
+                pn.pane.HTML(
+                    f"""<h2>Select files</h2>
+                             Select local files to be used for future chats. <br />
+                             <script>{js.reset_modal_size(ui.FILE_MODAL_WIDTH, ui.FILE_MODAL_MIN_HEIGHT)}</script>
+                             """,
+                ),
+                ui.divider(),
+                self.model_section,
+                self.upload_files_label,
+                self.file_widget,
+                pn.Row(self.cancel_button, self.start_chat_button),
+                not_visible,
+                min_height=ui.FILE_MODAL_MIN_HEIGHT,
+                min_width=ui.FILE_MODAL_WIDTH,
+                sizing_mode="stretch_both",
+                height_policy="max",
+            )
+        else:
+            return pn.Column(
+                pn.pane.HTML(
+                    f"""<h2>Start a new chat</h2>
+                            Let's set up the configurations for your new chat !<br />
+                            <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
+                            """,
+                ),
+                ui.divider(),
+                pn.pane.HTML("<b>Chat name</b>"),
+                self.chat_name_input,
+                ui.divider(),
+                self.model_section,
+                ui.divider(),
+                self.advanced_config_ui,
+                ui.divider(),
+                self.upload_files_label,
+                pn.Row(
+                    self.document_uploader,
+                    sizing_mode="stretch_width",
+                    stylesheets=[""" :host { margin-bottom: 20px; } """],
+                ),
+                pn.Row(self.cancel_button, self.start_chat_button),
+                min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
+                min_width=ui.CONFIG_MODAL_WIDTH,
+                sizing_mode="stretch_both",
+                height_policy="max",
+            )
