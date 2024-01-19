@@ -88,4 +88,5 @@ jobs:
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
           platforms: linux/amd64,linux/arm64
+          load: true
           push: ${{ github.event_name == 'workflow_dispatch' }}
