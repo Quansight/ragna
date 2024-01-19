@@ -79,6 +79,7 @@ jobs:
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
       - name: Build and push on workflow dispatch
+        id: build
         uses: docker/build-push-action@v5
         with:
           cache-from: type=local,src=${{ steps.cache.outputs.cache-dir }}
@@ -88,5 +89,11 @@ jobs:
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
           platforms: linux/amd64,linux/arm64
-          load: true
+          outputs: type=image
           push: ${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Debug
+        run: |
+          set -x
+          echo ${{ toJson(steps.id.build.outputs) }}
+          docker image ls -a
