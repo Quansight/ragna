@@ -1,15 +1,7 @@
-import pytest
-
 from ragna.core import DocxDocumentHandler, LocalDocument
 
 
-@pytest.fixture()
-def docx_text():
-    return "Ragna is neat!"
-
-
-@pytest.fixture()
-def tmp_docx_document(tmp_path, docx_text):
+def get_docx_document(tmp_path, docx_text):
     import docx
 
     document = docx.Document()
@@ -20,7 +12,12 @@ def tmp_docx_document(tmp_path, docx_text):
     return LocalDocument.from_path(path)
 
 
-def test_docx(tmp_docx_document, docx_text):
-    handler = DocxDocumentHandler()
-    for page in handler.extract_pages(tmp_docx_document):
-        assert page.text == docx_text
+def test_docx(tmp_path):
+    docx_text = "ragna is neat!"
+    tmp_docx_document = get_docx_document(tmp_path, docx_text)
+    assert isinstance(tmp_docx_document.handler, DocxDocumentHandler)
+    pages = list(tmp_docx_document.extract_pages())
+    assert len(pages) == 1
+    page = pages[0]
+    print(page.text)
+    assert page.text == "\n".join((docx_text, docx_text))

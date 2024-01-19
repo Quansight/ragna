@@ -277,7 +277,7 @@ class DocxDocumentHandler(DocumentHandler):
     """Document handler for `.docx` documents.
 
     !!! note
-    
+
         This does *not* extract text from headers or footers.
 
     !!! info "Package requirements"
@@ -297,7 +297,5 @@ class DocxDocumentHandler(DocumentHandler):
         import docx
 
         document_docx = docx.Document(io.BytesIO(document.read()))
-        for paragraph in document_docx.paragraphs:
-            text = paragraph.text
-            if len(text) > 0:  # skip empty paragraphs
-                yield Page(text=text)
+        text = "\n".join(paragraph.text for paragraph in document_docx.paragraphs)
+        yield Page(text=text)
