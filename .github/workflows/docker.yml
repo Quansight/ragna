@@ -63,9 +63,8 @@ jobs:
       - name: Build and push on workflow dispatch
         uses: docker/build-push-action@v5
         with:
-          tags:
-            "${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{
-            steps.metadata.outputs.tag }}"
+          # prettier-ignore
+          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
           platforms: linux/amd64,linux/arm64
