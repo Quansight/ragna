@@ -14,6 +14,7 @@ dependencies:
       - pre-commit
       - types-aiofiles
       - sqlalchemy-stubs
+      - setuptools-scm
       # documentation
       - mkdocs
       - mkdocs-material
