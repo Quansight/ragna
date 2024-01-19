@@ -1,9 +1,9 @@
+import docx
+
 from ragna.core import DocxDocumentHandler, LocalDocument
 
 
 def get_docx_document(tmp_path, docx_text):
-    import docx
-
     document = docx.Document()
     document.add_heading(docx_text)
     document.add_paragraph(docx_text)
