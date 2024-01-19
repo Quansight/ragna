@@ -142,7 +142,7 @@ module = [
     "lancedb",
     "param",
     "pyarrow",
-    "python-docx",
+    "docx",
     "sentence_transformers",
 ]
 ignore_missing_imports = true
