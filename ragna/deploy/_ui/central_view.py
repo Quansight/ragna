@@ -400,7 +400,7 @@ class CentralView(pn.viewable.Viewer):
         if self.current_chat is None:
             return
 
-        return RagnaChatInterface(
+        chat_interface = RagnaChatInterface(
             *[
                 RagnaChatMessage(
                     message["content"],
@@ -447,28 +447,33 @@ class CentralView(pn.viewable.Viewer):
                     ),
                 )
             ],
-            card_params=dict(
-                stylesheets=ui.stylesheets(
-                    (":host", {"border": "none !important"}),
-                    (
-                        ".chat-feed-log",
-                        {
-                            "padding-right": "18%",
-                            "margin-left": "18%",
-                            "padding-top": "25px !important",
-                        },
-                    ),
-                    (
-                        ".chat-interface-input-container",
-                        {
-                            "margin-left": "19%",
-                            "margin-right": "20%",
-                            "margin-bottom": "20px",
-                        },
-                    ),
-                )
-            ),
         )
+
+        # TODO: Pass as regular parameters when
+        #  https://github.com/holoviz/panel/pull/6154 is merged and released.
+        chat_interface._card.stylesheets.extend(
+            ui.stylesheets(
+                (":host", {"border": "none !important"}),
+                (
+                    ".chat-feed-log",
+                    {
+                        "padding-right": "18%",
+                        "margin-left": "18%",
+                        "padding-top": "25px !important",
+                    },
+                ),
+                (
+                    ".chat-interface-input-container",
+                    {
+                        "margin-left": "19%",
+                        "margin-right": "20%",
+                        "margin-bottom": "20px",
+                    },
+                ),
+            )
+        )
+
+        return chat_interface
 
     @pn.depends("current_chat")
     def header(self):
