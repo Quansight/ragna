@@ -15,6 +15,10 @@ on:
       - release/*
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   DOCKER_REGISTRY: quay.io
   DOCKER_IMAGE: quansight/ragna
@@ -43,6 +47,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set up Docker Build Cache
+        id: cache
+        run: |
+          CACHE_DIR="${HOME}/.cache/docker"
+          mkdir --parents "${CACHE_DIR}"
+          echo "cache-dir=${CACHE_DIR}" | tee --append $GITHUB_OUTPUT
+
+      - name: Restore docker cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.cache.outputs.cache-dir }}
+          key: docker-${{ hashFiles('Dockerfile','requirements-docker.lock') }}
+          restore-keys: docker-
+
       - name: Setup metadata
         id: metadata
         run: |
@@ -63,6 +81,8 @@ jobs:
       - name: Build and push on workflow dispatch
         uses: docker/build-push-action@v5
         with:
+          cache-from: type=local,src=${{ steps.cache.outputs.cache-dir }}
+          cache-to: type=local,dest=${{ steps.cache.outputs.cache-dir }}
           # prettier-ignore
           tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
           build-args: |
