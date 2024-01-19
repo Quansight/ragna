@@ -468,6 +468,7 @@ class CentralView(pn.viewable.Viewer):
                     ),
                 )
             ),
+            show_activity_dot=False,
         )
 
     @pn.depends("current_chat")
