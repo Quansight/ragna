@@ -9,7 +9,7 @@ on:
       - "environment-dev.yml"
       - "pyproject.toml"
       - "ragna-docker.toml"
-      - "requirements-docker.txt"
+      - "requirements-docker.lock"
   push:
     branches:
       - release/*
