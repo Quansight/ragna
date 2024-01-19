@@ -15,6 +15,7 @@ dependencies:
       - types-aiofiles
       - sqlalchemy-stubs
       - setuptools-scm
+      - pip-tools
       # documentation
       - mkdocs
       - mkdocs-material
