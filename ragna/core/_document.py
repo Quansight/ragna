@@ -287,7 +287,7 @@ class DocxDocumentHandler(DocumentHandler):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("python-docx>=1.1.0")]
+        return [PackageRequirement("python-docx")]
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
