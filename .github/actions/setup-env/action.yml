@@ -61,7 +61,7 @@ runs:
     # FIXME: remove before merge
     - name: Install panel RC
       shell: bash -el {0}
-      run: pip install --upgrade --pre 'panel>=1.3, <1.4'
+      run: pip install --upgrade --pre panel==1.3.7rc2
 
     - name: Install ragna
       shell: bash -el {0}
