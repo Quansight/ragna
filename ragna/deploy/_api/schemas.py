@@ -37,6 +37,8 @@ class Source(BaseModel):
     id: str
     document: Document
     location: str
+    content: str
+    num_tokens: int
 
     @classmethod
     def from_core(cls, source: ragna.core.Source) -> Source:
@@ -44,6 +46,8 @@ class Source(BaseModel):
             id=source.id,
             document=Document.from_core(source.document),
             location=source.location,
+            content=source.content,
+            num_tokens=source.num_tokens,
         )
 
 
