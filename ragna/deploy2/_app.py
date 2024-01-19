@@ -13,6 +13,7 @@ from ragna.core import RagnaException
 from . import _api as api
 from . import _auth
 from . import _ui as ui
+from ._engine import Engine
 from ._session import SessionMiddleware
 from ._utils import redirect_response
 
@@ -56,8 +57,11 @@ def make_app(config):
         allow_headers=["*"],
     )
 
-    app.include_router(ui.make_router(config), prefix="/ui", include_in_schema=False)
-    app.include_router(api.make_router(config), prefix="/api")
+    engine = Engine(config)
+    app.include_router(
+        ui.make_router(engine, config), prefix="/ui", include_in_schema=False
+    )
+    app.include_router(api.make_router(engine, config), prefix="/api")
 
     app.mount(
         "/static",

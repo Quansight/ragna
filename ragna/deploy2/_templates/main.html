@@ -6,6 +6,13 @@
   <div class="row flex-fill p-3">
     <ul id="chat-feed" style="list-style-type: none"></ul>
   </div>
+  <div>
+    <form enctype="multipart/form-data" hx-post="/ui/chat">
+      <input type="file" multiple name="documents" />
+      <input type="text" name="chat_name" placeholder="chat name" />
+      <button type="submit">Start Chat</button>
+    </form>
+  </div>
   <div class="row bg-success d-flex flex-row">
     <form hx-post="/ui/answer" hx-target="#chat-feed" hx-swap="beforeend">
       <input

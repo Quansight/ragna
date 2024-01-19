@@ -2,7 +2,7 @@ import asyncio
 from typing import Annotated
 
 import sse_starlette
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Form, Request, UploadFile, status
 from fastapi.responses import HTMLResponse
 
 from ragna._utils import as_awaitable
@@ -13,7 +13,7 @@ from ._utils import redirect_response
 from .schemas import User
 
 
-def make_router(config):
+def make_router(engine, config):
     router = APIRouter()
 
     auth = config.authentication()
@@ -70,5 +70,11 @@ def make_router(config):
                 yield await event_queue.get()
 
         return sse_starlette.EventSourceResponse(event_stream())
+
+    @router.post("/chat")
+    async def upload_documents(
+        request: Request, documents: list[UploadFile], chat_name: Annotated[str, Form()]
+    ):
+        await engine.upload_documents(documents)
 
     return router

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request, Response
 from ._utils import redirect_response
 
 
-def make_router(config):
+def make_router(engine, config):
     router = APIRouter()
 
     @router.get("/", include_in_schema=False)
