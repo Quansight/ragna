@@ -297,5 +297,7 @@ class DocxDocumentHandler(DocumentHandler):
         import docx
 
         document_docx = docx.Document(io.BytesIO(document.read()))
-        text = "\n".join(paragraph.text for paragraph in document_docx.paragraphs)
-        yield Page(text=text)
+        for paragraph in document_docx.paragraphs:
+            text = paragraph.text
+            if len(text) > 0:
+                yield Page(text=text)
