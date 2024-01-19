@@ -229,12 +229,14 @@ DOCUMENT_HANDLERS = DocumentHandlerRegistry()
 
 
 @DOCUMENT_HANDLERS.load_if_available
-class TxtDocumentHandler(DocumentHandler):
-    """Document handler for `.txt` documents."""
+class PlainTextDocumentHandler(DocumentHandler):
+    """Document handler for plain-text documents.
+    Currently supports `.txt` and `.md` extensions.
+    """
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
-        return [".txt"]
+        return [".txt", ".md"]
 
     def extract_pages(self, document: Document) -> Iterator[Page]:
         yield Page(text=document.read().decode())

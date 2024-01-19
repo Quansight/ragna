@@ -31,6 +31,7 @@ RES = HERE / "resources"
 class App(param.Parameterized):
     def __init__(self, *, url, api_url, origins):
         super().__init__()
+        ui.apply_design_modifiers()
         self.url = url
         self.api_url = api_url
         self.origins = origins
@@ -108,8 +109,8 @@ class App(param.Parameterized):
     def serve(self):
         all_pages = {
             "/": self.index_page,
-            "auth": self.auth_page,
-            "logout": self.logout_page,
+            "/auth": self.auth_page,
+            "/logout": self.logout_page,
             "/health": self.health_page,
         }
         titles = {"/": "Home"}
