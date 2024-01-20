@@ -18,6 +18,5 @@ def test_docx(tmp_path):
     assert isinstance(tmp_docx_document.handler, DocxDocumentHandler)
     pages = list(tmp_docx_document.extract_pages())
     assert len(pages) == 2
-    page = pages[0]
-    print(page.text)
-    assert page.text == docx_text
+    for page in pages:
+        assert page.text == docx_text
