@@ -142,7 +142,7 @@ def stylesheets(
     ]
 
 
-MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
+MAIN_COLOR = "#000000"  # "rgba(223, 85, 56, 1)"
 
 
 # MAIN_COLOR_LIGHT = "#10BBE580"
@@ -166,12 +166,12 @@ WELCOME_MODAL_WIDTH = 530
 APP_RAW = """
 
 :root {
-    --body-font: 'Inter', sans-serif !important;
+    --body-font: 'Guardian Sans', sans-serif !important;
     --accent-color: {{MAIN_COLOR}} !important;
 }
 
 * {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Guardian Sans', sans-serif;
 }
 
 .main {
@@ -189,10 +189,10 @@ div.card-margin {
 }
 
 
-/* Hide the whole header */
-
 #header {
-    display: none;
+    color: white !important;
+    background-color: {{MAIN_COLOR}} !important;
+    font-size: 8px !important;
 }
 
 
@@ -203,7 +203,7 @@ div#content {
 /* Fix the size of the modal */
 #pn-Modal {
     --dialog-width: 800px !important;
-    --dialog-height:500px !important; 
+    --dialog-height:500px !important;
 }
 
 /* Hide the default close button of the modal */

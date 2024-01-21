@@ -40,14 +40,26 @@ class App(param.Parameterized):
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
-            title="Ragna",
+            title="",
             accent_base_color=ui.MAIN_COLOR,
             theme_toggle=False,
             collapsed_sidebar=True,
+            header=[
+                pn.pane.PNG(IMGS / "test_logo.png", width=100),
+                pn.pane.HTML(
+                    "BX AI",
+                    style={
+                        "font-size": "25px",
+                        "margin-top": "20px",
+                        "font-weight": "300",
+                    },
+                ),
+            ],
             # main_layout=None
             raw_css=[ui.APP_RAW],
             favicon="imgs/ragna_logo.svg",
-            css_files=["https://rsms.me/", "https://rsms.me/inter/inter.css"],
+            busy_indicator=None,
+            css_files=["https://fonts.cdnfonts.com/css/guardian-sans"],
         )
 
         template.modal.objects = [

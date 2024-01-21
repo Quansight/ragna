@@ -580,7 +580,7 @@ class CentralView(pn.viewable.Viewer):
                 """                    :host { 
                                             background-color: #F9F9F9;
                                             
-                                            height:100%;
+                                            height:95%;
                                             max-width: 100%;
                                             margin-left: min(15px, 2%);
                                             border-left: 1px solid #EEEEEE;
