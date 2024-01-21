@@ -1,13 +1,24 @@
-try:
-    from ._version import __version__
-except ModuleNotFoundError:
-    import warnings
+__all__ = [
+    "Claude",
+    "ClaudeInstant",
+    "Gpt35Turbo16k",
+    "Gpt4",
+    "Mpt7bInstruct",
+    "Mpt30bInstruct",
+    "RagnaDemoAssistant",
+    "AzureGpt35Turbo",
+    "AzureGpt4"
+]
 
-    warnings.warn("ragna was not properly installed!")
-    del warnings
+from ._anthropic import Claude, ClaudeInstant
+from ._demo import RagnaDemoAssistant
+from ._mosaicml import Mpt7bInstruct, Mpt30bInstruct
+from ._openai import Gpt4, Gpt35Turbo16k
+from ._azure import AzureGpt35Turbo, AzureGpt4
+ 
+# isort: split
 
-    __version__ = "UNKNOWN"
+from ragna._utils import fix_module
 
-from . import assistants, core, deploy, source_storages
-from ._utils import local_root
-from .core import Rag
+fix_module(globals())
+del fix_module
