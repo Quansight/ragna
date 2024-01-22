@@ -85,15 +85,17 @@ jobs:
           cache-from: type=local,src=${{ steps.cache.outputs.cache-dir }}
           cache-to: type=local,dest=${{ steps.cache.outputs.cache-dir }}
           # prettier-ignore
-          tags: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
+          tags:
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
-          platforms: linux/amd64,linux/arm64
-          outputs: type=image
+          # prettier-ignore
+          platforms:
+            ${{ github.event_name == 'workflow_dispatch' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          load: ${{ github.event_name != 'workflow_dispatch' }}
           push: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Debug
         run: |
           set -x
-          echo ${{ toJson(steps.id.build.outputs) }}
           docker image ls -a
