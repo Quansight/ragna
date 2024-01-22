@@ -41,7 +41,7 @@ def app(config: Config) -> FastAPI:
     app = FastAPI(
         title="ragna",
         version=ragna.__version__,
-        root_path=os.environ.get("RAGNA_API_ROOT_PATH", ""),
+        root_path=config.api.root_path,
     )
     app.add_middleware(
         CORSMiddleware,

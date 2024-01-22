@@ -4,6 +4,11 @@ from ragna.deploy._ui.js_utils import preformat, redirect_script
 
 
 def test_preformat_basic():
+    output = preformat("{ This is awesome {{var}} }")
+    assert output == "{{ This is awesome {var} }}"
+
+
+def test_preformat_basic_fmt():
     output = preformat("{ This is awesome {{var}} }").format(var="test")
     assert output == "{ This is awesome test }"
 
