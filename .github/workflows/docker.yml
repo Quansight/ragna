@@ -70,6 +70,9 @@ jobs:
           TAG=$(echo "${VERSION}" | sed 's/+/-/g')
           echo "tag=${TAG}" | tee --append $GITHUB_OUTPUT
 
+          IMAGE_NAME=${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
+          echo "image-name=${IMAGE_NAME}" | tee --append $GITHUB_OUTPUT
+
       - name: Login to Quay.io
         if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: docker/login-action@v3
@@ -85,8 +88,7 @@ jobs:
           cache-from: type=local,src=${{ steps.cache.outputs.cache-dir }}
           cache-to: type=local,dest=${{ steps.cache.outputs.cache-dir }}
           # prettier-ignore
-          tags:
-            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
+          tags: ${{ steps.metadata.outputs.image-name }}
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
           # Unfortunately, there currently seems to be no way to build a multiplatform
@@ -101,4 +103,4 @@ jobs:
           push: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Smoke test
-        run: docker run ${{ steps.build.outputs.imageid }} --version
+        run: docker run ${{ steps.metadata.outputs.image-name }} --version
