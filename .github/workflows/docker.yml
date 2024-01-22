@@ -89,13 +89,16 @@ jobs:
             ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE}}:${{steps.metadata.outputs.tag }}
           build-args: |
             SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
+          # Unfortunately, there currently seems to be no way to build a multiplatform
+          # image and access a single one for the host platform afterwards. Thus, we
+          # only build a multiplatform image when we also want to push to the registry.
+          # https://github.com/docker/buildx/issues/166
+          # https://github.com/moby/buildkit/issues/1555
           # prettier-ignore
           platforms:
             ${{ github.event_name == 'workflow_dispatch' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           load: ${{ github.event_name != 'workflow_dispatch' }}
           push: ${{ github.event_name == 'workflow_dispatch' }}
 
-      - name: Debug
-        run: |
-          set -x
-          docker image ls -a
+      - name: Smoke test
+        run: docker run ${{ steps.build.outputs.imageid }} --version
