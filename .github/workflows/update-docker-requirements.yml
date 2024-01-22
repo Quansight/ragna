@@ -1,0 +1,59 @@
+name: docker-requirements
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/update-docker-requirements.yml"
+      - "pyproject.toml"
+      - "requirements-docker.lock"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          python-version: "3.11"
+          optional-dependencies: "false"
+
+      - name: Update docker requirements
+        id: update
+        run: |
+          pip-compile \
+            --quiet \
+            --strip-extras --output-file=requirements-docker.lock \
+            --extra=all pyproject.toml
+
+          NEEDS_UPDATE=$(git diff --quiet && 'true' || 'false')
+          echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
+
+      - name: Open a PR to update the requirements
+        if:
+          ${{ steps.update.outputs.needs-update && github.event_name ==
+          'workflow_dispatch' }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: update requirements-docker.lock
+          branch: update-docker-requirements
+          branch-suffix: timestamp
+          title: Update requirements-docker.lock
+          body:
+            https://github.com/{{ github.repository }}/actions/runs/{{ github.run_id }}
+          assignees: ${{ github.actor }}
+
+      - name: Show diff
+        if:
+          ${{ steps.update.outputs.needs-update && github.event_name !=
+          'workflow_dispatch' }}
+        run: git diff
