@@ -59,6 +59,7 @@ all = [
     "lancedb>=0.2",
     "pyarrow",
     "pymupdf>=1.23.6",
+    "python-docx",
     "tiktoken",
 ]
 
@@ -141,6 +142,7 @@ module = [
     "lancedb",
     "param",
     "pyarrow",
+    "docx",
     "sentence_transformers",
 ]
 ignore_missing_imports = true
