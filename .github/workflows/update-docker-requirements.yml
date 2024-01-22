@@ -8,6 +8,10 @@ on:
       - "requirements-docker.lock"
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -47,9 +51,11 @@ jobs:
           commit-message: update requirements-docker.lock
           branch: update-docker-requirements
           branch-suffix: timestamp
+          base: ${{ github.head_ref || github.ref_name }}
           title: Update requirements-docker.lock
+          # prettier-ignore
           body:
-            https://github.com/{{ github.repository }}/actions/runs/{{ github.run_id }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           assignees: ${{ github.actor }}
 
       - name: Show diff
