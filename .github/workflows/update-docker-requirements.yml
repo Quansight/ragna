@@ -56,7 +56,7 @@ jobs:
           # prettier-ignore
           body:
             https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
 
       - name: Show diff
         # prettier-ignore
