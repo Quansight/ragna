@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -24,8 +25,8 @@ pn.config.browser_info = True
 
 HERE = Path(__file__).parent
 # CSS = HERE / "css"
-IMGS = HERE / "imgs"
-RES = HERE / "resources"
+IMGS = Path(os.environ.get("RAGNA_UI_IMG_DIR", HERE / "imgs"))
+RES = Path(os.environ.get("RAGNA_UI_RES_DIR", HERE / "resources"))
 
 
 class App(param.Parameterized):
