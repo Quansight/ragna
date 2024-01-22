@@ -84,6 +84,8 @@ class Source(Base):
     document = relationship("Document", back_populates="sources")
 
     location = Column(types.String)
+    content = Column(types.String)
+    num_tokens = Column(types.Integer)
 
     messages = relationship(
         "Message",

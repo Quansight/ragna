@@ -5,6 +5,7 @@ __all__ = [
     "Document",
     "DocumentHandler",
     "DocumentUploadParameters",
+    "DocxDocumentHandler",
     "EnvVarRequirement",
     "LocalDocument",
     "Message",
@@ -17,7 +18,7 @@ __all__ = [
     "Requirement",
     "Source",
     "SourceStorage",
-    "TxtDocumentHandler",
+    "PlainTextDocumentHandler",
 ]
 
 from ._utils import (
@@ -33,10 +34,11 @@ from ._document import (
     Document,
     DocumentHandler,
     DocumentUploadParameters,
+    DocxDocumentHandler,
     LocalDocument,
     Page,
     PdfDocumentHandler,
-    TxtDocumentHandler,
+    PlainTextDocumentHandler,
 )
 
 # isort: split

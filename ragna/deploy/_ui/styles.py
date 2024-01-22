@@ -1,6 +1,8 @@
 """
 UI Helpers
 """
+from typing import Iterable, Optional, Union
+
 import panel as pn
 
 
@@ -8,9 +10,137 @@ def divider():
     return pn.layout.Divider(styles={"padding": "0em 1em"})
 
 
+def apply_design_modifiers():
+    apply_design_modifiers_source_accordion()
+    # add here calls to other design modifiers,
+    #   group them per UI component
+
+
+def apply_design_modifiers_source_accordion():
+    pn.theme.fast.Fast.modifiers[pn.layout.Accordion] = {
+        "stylesheets": [
+            """ :host { 
+                                    height: 100%
+                                    }
+                           """
+        ]
+    }
+
+    pn.theme.fast.Fast.modifiers[pn.layout.Card] = {
+        "stylesheets": [
+            """ 
+
+                        /* Define some variables */
+                        :host {
+                            --ragna-accordion-header-height: 50px;
+                        } 
+
+                        /* Resets some existing styles */
+                        :host(.accordion) { 
+                            margin-left: 0px;
+                            margin-top: 0px;
+                            outline: none;
+                        }
+                        
+                        /* Styles the button itself */
+                        button.accordion-header { 
+                            background-color: white !important;
+                            height: var(--ragna-accordion-header-height);
+                            padding-top: 0px;
+                            padding-bottom: 0px;
+                            outline:0px;
+                            margin-left: 15px;
+                            margin-right: 15px;
+                            width: calc(100% - 30px);
+                            border-bottom: 2px solid #D9D9D9;
+                        
+                        }
+                        
+                        button.accordion-header div.card-button {
+                            font-size: 11px;
+                            padding-top: 5px;
+                            margin-left: 0px;
+                            margin-right: 10px;
+                        }
+                        
+                        div.card-header-row {
+                            height: var(--ragna-accordion-header-height);
+                            background-color: unset !important;
+                        }
+
+                        /* styles the content of the sources content (the expanding areas of the Accordion) */
+                        div.bk-panel-models-markup-HTML.markdown {
+                            margin-left: 15px;
+                            margin-right: 15px;
+                            margin-top:0px;
+                        }
+
+                    """
+        ]
+    }
+
+    pn.theme.fast.Fast.modifiers[pn.pane.HTML] = {
+        "stylesheets": [
+            """ :host(.card-title) {
+                                height: var(--ragna-accordion-header-height);
+                                margin: 0px;
+                            }
+                        
+                            :host(.card-title) div {
+                                height: var(--ragna-accordion-header-height);
+                                
+                                display:flex;
+                                flex-direction:row;
+                                align-items:center;
+                            }
+                        
+
+                            :host(.card-title) h3 {
+                                font-weight: normal;
+                            }
+                        """
+        ]
+    }
+
+    pn.theme.fast.Fast.modifiers[pn.pane.Markdown] = {
+        "stylesheets": [
+            """  /* Styles the content of the sources content (the expanding areas of the Accordion).
+                            This fixes a small margin-top that is added by default and that leads to overflowing content 
+                            in some cases.
+                            */
+                            :host(.source-content) p:nth-of-type(1)  {
+                                margin-top: 0px;
+                            }
+                        """
+        ]
+    }
+
+
 """
 CSS constants
 """
+
+
+def stylesheets(
+    *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]]
+) -> Optional[list[str]]:
+    if not class_selectors:
+        return None
+
+    return [
+        "\n".join(
+            [
+                f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
+                *[
+                    f"    {property}: {value};"
+                    for property, value in declarations.items()
+                ],
+                "}",
+            ]
+        )
+        for selector, declarations in class_selectors
+    ]
+
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
@@ -92,9 +222,6 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
     color: gray;
 }
 
-:host {
-    transform: translate(14px, -56px); 
-}
 
 .bk-btn {
     border-radius: 0;
@@ -107,12 +234,6 @@ BK_INPUT_GRAY_BORDER = (
     """ .bk-input {border-color: var(--neutral-color) !important;} """
 )
 
-
-SS_MULTI_SELECT_STYLE = """
-option:hover, option:checked, option:focus {
-    color:white !important;
-}
-"""
 
 SS_LABEL_STYLE = """
 :host {
