@@ -40,24 +40,6 @@ with open(path, "w") as file:
 #   sources as objects in memory. It provides a quick way to try out Ragna.
 # - **`Chroma`** - Learn more in the [official website](https://www.trychroma.com/)
 # - **`LanceDB`** - Learn more in the [official website](https://lancedb.com/)
-from ragna.source_storages import RagnaDemoSourceStorage
-
-# %%
-# ## Step 3: Select an assistant (LLM)
-#
-# Pick the Large Language Model you want to use as your chat assistant.
-#
-# Similar to source storages, Ragna has the following built-in options:
-#
-# - **`RagnaDemoAssistant`** - Not an actual LLM. Instead replies with your prompt and a
-#   static message. It provides a quick way to setup and use Ragna.
-# - **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
-# - **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
-# - **Anthropic's `ClaudeInstant` and `Claude`**
-#
-# Pick the demo assistant for this tutorial:
-from ragna.assistants import RagnaDemoAssistant
-
 # %%
 # !!! note
 #
@@ -74,8 +56,24 @@ from ragna.assistants import RagnaDemoAssistant
 #
 # You can provide your assistant, document, and source storage selections to the
 # `rag.chat` function, and share your prompt (question to the LLM) using `.answer()`:
-
 from ragna import Rag
+
+# %%
+# ## Step 3: Select an assistant (LLM)
+#
+# Pick the Large Language Model you want to use as your chat assistant.
+#
+# Similar to source storages, Ragna has the following built-in options:
+#
+# - **`RagnaDemoAssistant`** - Not an actual LLM. Instead replies with your prompt and a
+#   static message. It provides a quick way to setup and use Ragna.
+# - **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
+# - **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
+# - **Anthropic's `ClaudeInstant` and `Claude`**
+#
+# Pick the demo assistant for this tutorial:
+from ragna.assistants import RagnaDemoAssistant
+from ragna.source_storages import RagnaDemoSourceStorage
 
 async with Rag().chat(
     documents=[path],

@@ -20,9 +20,6 @@ repos:
     hooks:
       - id: ruff-format
         types_or: [python, jupyter]
-        # The notebook uses the ! command to run a shell command in the notebook,
-        # but it is not supported
-        exclude: "examples/s3_documents/s3_documents.ipynb"
       - id: ruff
         types_or: [python, jupyter]
         args: [--fix, --exit-non-zero-on-fix]
