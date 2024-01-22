@@ -30,13 +30,12 @@ jobs:
       - name: Update docker requirements
         id: update
         run: |
-          set -x
           pip-compile \
             --quiet \
             --strip-extras --output-file=requirements-docker.lock \
             --extra=all pyproject.toml
 
-          NEEDS_UPDATE=$(git diff --quiet && 'true' || 'false')
+          NEEDS_UPDATE=$(git diff --quiet && echo 'false' || echo 'true')
           echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
 
       - name: Open a PR to update the requirements
