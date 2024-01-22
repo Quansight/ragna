@@ -1,0 +1,108 @@
+name: docker
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/docker.yml"
+      - ".dockerignore"
+      - "Dockerfile"
+      - "environment-dev.yml"
+      - "pyproject.toml"
+      - "ragna-docker.toml"
+      - "requirements-docker.lock"
+  push:
+    branches:
+      - release/*
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: quay.io
+  PROJECT: quansight/ragna
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -el {0}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-env
+        with:
+          optional-dependencies: "false"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Docker Build Cache
+        id: cache
+        run: |
+          CACHE_DIR="${HOME}/.cache/docker"
+          mkdir --parents "${CACHE_DIR}"
+          echo "cache-dir=${CACHE_DIR}" | tee --append $GITHUB_OUTPUT
+
+      - name: Restore docker cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.cache.outputs.cache-dir }}
+          key: docker-${{ hashFiles('Dockerfile','requirements-docker.lock') }}
+          restore-keys: docker-
+
+      - name: Setup metadata
+        id: metadata
+        run: |
+          IMAGE_NAME="${{ env.REGISTRY }}/${{ env.PROJECT }}"
+          echo "image-name=${IMAGE_NAME}" | tee --append $GITHUB_OUTPUT
+
+          VERSION=$(python -m setuptools_scm)
+          echo "version=${VERSION}" | tee --append $GITHUB_OUTPUT
+
+          TAG=$(echo "${VERSION}" | sed 's/+/-/g')
+          echo "tag=${TAG}" | tee --append $GITHUB_OUTPUT
+
+          TAGGED_IMAGE_NAME="${IMAGE_NAME}:${TAG}"
+          echo "tagged-image-name=${TAGGED_IMAGE_NAME}" | tee --append $GITHUB_OUTPUT
+
+      - name: Login to Quay.io
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Build and push on workflow dispatch
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          cache-from: type=local,src=${{ steps.cache.outputs.cache-dir }}
+          cache-to: type=local,dest=${{ steps.cache.outputs.cache-dir }}
+          tags: ${{ steps.metadata.outputs.tagged-image-name }}
+          build-args: |
+            SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
+          # Unfortunately, there currently seems to be no way to build a multiplatform
+          # image and access a single one for the host platform afterwards. Thus, we
+          # only build a multiplatform image when we also want to push to the registry.
+          # https://github.com/docker/buildx/issues/166
+          # https://github.com/moby/buildkit/issues/1555
+          # prettier-ignore
+          platforms:
+            ${{ github.event_name == 'workflow_dispatch' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          load: ${{ github.event_name != 'workflow_dispatch' }}
+          push: ${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Smoke test
+        run: docker run ${{ steps.metadata.outputs.tagged-image-name }} --version
