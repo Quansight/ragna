@@ -56,4 +56,4 @@ jobs:
         # prettier-ignore
         if:
           ${{ steps.update.outputs.needs-update && github.event_name != 'workflow_dispatch' }}
-        run: git diff
+        run: git diff --exit-code
