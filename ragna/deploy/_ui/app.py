@@ -32,6 +32,7 @@ RES = HERE / "resources"
 class App(param.Parameterized):
     def __init__(self, *, url, api_url, origins):
         super().__init__()
+        ui.apply_design_modifiers()
         self.url = url
         self.api_url = api_url
         self.origins = origins
