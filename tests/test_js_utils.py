@@ -27,15 +27,12 @@ def test_redirect_script():
         <script>
             var currentPath = window.location.pathname; // Get the current path
             if (currentPath.includes('/foo')) {
-              console.log("Removing foo from " + currentPath)
               if ("foo") {
                 currentPath = currentPath.replace(/\/foo(\/)?$/, '')
               }
               var redirectTo = currentPath + 'bar';
-              console.log("Redirecting to " + redirectTo)
               window.location.href = redirectTo;
               if (false) {
-                console.log("Removing auth_token cookie")
                 document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=${redirectTo}";
               }
             }
