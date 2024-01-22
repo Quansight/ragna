@@ -30,6 +30,7 @@ jobs:
       - name: Update docker requirements
         id: update
         run: |
+          set -x
           pip-compile \
             --quiet \
             --strip-extras --output-file=requirements-docker.lock \
