@@ -44,4 +44,4 @@ def test_redirect_script():
         </script>
     """
     )
-    assert dedent(output) == expected
+    assert dedent(output.object) == expected

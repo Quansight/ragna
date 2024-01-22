@@ -1,3 +1,6 @@
+import panel as pn
+
+
 def preformat(text):
     """Allows {{key}} to be used for formatting in textcthat already uses
     curly braces.  First switch this into something else, replace curlies
@@ -50,6 +53,10 @@ def redirect_script(remove, append="/", remove_auth_cookie=False):
         """
     )
 
-    return js_script.format(
-        remove=remove, append=append, remove_auth_cookie=str(remove_auth_cookie).lower()
+    return pn.pane.HTML(
+        js_script.format(
+            remove=remove,
+            append=append,
+            remove_auth_cookie=str(remove_auth_cookie).lower(),
+        )
     )

@@ -65,7 +65,7 @@ class App(param.Parameterized):
 
     def index_page(self):
         if "auth_token" not in pn.state.cookies:
-            return pn.pane.HTML(redirect_script(remove="", append="auth"))
+            return redirect_script(remove="", append="auth")
 
         try:
             api_wrapper = ApiWrapper(
@@ -74,7 +74,7 @@ class App(param.Parameterized):
         except RagnaAuthTokenExpiredException:
             # If the token has expired / is invalid, we redirect to the logout page.
             # The logout page will delete the cookie and redirect to the auth page.
-            return pn.pane.HTML(redirect_script(remove="", append="logout"))
+            return redirect_script(remove="", append="logout")
 
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
@@ -89,7 +89,7 @@ class App(param.Parameterized):
             # >>> pn.state.location.param.update(reload=True, pathname="/")
             # But it only works once the page is fully loaded.
             # So we render a javascript redirect instead.
-            return pn.pane.HTML(redirect_script(remove="auth"))
+            return redirect_script(remove="auth")
 
         template = self.get_template()
         auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
