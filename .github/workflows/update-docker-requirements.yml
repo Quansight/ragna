@@ -51,9 +51,11 @@ jobs:
           commit-message: update requirements-docker.lock
           branch: update-docker-requirements
           branch-suffix: timestamp
+          base: ${{ github.head_ref || github.ref_name }}
           title: Update requirements-docker.lock
+          # prettier-ignore
           body:
-            https://github.com/{{ github.repository }}/actions/runs/{{ github.run_id }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_idb }}
           assignees: ${{ github.actor }}
 
       - name: Show diff
