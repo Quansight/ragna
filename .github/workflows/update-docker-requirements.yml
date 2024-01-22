@@ -55,7 +55,7 @@ jobs:
           title: Update requirements-docker.lock
           # prettier-ignore
           body:
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_idb }}
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
           assignees: ${{ github.actor }}
 
       - name: Show diff
