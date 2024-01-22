@@ -8,6 +8,10 @@ on:
       - "requirements-docker.lock"
   workflow_dispatch:
 
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
