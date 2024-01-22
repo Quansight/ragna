@@ -42,9 +42,6 @@ jobs:
           NEEDS_UPDATE=$(git diff --quiet && echo 'false' || echo 'true')
           echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
 
-      - name: Debug
-        run: echo ${{ toJSON(github) }} | jq
-
       - name: Open a PR to update the requirements
         # prettier-ignore
         if:
