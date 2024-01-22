@@ -18,6 +18,4 @@ class LogoutPage(pn.viewable.Viewer, param.Parameterized):
         # So we render a javascript redirect instead.
 
         # To remove the token from the cookie, we have to force its expiry date to the past.
-        return pn.pane.HTML(
-            redirect_script(remove="logout", append="/", remove_auth_cookie=True)
-        )
+        return redirect_script(remove="logout", append="/", remove_auth_cookie=True)
