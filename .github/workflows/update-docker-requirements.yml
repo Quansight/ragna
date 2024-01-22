@@ -45,7 +45,7 @@ jobs:
       - name: Open a PR to update the requirements
         # prettier-ignore
         if:
-          ${{ steps.update.outputs.needs-update }}
+          ${{ steps.update.outputs.needs-update && github.event_name == 'workflow_dispatch' }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update requirements-docker.lock
