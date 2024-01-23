@@ -24,8 +24,8 @@ class Airoboros(Assistant):
 
         return torch.cuda.is_available()
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self):
+        super().__init__()
 
         from auto_gptq import AutoGPTQForCausalLM
         from transformers import AutoTokenizer
@@ -72,7 +72,4 @@ class Airoboros(Assistant):
             max_new_tokens=max_new_tokens,
         )
         output = self.tokenizer.decode(output_ids[0])
-        return output.rsplit("ASSISTANT:", 1)[-1].replace("</s>", "").strip()
-
-
-# assert Airoboros.is_available()
+        yield output.rsplit("ASSISTANT:", 1)[-1].replace("</s>", "").strip()
