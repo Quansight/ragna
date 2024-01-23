@@ -301,3 +301,31 @@ class DocxDocumentHandler(DocumentHandler):
             text = paragraph.text
             if len(text) > 0:
                 yield Page(text=text)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class PptxDocumentHandler(DocumentHandler):
+    """Document handler for `.pptx` documents.
+
+    !!! info "Package requirements"
+
+        - [`python-pptx`](https://github.com/scanny/python-pptx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-pptx>=0.6.23")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".pptx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import pptx
+
+        document_pptx = pptx.Presentation(io.BytesIO(document.read()))
+        for slide in document_pptx.slides:
+            for shape in filter(
+                lambda shape: shape.has_text_frame and shape.text, slide.shapes
+            ):
+                yield Page(text=shape.text)

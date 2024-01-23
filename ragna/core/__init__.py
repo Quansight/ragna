@@ -6,7 +6,7 @@ __all__ = [
     "DocumentHandler",
     "DocumentUploadParameters",
     "DocxDocumentHandler",
-    "EnvVarRequirement",
+    "PptxDocumentHandler" "EnvVarRequirement",
     "LocalDocument",
     "Message",
     "MessageRole",
@@ -39,6 +39,7 @@ from ._document import (
     Page,
     PdfDocumentHandler,
     PlainTextDocumentHandler,
+    PptxDocumentHandler,
 )
 
 # isort: split
