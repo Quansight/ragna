@@ -1,3 +1,5 @@
+from threading import Thread
+
 from ragna.core import Assistant, PackageRequirement, Source
 
 
@@ -26,11 +28,11 @@ class Airoboros(Assistant):
 
     def __init__(self):
         super().__init__()
-
         from auto_gptq import AutoGPTQForCausalLM
-        from transformers import AutoTokenizer
+        from transformers import AutoTokenizer, TextIteratorStreamer
 
         self.tokenizer = AutoTokenizer.from_pretrained(str(self), use_fast=True)
+        self.streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True)
         self.model = AutoGPTQForCausalLM.from_quantized(
             str(self),
             device_map="auto",
@@ -55,7 +57,7 @@ class Airoboros(Assistant):
         If you can't answer a question based on the information you are given, just say so.
 
         {sources}
-        
+
         USER: {prompt}
         ASSISTANT: 
         """
@@ -63,13 +65,21 @@ class Airoboros(Assistant):
             sources="- " + "\n - ".join(source.content for source in sources),
             prompt=prompt,
         )
-        input_ids = self.tokenizer(
-            templated_prompt, return_tensors="pt"
-        ).input_ids.cuda()
-        output_ids = self.model.generate(
-            inputs=input_ids,
-            do_sample=False,
-            max_new_tokens=max_new_tokens,
+        input_ids = self.tokenizer(templated_prompt, return_tensors="pt").input_ids.to(
+            self.model.device
         )
-        output = self.tokenizer.decode(output_ids[0])
-        yield output.rsplit("ASSISTANT:", 1)[-1].replace("</s>", "").strip()
+        thread = Thread(
+            target=self.model.generate,
+            kwargs=dict(
+                inputs=input_ids,
+                do_sample=False,
+                max_new_tokens=max_new_tokens,
+                streamer=self.streamer,
+            ),
+        )
+        thread.start()
+        for chunk in self.streamer:
+            if chunk == "</s>":
+                break
+            yield chunk
+        thread.join()
