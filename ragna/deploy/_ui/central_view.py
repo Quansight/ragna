@@ -195,6 +195,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
         if organization == "Ragna":
             return "imgs/ragna_logo.svg"
+        elif organization == "MistralAI":
+            return "imgs/mistral-ai-logo.svg"
         elif organization == "OpenAI":
             if model.startswith("gpt-3"):
                 return "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png?20230318122128"
