@@ -24,7 +24,7 @@ def make_app(config):
 
     # from config
     config = SimpleNamespace(
-        authentication=_auth.NoAuth,
+        authentication=_auth.DummyBasicAuth,
         deploy=SimpleNamespace(
             session_storage_url="",
             token_expires=3600,

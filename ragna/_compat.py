@@ -1,6 +1,7 @@
 import builtins
 import sys
 from typing import (
+    AsyncIterable,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -61,3 +62,17 @@ def _anext() -> Callable[[AsyncIterator[T]], Awaitable[T]]:
 
 
 anext = _anext()
+
+
+def _aiter() -> Callable[[AsyncIterable[T]], AsyncIterator[T]]:
+    if sys.version_info[:2] >= (3, 10):
+        aiter = builtins.aiter
+    else:
+
+        async def aiter(ait: AsyncIterable[T]) -> AsyncIterator[T]:
+            return ait.__aiter__()
+
+    return aiter
+
+
+aiter = _aiter()

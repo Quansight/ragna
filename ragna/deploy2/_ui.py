@@ -3,8 +3,11 @@ from typing import Annotated
 
 import sse_starlette
 from fastapi import APIRouter, Depends, Form, Request, UploadFile, status
+from fastapi.background import BackgroundTasks
 from fastapi.responses import HTMLResponse
 
+import ragna.core
+from ragna._compat import aiter, anext
 from ragna._utils import as_awaitable
 
 from ._session import Session, SessionDependency
@@ -76,5 +79,38 @@ def make_router(engine, config):
         request: Request, documents: list[UploadFile], chat_name: Annotated[str, Form()]
     ):
         await engine.upload_documents(documents)
+
+    @router.post("/chats/{chat_id}/answer")
+    async def answer_prompt(
+        background_tasks: BackgroundTasks,
+        session: SessionDependency,
+        event_queue: EventQueueDependency,
+        prompt: Annotated[str, Form()],
+    ):
+        message = await engine.answer_prompt(
+            user=session.user.username, chat_id=session.current_chat_id, prompt=prompt
+        )
+        background_tasks.add_task(_stream_answer, event_queue, message)
+        # return HTML HERE
+
+    async def _stream_answer(
+        event_queue: asyncio.Queue, message: ragna.core.Message
+    ) -> None:
+        stream = aiter(message)
+        chunk = anext(stream)
+        await event_queue.put(
+            {
+                "event": message.id,
+                "data": "html that replaces the old placeholder with beforeend",
+            }
+        )
+
+        async for chunk in stream:
+            await event_queue.put({"event": message.id, "data": chunk})
+
+    # Send system message -> just the message template
+    # Send user message -> just the message template
+    # Send assistant placeholder -> message with extra attributes
+    # Send assistant first chunk -> message with extra attributes
 
     return router

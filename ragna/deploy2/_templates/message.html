@@ -1,0 +1,9 @@
+<div class="message message-{{ message.role }}" id="{{ message.id }}">
+  <div class="message-content" sse-swap="event_id" hx-swap="outerHTML">
+    <!--      loading indicator-->
+  </div>
+</div>
+
+<div class="message-content" sse-swap="event_id" hx-swap="beforeend">
+  <!--      initial chunk -->
+</div>
