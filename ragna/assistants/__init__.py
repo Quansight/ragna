@@ -6,8 +6,10 @@ __all__ = [
     "Mpt7bInstruct",
     "Mpt30bInstruct",
     "RagnaDemoAssistant",
+    "Airoboros",
 ]
 
+from ._airoboros import Airoboros
 from ._anthropic import Claude, ClaudeInstant
 from ._demo import RagnaDemoAssistant
 from ._mosaicml import Mpt7bInstruct, Mpt30bInstruct
