@@ -75,4 +75,4 @@ class Airoboros(Assistant):
         return output.rsplit("ASSISTANT:", 1)[-1].replace("</s>", "").strip()
 
 
-assert Airoboros.is_available()
+# assert Airoboros.is_available()
