@@ -37,7 +37,11 @@ def app(config: Config) -> FastAPI:
 
         return component
 
-    app = FastAPI(title="ragna", version=ragna.__version__)
+    app = FastAPI(
+        title="ragna",
+        version=ragna.__version__,
+        root_path=config.api.root_path,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=handle_localhost_origins(config.api.origins),

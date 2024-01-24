@@ -1,6 +1,8 @@
 import panel as pn
 import param
 
+from ragna.deploy._ui.js_utils import redirect_script
+
 
 class LogoutPage(pn.viewable.Viewer, param.Parameterized):
     def __init__(self, api_wrapper, **params):
@@ -16,9 +18,4 @@ class LogoutPage(pn.viewable.Viewer, param.Parameterized):
         # So we render a javascript redirect instead.
 
         # To remove the token from the cookie, we have to force its expiry date to the past.
-        return pn.pane.HTML(
-            """<script>
-                            document.cookie = "auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
-                            window.location.href = '/'; 
-                            </script> """
-        )
+        return redirect_script(remove="logout", append="/", remove_auth_cookie=True)
