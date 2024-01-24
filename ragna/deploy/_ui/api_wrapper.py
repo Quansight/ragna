@@ -18,7 +18,7 @@ class ApiWrapper(param.Parameterized):
     auth_token = param.String(default=None)
 
     def __init__(self, api_url, **params):
-        self.client = httpx.AsyncClient(base_url=api_url)
+        self.client = httpx.AsyncClient(base_url=api_url, timeout=60)
 
         super().__init__(**params)
 

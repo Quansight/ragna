@@ -65,13 +65,12 @@ class Airoboros(Assistant):
             sources="- " + "\n - ".join(source.content for source in sources),
             prompt=prompt,
         )
-        input_ids = self.tokenizer(templated_prompt, return_tensors="pt").input_ids.to(
-            self.model.device
-        )
+        input_ids = self.tokenizer(templated_prompt, return_tensors="pt").input_ids
+
         thread = Thread(
             target=self.model.generate,
             kwargs=dict(
-                inputs=input_ids,
+                inputs=input_ids.to(self.model.device),
                 do_sample=False,
                 max_new_tokens=max_new_tokens,
                 streamer=self.streamer,
