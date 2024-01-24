@@ -27,6 +27,7 @@ def make_app(config):
         authentication=_auth.DummyBasicAuth,
         deploy=SimpleNamespace(
             session_storage_url="",
+            database_url="memory",
             token_expires=3600,
             cookie_expires=3600,
         ),

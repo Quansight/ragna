@@ -1,9 +1,19 @@
-<div class="message message-{{ message.role }}" id="{{ message.id }}">
-  <div class="message-content" sse-swap="event_id" hx-swap="outerHTML">
-    <!--      loading indicator-->
+<div
+  class="message {%- if message.role is defined %} message-{{ message.role }} {%- endif %}"
+  {%- if message.id is defined %}
+  id="{{ message.id }}">
+  {%- endif %}
+  {%- if update_event_id is defined %}
+  sse-swap="{{ update_event_id }}"
+  hx-swap="outerHTML"
+  {%- endif %}
+  <div
+    class="message-content"
+    {%- if stream_event_id is defined %}
+    sse-swap="{{ stream_event_id }}"
+    hx-swap="beforeend"
+    {%- endif %}
+  >
+    {{ message.content }}
   </div>
-</div>
-
-<div class="message-content" sse-swap="event_id" hx-swap="beforeend">
-  <!--      initial chunk -->
 </div>

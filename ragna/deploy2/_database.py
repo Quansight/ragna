@@ -17,7 +17,7 @@ from . import schemas
 
 class Database:
     def __init__(self, config):
-        database_url = config.api.database_url
+        database_url = config.deploy.database_url
         if database_url == "memory":
             database_url = "sqlite://"
         components = urlsplit(database_url)

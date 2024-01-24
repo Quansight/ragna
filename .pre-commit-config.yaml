@@ -15,7 +15,6 @@ repos:
           - yaml
           - javascript
           - css
-          - html
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.2
     hooks:

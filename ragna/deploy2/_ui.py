@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from typing import Annotated
 
 import sse_starlette
@@ -6,22 +7,21 @@ from fastapi import APIRouter, Depends, Form, Request, UploadFile, status
 from fastapi.background import BackgroundTasks
 from fastapi.responses import HTMLResponse
 
-import ragna.core
 from ragna._compat import aiter, anext
 from ragna._utils import as_awaitable
 
+from . import _templates as templates
 from ._session import Session, SessionDependency
-from ._templates import TemplateResponse
 from ._utils import redirect_response
 from .schemas import User
 
 
 def make_router(engine, config):
-    router = APIRouter()
+    router = APIRouter(default_response_class=HTMLResponse)
 
     auth = config.authentication()
 
-    @router.get("/login", response_class=HTMLResponse)
+    @router.get("/login")
     async def login_page(request: Request):
         return await as_awaitable(auth.login_page, request)
 
@@ -51,11 +51,8 @@ def make_router(engine, config):
         )
 
     @router.get("")
-    async def main_page(request: Request, session: SessionDependency):
-        return TemplateResponse(
-            name="index.html",
-            context={"request": request, "user": session.user},
-        )
+    async def main_page(session: SessionDependency):
+        return templates.render("index.html", user=session.user)
 
     event_queues: dict[str, asyncio.Queue] = {}
 
@@ -81,36 +78,85 @@ def make_router(engine, config):
         await engine.upload_documents(documents)
 
     @router.post("/chats/{chat_id}/answer")
-    async def answer_prompt(
+    async def answer(
         background_tasks: BackgroundTasks,
         session: SessionDependency,
         event_queue: EventQueueDependency,
         prompt: Annotated[str, Form()],
     ):
-        message = await engine.answer_prompt(
-            user=session.user.username, chat_id=session.current_chat_id, prompt=prompt
+        user_message_event_id = str(uuid.uuid4())
+        assistant_message_event_id = str(uuid.uuid4())
+        background_tasks.add_task(
+            _stream_answer,
+            session=session,
+            event_queue=event_queue,
+            prompt=prompt,
+            user_message_event_id=user_message_event_id,
+            assistant_message_event_id=assistant_message_event_id,
         )
-        background_tasks.add_task(_stream_answer, event_queue, message)
-        # return HTML HERE
+        return "\n".join(
+            [
+                templates.render(
+                    "message.html",
+                    message={
+                        "content": prompt,
+                    },
+                    update_event_id=user_message_event_id,
+                ),
+                templates.render(
+                    "message.html",
+                    message={
+                        "content": "LOADING INDICATOR",
+                    },
+                    update_event_id=assistant_message_event_id,
+                ),
+            ]
+        )
 
     async def _stream_answer(
-        event_queue: asyncio.Queue, message: ragna.core.Message
+        *,
+        session: Session,
+        event_queue: asyncio.Queue,
+        prompt: str,
+        user_message_event_id: str,
+        assistant_message_event_id: str,
     ) -> None:
-        stream = aiter(message)
+        # Streaming the assistant message back to the client happens in three steps:
+        # 1. Right after the creation of the stream, we send back a placeholder message
+        #    with a loading indicator.
+        # 2. When we have the first chunk
+
+        # FIXME: we need to return the user message here
+        user_message = None
+        assistant_message = await engine.answer_prompt(
+            user=session.user.username, chat_id=session.current_chat_id, prompt=prompt
+        )
+
+        await event_queue.put(
+            {
+                "event": user_message_event_id,
+                "data": templates.render("message.html", message=user_message),
+            }
+        )
+
+        stream = aiter(assistant_message)
         chunk = anext(stream)
         await event_queue.put(
             {
-                "event": message.id,
-                "data": "html that replaces the old placeholder with beforeend",
+                "event": assistant_message_event_id,
+                "data": templates.render(
+                    "message.html",
+                    message={
+                        "id": assistant_message.id,
+                        "role": assistant_message.role,
+                        "content": chunk,
+                    },
+                    stream_event_id=assistant_message_event_id,
+                ),
             }
         )
 
         async for chunk in stream:
-            await event_queue.put({"event": message.id, "data": chunk})
-
-    # Send system message -> just the message template
-    # Send user message -> just the message template
-    # Send assistant placeholder -> message with extra attributes
-    # Send assistant first chunk -> message with extra attributes
+            await event_queue.put({"event": assistant_message_event_id, "data": chunk})
 
     return router

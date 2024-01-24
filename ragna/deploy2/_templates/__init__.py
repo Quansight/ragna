@@ -1,12 +1,11 @@
 from pathlib import Path
+from typing import Any
 
-from fastapi.templating import Jinja2Templates
+from jinja2 import Environment, FileSystemLoader
 
-templates = Jinja2Templates(directory=Path(__file__).parent)
-
-
-def template_response():
-    pass
+ENVIRONMENT = Environment(loader=FileSystemLoader(Path(__file__).parent))
 
 
-TemplateResponse = templates.TemplateResponse
+def render(template: str, **context: Any) -> str:
+    template = ENVIRONMENT.get_template(template)
+    return template.render(**context)

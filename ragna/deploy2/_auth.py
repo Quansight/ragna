@@ -4,11 +4,11 @@ from typing import Optional, Union
 
 import httpx
 from fastapi import Request, status
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 
 from ragna.core import RagnaException
 
-from ._templates import TemplateResponse
+from . import _templates as templates
 from ._utils import redirect_response
 from .schemas import User
 
@@ -49,19 +49,16 @@ class DummyBasicAuth(Auth):
 
     def login_page(
         self, request: Request, *, fail_reason: Optional[str] = None
-    ) -> Union[str, Response]:
-        return TemplateResponse(
-            name="basic_auth.html",
-            context={"request": request},
-        )
+    ) -> HTMLResponse:
+        return HTMLResponse(templates.render("basic_auth.html"))
 
-    async def login(self, request: Request) -> Union[User, str, Response]:
+    async def login(self, request: Request) -> Union[User, HTMLResponse]:
         async with request.form() as form:
             username = form.get("username")
             password = form.get("password")
 
         if username is None or password is None:
-            # This can only happen if the endpoint is not hit through the endpoint.
+            # This can only happen if the endpoint is not hit through the login page.
             # Thus, instead of returning the failed login page like below, we just
             # return an error.
             raise RagnaException(
@@ -73,7 +70,8 @@ class DummyBasicAuth(Auth):
         if (self._password is not None and password != self._password) or (
             self._password is None and password != username
         ):
-            return self.login_page(request, fail_reason="Unauthorized")
+            # FIXME: just replace the right field
+            return HTMLResponse("Unauthorized!")
 
         return User(username=username)
 
@@ -83,14 +81,13 @@ class GithubOauth(Auth):
         self._client_id = os.environ["RAGNA_GITHUB_OAUTH_CLIENT_ID"]
         self._client_secret = os.environ["RAGNA_GITHUB_OAUTH_CLIENT_SECRET"]
 
-    def login_page(self, request) -> Response:
-        return TemplateResponse(
-            name="oauth.html",
-            context={
-                "request": request,
-                "service": "Github",
-                "url": f"https://github.com/login/oauth/authorize?client_id={self._client_id}",
-            },
+    def login_page(self, request) -> HTMLResponse:
+        return HTMLResponse(
+            templates.render(
+                "oauth.html",
+                service="GitHub",
+                url=f"https://github.com/login/oauth/authorize?client_id={self._client_id}",
+            )
         )
 
     async def login(self, request):
