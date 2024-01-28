@@ -324,8 +324,8 @@ class PptxDocumentHandler(DocumentHandler):
         import pptx
 
         document_pptx = pptx.Presentation(io.BytesIO(document.read()))
-        for slide in document_pptx.slides:
-            for shape in filter(
-                lambda shape: shape.has_text_frame and shape.text, slide.shapes
-            ):
-                yield Page(text=shape.text)
+        for number, slide in enumerate(document_pptx.slides, 1):
+            text = "\n\n".join(
+                shape.text for shape in slide.shapes if shape.has_text_frame and shape.text
+            )
+            yield Page(text=text, number=number)
