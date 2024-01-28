@@ -314,7 +314,7 @@ class PptxDocumentHandler(DocumentHandler):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("python-pptx>=0.6.23")]
+        return [PackageRequirement("python-pptx")]
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
