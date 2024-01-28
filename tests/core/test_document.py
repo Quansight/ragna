@@ -27,7 +27,8 @@ def get_pptx_document(tmp_path, pptx_text):
     document = pptx.Presentation()
     document.slides.add_slide(document.slide_layouts[0])
     document.slides[0].shapes.title.text = pptx_text
-    document.slides[0].shapes.add_textbox(0, 0, 100, 100).text = pptx_text
+    document.slides.add_slide(document.slide_layouts[0])
+    document.slides[1].shapes.add_textbox(0, 0, 100, 100).text = pptx_text
     path = tmp_path / "test_document.pptx"
     document.save(path)
     return LocalDocument.from_path(path)
