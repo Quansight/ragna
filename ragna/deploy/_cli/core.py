@@ -131,15 +131,15 @@ def ui(
     try:
         if process is not None:
 
-            @timeout_after()
+            @timeout_after(
+                60,
+                "Could not launch the UI. This is likely due to a failure to start the API.",
+            )
             def wait_for_api() -> None:
                 while not check_api_available():
                     time.sleep(0.5)
 
-            wait_for_api(
-                60,
-                "Could not launch the UI. This is likely due to a failure to start the API.",
-            )
+            wait_for_api()
 
         ui_app(config).serve()  # type: ignore[no-untyped-call]
     finally:
