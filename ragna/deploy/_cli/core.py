@@ -133,7 +133,7 @@ def ui(
 
             @timeout_after(
                 60,
-                "Failed to start the API in 60 seconds. Please start it manually with ragna API.",
+                'Failed to start the API in 60 seconds. Please start it manually with the command "ragna api".',
             )
             def wait_for_api() -> None:
                 while not check_api_available():
