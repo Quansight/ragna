@@ -136,7 +136,10 @@ def ui(
                 while not check_api_available():
                     time.sleep(0.5)
 
-            wait_for_api()
+            wait_for_api(
+                60,
+                "Could not launch the UI. This is likely due to a failure to start the API.",
+            )
 
         ui_app(config).serve()  # type: ignore[no-untyped-call]
     finally:
