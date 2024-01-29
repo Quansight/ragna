@@ -131,15 +131,19 @@ def ui(
     try:
         if process is not None:
 
-            @timeout_after(
-                60,
-                'Failed to start the API in 60 seconds. Please start it manually with the command "ragna api".',
-            )
+            @timeout_after(60)
             def wait_for_api() -> None:
                 while not check_api_available():
                     time.sleep(0.5)
 
-            wait_for_api()
+            try:
+                wait_for_api()
+            except TimeoutError:
+                rich.print(
+                    "Failed to start the API in 60 seconds. "
+                    "Please start it manually with [bold]ragna api[/bold]."
+                )
+                raise typer.Exit(1)
 
         ui_app(config).serve()  # type: ignore[no-untyped-call]
     finally:
