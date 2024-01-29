@@ -76,7 +76,7 @@ def handle_localhost_origins(origins: list[str]) -> list[str]:
 def timeout_after(
     seconds: float = 60, *, message: str = ""
 ) -> Callable[[Callable], Callable]:
-    timeout = f"Timeout after {seconds:.1f} seconds"
+    timeout = f"Timeout after {seconds:.1f} seconds. This is likely due to a failure to start the API."
     message = timeout if message else f"{timeout}: {message}"
 
     def decorator(fn: Callable) -> Callable:
