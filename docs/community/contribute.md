@@ -88,6 +88,29 @@ mkdocs serve
 
 This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+### View, add, or update images
+
+Ragna tracks all image files with [`git-lfs`](https://git-lfs.com).
+
+As a first-time user of `git-lfs`, set it up with:
+
+```bash
+git lfs install
+```
+
+To pull all image files to your local repository, run:
+
+```bash
+git lfs pull
+```
+
+All new or updated images will be tracked by `git-lfs`. To verify the files being
+tracked, run:
+
+```bash
+git lfs ls-files
+```
+
 ## Contribution best practices
 
 - Before opening new issues, go through the tracker to ensure there aren't any previous
