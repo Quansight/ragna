@@ -59,16 +59,16 @@ def _anext() -> Callable[[AsyncIterator[T]], Awaitable[T]]:
             ait: AsyncIterator[T],
             default: T = sentinel,  # type: ignore[assignment]
         ) -> Awaitable[T]:
-            if default is sentinel:
-                return ait.__anext__()
-
-            async def anext_with_default() -> T:
+            async def anext_impl() -> T:
                 try:
                     return await ait.__anext__()
                 except StopAsyncIteration:
-                    return default
+                    if default is not sentinel:
+                        return default
 
-            return anext_with_default()
+                    raise
+
+            return anext_impl()
 
     return anext
 
