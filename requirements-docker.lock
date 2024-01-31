@@ -109,6 +109,8 @@ idna==3.6
     #   anyio
     #   httpx
     #   requests
+ijson==3.2.3
+    # via Ragna (pyproject.toml)
 importlib-metadata==6.11.0
     # via opentelemetry-api
 importlib-resources==6.1.1
