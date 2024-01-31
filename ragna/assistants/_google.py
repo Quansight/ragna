@@ -41,6 +41,9 @@ class GoogleApiAssistant(ApiAssistant):
     ) -> Iterator[str]:
         import json_stream.httpx
 
+        # TODO: Use the async client and make this method async as soon when json-stream
+        #  supports async JSON stream.
+        #  See https://github.com/daggaz/json-stream/issues/54
         with self._sync_client.stream(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
