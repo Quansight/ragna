@@ -42,7 +42,8 @@
 
 ### [Google](https://ai.google.dev/)
 
-1. ADDME
+1. Get a Google AI Studio API key following these instructions:
+First, create a Google AI Studio account or sign in. Next, navigate to the API key page and "Create API key in new/exisiting project", optionally naming the key. Do not share it with anyone.
 2. Set the `GOOGLE_API_KEY` environment variable with your Google API key:
    ```bash
    export GOOGLE_API_KEY="XXXXX"
