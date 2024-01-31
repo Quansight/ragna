@@ -16,9 +16,14 @@ class ApiAssistant(Assistant):
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
 
     def __init__(self) -> None:
+        import httpx_socks
+
         self._client = httpx.AsyncClient(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
+            transport=httpx_socks.AsyncProxyTransport.from_url(
+                "socks5://127.0.0.1:32500"
+            ),
         )
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 

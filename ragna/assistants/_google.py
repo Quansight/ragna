@@ -13,11 +13,7 @@ class AsyncIteratorReader:
     async def read(self, n: int) -> bytes:
         if n == 0:
             return b""
-
-        try:
-            return await anext(self._ait)
-        except StopIteration:
-            return b""
+        return await anext(self._ait, b"")  # type: ignore[call-arg]
 
 
 class GoogleApiAssistant(ApiAssistant):
@@ -29,7 +25,7 @@ class GoogleApiAssistant(ApiAssistant):
     def requirements(cls) -> list[Requirement]:
         return [
             *super().requirements(),
-            PackageRequirement("json-stream"),
+            PackageRequirement("ijson"),
         ]
 
     @classmethod
@@ -56,7 +52,7 @@ class GoogleApiAssistant(ApiAssistant):
     ) -> AsyncIterator[str]:
         import ijson
 
-        async with self._async_client.stream(
+        async with self._client.stream(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
@@ -83,7 +79,7 @@ class GoogleApiAssistant(ApiAssistant):
             },
         ) as response:
             async for chunk in ijson.items(
-                AsyncIteratorReader(response.aiter_bytes(10 * 1024)),
+                AsyncIteratorReader(response.aiter_bytes(1024)),
                 "item.candidates.item.content.parts.item.text",
             ):
                 yield chunk
