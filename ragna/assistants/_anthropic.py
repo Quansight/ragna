@@ -36,7 +36,7 @@ class AnthropicApiAssistant(ApiAssistant):
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/streaming
         async with httpx_sse.aconnect_sse(
-            self._async_client,
+            self._client,
             "POST",
             "https://api.anthropic.com/v1/complete",
             headers={

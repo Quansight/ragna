@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import inspect
 import uuid
 from typing import (
     Any,
@@ -18,8 +19,7 @@ from typing import (
 )
 
 import pydantic
-
-from ragna._utils import as_async_iterator, as_awaitable
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
@@ -256,19 +256,34 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    def _run(
+    async def _run(
         self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
-    ) -> Awaitable[T]:
+    ) -> T:
         kwargs = self._unpacked_params[fn]
-        return as_awaitable(fn, *args, **kwargs)
+        if inspect.iscoroutinefunction(fn):
+            fn = cast(Callable[..., Awaitable[T]], fn)
+            coro = fn(*args, **kwargs)
+        else:
+            fn = cast(Callable[..., T], fn)
+            coro = run_in_threadpool(fn, *args, **kwargs)
 
-    def _run_gen(
+        return await coro
+
+    async def _run_gen(
         self,
         fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
         *args: Any,
     ) -> AsyncIterator[T]:
         kwargs = self._unpacked_params[fn]
-        return as_async_iterator(fn, *args, **kwargs)
+        if inspect.isasyncgenfunction(fn):
+            fn = cast(Callable[..., AsyncIterator[T]], fn)
+            async_gen = fn(*args, **kwargs)
+        else:
+            fn = cast(Callable[..., Iterator[T]], fn)
+            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
+
+        async for item in async_gen:
+            yield item
 
     async def __aenter__(self) -> Chat:
         await self.prepare()
