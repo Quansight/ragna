@@ -91,6 +91,10 @@ class GeminiPro(GoogleApiAssistant):
     !!! info "Required environment variables"
 
         - `GOOGLE_API_KEY`
+
+    !!! info "Required packages"
+
+        - `ijson`
     """
 
     _MODEL = "gemini-pro"
@@ -103,6 +107,10 @@ class GeminiUltra(GoogleApiAssistant):
     !!! info "Required environment variables"
 
         - `GOOGLE_API_KEY`
+
+    !!! info "Required packages"
+
+        - `ijson`
     """
 
     _MODEL = "gemini-ultra"

@@ -56,7 +56,7 @@ Repository = "https://github.com/Quansight/ragna"
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
     "chromadb>=0.4.13",
-    "json-stream",
+    "ijson",
     "lancedb>=0.2",
     "pyarrow",
     "pymupdf>=1.23.6",
