@@ -142,8 +142,7 @@ disallow_incomplete_defs = false
 module = [
     "docx",
     "fitz",
-    "json_stream",
-    "json_stream.httpx",
+    "ijson",
     "lancedb",
     "param",
     "pptx",
