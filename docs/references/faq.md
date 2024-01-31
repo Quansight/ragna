@@ -39,3 +39,11 @@
    ```bash
    export MOSAICML_API_KEY="XXXXX"
    ```
+
+### [Google](https://ai.google.dev/)
+
+1. ADDME
+2. Set the `GOOGLE_API_KEY` environment variable with your Google API key:
+   ```bash
+   export GOOGLE_API_KEY="XXXXX"
+   ```
