@@ -115,6 +115,10 @@ importlib-resources==6.1.1
     # via chromadb
 jinja2==3.1.3
     # via bokeh
+json-stream==2.3.2
+    # via Ragna (pyproject.toml)
+json-stream-rs-tokenizer==0.4.25
+    # via json-stream
 kubernetes==29.0.0
     # via chromadb
 lancedb==0.4.4
