@@ -36,7 +36,7 @@ class OpenaiApiAssistant(ApiAssistant):
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         async with httpx_sse.aconnect_sse(
-            self._client,
+            self._async_client,
             "POST",
             "https://api.openai.com/v1/chat/completions",
             headers={

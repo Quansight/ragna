@@ -32,7 +32,7 @@ class MosaicmlApiAssistant(ApiAssistant):
     ) -> AsyncIterator[str]:
         instruction = self._instructize_prompt(prompt, sources)
         # https://docs.mosaicml.com/en/latest/inference.html#text-completion-requests
-        response = await self._client.post(
+        response = await self._async_client.post(
             f"https://models.hosted-on.mosaicml.hosting/{self._MODEL}/v1/predict",
             headers={
                 "Authorization": f"{self._api_key}",
