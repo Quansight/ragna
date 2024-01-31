@@ -17,7 +17,8 @@ class ApiAssistant(Assistant):
 
     def __init__(self) -> None:
         self._client = httpx.AsyncClient(
-            headers={"User-Agent": f"{ragna.__version__}/{self}"}, timeout=60
+            headers={"User-Agent": f"{ragna.__version__}/{self}"},
+            timeout=60,
         )
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
