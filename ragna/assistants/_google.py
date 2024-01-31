@@ -6,11 +6,20 @@ from ragna.core import PackageRequirement, Requirement, Source
 from ._api import ApiAssistant
 
 
+# ijson does not support reading from an (async) iterator, but only from file-like
+# objects, i.e. https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects.
+# See https://github.com/ICRAR/ijson/issues/44 for details.
+# ijson actually doesn't care about most of the file interface and only requires the
+# read() method to be present.
 class AsyncIteratorReader:
     def __init__(self, ait: AsyncIterator[bytes]) -> None:
         self._ait = ait
 
     async def read(self, n: int) -> bytes:
+        # n is usually used to indicate how many bytes to read, but since we want to
+        # return a chunk as soon as it is available, we ignore the value of n. The only
+        # exception is n == 0, which is used by ijson to probe the return type and
+        # set up decoding.
         if n == 0:
             return b""
         return await anext(self._ait, b"")  # type: ignore[call-arg]
