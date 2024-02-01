@@ -1,4 +1,6 @@
+import json
 import os
+import subprocess
 
 from mkdocs.plugins import get_plugin_logger
 
@@ -32,3 +34,16 @@ def on_startup(command, dirty):
 
     for name, value in RTD_ENV_VARS.items():
         logger.info(f"{name}={value}")
+
+    logger.info(
+        json.dumps(
+            {
+                "files": subprocess.run(
+                    ["git", "diff", "--name-only"], capture_output=True
+                ).stdout.decode(),
+                "diff": subprocess.run(
+                    ["git", "diff"], capture_output=True
+                ).stdout.decode(),
+            }
+        )
+    )
