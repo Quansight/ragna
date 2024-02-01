@@ -55,17 +55,49 @@
 - fix source view on messages that were generated in a previous session by
   [@pmeier](https://github.com/pmeier) in
   [#273](https://github.com/Quansight/ragna/pull/273)
-- add forward slashes to the auth and logout endpoints by @pmeier in
-  https://github.com/Quansight/ragna/pull/276
-- implement streaming for assistants by @pmeier in
-  https://github.com/Quansight/ragna/pull/215
-- return source content from the REST API by @pmeier in
-  https://github.com/Quansight/ragna/pull/264
+- add forward slashes to the auth and logout endpoints by
+  [@pmeier](https://github.com/pmeier) in
+  [#276](https://github.com/Quansight/ragna/pull/276)
+- implement streaming for assistants by [@pmeier](https://github.com/pmeier) in
+  [#215](https://github.com/Quansight/ragna/215)
+- return source content from the REST API by [@pmeier](https://github.com/pmeier) in
+  [#264](https://github.com/Quansight/ragna/264)
+- Fix environment-dev.yml by [@nenb](https://github.com/nenb) in
+  [#282](https://github.com/Quansight/ragna/282)
+- Support using .docx files by [@paskett](https://github.com/paskett) in
+  [#281](https://github.com/Quansight/ragna/281)
+- dockerize by [@pmeier](https://github.com/pmeier) in
+  [#283](https://github.com/Quansight/ragna/283)
+- add workflow to update the docker requirements by [@pmeier](https://github.com/pmeier)
+  in [#287](https://github.com/Quansight/ragna/287)
+- add write permissions for GHA bot by [@pmeier](https://github.com/pmeier) in
+  [#288](https://github.com/Quansight/ragna/288)
+- add workflow actor as reviewer rather than assignee by
+  [@pmeier](https://github.com/pmeier) in [#293](https://github.com/Quansight/ragna/293)
+- Fix relative path handling for ragna panel app by [@aktech](https://github.com/aktech)
+  in [#280](https://github.com/Quansight/ragna/280)
+- Pptx support by [@davidedigrande](https://github.com/davidedigrande) in
+  [#296](https://github.com/Quansight/ragna/296)
+- Update requirements-docker.lock by [@github](https://github.com/github)-actions in
+  [#298](https://github.com/Quansight/ragna/298)
+- Increase API timeout and add custom message by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#299](https://github.com/Quansight/ragna/299)
+- add Google assistants by [@pmeier](https://github.com/pmeier) in
+  [#301](https://github.com/Quansight/ragna/301)
+- RTD git debug by [@pmeier](https://github.com/pmeier) in
+  [#302](https://github.com/Quansight/ragna/302)
 
 ### New Contributors
 
 - [@paskett](https://github.com/paskett) made their first contribution in
-  [#270](https://github.com/Quansight/ragna/pull/270)
+  [#270](https://github.com/Quansight/ragna/270)
+- [@aktech](https://github.com/aktech) made their first contribution in
+  [#280](https://github.com/Quansight/ragna/280)
+- [@davidedigrande](https://github.com/davidedigrande) made their first contribution in
+  [#296](https://github.com/Quansight/ragna/296)
+- [@smokestacklightnin](https://github.com/smokestacklightnin) made their first
+  contribution in [#299](https://github.com/Quansight/ragna/299)
 
 ## Version 0.1.3
 
