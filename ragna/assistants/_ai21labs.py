@@ -1,5 +1,7 @@
 from enum import Enum, unique
 
+from ragna.core import Source
+
 from ._api import ApiAssistant
 
 
@@ -22,3 +24,11 @@ class AI21LabsAssistant(ApiAssistant):
     @property
     def max_input_size(self) -> int:
         return self._CONTEXT_SIZE
+
+    def _make_system_content(self, sources: list[Source]) -> str:
+        instruction = (
+            "You are a helpful assistant that answers user questions given the context below. "
+            "If you don't know the answer, just say so. Don't try to make up an answer. "
+            "Only use the sources below to generate the answer."
+        )
+        return instruction + "\n\n".join(source.content for source in sources)
