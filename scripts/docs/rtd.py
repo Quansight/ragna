@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import subprocess
 
 from mkdocs.plugins import get_plugin_logger
@@ -43,7 +44,7 @@ def on_startup(command, dirty):
     logger.info(
         json.dumps(
             {
-                "files": git("add", "--dry-run", "."),
+                "files": re.findall(r"add '(.*?)'\n", git("add", "--dry-run", ".")),
                 "diff": git("diff"),
             }
         )
