@@ -18,3 +18,7 @@ class AI21LabsAssistant(ApiAssistant):
     @classmethod
     def display_name(cls) -> str:
         return f"AI21Labs/jurassic-2-{cls._MODEL_TYPE}"
+
+    @property
+    def max_input_size(self) -> int:
+        return self._CONTEXT_SIZE
