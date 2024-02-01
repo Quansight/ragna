@@ -28,6 +28,10 @@ RTD_ENV_VARS = {
 RTD = RTD_ENV_VARS["READTHEDOCS"] == "True"
 
 
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True).stdout.decode()
+
+
 def on_startup(command, dirty):
     if not RTD:
         return
@@ -35,15 +39,12 @@ def on_startup(command, dirty):
     for name, value in RTD_ENV_VARS.items():
         logger.info(f"{name}={value}")
 
+    # RTD makes some modifications to existing files and adds some new ones
     logger.info(
         json.dumps(
             {
-                "files": subprocess.run(
-                    ["git", "diff", "--name-only"], capture_output=True
-                ).stdout.decode(),
-                "diff": subprocess.run(
-                    ["git", "diff"], capture_output=True
-                ).stdout.decode(),
+                "files": git("add", "--dry-run", "."),
+                "diff": git("diff"),
             }
         )
     )
