@@ -1,6 +1,7 @@
 from enum import Enum, unique
+from typing import cast
 
-from ragna.core import Source
+from ragna.core import RagnaException, Source
 
 from ._api import ApiAssistant
 
@@ -32,3 +33,34 @@ class AI21LabsAssistant(ApiAssistant):
             "Only use the sources below to generate the answer."
         )
         return instruction + "\n\n".join(source.content for source in sources)
+
+    async def _call_api(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    ) -> str:
+        response = await self._client.post(
+            f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
+            headers={
+                "accept": "application/json",
+                "content-type": "application/json",
+                "authorization": f"Bearer {self._api_key}",
+            },
+            json={
+                "numResults": 1,
+                "temperature": 0.0,
+                "maxTokens": max_new_tokens,
+                "messages": [
+                    {
+                        "text": prompt,
+                        "role": "user",
+                    }
+                ],
+                "system": self._make_system_content(sources),
+            },
+        )
+
+        if response.is_error:
+            raise RagnaException(
+                status_code=response.status_code, response=response.json()
+            )
+
+        return cast(str, response.json()["outputs"][0]["text"])
