@@ -60,6 +60,7 @@ class ApiConfig(ConfigBase):
     # FIXME: this needs to be dynamic for the UI url
     origins: list[str] = ["http://127.0.0.1:31477"]
     database_url: str = "memory"
+    root_path: str = ""
 
 
 class UiConfig(ConfigBase):
