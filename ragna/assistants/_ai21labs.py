@@ -64,3 +64,7 @@ class AI21LabsAssistant(ApiAssistant):
             )
 
         return cast(str, response.json()["outputs"][0]["text"])
+
+
+class AI21LabsJurassic2Mid(AI21LabsAssistant):
+    _MODEL_TYPE = AI2LabsModelType.mid
