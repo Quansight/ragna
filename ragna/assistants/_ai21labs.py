@@ -68,3 +68,7 @@ class AI21LabsAssistant(ApiAssistant):
 
 class AI21LabsJurassic2Mid(AI21LabsAssistant):
     _MODEL_TYPE = AI2LabsModelType.mid
+
+
+class AI21LabsJurassic2Ultra(AI21LabsAssistant):
+    _MODEL_TYPE = AI2LabsModelType.ultra
