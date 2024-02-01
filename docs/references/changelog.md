@@ -7,7 +7,7 @@
 - remove task queue
 - direct result: async components
 - direct result: streaming
-- support for markdown / docx
+- support for markdown / docx / pptx
 
 ### Breaking Changes
 
