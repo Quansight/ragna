@@ -10,8 +10,11 @@ __all__ = [
     "Mpt7bInstruct",
     "Mpt30bInstruct",
     "RagnaDemoAssistant",
+    "AI21LabsJurassic2Mid",
+    "AI21LabsJurassic2Ultra",
 ]
 
+from ._ai21labs import AI21LabsJurassic2Mid, AI21LabsJurassic2Ultra
 from ._anthropic import Claude, ClaudeInstant
 from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
