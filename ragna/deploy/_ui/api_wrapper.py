@@ -1,7 +1,9 @@
+import json
 from datetime import datetime
 
 import emoji
 import httpx
+import httpx_sse
 import param
 
 
@@ -16,7 +18,7 @@ class ApiWrapper(param.Parameterized):
     auth_token = param.String(default=None)
 
     def __init__(self, api_url, **params):
-        self.client = httpx.AsyncClient(base_url=api_url)
+        self.client = httpx.AsyncClient(base_url=api_url, timeout=60)
 
         super().__init__(**params)
 
@@ -62,17 +64,14 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def answer(self, chat_id, prompt):
-        return self.improve_message(
-            (
-                await self.client.post(
-                    f"/chats/{chat_id}/answer",
-                    params={"prompt": prompt},
-                    timeout=None,
-                )
-            )
-            .raise_for_status()
-            .json()
-        )
+        async with httpx_sse.aconnect_sse(
+            self.client,
+            "POST",
+            f"/chats/{chat_id}/answer",
+            json={"prompt": prompt, "stream": True},
+        ) as event_source:
+            async for sse in event_source.aiter_sse():
+                yield self.improve_message(json.loads(sse.data))
 
     async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()

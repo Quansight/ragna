@@ -11,6 +11,7 @@ from . import js
 from . import styles as ui
 from .api_wrapper import ApiWrapper, RagnaAuthTokenExpiredException
 from .auth_page import AuthPage
+from .js_utils import redirect_script
 from .logout_page import LogoutPage
 from .main_page import MainPage
 
@@ -31,6 +32,7 @@ RES = HERE / "resources"
 class App(param.Parameterized):
     def __init__(self, *, url, api_url, origins):
         super().__init__()
+        ui.apply_design_modifiers()
         self.url = url
         self.api_url = api_url
         self.origins = origins
@@ -63,7 +65,7 @@ class App(param.Parameterized):
 
     def index_page(self):
         if "auth_token" not in pn.state.cookies:
-            return pn.pane.HTML("""<script>window.location.href = '/auth';</script>""")
+            return redirect_script(remove="", append="auth")
 
         try:
             api_wrapper = ApiWrapper(
@@ -72,9 +74,7 @@ class App(param.Parameterized):
         except RagnaAuthTokenExpiredException:
             # If the token has expired / is invalid, we redirect to the logout page.
             # The logout page will delete the cookie and redirect to the auth page.
-            return pn.pane.HTML(
-                """<script>window.location.href = '/logout'; </script> """
-            )
+            return redirect_script(remove="", append="logout")
 
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
@@ -89,7 +89,7 @@ class App(param.Parameterized):
             # >>> pn.state.location.param.update(reload=True, pathname="/")
             # But it only works once the page is fully loaded.
             # So we render a javascript redirect instead.
-            return pn.pane.HTML("""<script>window.location.href = '/'; </script> """)
+            return redirect_script(remove="auth")
 
         template = self.get_template()
         auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
@@ -108,8 +108,8 @@ class App(param.Parameterized):
     def serve(self):
         all_pages = {
             "/": self.index_page,
-            "auth": self.auth_page,
-            "logout": self.logout_page,
+            "/auth": self.auth_page,
+            "/logout": self.logout_page,
             "/health": self.health_page,
         }
         titles = {"/": "Home"}

@@ -1,0 +1,22 @@
+local_cache_root = "/var/ragna"
+document = "ragna.core.LocalDocument"
+authentication = "ragna.deploy.RagnaDemoAuthentication"
+
+[components]
+source_storages = [
+    "ragna.source_storages.Chroma",
+    "ragna.source_storages.RagnaDemoSourceStorage",
+    "ragna.source_storages.LanceDB"
+]
+assistants = [
+    "ragna.assistants.RagnaDemoAssistant"
+]
+
+[api]
+url = "http://0.0.0.0:31476"
+origins = ["http://localhost:31477"]
+database_url = "sqlite:////var/ragna/ragna.db"
+
+[ui]
+url = "http://0.0.0.0:31477"
+origins = ["http://localhost:31477"]

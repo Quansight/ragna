@@ -5,7 +5,6 @@ dependencies:
   - python =3.9
   - pip
   - pip:
-      - jupyter
       - python-dotenv
       - boto3
       - pytest >=6
@@ -14,6 +13,8 @@ dependencies:
       - pre-commit
       - types-aiofiles
       - sqlalchemy-stubs
+      - setuptools-scm
+      - pip-tools
       # documentation
       - mkdocs
       - mkdocs-material

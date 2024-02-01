@@ -1,7 +1,16 @@
+import builtins
 import sys
-from typing import Callable, Iterable, Iterator, Mapping, TypeVar
+from typing import (
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterable,
+    Iterator,
+    Mapping,
+    TypeVar,
+)
 
-__all__ = ["itertools_pairwise", "importlib_metadata_package_distributions"]
+__all__ = ["itertools_pairwise", "importlib_metadata_package_distributions", "anext"]
 
 T = TypeVar("T")
 
@@ -38,3 +47,30 @@ def _importlib_metadata_package_distributions() -> (
 
 
 importlib_metadata_package_distributions = _importlib_metadata_package_distributions()
+
+
+def _anext() -> Callable[[AsyncIterator[T]], Awaitable[T]]:
+    if sys.version_info[:2] >= (3, 10):
+        anext = builtins.anext
+    else:
+        sentinel = object()
+
+        def anext(
+            ait: AsyncIterator[T],
+            default: T = sentinel,  # type: ignore[assignment]
+        ) -> Awaitable[T]:
+            async def anext_impl() -> T:
+                try:
+                    return await ait.__anext__()
+                except StopAsyncIteration:
+                    if default is not sentinel:
+                        return default
+
+                    raise
+
+            return anext_impl()
+
+    return anext
+
+
+anext = _anext()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import io
 import os
 import secrets
 import time
@@ -269,3 +270,64 @@ class PdfDocumentHandler(DocumentHandler):
         ) as document:
             for number, page in enumerate(document, 1):
                 yield Page(text=page.get_text(sort=True), number=number)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class DocxDocumentHandler(DocumentHandler):
+    """Document handler for `.docx` documents.
+
+    !!! note
+
+        This does *not* extract text from headers or footers.
+
+    !!! info "Package requirements"
+
+        - [`python-docx`](https://github.com/python-openxml/python-docx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-docx")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".docx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import docx
+
+        document_docx = docx.Document(io.BytesIO(document.read()))
+        for paragraph in document_docx.paragraphs:
+            text = paragraph.text
+            if len(text) > 0:
+                yield Page(text=text)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class PptxDocumentHandler(DocumentHandler):
+    """Document handler for `.pptx` documents.
+
+    !!! info "Package requirements"
+
+        - [`python-pptx`](https://github.com/scanny/python-pptx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-pptx")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".pptx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import pptx
+
+        document_pptx = pptx.Presentation(io.BytesIO(document.read()))
+        for number, slide in enumerate(document_pptx.slides, 1):
+            text = "\n\n".join(
+                shape.text
+                for shape in slide.shapes
+                if shape.has_text_frame and shape.text
+            )
+            yield Page(text=text, number=number)
