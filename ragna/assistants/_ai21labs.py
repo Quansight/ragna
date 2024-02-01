@@ -8,7 +8,7 @@ from ._api import ApiAssistant
 
 @unique
 class AI2LabsModelType(str, Enum):
-    light = "light"
+    # light = "light"
     mid = "mid"
     ultra = "ultra"
 
