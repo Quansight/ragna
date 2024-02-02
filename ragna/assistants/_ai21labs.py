@@ -9,6 +9,7 @@ class Ai21LabsAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
     _MODEL_TYPE: str
     _CONTEXT_SIZE: int = 8_192
+    # See https://docs.ai21.com/docs/model-availability-across-platforms#ai21-studio
 
     @classmethod
     def display_name(cls) -> str:
@@ -29,6 +30,9 @@ class Ai21LabsAssistant(ApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
+        # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
+        # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
+        # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
         response = await self._client.post(
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
             headers={
