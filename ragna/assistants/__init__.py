@@ -1,4 +1,6 @@
 __all__ = [
+    "AI21LabsJurassic2Mid",
+    "AI21LabsJurassic2Ultra",
     "Claude",
     "ClaudeInstant",
     "Command",
@@ -10,8 +12,6 @@ __all__ = [
     "Mpt7bInstruct",
     "Mpt30bInstruct",
     "RagnaDemoAssistant",
-    "AI21LabsJurassic2Mid",
-    "AI21LabsJurassic2Ultra",
 ]
 
 from ._ai21labs import AI21LabsJurassic2Mid, AI21LabsJurassic2Ultra
