@@ -13,3 +13,11 @@ class CohereApiAssistant(ApiAssistant):
     @property
     def max_input_size(self) -> int:
         return self._CONTEXT_SIZE
+
+    def _make_system_content(self) -> str:
+        instruction = (
+            "You are a helpful assistant that answers user questions given the included context. "
+            "If you don't know the answer, just say so. Don't try to make up an answer. "
+            "Only use the included documents below to generate the answer."
+        )
+        return instruction
