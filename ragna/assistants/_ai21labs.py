@@ -1,4 +1,4 @@
-from typing import cast
+from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
@@ -28,7 +28,7 @@ class AI21LabsAssistant(ApiAssistant):
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> str:
+    ) -> AsyncIterator[str]:
         response = await self._client.post(
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
             headers={
