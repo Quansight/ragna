@@ -1,3 +1,5 @@
+from ragna.core import Source
+
 from ._api import ApiAssistant
 
 
@@ -21,3 +23,9 @@ class CohereApiAssistant(ApiAssistant):
             "Only use the included documents below to generate the answer."
         )
         return instruction
+
+    def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
+        document_sources = [
+            {"title": source.id, "snippet": source.content} for source in sources
+        ]
+        return document_sources
