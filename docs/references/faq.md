@@ -62,7 +62,7 @@
    export COHERE_API_KEY="XXXXX"
    ```
    
-## [AI21 Labs](https://www.ai21.com/)
+### [AI21 Labs](https://www.ai21.com/)
 
 1. To use the API, you need an API key. You can create one in AI21 Studio
    > [Create your account on AI21 Studio](https://studio.ai21.com/sign-up) and start
