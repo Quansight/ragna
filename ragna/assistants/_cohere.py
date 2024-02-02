@@ -9,3 +9,7 @@ class CohereApiAssistant(ApiAssistant):
     @classmethod
     def display_name(cls) -> str:
         return f"Cohere/{cls._MODEL}"
+
+    @property
+    def max_input_size(self) -> int:
+        return self._CONTEXT_SIZE
