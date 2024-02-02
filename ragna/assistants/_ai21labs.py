@@ -55,7 +55,7 @@ class AI21LabsAssistant(ApiAssistant):
                 status_code=response.status_code, response=response.json()
             )
 
-        return cast(str, response.json()["outputs"][0]["text"])
+        yield cast(str, response.json()["outputs"][0]["text"])
 
 
 class AI21LabsJurassic2Mid(AI21LabsAssistant):
