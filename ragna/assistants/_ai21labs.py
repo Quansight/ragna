@@ -67,8 +67,22 @@ class AI21LabsAssistant(ApiAssistant):
 
 
 class AI21LabsJurassic2Mid(AI21LabsAssistant):
+    """[AI21Labs Jurassic-2 Mid](https://docs.ai21.com/docs/jurassic-2-models)
+
+    !!! info "Required environment variables"
+
+        - `AI21LABS_API_KEY`
+    """
+
     _MODEL_TYPE = AI2LabsModelType.mid
 
 
 class AI21LabsJurassic2Ultra(AI21LabsAssistant):
+    """[AI21Labs Jurassic-2 Ultra](https://docs.ai21.com/docs/jurassic-2-models)
+
+    !!! info "Required environment variables"
+
+        - `AI21LABS_API_KEY`
+    """
+
     _MODEL_TYPE = AI2LabsModelType.ultra
