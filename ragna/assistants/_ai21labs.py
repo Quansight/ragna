@@ -5,7 +5,7 @@ from ragna.core import RagnaException, Source
 from ._api import ApiAssistant
 
 
-class AI21LabsAssistant(ApiAssistant):
+class Ai21LabsAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "AI21LABS_API_KEY"
     _MODEL_TYPE: str
     _CONTEXT_SIZE: int = 8_192
@@ -58,8 +58,8 @@ class AI21LabsAssistant(ApiAssistant):
         yield cast(str, response.json()["outputs"][0]["text"])
 
 
-class AI21LabsJurassic2Mid(AI21LabsAssistant):
-    """[AI21Labs Jurassic-2 Mid](https://docs.ai21.com/docs/jurassic-2-models)
+class Jurassic2Mid(Ai21LabsAssistant):
+    """[AI21 Labs Jurassic-2 Mid](https://docs.ai21.com/docs/jurassic-2-models)
 
     !!! info "Required environment variables"
 
@@ -69,8 +69,8 @@ class AI21LabsJurassic2Mid(AI21LabsAssistant):
     _MODEL_TYPE = "mid"
 
 
-class AI21LabsJurassic2Ultra(AI21LabsAssistant):
-    """[AI21Labs Jurassic-2 Ultra](https://docs.ai21.com/docs/jurassic-2-models)
+class Jurassic2Ultra(Ai21LabsAssistant):
+    """[AI21 Labs Jurassic-2 Ultra](https://docs.ai21.com/docs/jurassic-2-models)
 
     !!! info "Required environment variables"
 

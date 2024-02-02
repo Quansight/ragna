@@ -1,6 +1,4 @@
 __all__ = [
-    "AI21LabsJurassic2Mid",
-    "AI21LabsJurassic2Ultra",
     "Claude",
     "ClaudeInstant",
     "Command",
@@ -9,12 +7,14 @@ __all__ = [
     "GeminiUltra",
     "Gpt35Turbo16k",
     "Gpt4",
+    "Jurassic2Mid",
+    "Jurassic2Ultra",
     "Mpt7bInstruct",
     "Mpt30bInstruct",
     "RagnaDemoAssistant",
 ]
 
-from ._ai21labs import AI21LabsJurassic2Mid, AI21LabsJurassic2Ultra
+from ._ai21labs import Jurassic2Mid, Jurassic2Ultra
 from ._anthropic import Claude, ClaudeInstant
 from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
