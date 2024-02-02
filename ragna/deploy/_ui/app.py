@@ -34,9 +34,8 @@ class App(param.Parameterized):
         super().__init__()
         ui.apply_design_modifiers()
         self.url = config.ui.url
-        self.api_url = config.api.url
+        self.api_url = f"{config.api.url}{config.api.root_path}"
         self.origins = handle_localhost_origins(config.ui.origins)
-        self.root_path = config.api.root_path
 
     def get_template(self):
         template = pn.template.FastListTemplate(
@@ -69,9 +68,8 @@ class App(param.Parameterized):
             return redirect_script(remove="", append="auth")
 
         try:
-            api_url = f"{self.api_url}{self.root_path}"
             api_wrapper = ApiWrapper(
-                api_url=api_url, auth_token=pn.state.cookies["auth_token"]
+                api_url=self.api_url, auth_token=pn.state.cookies["auth_token"]
             )
         except RagnaAuthTokenExpiredException:
             # If the token has expired / is invalid, we redirect to the logout page.
@@ -94,15 +92,13 @@ class App(param.Parameterized):
             return redirect_script(remove="auth")
 
         template = self.get_template()
-        api_url = f"{self.api_url}{self.root_path}"
-        auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=api_url))
+        auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
         template.main.append(auth_page)
         return template
 
     def logout_page(self):
         template = self.get_template()
-        api_url = f"{self.api_url}{self.root_path}"
-        logout_page = LogoutPage(api_wrapper=ApiWrapper(api_url=api_url))
+        logout_page = LogoutPage(api_wrapper=ApiWrapper(api_url=self.api_url))
         template.main.append(logout_page)
         return template
 
