@@ -1,16 +1,8 @@
-from enum import Enum, unique
 from typing import cast
 
 from ragna.core import RagnaException, Source
 
 from ._api import ApiAssistant
-
-
-@unique
-class AI2LabsModelType(str, Enum):
-    # light = "light"
-    mid = "mid"
-    ultra = "ultra"
 
 
 class AI21LabsAssistant(ApiAssistant):
@@ -74,7 +66,7 @@ class AI21LabsJurassic2Mid(AI21LabsAssistant):
         - `AI21LABS_API_KEY`
     """
 
-    _MODEL_TYPE = AI2LabsModelType.mid
+    _MODEL_TYPE = "mid"
 
 
 class AI21LabsJurassic2Ultra(AI21LabsAssistant):
@@ -85,4 +77,4 @@ class AI21LabsJurassic2Ultra(AI21LabsAssistant):
         - `AI21LABS_API_KEY`
     """
 
-    _MODEL_TYPE = AI2LabsModelType.ultra
+    _MODEL_TYPE = "ultra"
