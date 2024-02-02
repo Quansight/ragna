@@ -8,7 +8,7 @@ from ._api import ApiAssistant
 class CohereApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
+    _CONTEXT_SIZE: int = 4_000
 
     @classmethod
     def display_name(cls) -> str:
@@ -55,3 +55,27 @@ class CohereApiAssistant(ApiAssistant):
                 status_code=response.status_code, response=response.json()
             )
         yield cast(str, response.json()["text"])
+
+
+class Command(CohereApiAssistant):
+    """
+    [Cohere Command](https://docs.cohere.com/docs/models#command)
+
+    !!! info "Required environment variables"
+
+        - `COHERE_API_KEY`
+    """
+
+    _MODEL = "command"
+
+
+class CommandLight(CohereApiAssistant):
+    """
+    [Cohere Command-Light](https://docs.cohere.com/docs/models#command)
+
+    !!! info "Required environment variables"
+
+        - `COHERE_API_KEY`
+    """
+
+    _MODEL = "command-light"
