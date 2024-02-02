@@ -63,7 +63,7 @@ class Jurassic2Mid(Ai21LabsAssistant):
 
     !!! info "Required environment variables"
 
-        - `AI21LABS_API_KEY`
+        - `AI21_API_KEY`
     """
 
     _MODEL_TYPE = "mid"
@@ -74,7 +74,7 @@ class Jurassic2Ultra(Ai21LabsAssistant):
 
     !!! info "Required environment variables"
 
-        - `AI21LABS_API_KEY`
+        - `AI21_API_KEY`
     """
 
     _MODEL_TYPE = "ultra"

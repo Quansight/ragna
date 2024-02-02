@@ -70,7 +70,7 @@
    > trial with a generous amount of free credits to get you started.
    >
    > ~ [AI21 Labs API key creation page](https://studio.ai21.com/account/api-key)
-2. Set the `AI21LABS_API_KEY` environment variable with your AI21 Labs API key:
+2. Set the `AI21_API_KEY` environment variable with your AI21 Labs API key:
    ```bash
    export AI21_API_KEY="XXXXX"
    ```
