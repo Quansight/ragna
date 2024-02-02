@@ -109,6 +109,8 @@ idna==3.6
     #   anyio
     #   httpx
     #   requests
+ijson==3.2.3
+    # via Ragna (pyproject.toml)
 importlib-metadata==6.11.0
     # via opentelemetry-api
 importlib-resources==6.1.1
@@ -122,7 +124,9 @@ lancedb==0.4.4
 linkify-it-py==2.0.2
     # via panel
 lxml==5.1.0
-    # via python-docx
+    # via
+    #   python-docx
+    #   python-pptx
 markdown==3.5.2
     # via panel
 markdown-it-py==3.0.0
@@ -218,7 +222,9 @@ param==2.0.1
     #   panel
     #   pyviz-comms
 pillow==10.2.0
-    # via bokeh
+    # via
+    #   bokeh
+    #   python-pptx
 posthog==3.3.1
     # via chromadb
 prompt-toolkit==3.0.36
@@ -281,6 +287,8 @@ python-dotenv==1.0.0
     #   pydantic-settings
     #   uvicorn
 python-multipart==0.0.6
+    # via Ragna (pyproject.toml)
+python-pptx==0.6.23
     # via Ragna (pyproject.toml)
 pytz==2023.3.post1
     # via pandas
@@ -404,6 +412,8 @@ wrapt==1.16.0
     # via
     #   deprecated
     #   opentelemetry-instrumentation
+xlsxwriter==3.1.9
+    # via python-pptx
 xyzservices==2023.10.1
     # via
     #   bokeh
