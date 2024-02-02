@@ -131,6 +131,4 @@ class App(param.Parameterized):
 
 
 def app(config: Config) -> App:
-    return App(
-        config=config
-    )
+    return App(config=config)
