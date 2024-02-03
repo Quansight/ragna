@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast
+from typing import cast
 
 from ragna.core import RagnaException, Source
 
@@ -34,7 +34,7 @@ class CohereApiAssistant(ApiAssistant):
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncIterator[str]:
+    ) -> str:
         response = await self._client.post(
             "https://api.cohere.ai/v1/chat",
             headers={
@@ -45,6 +45,7 @@ class CohereApiAssistant(ApiAssistant):
             json={
                 "message": prompt,
                 "model": self._MODEL,
+                "stream": "true",
                 "temperature": 0.0,
                 "max_tokens": max_new_tokens,
                 "documents": self._make_source_documents(sources),
@@ -54,7 +55,7 @@ class CohereApiAssistant(ApiAssistant):
             raise RagnaException(
                 status_code=response.status_code, response=response.json()
             )
-        yield cast(str, response.json()["text"])
+        return cast(str, response.json()["text"])
 
 
 class Command(CohereApiAssistant):
