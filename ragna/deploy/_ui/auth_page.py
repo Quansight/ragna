@@ -53,22 +53,7 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
         else:
             return pn.pane.HTML(
                 f"""<div class="error">{self.feedback_message}</div>""",
-                stylesheets=[
-                    """
-                                             :host { 
-                                                width:100%;
-                                                margin-left:0px;
-                                                margin-right:0px;
-                                             }  
-                                             
-                                             div.error { 
-                                                width:100%; 
-                                                color:red; 
-                                                text-align:center;
-                                                font-weight: 600;
-                                                font-size: 16px;
-                                             } """
-                ],
+                css_classes=["error"],
             )
 
     @pn.depends("custom_js")
@@ -85,13 +70,7 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
         login_button = pn.widgets.Button(
             name="Sign In",
             button_type="primary",
-            stylesheets=[
-                """ :host { 
-                                                                width:100%;
-                                                                margin-left:0px;
-                                                                margin-right:0px;
-                                                       } """
-            ],
+            css_classes=["auth_login_button"],
         )
         login_button.on_click(self.perform_login)
 
@@ -99,53 +78,14 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
             self.wrapped_custom_js,
             pn.pane.HTML(
                 "<h1>Log In</h1>",
-                stylesheets=[
-                    """ :host { 
-                                                width:100%;
-                                                margin-left:0px;
-                                                margin-right:0px;
-                                                text-align:center;
-                                            } 
-                                         h1 { 
-                                            font-weight: 600;
-                                            font-size: 24px;
-                                         }
-                                         """
-                ],
+                css_classes=["auth_title"],
             ),
             self.display_error_message,
             self.login_input,
             self.password_input,
             pn.pane.HTML("<br />"),
             login_button,
-            stylesheets=[
-                """ :host { 
-                                    background-color:white;
-                                    /*background-color:gold;*/
-                                    border-radius: 5px;
-                                    box-shadow: lightgray 0px 0px 10px;
-                                    padding: 0 25px 0 25px;
-                             
-                                    width:30%;
-                                    min-width:360px;
-                                    max-width:430px;
-                                    
-                                    margin-left: auto;
-                                    margin-right: auto;
-                                    margin-top: 10%;
-
-                              }
-                             :host > div {
-                                margin-bottom: 10px;
-                                margin-top: 10px;
-                             }
-
-                             .bk-panel-models-layout-Column {
-                                width:100%;
-                             }
-                             
-                             """
-            ],
+            css_classes=["auth_page_main_layout"],
         )
 
         return self.main_layout

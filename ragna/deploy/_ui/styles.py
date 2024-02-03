@@ -42,6 +42,8 @@ def apply_design_modifiers_global():
         """ .bk-input {border-color: var(--neutral-color) !important;} """,
     )
 
+    add_modifier(pn.widgets.Button, "css/global/button.css")
+
 
 def apply_design_modifiers_source_accordion():
     add_modifier(pn.layout.Accordion, " :host { height: 100%; } ")
@@ -52,6 +54,9 @@ def apply_design_modifiers_source_accordion():
 
 def apply_design_modifiers_auth_page():
     add_modifier(pn.widgets.TextInput, "css/auth/textinput.css")
+    add_modifier(pn.pane.HTML, "css/auth/html.css")
+    add_modifier(pn.widgets.Button, "css/auth/button.css")
+    add_modifier(pn.Column, "css/auth/column.css")
 
 
 """
