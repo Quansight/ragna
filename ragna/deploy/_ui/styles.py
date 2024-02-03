@@ -176,21 +176,6 @@ span.fullscreen-button {
 """.replace("{{MAIN_COLOR}}", MAIN_COLOR)
 
 
-CHAT_INTERFACE_CUSTOM_BUTTON = """
-:host(.solid) .bk-btn.bk-btn-default {
-    background-color: transparent;
-    color: gray;
-}
-
-
-.bk-btn {
-    border-radius: 0;
-    padding: 0;
-    font-size: 14px;
-}
-    """
-
-
 SS_LABEL_STYLE = """
 :host {
     margin-top:20px;
