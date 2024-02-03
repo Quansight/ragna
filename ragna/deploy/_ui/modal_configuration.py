@@ -86,7 +86,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
-            stylesheets=[ui.BK_INPUT_GRAY_BORDER],
         )
         self.document_uploader = FileUploader(
             [],  # the allowed documents are set in the model_section function
@@ -190,7 +189,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                 pn.widgets.Select.from_param(
                     self.config.param.assistant_name,
                     name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
             ),
             pn.Column(
@@ -198,7 +196,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                 pn.widgets.Select.from_param(
                     self.config.param.source_storage_name,
                     name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
             ),
         )

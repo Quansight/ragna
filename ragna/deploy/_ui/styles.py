@@ -11,7 +11,11 @@ def divider():
 
 
 def apply_design_modifiers():
+    apply_design_modifiers_global()
+
     apply_design_modifiers_source_accordion()
+    apply_design_modifiers_auth_page()
+
     # add here calls to other design modifiers,
     #   group them per UI component
 
@@ -28,11 +32,26 @@ def add_modifier(
         pn.theme.fast.Fast.modifiers[modifier_class][property].append(modifications)
 
 
+def apply_design_modifiers_global():
+    add_modifier(
+        pn.widgets.TextInput,
+        """ .bk-input {border-color: var(--neutral-color) !important;} """,
+    )
+    add_modifier(
+        pn.widgets.Select,
+        """ .bk-input {border-color: var(--neutral-color) !important;} """,
+    )
+
+
 def apply_design_modifiers_source_accordion():
     add_modifier(pn.layout.Accordion, " :host { height: 100%; } ")
     add_modifier(pn.layout.Card, "css/source_accordion/card.css")
     add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
     add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
+
+
+def apply_design_modifiers_auth_page():
+    add_modifier(pn.widgets.TextInput, "css/auth/textinput.css")
 
 
 """
@@ -148,10 +167,6 @@ CHAT_INTERFACE_CUSTOM_BUTTON = """
     font-size: 14px;
 }
     """
-
-BK_INPUT_GRAY_BORDER = (
-    """ .bk-input {border-color: var(--neutral-color) !important;} """
-)
 
 
 SS_LABEL_STYLE = """

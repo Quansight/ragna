@@ -1,28 +1,6 @@
 import panel as pn
 import param
 
-from . import styles as ui
-
-# TODO Move this into a CSS file
-login_inputs_stylesheets = """
-
-:host {
-    width:100%;
-    margin-left:0px;
-    margin-right:0px;
-}
-
-label {
-    font-weight: 600;
-    font-size: 16px;
-}
-
-input {
-    background-color: white !important;
-}
-
-"""
-
 
 class AuthPage(pn.viewable.Viewer, param.Parameterized):
     feedback_message = param.String(default=None)
@@ -37,11 +15,11 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
 
         self.login_input = pn.widgets.TextInput(
             name="Email",
-            stylesheets=[login_inputs_stylesheets, ui.BK_INPUT_GRAY_BORDER],
+            css_classes=["auth_login_input"],
         )
         self.password_input = pn.widgets.PasswordInput(
             name="Password",
-            stylesheets=[login_inputs_stylesheets, ui.BK_INPUT_GRAY_BORDER],
+            css_classes=["auth_password_input"],
         )
 
     async def perform_login(self, event=None):
