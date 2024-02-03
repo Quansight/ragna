@@ -12,15 +12,11 @@ def divider():
 
 def apply_design_modifiers():
     apply_design_modifiers_global()
-
     apply_design_modifiers_source_accordion()
     apply_design_modifiers_auth_page()
-
     apply_design_modifiers_central_view()
     apply_design_modifiers_chat_info()
-
-    # add here calls to other design modifiers,
-    #   group them per UI component
+    apply_design_modifiers_chat_interface()
 
 
 def add_modifier(
@@ -73,9 +69,11 @@ def apply_design_modifiers_central_view():
     add_modifier(pn.Column, "css/central_view/column.css")
     add_modifier(pn.Row, "css/central_view/row.css")
     add_modifier(pn.pane.HTML, "css/central_view/html.css")
-    add_modifier(pn.widgets.TextInput, "css/central_view/textinput.css")
 
-    add_modifier(pn.layout.Card, "css/central_view/card.css")
+
+def apply_design_modifiers_chat_interface():
+    add_modifier(pn.widgets.TextInput, "css/chat_interface/textinput.css")
+    add_modifier(pn.layout.Card, "css/chat_interface/card.css")
 
 
 """
