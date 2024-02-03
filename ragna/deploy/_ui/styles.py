@@ -75,6 +75,8 @@ def apply_design_modifiers_central_view():
     add_modifier(pn.pane.HTML, "css/central_view/html.css")
     add_modifier(pn.widgets.TextInput, "css/central_view/textinput.css")
 
+    add_modifier(pn.layout.Card, "css/central_view/card.css")
+
 
 """
 CSS constants
