@@ -17,6 +17,7 @@ def apply_design_modifiers():
     apply_design_modifiers_auth_page()
 
     apply_design_modifiers_central_view()
+    apply_design_modifiers_chat_info()
 
     # add here calls to other design modifiers,
     #   group them per UI component
@@ -54,6 +55,11 @@ def apply_design_modifiers_source_accordion():
     add_modifier(pn.layout.Card, "css/source_accordion/card.css")
     add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
     add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
+
+
+def apply_design_modifiers_chat_info():
+    add_modifier(pn.pane.Markdown, "css/chat_info/markdown.css")
+    add_modifier(pn.widgets.Button, "css/chat_info/button.css")
 
 
 def apply_design_modifiers_auth_page():

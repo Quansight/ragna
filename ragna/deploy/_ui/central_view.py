@@ -244,7 +244,7 @@ class CentralView(pn.viewable.Viewer):
             on_click=self.on_click_chat_info_wrapper,
             button_style="outline",
             icon="info-circle",
-            stylesheets=[":host { margin-top:10px; }"],
+            css_classes=["chat-info-button"],
         )
         self.on_click_chat_info = None
 
@@ -287,34 +287,14 @@ class CentralView(pn.viewable.Viewer):
                 pn.pane.Markdown(
                     markdown,
                     dedent=True,
+                    css_classes=["chat_info_markdown"],
                     stylesheets=ui.stylesheets(
-                        (":host", {"width": "100%"}),
                         (
-                            ".pills_list",
+                            ":host(.chat_info_markdown) .pills_list",
                             {
-                                # "background-color": "gold",
-                                "display": "grid",
-                                "grid-auto-flow": "row",
-                                "row-gap": "10px",
                                 "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
-                                "max-height": "200px",
-                                "overflow": "scroll",
                             },
                         ),
-                        (
-                            ".chat_document_pill",
-                            {
-                                "background-color": "rgb(241,241,241)",
-                                "margin-left": "5px",
-                                "margin-right": "5px",
-                                "padding": "5px 15px",
-                                "border-radius": "10px",
-                                "color": "var(--accent-color)",
-                                "width": "fit-content",
-                                "grid-column": "span 1",
-                            },
-                        ),
-                        ("ul", {"list-style-type": "none"}),
                     ),
                 ),
             ],
