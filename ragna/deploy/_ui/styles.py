@@ -16,6 +16,8 @@ def apply_design_modifiers():
     apply_design_modifiers_source_accordion()
     apply_design_modifiers_auth_page()
 
+    apply_design_modifiers_central_view()
+
     # add here calls to other design modifiers,
     #   group them per UI component
 
@@ -46,7 +48,9 @@ def apply_design_modifiers_global():
 
 
 def apply_design_modifiers_source_accordion():
-    add_modifier(pn.layout.Accordion, " :host { height: 100%; } ")
+    add_modifier(
+        pn.layout.Accordion, " :host(.source-accordion) { height: 100%; width: 100%; } "
+    )
     add_modifier(pn.layout.Card, "css/source_accordion/card.css")
     add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
     add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
@@ -57,6 +61,13 @@ def apply_design_modifiers_auth_page():
     add_modifier(pn.pane.HTML, "css/auth/html.css")
     add_modifier(pn.widgets.Button, "css/auth/button.css")
     add_modifier(pn.Column, "css/auth/column.css")
+
+
+def apply_design_modifiers_central_view():
+    add_modifier(pn.Column, "css/central_view/column.css")
+    add_modifier(pn.Row, "css/central_view/row.css")
+    add_modifier(pn.pane.HTML, "css/central_view/html.css")
+    add_modifier(pn.widgets.TextInput, "css/central_view/textinput.css")
 
 
 """

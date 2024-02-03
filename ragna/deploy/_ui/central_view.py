@@ -342,13 +342,11 @@ class CentralView(pn.viewable.Viewer):
             [
                 pn.pane.Markdown(
                     "This response was generated using the following data from the uploaded files: <br />",
-                    dedent=True,
-                    stylesheets=[""" hr { width: 94%; height:1px;  }  """],
                 ),
                 pn.layout.Accordion(
                     *source_infos,
                     header_background="transparent",
-                    stylesheets=ui.stylesheets((":host", {"width": "100%"})),
+                    css_classes=["source-accordion"],
                 ),
             ],
         )
@@ -429,22 +427,7 @@ class CentralView(pn.viewable.Viewer):
             widgets=[
                 pn.widgets.TextInput(
                     placeholder="Ask a question about the documents",
-                    stylesheets=ui.stylesheets(
-                        (
-                            ":host input[type='text']",
-                            {
-                                "border": "none !important",
-                                "box-shadow": "0px 0px 6px 0px rgba(0, 0, 0, 0.2)",
-                                "padding": "10px 10px 10px 15px",
-                            },
-                        ),
-                        (
-                            ":host input[type='text']:focus",
-                            {
-                                "box-shadow": "0px 0px 8px 0px rgba(0, 0, 0, 0.3)",
-                            },
-                        ),
-                    ),
+                    # css_classes is forced to chat-interface-input-widget by Panel
                 )
             ],
         )
@@ -487,28 +470,7 @@ class CentralView(pn.viewable.Viewer):
         chat_name_header = pn.pane.HTML(
             f"<p>{current_chat_name}</p>",
             sizing_mode="stretch_width",
-            stylesheets=[
-                """ 
-
-                        :host p {
-                            max-width: 50%;
-                            height:100%;
-
-                            text-overflow: ellipsis;
-                            white-space: nowrap;
-                            overflow: hidden;
-                            margin: 0px 0px 0px 10px;
-
-                            font-size:20px;
-                            text-decoration: underline;
-                            text-underline-offset: 4px;
-
-                            /* I don't understand why this is necessary to vertically align the text ... */
-                            line-height:250%; 
-                            
-                        }
-                        """
-            ],
+            css_classes=["chat-name-header"],
         )
 
         chat_documents_pills = []
@@ -524,22 +486,8 @@ class CentralView(pn.viewable.Viewer):
             #  See https://github.com/Quansight/ragna/issues/224
             for doc_name in doc_names[:20]:
                 pill = pn.pane.HTML(
-                    f"""<div class="chat_document_pill">{doc_name}</div>""",
-                    stylesheets=[
-                        """
-                                                 :host {
-                                                    background-color: rgb(241,241,241);
-                                                    margin-top: 15px;
-                                                    margin-left: 5px;   
-                                                    margin-right: 5px;
-                                                    padding: 5px 15px;
-                                                    border-radius: 10px;
-                                                    color:var(--accent-color);
-                                                    
-                                                 }   
-
-                                                 """
-                    ],
+                    f"""<div class="chat-document-pill">{doc_name}</div>""",
+                    css_classes=["chat-document-pill"],
                 )
 
                 chat_documents_pills.append(pill)
@@ -550,22 +498,7 @@ class CentralView(pn.viewable.Viewer):
             chat_name_header,
             *chat_documents_pills,
             self.chat_info_button,
-            stylesheets=[
-                """:host {  
-                                    background-color: #F9F9F9;
-                                    border-bottom: 1px solid #EEEEEE;
-                                    width: 100% !important;
-                                    margin:0px;
-                                    height:54px;
-                                    overflow:hidden;
-                                }
-
-                                :host div {
-                                    
-                                    vertical-align: middle;
-                                }
-"""
-            ],
+            css_classes=["central-view-header"],
         )
 
     def set_loading(self, is_loading):
@@ -576,18 +509,7 @@ class CentralView(pn.viewable.Viewer):
             self.header,
             self.chat_interface,
             sizing_mode="stretch_width",
-            stylesheets=[
-                """                    :host { 
-                                            background-color: #F9F9F9;
-                                            
-                                            height:100%;
-                                            max-width: 100%;
-                                            margin-left: min(15px, 2%);
-                                            border-left: 1px solid #EEEEEE;
-                                            border-right: 1px solid #EEEEEE;
-                                        }
-                                """
-            ],
+            css_classes=["central-view-main-column"],
         )
 
         return self.main_column
