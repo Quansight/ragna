@@ -1,7 +1,7 @@
 """
 UI Helpers
 """
-from typing import Iterable, Optional, Union
+from typing import Any, Iterable, Optional, Type, Union
 
 import panel as pn
 
@@ -16,104 +16,23 @@ def apply_design_modifiers():
     #   group them per UI component
 
 
+def add_modifier(
+    modifier_class: Type[Any], modifications: Any, property: str = "stylesheets"
+):
+    if modifier_class not in pn.theme.fast.Fast.modifiers:
+        pn.theme.fast.Fast.modifiers[modifier_class] = {}
+
+    if property not in pn.theme.fast.Fast.modifiers[modifier_class]:
+        pn.theme.fast.Fast.modifiers[modifier_class] = {property: [modifications]}
+    else:
+        pn.theme.fast.Fast.modifiers[modifier_class][property].append(modifications)
+
+
 def apply_design_modifiers_source_accordion():
-    pn.theme.fast.Fast.modifiers[pn.layout.Accordion] = {
-        "stylesheets": [
-            """ :host { 
-                                    height: 100%
-                                    }
-                           """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.layout.Card] = {
-        "stylesheets": [
-            """ 
-
-                        /* Define some variables */
-                        :host {
-                            --ragna-accordion-header-height: 50px;
-                        } 
-
-                        /* Resets some existing styles */
-                        :host(.accordion) { 
-                            margin-left: 0px;
-                            margin-top: 0px;
-                            outline: none;
-                        }
-                        
-                        /* Styles the button itself */
-                        button.accordion-header { 
-                            background-color: white !important;
-                            height: var(--ragna-accordion-header-height);
-                            padding-top: 0px;
-                            padding-bottom: 0px;
-                            outline:0px;
-                            margin-left: 15px;
-                            margin-right: 15px;
-                            width: calc(100% - 30px);
-                            border-bottom: 2px solid #D9D9D9;
-                        
-                        }
-                        
-                        button.accordion-header div.card-button {
-                            font-size: 11px;
-                            padding-top: 5px;
-                            margin-left: 0px;
-                            margin-right: 10px;
-                        }
-                        
-                        div.card-header-row {
-                            height: var(--ragna-accordion-header-height);
-                            background-color: unset !important;
-                        }
-
-                        /* styles the content of the sources content (the expanding areas of the Accordion) */
-                        div.bk-panel-models-markup-HTML.markdown {
-                            margin-left: 15px;
-                            margin-right: 15px;
-                            margin-top:0px;
-                        }
-
-                    """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.pane.HTML] = {
-        "stylesheets": [
-            """ :host(.card-title) {
-                                height: var(--ragna-accordion-header-height);
-                                margin: 0px;
-                            }
-                        
-                            :host(.card-title) div {
-                                height: var(--ragna-accordion-header-height);
-                                
-                                display:flex;
-                                flex-direction:row;
-                                align-items:center;
-                            }
-                        
-
-                            :host(.card-title) h3 {
-                                font-weight: normal;
-                            }
-                        """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.pane.Markdown] = {
-        "stylesheets": [
-            """  /* Styles the content of the sources content (the expanding areas of the Accordion).
-                            This fixes a small margin-top that is added by default and that leads to overflowing content 
-                            in some cases.
-                            */
-                            :host(.source-content) p:nth-of-type(1)  {
-                                margin-top: 0px;
-                            }
-                        """
-        ]
-    }
+    add_modifier(pn.layout.Accordion, " :host { height: 100%; } ")
+    add_modifier(pn.layout.Card, "css/source_accordion/card.css")
+    add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
+    add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
 
 
 """

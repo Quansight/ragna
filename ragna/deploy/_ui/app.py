@@ -24,7 +24,7 @@ pn.config.browser_info = True
 
 
 HERE = Path(__file__).parent
-# CSS = HERE / "css"
+CSS = HERE / "css"
 IMGS = HERE / "imgs"
 RES = HERE / "resources"
 
@@ -126,7 +126,7 @@ class App(param.Parameterized):
             autoreload=True,
             profiler="pyinstrument",
             allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
-            static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
+            static_dirs={"imgs": str(IMGS), "resources": str(RES), "css": str(CSS)},
         )
 
 
