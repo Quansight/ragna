@@ -391,7 +391,7 @@ class CentralView(pn.viewable.Viewer):
         if self.current_chat is None:
             return
 
-        chat_interface = RagnaChatInterface(
+        return RagnaChatInterface(
             *[
                 RagnaChatMessage(
                     message["content"],
@@ -423,9 +423,29 @@ class CentralView(pn.viewable.Viewer):
                     # css_classes is forced to chat-interface-input-widget by Panel
                 )
             ],
+            card_params=dict(
+                stylesheets=ui.stylesheets(
+                    (":host", {"border": "none !important"}),
+                    (
+                        ".chat-feed-log",
+                        {
+                            "padding-right": "18%",
+                            "margin-left": "18%",
+                            "padding-top": "25px !important",
+                        },
+                    ),
+                    (
+                        ".chat-interface-input-container",
+                        {
+                            "margin-left": "19%",
+                            "margin-right": "20%",
+                            "margin-bottom": "20px",
+                        },
+                    ),
+                )
+            ),
+            show_activity_dot=False,
         )
-
-        return chat_interface
 
     @pn.depends("current_chat")
     def header(self):
