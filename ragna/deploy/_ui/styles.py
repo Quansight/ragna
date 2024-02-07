@@ -22,9 +22,6 @@ def apply_design_modifiers():
 def add_modifier(
     modifier_class: Type[Any], modifications: Any, property: str = "stylesheets"
 ):
-    # if modifier_class == pn.widgets.button.Button and "chat_interface" in modifications:
-    #    breakpoint()
-
     if modifier_class not in pn.theme.fast.Fast.modifiers:
         pn.theme.fast.Fast.modifiers[modifier_class] = {}
 
@@ -37,20 +34,18 @@ def add_modifier(
 def apply_design_modifiers_global():
     add_modifier(
         pn.widgets.TextInput,
-        """ .bk-input {border-color: var(--neutral-color) !important;} """,
+        "css/global/textinput_select.css",
     )
     add_modifier(
         pn.widgets.Select,
-        """ .bk-input {border-color: var(--neutral-color) !important;} """,
+        "css/global/textinput_select.css",
     )
 
     add_modifier(pn.widgets.Button, "css/global/button.css")
 
 
 def apply_design_modifiers_source_accordion():
-    add_modifier(
-        pn.layout.Accordion, " :host(.source-accordion) { height: 100%; width: 100%; } "
-    )
+    add_modifier(pn.layout.Accordion, "css/source_accordion/accordion.css")
     add_modifier(pn.layout.Card, "css/source_accordion/card.css")
     add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
     add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
