@@ -126,7 +126,10 @@ class App(param.Parameterized):
             autoreload=True,
             profiler="pyinstrument",
             allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
-            static_dirs={"imgs": str(IMGS), "resources": str(RES), "css": str(CSS)},
+            static_dirs={
+                dir: str(Path(__file__).parent / dir)
+                for dir in ["css", "imgs", "resources"]
+            },
         )
 
 
