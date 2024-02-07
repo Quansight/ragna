@@ -22,11 +22,14 @@ def apply_design_modifiers():
 def add_modifier(
     modifier_class: Type[Any], modifications: Any, property: str = "stylesheets"
 ):
+    # if modifier_class == pn.widgets.button.Button and "chat_interface" in modifications:
+    #    breakpoint()
+
     if modifier_class not in pn.theme.fast.Fast.modifiers:
         pn.theme.fast.Fast.modifiers[modifier_class] = {}
 
     if property not in pn.theme.fast.Fast.modifiers[modifier_class]:
-        pn.theme.fast.Fast.modifiers[modifier_class] = {property: [modifications]}
+        pn.theme.fast.Fast.modifiers[modifier_class][property] = [modifications]
     else:
         pn.theme.fast.Fast.modifiers[modifier_class][property].append(modifications)
 
@@ -74,6 +77,8 @@ def apply_design_modifiers_central_view():
 def apply_design_modifiers_chat_interface():
     add_modifier(pn.widgets.TextInput, "css/chat_interface/textinput.css")
     add_modifier(pn.layout.Card, "css/chat_interface/card.css")
+    add_modifier(pn.pane.Markdown, "css/chat_interface/markdown.css")
+    add_modifier(pn.widgets.button.Button, "css/chat_interface/button.css")
 
 
 """

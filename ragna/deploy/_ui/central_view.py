@@ -161,25 +161,10 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         self._stylesheets.extend(message_stylesheets)
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
-        # I have tried to style this button using modifiers, but it doesn't work.
-        # If you inspect the HTML code for this button, none of the CSS files are
-        # added. Leaving this as this is for now.
         source_info_button = pn.widgets.Button(
             name="Source Info",
             icon="info-circle",
-            stylesheets=[
-                """     :host(.solid) .bk-btn.bk-btn-default {
-                                background-color: transparent;
-                                color: gray;
-                            }
-
-                            .bk-btn {
-                                border-radius: 0;
-                                padding: 0;
-                                font-size: 14px;
-                            }
-                    """
-            ],
+            css_classes=["source-info-button"],
             on_click=lambda event: self.on_click_source_info_callback(
                 event, self.sources
             ),
