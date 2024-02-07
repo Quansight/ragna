@@ -23,12 +23,6 @@ pn.extension(
 pn.config.browser_info = True
 
 
-HERE = Path(__file__).parent
-CSS = HERE / "css"
-IMGS = HERE / "imgs"
-RES = HERE / "resources"
-
-
 class App(param.Parameterized):
     def __init__(self, *, url, api_url, origins):
         super().__init__()
