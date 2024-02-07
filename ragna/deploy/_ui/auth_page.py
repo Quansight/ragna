@@ -52,8 +52,8 @@ class AuthPage(pn.viewable.Viewer, param.Parameterized):
             return None
         else:
             return pn.pane.HTML(
-                f"""<div class="error">{self.feedback_message}</div>""",
-                css_classes=["error"],
+                f"""<div class="auth_error">{self.feedback_message}</div>""",
+                css_classes=["auth_error"],
             )
 
     @pn.depends("custom_js")

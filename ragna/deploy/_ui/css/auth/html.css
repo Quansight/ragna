@@ -1,10 +1,10 @@
-:host(.error) {
+:host(.auth_error) {
   width: 100%;
   margin-left: 0px;
   margin-right: 0px;
 }
 
-:host(.error) div.error {
+:host(.auth_error) div.auth_error {
   width: 100%;
   color: red;
   text-align: center;
