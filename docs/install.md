@@ -35,3 +35,14 @@ pip install --upgrade ragna
 ```
 ragna --version
 ```
+
+## Backwards compatibility
+
+As an early-stage project and as long as we are on a `0.` version, we allow ourselves
+the **option to break backwards compatibility**. This is done to accommodate feature
+requests that require large refactorings, which inadvertently happen in the beginning.
+The amount and severity of the breaking changes should diminish as the project matures.
+All such changes will be announced in the [release notes](references/release-notes.md).
+At some point, we'll release a `1.0.0` version and switch to
+[SemVer](https://semver.org/), imposing strict backwards compatibility rules onto
+ourselves.
