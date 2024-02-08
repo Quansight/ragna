@@ -19,6 +19,7 @@ def apply_design_modifiers():
     apply_design_modifiers_chat_interface()
     apply_design_modifiers_right_sidebar()
     apply_design_modifiers_left_sidebar()
+    apply_design_modifiers_main_page()
 
 
 def add_modifier(
@@ -89,6 +90,10 @@ def apply_design_modifiers_left_sidebar():
     add_modifier(pn.widgets.Button, "css/left_sidebar/button.css")
     add_modifier(pn.Column, "css/left_sidebar/column.css")
     add_modifier(pn.pane.HTML, "css/left_sidebar/html.css")
+
+
+def apply_design_modifiers_main_page():
+    add_modifier(pn.Row, "css/main_page/row.css")
 
 
 """

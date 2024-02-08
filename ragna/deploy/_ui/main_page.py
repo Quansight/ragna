@@ -141,6 +141,8 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
                             """.replace(
                     "{new_chat_btn_name}", new_chat_button_name
                 ).strip(),
+                # This is not really styling per say, it's just a way to hide from the page the HTML item of this hack.
+                # It's not worth moving this to a separate file.
                 stylesheets=[":host { position:absolute; z-index:-999; }"],
             )
 
@@ -155,23 +157,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
         main_page = pn.Row(
             *objects,
-            stylesheets=[
-                """   
-                                :host { 
-                                    background-color: rgb(248, 248, 248);
-                                    height: 100%;
-                                    width: 100%;
-                                }
-
-                                /* Enforces the width of the LeftSidebarn 
-                                which is the "first of type" with this class 
-                                (first object in the row) */
-                                .bk-panel-models-layout-Column:first-of-type {
-                                    min-width: 220px;
-                                    width: 15%;     
-                                }
-                        """
-            ],
+            css_classes=["main_page_main_row"],
         )
 
         return main_page
