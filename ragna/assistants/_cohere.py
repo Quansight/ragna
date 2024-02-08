@@ -10,6 +10,7 @@ class CohereApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int = 4_000
+    # See https://docs.cohere.com/docs/models#command
 
     @classmethod
     def display_name(cls) -> str:
@@ -36,6 +37,9 @@ class CohereApiAssistant(ApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
+        # See https://docs.cohere.com/docs/cochat-beta
+        # See https://docs.cohere.com/reference/chat
+        # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
         async with self._client.stream(
             "POST",
             "https://api.cohere.ai/v1/chat",
