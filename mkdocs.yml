@@ -77,23 +77,15 @@ extra_css:
 
 # Explicit navigation
 nav:
-  - "index.md"
-  - "install.md"
-  # - Explanations:
-  #     - "explanations/what-is-rag.md" # Hide for 0.1.0 release
-  - Tutorials:
-      - "tutorials/python-api.md"
-      - "tutorials/rest-api.md"
-      - "tutorials/web-app.md"
-  - How-to:
-      - "how-tos/set-configuration.md"
+  - index.md
+  - install.md
   - Examples: generated/gallery
   - Community:
-      - "community/welcome.md"
-      - "community/contribute.md"
+      - community/welcome.md
+      - community/contribute.md
   - References:
-      - "references/python-api.md"
-      - "references/rest-api.md"
-      - "references/cli.md"
-      - "references/faq.md"
-      - "references/changelog.md"
+      - references/python-api.md
+      - references/rest-api.md
+      - references/cli.md
+      - references/faq.md
+      - references/changelog.md
