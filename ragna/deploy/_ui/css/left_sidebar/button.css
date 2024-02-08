@@ -18,6 +18,8 @@
   text-overflow: ellipsis;
   text-align: left;
   border: 0px !important;
+  font-size: 14px;
+  color: rgb(113, 113, 113) !important;
 }
 
 :host(.chat_button) div button:before {
