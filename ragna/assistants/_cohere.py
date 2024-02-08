@@ -45,6 +45,7 @@ class CohereApiAssistant(ApiAssistant):
                 "authorization": f"Bearer {self._api_key}",
             },
             json={
+                "preamble_override": self._make_system_content(),
                 "message": prompt,
                 "model": self._MODEL,
                 "stream": True,
