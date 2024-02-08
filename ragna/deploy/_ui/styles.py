@@ -20,6 +20,7 @@ def apply_design_modifiers():
     apply_design_modifiers_right_sidebar()
     apply_design_modifiers_left_sidebar()
     apply_design_modifiers_main_page()
+    apply_design_modifiers_modal_welcome()
 
 
 def add_modifier(
@@ -94,6 +95,10 @@ def apply_design_modifiers_left_sidebar():
 
 def apply_design_modifiers_main_page():
     add_modifier(pn.Row, "css/main_page/row.css")
+
+
+def apply_design_modifiers_modal_welcome():
+    add_modifier(pn.widgets.Button, "css/modal_welcome/button.css")
 
 
 """
