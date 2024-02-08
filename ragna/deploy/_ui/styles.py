@@ -17,6 +17,7 @@ def apply_design_modifiers():
     apply_design_modifiers_central_view()
     apply_design_modifiers_chat_info()
     apply_design_modifiers_chat_interface()
+    apply_design_modifiers_right_sidebar()
 
 
 def add_modifier(
@@ -75,6 +76,12 @@ def apply_design_modifiers_chat_interface():
     add_modifier(pn.pane.Markdown, "css/chat_interface/markdown.css")
     add_modifier(pn.widgets.button.Button, "css/chat_interface/button.css")
     add_modifier(pn.Column, "css/chat_interface/column.css")
+
+
+def apply_design_modifiers_right_sidebar():
+    add_modifier(pn.widgets.Button, "css/right_sidebar/button.css")
+    add_modifier(pn.Column, "css/right_sidebar/column.css")
+    add_modifier(pn.pane.Markdown, "css/right_sidebar/markdown.css")
 
 
 """
