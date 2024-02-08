@@ -21,6 +21,7 @@ def apply_design_modifiers():
     apply_design_modifiers_left_sidebar()
     apply_design_modifiers_main_page()
     apply_design_modifiers_modal_welcome()
+    apply_design_modifiers_modal_configuration()
 
 
 def add_modifier(
@@ -99,6 +100,13 @@ def apply_design_modifiers_main_page():
 
 def apply_design_modifiers_modal_welcome():
     add_modifier(pn.widgets.Button, "css/modal_welcome/button.css")
+
+
+def apply_design_modifiers_modal_configuration():
+    add_modifier(pn.widgets.IntSlider, "css/modal_configuration/intslider.css")
+    add_modifier(pn.layout.Card, "css/modal_configuration/card.css")
+    add_modifier(pn.Row, "css/modal_configuration/row.css")
+    add_modifier(pn.widgets.Button, "css/modal_configuration/button.css")
 
 
 """
@@ -199,59 +207,6 @@ span.fullscreen-button {
 }
 
 """.replace("{{MAIN_COLOR}}", MAIN_COLOR)
-
-
-SS_LABEL_STYLE = """
-:host {
-    margin-top:20px;
-}
-
-label, .bk-slider-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.bk-slider-value {
-    font-weight: normal;
-}
-
-.noUi-target {
-    border-color: var(--accent-fill-active);
-}
-
-.noUi-handle {
-    border-radius: 50%;
-}
-
-.noUi-handle, .noUi-connects {
-    background-color: var(--clear-button-active);
-}
-
-.noUi-target[disabled='true'] {
-    border-color: darkgray;
-}
-
-
-.noUi-target[disabled='true'] .noUi-connect {
-    background-color: darkgray !important;
-}
-
-
-:host(.disabled) div.bk-slider-title {
-    color: darkgray !important;
-}
-
-
-"""
-
-
-SS_ADVANCED_UI_CARD = """
-:host {
-    border : none !important;
-    outline: none !important;
-    background-color: unset !important;
-}
-"""
 
 
 message_loading_indicator = f""" 
