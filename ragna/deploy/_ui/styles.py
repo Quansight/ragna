@@ -74,6 +74,7 @@ def apply_design_modifiers_chat_interface():
     add_modifier(pn.layout.Card, "css/chat_interface/card.css")
     add_modifier(pn.pane.Markdown, "css/chat_interface/markdown.css")
     add_modifier(pn.widgets.button.Button, "css/chat_interface/button.css")
+    add_modifier(pn.Column, "css/chat_interface/column.css")
 
 
 """

@@ -10,41 +10,6 @@ from ragna._compat import anext
 
 from . import styles as ui
 
-# TODO : move all the CSS rules in a dedicated file
-
-message_stylesheets = [
-    """ 
-            :host .right, :host .center {
-                    width:100% !important;
-            }
-    """,
-    """ 
-            :host .left {
-                height: unset !important;
-                min-height: unset !important;
-            }
-    """,
-    """
-            :host div.bk-panel-models-layout-Column:not(.left) { 
-                    width:100% !important;
-            }
-    """,
-    """
-            :host .message {
-                width: calc(100% - 15px);
-                box-shadow: unset;
-                font-size: unset;
-                background-color: unset;
-            }
-    """,
-    """
-            :host .avatar {
-                margin-top:0px;
-                box-shadow: unset;
-            }
-    """,
-]
-
 
 class CopyToClipboardButton(ReactiveHTML):
     title = param.String(default=None, doc="The title of the button ")
@@ -71,22 +36,7 @@ class CopyToClipboardButton(ReactiveHTML):
         "copy_to_clipboard": """navigator.clipboard.writeText(`${data.value}`);"""
     }
 
-    _stylesheets = [
-        """ div.container { 
-                            
-                            display:flex;
-                            flex-direction: row;
-                            margin: 7px 10px;
-                    
-                            color:gray;
-                        } 
-                    
-                        svg {
-                            margin-right:5px;
-                        }
-
-                    """
-    ]
+    _stylesheets = ["css/chat_interface/copybutton.css"]
 
 
 class RagnaChatMessage(pn.chat.ChatMessage):
@@ -109,41 +59,22 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         self.content_pane = pn.pane.Markdown(
             content,
             css_classes=["message-content", css_class],
-            stylesheets=ui.stylesheets(
-                (
-                    "table",
-                    {"margin-top": "10px", "margin-bottom": "10px"},
-                )
-            ),
         )
 
         if role == "assistant":
             assert sources is not None
-            css_class = "message-content-assistant-with-buttons"
             object = pn.Column(
                 self.content_pane,
                 self._copy_and_source_view_buttons(),
-                css_classes=[css_class],
+                css_classes=["message-content-assistant-with-buttons"],
             )
         else:
             object = self.content_pane
 
-        object.stylesheets.extend(
-            ui.stylesheets(
-                (
-                    f":host(.{css_class})",
-                    {"background-color": "rgb(243, 243, 243) !important"}
-                    if role == "user"
-                    else {
-                        "background-color": "none",
-                        "border": "rgb(234, 234, 234)",
-                        "border-style": "solid",
-                        "border-width": "1.2px",
-                        "border-radius": "5px",
-                    },
-                )
-            ),
-        )
+        if role == "user":
+            object.css_classes.append("message-content-no-border")
+        else:
+            object.css_classes.append("message-content-border")
 
         super().__init__(
             object=object,
@@ -158,7 +89,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
         )
-        self._stylesheets.extend(message_stylesheets)
+        self._stylesheets.append("css/chat_interface/chatmessage.css")
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
         source_info_button = pn.widgets.Button(
@@ -408,27 +339,6 @@ class CentralView(pn.viewable.Viewer):
                     # css_classes is forced to chat-interface-input-widget by Panel
                 )
             ],
-            card_params=dict(
-                stylesheets=ui.stylesheets(
-                    (":host", {"border": "none !important"}),
-                    (
-                        ".chat-feed-log",
-                        {
-                            "padding-right": "18%",
-                            "margin-left": "18%",
-                            "padding-top": "25px !important",
-                        },
-                    ),
-                    (
-                        ".chat-interface-input-container",
-                        {
-                            "margin-left": "19%",
-                            "margin-right": "20%",
-                            "margin-bottom": "20px",
-                        },
-                    ),
-                )
-            ),
             show_activity_dot=False,
         )
 
