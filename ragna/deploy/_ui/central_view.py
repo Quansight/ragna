@@ -217,7 +217,7 @@ class CentralView(pn.viewable.Viewer):
                     dedent=True,
                     css_classes=["chat_info_markdown"],
                     # The CSS rule below relies on a variable value, so we can't move it into modifers
-                    stylesheets=ui.stylesheets(
+                    stylesheets=ui.css(
                         (
                             ":host(.chat_info_markdown) .pills_list",
                             {

@@ -40,9 +40,9 @@ class App(param.Parameterized):
             theme_toggle=False,
             collapsed_sidebar=True,
             # main_layout=None
-            raw_css=[ui.APP_RAW],
+            raw_css=[ui.CSS_VARS],
             favicon="imgs/ragna_logo.svg",
-            css_files=["https://rsms.me/inter/inter.css"],
+            css_files=["https://rsms.me/inter/inter.css", "css/main.css"],
         )
 
         template.modal.objects = [

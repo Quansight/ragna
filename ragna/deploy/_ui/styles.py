@@ -6,10 +6,6 @@ from typing import Any, Iterable, Optional, Type, Union
 import panel as pn
 
 
-def divider():
-    return pn.layout.Divider(styles={"padding": "0em 1em"})
-
-
 def apply_design_modifiers():
     apply_design_modifiers_global()
     apply_design_modifiers_source_accordion()
@@ -113,8 +109,35 @@ def apply_design_modifiers_modal_configuration():
 CSS constants
 """
 
+MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
-def stylesheets(
+# set modal height
+CONFIG_MODAL_MIN_HEIGHT = 610
+CONFIG_MODAL_MAX_HEIGHT = 850
+CONFIG_MODAL_WIDTH = 800
+
+WELCOME_MODAL_HEIGHT = 275
+WELCOME_MODAL_WIDTH = 530
+
+
+CSS_VARS = """
+:root {
+    --body-font: 'Inter', sans-serif !important;
+    --accent-color: {{MAIN_COLOR}} !important;
+}
+""".replace("{{MAIN_COLOR}}", MAIN_COLOR)
+
+
+"""
+CSS and UI Helpers
+"""
+
+
+def divider():
+    return pn.layout.Divider(styles={"padding": "0em 1em"})
+
+
+def css(
     *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]]
 ) -> Optional[list[str]]:
     if not class_selectors:
@@ -133,80 +156,6 @@ def stylesheets(
         )
         for selector, declarations in class_selectors
     ]
-
-
-MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
-
-
-# MAIN_COLOR_LIGHT = "#10BBE580"
-# MAIN_COLOR_LIGHTER = "#E1E8E3"
-# TABS_SIDEBAR_BKGROUND_COLOR = "#EAEAEA"
-# TABS_SIDEBAR_WIDTH = "20em"
-
-# set modal height
-CONFIG_MODAL_MIN_HEIGHT = 610
-CONFIG_MODAL_MAX_HEIGHT = 850
-CONFIG_MODAL_WIDTH = 800
-
-WELCOME_MODAL_HEIGHT = 275
-WELCOME_MODAL_WIDTH = 530
-
-
-APP_RAW = """
-
-:root {
-    --body-font: 'Inter', sans-serif !important;
-    --accent-color: {{MAIN_COLOR}} !important;
-}
-
-* {
-    font-family: 'Inter', sans-serif;
-}
-
-.main {
-    padding: 0px !important;
-
-}
-
-.pn-wrapper {
-    padding: 0px;
-}
-
-div.card-margin {
-    margin: 0px !important;
-    height: 100% !important;
-}
-
-
-/* Hide the whole header */
-
-#header {
-    display: none;
-}
-
-
-div#content {
-    height: calc(100vh);
-}
-
-/* Fix the size of the modal */
-#pn-Modal {
-    --dialog-width: 800px !important;
-    --dialog-height:500px !important; 
-}
-
-/* Hide the default close button of the modal */
-.pn-modal-close {
-    display: none !important;
-}
-
-
-/* Hide the fullscreen button of the template */ 
-span.fullscreen-button {
-    display:none;
-}
-
-""".replace("{{MAIN_COLOR}}", MAIN_COLOR)
 
 
 message_loading_indicator = f""" 
