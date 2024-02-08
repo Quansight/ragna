@@ -5,19 +5,60 @@ from typing import Any, Iterable, Optional, Type, Union
 
 import panel as pn
 
+"""
+the structure of css_modifiers is as follows:
+{
+    "directory name under css/":[list of panel classes that will be modified],
+    ...
+}
+
+Each CSS modifier file that needs to be loaded, is infered from the panel class name and the directory name.
+For example, with value :
+{ "foobar":[pn.widgets.TextInput] }
+the css file that will be loaded is css/foobar/textinput.css
+
+"""
+
+css_modifiers = {
+    "global": [pn.widgets.TextInput, pn.widgets.Select, pn.widgets.Button],
+    "source_accordion": [
+        pn.layout.Accordion,
+        pn.layout.Card,
+        pn.pane.HTML,
+        pn.pane.Markdown,
+    ],
+    "chat_info": [pn.pane.Markdown, pn.widgets.Button],
+    "auth": [pn.widgets.TextInput, pn.pane.HTML, pn.widgets.Button, pn.Column],
+    "central_view": [pn.Column, pn.Row, pn.pane.HTML],
+    "chat_interface": [
+        pn.widgets.TextInput,
+        pn.layout.Card,
+        pn.pane.Markdown,
+        pn.widgets.button.Button,
+        pn.Column,
+    ],
+    "right_sidebar": [pn.widgets.Button, pn.Column, pn.pane.Markdown],
+    "left_sidebar": [pn.widgets.Button, pn.pane.HTML, pn.Column],
+    "main_page": [pn.Row],
+    "modal_welcome": [pn.widgets.Button],
+    "modal_configuration": [
+        pn.widgets.IntSlider,
+        pn.layout.Card,
+        pn.Row,
+        pn.widgets.Button,
+    ],
+}
+
 
 def apply_design_modifiers():
-    apply_design_modifiers_global()
-    apply_design_modifiers_source_accordion()
-    apply_design_modifiers_auth_page()
-    apply_design_modifiers_central_view()
-    apply_design_modifiers_chat_info()
-    apply_design_modifiers_chat_interface()
-    apply_design_modifiers_right_sidebar()
-    apply_design_modifiers_left_sidebar()
-    apply_design_modifiers_main_page()
-    apply_design_modifiers_modal_welcome()
-    apply_design_modifiers_modal_configuration()
+    css_filepaths = []
+    for dir, classes in css_modifiers.items():
+        for cls in classes:
+            css_filename = cls.__name__.lower().split(".")[-1] + ".css"
+            add_modifier(cls, f"css/{dir}/{css_filename}")
+            css_filepaths.append(f"css/{dir}/{css_filename}")
+
+    return css_filepaths
 
 
 def add_modifier(
@@ -32,19 +73,7 @@ def add_modifier(
         pn.theme.fast.Fast.modifiers[modifier_class][property].append(modifications)
 
 
-def apply_design_modifiers_global():
-    add_modifier(
-        pn.widgets.TextInput,
-        "css/global/textinput_select.css",
-    )
-    add_modifier(
-        pn.widgets.Select,
-        "css/global/textinput_select.css",
-    )
-
-    add_modifier(pn.widgets.Button, "css/global/button.css")
-
-
+"""
 def apply_design_modifiers_source_accordion():
     add_modifier(pn.layout.Accordion, "css/source_accordion/accordion.css")
     add_modifier(pn.layout.Card, "css/source_accordion/card.css")
@@ -103,7 +132,7 @@ def apply_design_modifiers_modal_configuration():
     add_modifier(pn.layout.Card, "css/modal_configuration/card.css")
     add_modifier(pn.Row, "css/modal_configuration/row.css")
     add_modifier(pn.widgets.Button, "css/modal_configuration/button.css")
-
+"""
 
 """
 CSS constants

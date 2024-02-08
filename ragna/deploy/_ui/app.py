@@ -26,12 +26,32 @@ pn.config.browser_info = True
 class App(param.Parameterized):
     def __init__(self, *, url, api_url, origins):
         super().__init__()
-        ui.apply_design_modifiers()
+
+        # Apply the design modifiers to the panel components
+        # It returns all the CSS files of the modifiers
+        self.css_filepaths = ui.apply_design_modifiers()
         self.url = url
         self.api_url = api_url
         self.origins = origins
 
     def get_template(self):
+        # A bit hacky, but works.
+        # we need to preload the css files to avoid a flash of unstyled content, especially when switching between chats.
+        # This is achieved by adding <link ref="preload" ...> tags in the head of the document.
+        # But none of the panel templates allow to add custom link tags in the head.
+        # the only way I found is to take advantage of the raw_css parameter, which allows to add custom css in the head.
+        preload_css = "\n".join(
+            [
+                f"""<link rel="preload" href="{css_fp}" as="style" />"""
+                for css_fp in self.css_filepaths
+            ]
+        )
+        preload_css = f"""
+                     </style>
+                     {preload_css}
+                     <style type="text/css">
+                     """
+
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
@@ -39,8 +59,7 @@ class App(param.Parameterized):
             accent_base_color=ui.MAIN_COLOR,
             theme_toggle=False,
             collapsed_sidebar=True,
-            # main_layout=None
-            raw_css=[ui.CSS_VARS],
+            raw_css=[ui.CSS_VARS, preload_css],
             favicon="imgs/ragna_logo.svg",
             css_files=["https://rsms.me/inter/inter.css", "css/main.css"],
         )
