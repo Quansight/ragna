@@ -18,8 +18,8 @@ In this tutorial, you will build your first RAG chat application.
 
 path = "ragna.txt"
 
-with open(path, "w") as file:
-    file.write("Ragna is an open-source RAG orchestration app.\n")
+with open(path) as file:
+    print(file.read())
 
 # %%
 # ## Step 2: Select source storage

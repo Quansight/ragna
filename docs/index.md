@@ -27,7 +27,7 @@ Ref: https://squidfunk.github.io/mkdocs-material/reference/grids/#using-card-gri
 
 Explore and test different LLMs quickly in Python.
 
-[Learn more →](tutorials/python-api.md)
+[Learn more →](generated/gallery/example_python_api.md)
 
 ### Web UI for chat interface :fontawesome-solid-window-maximize:{ .icon }
 
