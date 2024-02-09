@@ -56,10 +56,14 @@ plugins:
             - https://docs.python.org/3/objects.inv
             - https://fastapi.tiangolo.com/objects.inv
   - gallery:
-      examples_dirs: docs/examples
-      gallery_dirs: docs/generated/gallery
-      filename_pattern: /example_
-      ignore_pattern: helpers.py
+      examples_dirs:
+        - docs/examples
+        - docs/tutorials
+      gallery_dirs:
+        - docs/generated/examples
+        - docs/generated/tutorials
+      filename_pattern: "/gallery_"
+      #      ignore_pattern: "/(?!gallery_).*"
       default_thumb_file: docs/assets/brand/logo-symbol/logo-symbol.svg
   - gen-files:
       scripts:
@@ -80,7 +84,8 @@ extra_css:
 nav:
   - index.md
   - install.md
-  - Examples: generated/gallery
+  - Examples: generated/examples
+  - Tutorials: generated/tutorials
   - Community:
       - community/welcome.md
       - community/contribute.md
