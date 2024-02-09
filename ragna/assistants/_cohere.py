@@ -20,19 +20,15 @@ class CohereApiAssistant(ApiAssistant):
     def max_input_size(self) -> int:
         return self._CONTEXT_SIZE
 
-    def _make_system_content(self) -> str:
-        instruction = (
+    def _make_preamble(self) -> str:
+        return (
             "You are a helpful assistant that answers user questions given the included context. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
             "Only use the included documents below to generate the answer."
         )
-        return instruction
 
     def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
-        document_sources = [
-            {"title": source.id, "snippet": source.content} for source in sources
-        ]
-        return document_sources
+        return [{"title": source.id, "snippet": source.content} for source in sources]
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
@@ -49,7 +45,7 @@ class CohereApiAssistant(ApiAssistant):
                 "authorization": f"Bearer {self._api_key}",
             },
             json={
-                "preamble_override": self._make_system_content(),
+                "preamble_override": self._make_preamble(),
                 "message": prompt,
                 "model": self._MODEL,
                 "stream": True,
