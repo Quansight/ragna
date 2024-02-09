@@ -8,6 +8,7 @@ import pydantic
 import questionary
 import rich
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 import ragna
@@ -213,7 +214,7 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
             f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
             f"Optionally, you can also install Ragna with all optional dependencies"
             f"for the builtin components\n\n"
-            f"$ pip install 'ragna\[all]'"
+            f"$ pip install '{escape('ragna[all]')}"
         )
 
     unmet_env_var_requirements = sorted(
