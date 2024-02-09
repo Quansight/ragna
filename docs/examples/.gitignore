@@ -1,4 +1,5 @@
 *
-!*.py
+!example_*.py
+!helpers.py
 !README.md
 !ragna.txt

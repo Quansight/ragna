@@ -59,6 +59,7 @@ plugins:
       examples_dirs: docs/examples
       gallery_dirs: docs/generated/gallery
       filename_pattern: /example_
+      ignore_pattern: helpers.py
       default_thumb_file: docs/assets/brand/logo-symbol/logo-symbol.svg
   - gen-files:
       scripts:
