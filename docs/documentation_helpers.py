@@ -1,7 +1,3 @@
-"""
-helpers for common tasks in the other galleries
-
-"""
 import subprocess
 import sys
 import time
@@ -12,6 +8,23 @@ import httpx
 
 from ragna._utils import timeout_after
 from ragna.deploy import Config
+
+
+# make it an asset!
+def make_demo_document(path: Union[str, Path]) -> str:
+    content = """\
+Ragna is an open source project built by Quansight. It is designed to allow
+organizations to explore the power of Retrieval-augmented generation (RAG) based
+AI tools. Ragna provides an intuitive API for quick experimentation and built-in
+tools for creating production-ready applications allowing you to quickly leverage
+Large Language Models (LLMs) for your work.
+
+The Ragna website is https://ragna.chat/. The source code is available at
+https://github.com/Quansight/ragna under the BSD 3-Clause license.
+"""
+    with open(path, "w") as file:
+        file.write(content)
+    return content
 
 
 class RestApi:
@@ -25,7 +38,7 @@ class RestApi:
         self._config = config or Config()
 
     def start(self, *, timeout: float = 60) -> None:
-        self._process = subprocess.Popen(
+        process = subprocess.Popen(
             [sys.executable, "-m", "ragna", "api"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -41,16 +54,16 @@ class RestApi:
         def wait_for_api() -> None:
             print("Starting Ragna REST API")
             while not check_api_available():
-                print(".", end="")
+                # FIXME: use communicate with timeout here and raise if it failed already
                 time.sleep(1)
+                print(".", end="")
+
             print()
 
         wait_for_api()
+        self._process = process
 
     def stop(self, *, quiet: bool = False) -> None:
-        if self._process is None:
-            return
-
         self._process.kill()
         stdout, _ = self._process.communicate()
 
@@ -58,4 +71,5 @@ class RestApi:
             print(stdout.decode())
 
     def __del__(self):
-        self.stop(quiet=True)
+        if self._process is not None:
+            self.stop(quiet=True)
