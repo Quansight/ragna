@@ -2,38 +2,20 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Collection, Optional, Union
+from typing import Optional
 
 import httpx
 
 from ragna._utils import timeout_after
 from ragna.deploy import Config
 
+__all__ = ["assets", "RestApi"]
 
-# make it an asset!
-def make_demo_document(path: Union[str, Path]) -> str:
-    content = """\
-Ragna is an open source project built by Quansight. It is designed to allow
-organizations to explore the power of Retrieval-augmented generation (RAG) based
-AI tools. Ragna provides an intuitive API for quick experimentation and built-in
-tools for creating production-ready applications allowing you to quickly leverage
-Large Language Models (LLMs) for your work.
-
-The Ragna website is https://ragna.chat/. The source code is available at
-https://github.com/Quansight/ragna under the BSD 3-Clause license.
-"""
-    with open(path, "w") as file:
-        file.write(content)
-    return content
+assets = Path(__file__).parent / "assets"
 
 
 class RestApi:
-    def __init__(
-        self,
-        *,
-        config: Optional[Config] = None,
-        extension_modules: Collection[Union[str, Path]] = (),
-    ):
+    def __init__(self, config: Optional[Config] = None):
         self._process: Optional[subprocess.Popen] = None
         self._config = config or Config()
 

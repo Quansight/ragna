@@ -92,7 +92,8 @@ ignore = ["E501"]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
 # The examples often have imports below the top of the file to follow the narrative
-"docs/examples/**/*.py" = ["E402", "F704", "I001"] # E703 trailing semicolon for output
+"docs/examples/**/*.py" = ["E402", "F704", "I001"]
+"docs/tutorials/**/*.py" = ["E402", "F704", "I001"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
