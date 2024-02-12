@@ -113,24 +113,18 @@ def divider():
 
 
 def css(
-    *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]]
+    selectors: Union[str, Iterable[str]], declarations: dict[str, str]
 ) -> Optional[list[str]]:
-    if not class_selectors:
+    if not selectors:
         return None
 
-    return [
-        "\n".join(
-            [
-                f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
-                *[
-                    f"    {property}: {value};"
-                    for property, value in declarations.items()
-                ],
-                "}",
-            ]
-        )
-        for selector, declarations in class_selectors
-    ]
+    return "\n".join(
+        [
+            f"{selectors if isinstance(selectors, str) else ', '.join(selectors)} {{",
+            *[f"    {property}: {value};" for property, value in declarations.items()],
+            "}",
+        ]
+    )
 
 
 message_loading_indicator = f""" 

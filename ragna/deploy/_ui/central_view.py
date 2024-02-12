@@ -213,14 +213,14 @@ class CentralView(pn.viewable.Viewer):
                     dedent=True,
                     css_classes=["chat_info_markdown"],
                     # The CSS rule below relies on a variable value, so we can't move it into modifers
-                    stylesheets=ui.css(
-                        (
+                    stylesheets=[
+                        ui.css(
                             ":host(.chat_info_markdown) .pills_list",
                             {
                                 "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
                             },
-                        ),
-                    ),
+                        )
+                    ],
                 ),
             ],
         )

@@ -144,12 +144,12 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
                 ).strip(),
                 # This is not really styling per say, it's just a way to hide from the page the HTML item of this hack.
                 # It's not worth moving this to a separate file.
-                stylesheets=ui.css(
-                    (
+                stylesheets=[
+                    ui.css(
                         ":host",
                         {"position": "absolute", "z-index": "-999"},
-                    ),
-                ),
+                    )
+                ],
             )
 
             objects.append(
