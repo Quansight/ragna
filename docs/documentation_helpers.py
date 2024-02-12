@@ -15,9 +15,9 @@ assets = Path(__file__).parent / "assets"
 
 
 class RestApi:
-    def __init__(self, config: Optional[Config] = None):
+    def __init__(self, config: Config):
         self._process: Optional[subprocess.Popen] = None
-        self._config = config or Config()
+        self._config = config
 
     def start(self, *, timeout: float = 60) -> None:
         process = subprocess.Popen(

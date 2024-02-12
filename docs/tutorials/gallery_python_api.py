@@ -5,11 +5,11 @@ The [Python API](../../references/python-api.md) is the best place to get starte
 Ragna and understand its key components. It's also the best way to continue
 experimenting with components and configurations for your particular use case.
 
-In this tutorial, you will build your first RAG chat application.
+This tutorial walks you through basic steps of using Ragnas Python API.
 """
 
 # %%
-# Before we start this tutorial, we load some helpers.
+# Before we start this tutorial, we import some helpers.
 
 import sys
 from pathlib import Path
