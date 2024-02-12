@@ -1,7 +1,7 @@
 """
 UI Helpers
 """
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Union
 
 import panel as pn
 
@@ -108,12 +108,7 @@ def divider():
     return pn.layout.Divider(css_classes=["default_divider"])
 
 
-def css(
-    selectors: Union[str, Iterable[str]], declarations: dict[str, str]
-) -> Optional[list[str]]:
-    if not selectors:
-        return None
-
+def css(selectors: Union[str, Iterable[str]], declarations: dict[str, str]) -> str:
     return "\n".join(
         [
             f"{selectors if isinstance(selectors, str) else ', '.join(selectors)} {{",
