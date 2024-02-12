@@ -53,9 +53,22 @@ def _anext() -> Callable[[AsyncIterator[T]], Awaitable[T]]:
     if sys.version_info[:2] >= (3, 10):
         anext = builtins.anext
     else:
+        sentinel = object()
 
-        async def anext(ait: AsyncIterator[T]) -> T:
-            return await ait.__anext__()
+        def anext(
+            ait: AsyncIterator[T],
+            default: T = sentinel,  # type: ignore[assignment]
+        ) -> Awaitable[T]:
+            async def anext_impl() -> T:
+                try:
+                    return await ait.__anext__()
+                except StopAsyncIteration:
+                    if default is not sentinel:
+                        return default
+
+                    raise
+
+            return anext_impl()
 
     return anext
 
