@@ -63,7 +63,8 @@ class Ai21LabsAssistant(ApiAssistant):
 
 
 # The following assistant receives a 500 internal service error from the remote
-# server, so it should be uncommented in the future when AI21Labs fixes this
+# server, so it should be uncommented in the future when AI21Labs fixes this.
+# See https://github.com/Quansight/ragna/pull/303
 # class Jurassic2Mid(Ai21LabsAssistant):
 #     """[AI21 Labs Jurassic-2 Mid](https://docs.ai21.com/docs/jurassic-2-models)
 
