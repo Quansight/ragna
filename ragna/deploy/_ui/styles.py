@@ -20,7 +20,12 @@ the css file that will be loaded is css/foobar/textinput.css
 """
 
 css_modifiers = {
-    "global": [pn.widgets.TextInput, pn.widgets.Select, pn.widgets.Button],
+    "global": [
+        pn.widgets.TextInput,
+        pn.widgets.Select,
+        pn.widgets.Button,
+        pn.layout.Divider,
+    ],
     "source_accordion": [
         pn.layout.Accordion,
         pn.layout.Card,
@@ -54,7 +59,7 @@ def apply_design_modifiers():
     css_filepaths = []
     for dir, classes in css_modifiers.items():
         for cls in classes:
-            css_filename = cls.__name__.lower().split(".")[-1] + ".css"
+            css_filename = f"{cls.__name__.lower()}.css"
             add_modifier(cls, f"css/{dir}/{css_filename}")
             css_filepaths.append(f"css/{dir}/{css_filename}")
 
@@ -104,7 +109,7 @@ CSS and UI Helpers
 
 
 def divider():
-    return pn.layout.Divider(styles={"padding": "0em 1em"})
+    return pn.layout.Divider(css_classes=["default_divider"])
 
 
 def css(

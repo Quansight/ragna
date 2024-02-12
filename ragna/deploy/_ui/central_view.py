@@ -71,10 +71,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         else:
             object = self.content_pane
 
-        if role == "user":
-            object.css_classes.append("message-content-no-border")
-        else:
-            object.css_classes.append("message-content-border")
+        object.css_classes.append(
+            "message-content-no-border" if role == "user" else "message-content-border"
+        )
 
         super().__init__(
             object=object,
@@ -92,21 +91,19 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         self._stylesheets.append("css/chat_interface/chatmessage.css")
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
-        source_info_button = pn.widgets.Button(
-            name="Source Info",
-            icon="info-circle",
-            css_classes=["source-info-button"],
-            on_click=lambda event: self.on_click_source_info_callback(
-                event, self.sources
-            ),
-        )
-
         return pn.Row(
             CopyToClipboardButton(
                 value=self.content_pane.object,
                 title="Copy",
             ),
-            source_info_button,
+            pn.widgets.Button(
+                name="Source Info",
+                icon="info-circle",
+                css_classes=["source-info-button"],
+                on_click=lambda event: self.on_click_source_info_callback(
+                    event, self.sources
+                ),
+            ),
         )
 
     def avatar_lookup(self, user: str) -> str:
@@ -170,7 +167,6 @@ class CentralView(pn.viewable.Viewer):
             # The name will be filled at runtime in self.header
             name="",
             on_click=self.on_click_chat_info_wrapper,
-            button_style="outline",
             icon="info-circle",
             css_classes=["chat-info-button"],
         )

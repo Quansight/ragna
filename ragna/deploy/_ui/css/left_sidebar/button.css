@@ -20,6 +20,7 @@
   border: 0px !important;
   font-size: 14px;
   color: rgb(113, 113, 113) !important;
+  background-color: unset !important;
 }
 
 :host(.chat_button) div button:before {
@@ -29,7 +30,7 @@
 }
 
 :host(.chat_button.selected) div button,
-:host(.chat_button.selected) div button:hover {
+:host(.chat_button) div button:hover {
   background-color: #f3f3f3 !important;
   border-radius: 0px 5px 5px 0px !important;
   border-left: solid 4px var(--accent-color) !important;

@@ -63,7 +63,6 @@ class LeftSidebar(pn.viewable.Viewer):
         for chat in self.chats:
             button = pn.widgets.Button(
                 name=chat["metadata"]["name"],
-                button_style="outline",
                 css_classes=["chat_button"],
             )
             button.on_click(lambda event, c=chat: self.on_click_chat_wrapper(event, c))

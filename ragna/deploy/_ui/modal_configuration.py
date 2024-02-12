@@ -208,6 +208,11 @@ class ModalConfiguration(pn.viewable.Viewer):
         disabled_assistant = self.config.is_assistant_disabled()
         disabled_source_storage = self.config.is_source_storage_disabled()
 
+        source_storage_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_source_storage else []),
+        ]
+
         card = pn.Card(
             pn.Row(
                 pn.Column(
@@ -221,8 +226,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                         self.config.param.chunk_size,
                         name="Chunk Size",
                         bar_color=ui.MAIN_COLOR,
-                        css_classes=["modal_configuration_int_slider"]
-                        + (["disabled"] if disabled_source_storage else []),
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
                     ),
@@ -230,8 +234,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                         self.config.param.chunk_overlap,
                         name="Chunk Overlap",
                         bar_color=ui.MAIN_COLOR,
-                        css_classes=["modal_configuration_int_slider"]
-                        + (["disabled"] if disabled_source_storage else []),
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
                     ),
@@ -248,8 +251,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_context_tokens,
                         bar_color=ui.MAIN_COLOR,
-                        css_classes=["modal_configuration_int_slider"]
-                        + (["disabled"] if disabled_source_storage else []),
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
                     ),

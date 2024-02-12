@@ -4,6 +4,7 @@ import panel as pn
 import param
 
 from . import js
+from . import styles as ui
 from .central_view import CentralView
 from .left_sidebar import LeftSidebar
 from .modal_configuration import ModalConfiguration
@@ -143,7 +144,12 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
                 ).strip(),
                 # This is not really styling per say, it's just a way to hide from the page the HTML item of this hack.
                 # It's not worth moving this to a separate file.
-                stylesheets=[":host { position:absolute; z-index:-999; }"],
+                stylesheets=ui.css(
+                    (
+                        ":host",
+                        {"position": "absolute", "z-index": "-999"},
+                    ),
+                ),
             )
 
             objects.append(
