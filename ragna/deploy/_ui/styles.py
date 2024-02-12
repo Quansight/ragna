@@ -74,67 +74,6 @@ def add_modifier(
 
 
 """
-def apply_design_modifiers_source_accordion():
-    add_modifier(pn.layout.Accordion, "css/source_accordion/accordion.css")
-    add_modifier(pn.layout.Card, "css/source_accordion/card.css")
-    add_modifier(pn.pane.HTML, "css/source_accordion/html.css")
-    add_modifier(pn.pane.Markdown, "css/source_accordion/markdown.css")
-
-
-def apply_design_modifiers_chat_info():
-    add_modifier(pn.pane.Markdown, "css/chat_info/markdown.css")
-    add_modifier(pn.widgets.Button, "css/chat_info/button.css")
-
-
-def apply_design_modifiers_auth_page():
-    add_modifier(pn.widgets.TextInput, "css/auth/textinput.css")
-    add_modifier(pn.pane.HTML, "css/auth/html.css")
-    add_modifier(pn.widgets.Button, "css/auth/button.css")
-    add_modifier(pn.Column, "css/auth/column.css")
-
-
-def apply_design_modifiers_central_view():
-    add_modifier(pn.Column, "css/central_view/column.css")
-    add_modifier(pn.Row, "css/central_view/row.css")
-    add_modifier(pn.pane.HTML, "css/central_view/html.css")
-
-
-def apply_design_modifiers_chat_interface():
-    add_modifier(pn.widgets.TextInput, "css/chat_interface/textinput.css")
-    add_modifier(pn.layout.Card, "css/chat_interface/card.css")
-    add_modifier(pn.pane.Markdown, "css/chat_interface/markdown.css")
-    add_modifier(pn.widgets.button.Button, "css/chat_interface/button.css")
-    add_modifier(pn.Column, "css/chat_interface/column.css")
-
-
-def apply_design_modifiers_right_sidebar():
-    add_modifier(pn.widgets.Button, "css/right_sidebar/button.css")
-    add_modifier(pn.Column, "css/right_sidebar/column.css")
-    add_modifier(pn.pane.Markdown, "css/right_sidebar/markdown.css")
-
-
-def apply_design_modifiers_left_sidebar():
-    add_modifier(pn.widgets.Button, "css/left_sidebar/button.css")
-    add_modifier(pn.Column, "css/left_sidebar/column.css")
-    add_modifier(pn.pane.HTML, "css/left_sidebar/html.css")
-
-
-def apply_design_modifiers_main_page():
-    add_modifier(pn.Row, "css/main_page/row.css")
-
-
-def apply_design_modifiers_modal_welcome():
-    add_modifier(pn.widgets.Button, "css/modal_welcome/button.css")
-
-
-def apply_design_modifiers_modal_configuration():
-    add_modifier(pn.widgets.IntSlider, "css/modal_configuration/intslider.css")
-    add_modifier(pn.layout.Card, "css/modal_configuration/card.css")
-    add_modifier(pn.Row, "css/modal_configuration/row.css")
-    add_modifier(pn.widgets.Button, "css/modal_configuration/button.css")
-"""
-
-"""
 CSS constants
 """
 
