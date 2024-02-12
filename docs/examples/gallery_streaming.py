@@ -1,11 +1,8 @@
 """
 # Streaming messages
 
-The [Python API](../../references/python-api.md) is the best place to get started with
-Ragna and understand its key components. It's also the best way to continue
-experimenting with components and configurations for your particular use case.
-
-This tutorial walks you through basic steps of using Ragnas Python API.
+Ragna supports streaming responses from the assistant. This example showcases how this
+is performed using the Python and REST API.
 """
 
 # %%
@@ -42,7 +39,7 @@ import documentation_helpers
 from ragna import assistants
 
 
-class RagnaDemoStreamingAssistant(assistants.RagnaDemoAssistant):
+class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
     @property
     def max_input_size(self) -> int:
         return 0
@@ -60,10 +57,12 @@ class RagnaDemoStreamingAssistant(assistants.RagnaDemoAssistant):
 
 from ragna import Rag, source_storages
 
+document_path = documentation_helpers.assets / "ragna.txt"
+
 chat = Rag().chat(
-    documents=[documentation_helpers.assets / "ragna.txt"],
+    documents=[document_path],
     source_storage=source_storages.RagnaDemoSourceStorage,
-    assistant=RagnaDemoStreamingAssistant,
+    assistant=DemoStreamingAssistant,
 )
 _ = await chat.prepare()
 
@@ -97,8 +96,80 @@ print("".join(chunks))
 
 from ragna.deploy import Config
 
-config = Config(components={"assistants": [RagnaDemoStreamingAssistant]})
+config = Config(components={"assistants": [DemoStreamingAssistant]})
 
 rest_api = documentation_helpers.RestApi()
 
 client = rest_api.start(config, authenticate=True)
+
+# %%
+# Upload the document.
+
+document_upload = (
+    client.post("/document", json={"name": document_path.name})
+    .raise_for_status()
+    .json()
+)
+
+document = document_upload["document"]
+
+parameters = document_upload["parameters"]
+client.request(
+    parameters["method"],
+    parameters["url"],
+    data=parameters["data"],
+    files={"file": open(document_path, "rb")},
+).raise_for_status()
+
+# %%
+# Start and prepare the chat
+
+chat = (
+    client.post(
+        "/chats",
+        json={
+            "name": "Tutorial REST API",
+            "documents": [document],
+            "source_storage": "Ragna/DemoSourceStorage",
+            "assistant": DemoStreamingAssistant.display_name(),
+            "params": {},
+        },
+    )
+    .raise_for_status()
+    .json()
+)
+
+client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+
+# %%
+# Streaming the response is performed with
+# [server-sent events (SSE)](https://en.wikipedia.org/wiki/Server-sent_events).
+
+import httpx_sse
+import json
+
+chunks = []
+with httpx_sse.connect_sse(
+    client,
+    "POST",
+    f"/chats/{chat['id']}/answer",
+    json={"prompt": "What is Ragna?", "stream": True},
+) as event_source:
+    for sse in event_source.iter_sse():
+        chunks.append(json.loads(sse.data))
+
+# %%
+# The first event contains the full message object along the first chunk of the content.
+
+print(len(chunks))
+print(json.dumps(chunks[0], indent=2))
+
+# %%
+# Subsequent events only contain the content chunks
+
+print(json.dumps(chunks[1], indent=2))
+
+# %%
+# Joining the chunks together results in the full message.
+
+print("".join(chunk["content"] for chunk in chunks))
