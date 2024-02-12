@@ -29,6 +29,9 @@ import documentation_helpers
 #     - [Anthropic](https://www.anthropic.com/)
 #         - [ragna.assistants.Claude][]
 #         - [ragna.assistants.ClaudeInstant][]
+#     - [Cohere](https://cohere.com/)
+#         - [ragna.assistants.Command][]
+#         - [ragna.assistants.CommandLight][]
 #     - [Google](https://ai.google.dev/)
 #         - [ragna.assistants.GeminiPro][]
 #         - [ragna.assistants.GeminiUltra][]
