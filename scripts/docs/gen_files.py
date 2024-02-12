@@ -21,16 +21,8 @@ from ragna.deploy._cli import app as cli_app  # noqa: E402
 
 
 def main():
-    # galleries_common()
     cli_reference()
     api_reference()
-
-
-# def galleries_common():
-#     for src in Path("galleries_common").iterdir():
-#         for gallery_dir in ["examples", "tutorials"]:
-#             dst = Path(gallery_dir) / src.name
-#             shutil.copy(str(src), str(dst))
 
 
 def cli_reference():
