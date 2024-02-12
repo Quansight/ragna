@@ -1,7 +1,7 @@
 """
 UI Helpers
 """
-from typing import Any, Iterable, Optional, Type, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import panel as pn
 
@@ -62,7 +62,9 @@ def apply_design_modifiers():
 
 
 def add_modifier(
-    modifier_class: Type[Any], modifications: Any, property: str = "stylesheets"
+    modifier_class: pn.viewable.Viewable,
+    modifications: Dict[str, Any],
+    property: str = "stylesheets",
 ):
     if modifier_class not in pn.theme.fast.Fast.modifiers:
         pn.theme.fast.Fast.modifiers[modifier_class] = {}
