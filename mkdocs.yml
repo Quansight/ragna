@@ -63,7 +63,6 @@ plugins:
         - docs/generated/examples
         - docs/generated/tutorials
       filename_pattern: "/gallery_"
-      #      ignore_pattern: "/(?!gallery_).*"
       default_thumb_file: docs/assets/brand/logo-symbol/logo-symbol.svg
   - gen-files:
       scripts:

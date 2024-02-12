@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 from typing import Type, Union
 
 import tomlkit
+import tomlkit.container
+import tomlkit.items
 from pydantic import Field, ImportString, field_validator
 from pydantic_settings import (
     BaseSettings,
@@ -108,10 +111,26 @@ class Config(ConfigBase):
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
 
+    def _set_multiline_array(self, item: tomlkit.items.Item) -> None:
+        if isinstance(item, tomlkit.items.Array):
+            item.multiline(True)
+
+        if not isinstance(item, tomlkit.items.Table):
+            return
+
+        container = item.value
+        for child in itertools.chain(
+            (value for _, value in container.body), container.value.values()
+        ):
+            self._set_multiline_array(child)
+
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
 
+        toml = tomlkit.item(self.model_dump(mode="json"))
+        self._set_multiline_array(toml)
+
         with open(path, "w") as file:
-            tomlkit.dump(self.model_dump(mode="json"), file)
+            file.write(toml.as_string())
