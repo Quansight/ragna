@@ -42,18 +42,19 @@ class RestApi:
 
         config.local_cache_root = deploy_directory
 
-        # inspect.getouterframes()
-        sys.modules[
-            "__main__"
-        ].__file__ = inspect.currentframe().f_back.f_back.f_code.co_filename
-        assistant_module = "custom_assistants"
-        with open(deploy_directory / f"{assistant_module}.py", "w") as file:
+        sys.modules["__main__"].__file__ = inspect.getouterframes(
+            inspect.currentframe()
+        )[2].filename
+        custom_module = deploy_directory.name
+        with open(deploy_directory / f"{custom_module}.py", "w") as file:
+            # TODO: this currently only handles assistants. When needed, we can extend
+            #  to source storages.
             file.write("from ragna import assistants\n\n")
 
             for assistant in config.components.assistants:
                 if assistant.__module__ == "__main__":
                     file.write(f"{inspect.getsource(assistant)}\n\n")
-                    assistant.__module__ = assistant_module
+                    assistant.__module__ = custom_module
 
         config.to_file(config_path)
         return python_path, config_path
