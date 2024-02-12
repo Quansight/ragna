@@ -71,13 +71,9 @@ def add_modifier(
     modifications: Dict[str, Any],
     property: str = "stylesheets",
 ):
-    if modifier_class not in pn.theme.fast.Fast.modifiers:
-        pn.theme.fast.Fast.modifiers[modifier_class] = {}
-
-    if property not in pn.theme.fast.Fast.modifiers[modifier_class]:
-        pn.theme.fast.Fast.modifiers[modifier_class][property] = [modifications]
-    else:
-        pn.theme.fast.Fast.modifiers[modifier_class][property].append(modifications)
+    properties = pn.theme.fast.Fast.modifiers.setdefault(modifier_class, {})
+    property_modifications = properties.setdefault(property, [])
+    property_modifications.append(modifications)
 
 
 """
