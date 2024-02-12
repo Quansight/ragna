@@ -28,7 +28,7 @@ from ragna import Config
 config = Config.from_file("ragna.toml")
 ```
 
-Learn more in [How to set configuration](../how-tos/set-configuration.md).
+Learn more in [How to set configuration](../references/config.md).
 
 ## Step 2: Start and connect to the API
 
