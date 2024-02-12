@@ -3,6 +3,7 @@
 *.jpeg filter=lfs diff=lfs merge=lfs -text
 *.gif filter=lfs diff=lfs merge=lfs -text
 *.png filter=lfs diff=lfs merge=lfs -text
-docs/assets/brand/**/*.png !filter !diff !merge text
 *.svg filter=lfs diff=lfs merge=lfs -text
+docs/assets/brand/**/*.png !filter !diff !merge text
 docs/assets/brand/**/*.svg !filter !diff !merge text
+ragna/deploy/_ui/imgs/*.svg !filter !diff !merge text
