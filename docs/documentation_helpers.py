@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -14,11 +15,29 @@ assets = Path(__file__).parent / "assets"
 
 
 class RestApi:
-    def __init__(self, config: Config):
+    def __init__(self):
         self._process: Optional[subprocess.Popen] = None
-        self._config = config
 
-    def start(self, *, timeout: float = 60) -> None:
+    def start(self, config: Config, *, authenticate: bool = False) -> httpx.Client:
+        config_path = self._prepare_config()
+
+        client = httpx.Client(base_url=self._config.api.url)
+
+        self._process = self._start_api(config_path, client)
+
+        if authenticate:
+            self._authenticate(client)
+
+        return client
+
+    def _prepare_config(self) -> Path:
+        deploy_directory = Path(tempfile.mkdtemp())
+        # PYTHONPATH
+        # set file of __main__
+
+        pass
+
+    def _start_api(self, config_path: Path, client: httpx.Client) -> subprocess.Popen:
         process = subprocess.Popen(
             [sys.executable, "-m", "ragna", "api"],
             stdout=subprocess.PIPE,
@@ -27,13 +46,13 @@ class RestApi:
 
         def check_api_available() -> bool:
             try:
-                return httpx.get(self._config.api.url).is_success
+                return client.get("/").is_success
             except httpx.ConnectError:
                 return False
 
         failure_message = "Failed to the start the Ragna REST API."
 
-        @timeout_after(timeout, message=failure_message)
+        @timeout_after(60, message=failure_message)
         def wait_for_api() -> None:
             print("Starting Ragna REST API")
             while not check_api_available():
@@ -54,7 +73,18 @@ class RestApi:
             print()
 
         wait_for_api()
-        self._process = process
+        return process
+
+    def _authenticate(self, client: httpx.Client) -> None:
+        username = password = "Ragna"
+
+        response = client.post(
+            "/token",
+            data={"username": username, "password": password},
+        ).raise_for_status()
+        token = response.json()
+
+        client.headers["Authorization"] = f"Bearer {token}"
 
     def stop(self, *, quiet: bool = False) -> None:
         self._process.kill()

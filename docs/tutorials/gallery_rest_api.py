@@ -47,8 +47,8 @@ from ragna.deploy import Config
 
 config = Config()
 
-rest_api = documentation_helpers.RestApi(config)
-rest_api.start()
+rest_api = documentation_helpers.RestApi()
+rest_api.start(config)
 
 # %%
 # Let's make sure the REST API is started correctly and can be reached.
