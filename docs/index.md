@@ -27,20 +27,18 @@ Ref: https://squidfunk.github.io/mkdocs-material/reference/grids/#using-card-gri
 
 Explore and test different LLMs quickly in Python.
 
-[Learn more →](generated/gallery/example_python_api.md)
+[Learn more →](generated/tutorials/gallery_python_api.md)
 
 ### Web UI for chat interface :fontawesome-solid-window-maximize:{ .icon }
 
 Select and configure LLMs, upload documents, and chat with the LLM with a web
 application. Use it out-of-the-box or as a reference to build custom web applications.
 
-[Learn more →](tutorials/rest-api.md)
+[Learn more →](generated/tutorials/gallery_rest_api.md)
 
 ### REST API to build web apps :fontawesome-solid-bolt:{ .icon }
 
 Create custom RAG-based web applications for your particular needs.
-
-[Learn more →](tutorials/web-app.md)
 
 ### Free and Open Source in ethos :fontawesome-solid-heart:{ .icon }
 

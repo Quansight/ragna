@@ -162,13 +162,14 @@ with httpx_sse.connect_sse(
         chunks.append(json.loads(sse.data))
 
 # %%
-# The first event contains the full message object along the first chunk of the content.
+# The first event contains the full message object including the sources along the first
+# chunk of the content.
 
 print(len(chunks))
 print(json.dumps(chunks[0], indent=2))
 
 # %%
-# Subsequent events only contain the content chunks
+# Subsequent events no longer contain the sources.
 
 print(json.dumps(chunks[1], indent=2))
 
