@@ -38,10 +38,10 @@ class LeftSidebar(pn.viewable.Viewer):
         # update the UI, unselect all buttons ...
         for button in self.chat_buttons:
             if "selected" in button.css_classes:
-                button.css_classes = []
+                button.css_classes = ["chat_button"]
 
         # ... and select the one that was clicked
-        event.obj.css_classes = ["selected"]
+        event.obj.css_classes = ["chat_button", "selected"]
 
         # call the actual callback
         if self.on_click_chat is not None:
