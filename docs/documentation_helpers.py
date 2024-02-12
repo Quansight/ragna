@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Optional
 
@@ -32,13 +31,25 @@ class RestApi:
             except httpx.ConnectError:
                 return False
 
-        @timeout_after(timeout, message="Failed to the start the Ragna REST API")
+        failure_message = "Failed to the start the Ragna REST API."
+
+        @timeout_after(timeout, message=failure_message)
         def wait_for_api() -> None:
             print("Starting Ragna REST API")
             while not check_api_available():
-                # FIXME: use communicate with timeout here and raise if it failed already
-                time.sleep(1)
-                print(".", end="")
+                try:
+                    stdout, stderr = process.communicate(timeout=1)
+                except subprocess.TimeoutExpired:
+                    print(".", end="")
+                    continue
+                else:
+                    parts = [failure_message]
+                    if stdout:
+                        parts.append(f"\n\nSTDOUT:\n\n{stdout.decode()}")
+                    if stderr:
+                        parts.append(f"\n\nSTDERR:\n\n{stderr.decode()}")
+
+                    raise RuntimeError("".join(parts))
 
             print()
 
