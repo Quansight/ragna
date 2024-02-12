@@ -1,3 +1,5 @@
+import inspect
+import os
 import subprocess
 import sys
 import tempfile
@@ -19,29 +21,54 @@ class RestApi:
         self._process: Optional[subprocess.Popen] = None
 
     def start(self, config: Config, *, authenticate: bool = False) -> httpx.Client:
-        config_path = self._prepare_config()
+        python_path, config_path = self._prepare_config(config)
 
-        client = httpx.Client(base_url=self._config.api.url)
+        client = httpx.Client(base_url=config.api.url)
 
-        self._process = self._start_api(config_path, client)
+        self._process = self._start_api(config_path, python_path, client)
 
         if authenticate:
             self._authenticate(client)
 
         return client
 
-    def _prepare_config(self) -> Path:
+    def _prepare_config(self, config: Config) -> tuple[str, str]:
         deploy_directory = Path(tempfile.mkdtemp())
-        # PYTHONPATH
-        # set file of __main__
 
-        pass
+        python_path = (
+            f"{deploy_directory}{os.pathsep}{os.environ.get('PYTHONPATH', '')}"
+        )
+        config_path = str(deploy_directory / "ragna.toml")
 
-    def _start_api(self, config_path: Path, client: httpx.Client) -> subprocess.Popen:
+        config.local_cache_root = deploy_directory
+
+        # inspect.getouterframes()
+        sys.modules[
+            "__main__"
+        ].__file__ = inspect.currentframe().f_back.f_back.f_code.co_filename
+        assistant_module = "custom_assistants"
+        with open(deploy_directory / f"{assistant_module}.py", "w") as file:
+            file.write("from ragna import assistants\n\n")
+
+            for assistant in config.components.assistants:
+                if assistant.__module__ == "__main__":
+                    file.write(f"{inspect.getsource(assistant)}\n\n")
+                    assistant.__module__ = assistant_module
+
+        config.to_file(config_path)
+        return python_path, config_path
+
+    def _start_api(
+        self, config_path: str, python_path: str, client: httpx.Client
+    ) -> subprocess.Popen:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = python_path
+
         process = subprocess.Popen(
-            [sys.executable, "-m", "ragna", "api"],
+            [sys.executable, "-m", "ragna", "api", "--config", config_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            env=env,
         )
 
         def check_api_available() -> bool:
