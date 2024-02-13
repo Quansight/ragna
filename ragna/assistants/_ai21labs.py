@@ -62,17 +62,17 @@ class Ai21LabsAssistant(ApiAssistant):
         yield cast(str, response.json()["outputs"][0]["text"])
 
 
-# The following assistant receives a 500 internal service error from the remote
-# server, so it should be uncommented in the future when AI21Labs fixes this.
-# See https://github.com/Quansight/ragna/pull/303
+# The Jurassic2Mid assistant receives a 500 internal service error from the remote
+# server. See https://github.com/Quansight/ragna/pull/303
+# TODO: Reinstate when the remote server is fixed
 # class Jurassic2Mid(Ai21LabsAssistant):
 #     """[AI21 Labs Jurassic-2 Mid](https://docs.ai21.com/docs/jurassic-2-models)
-
+#
 #     !!! info "Required environment variables"
-
+#
 #         - `AI21_API_KEY`
 #     """
-
+#
 #     _MODEL_TYPE = "mid"
 
 

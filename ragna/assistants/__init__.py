@@ -7,17 +7,12 @@ __all__ = [
     "GeminiUltra",
     "Gpt35Turbo16k",
     "Gpt4",
-    # "Jurassic2Mid", # This assistant receives a 500 internal service
-    # error from the remote server, so it should be uncommented in the
-    # future when AI21Labs fixes this.
-    # See https://github.com/Quansight/ragna/pull/303
     "Jurassic2Ultra",
     "Mpt7bInstruct",
     "Mpt30bInstruct",
     "RagnaDemoAssistant",
 ]
 
-# from ._ai21labs import Jurassic2Mid, Jurassic2Ultra
 from ._ai21labs import Jurassic2Ultra
 from ._anthropic import Claude, ClaudeInstant
 from ._cohere import Command, CommandLight
