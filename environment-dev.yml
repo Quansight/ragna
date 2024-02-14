@@ -6,7 +6,6 @@ dependencies:
   - pip
   - pip:
       - python-dotenv
-      - boto3
       - pytest >=6
       - pytest-mock
       - mypy ==1.6.1
