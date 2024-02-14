@@ -40,7 +40,7 @@ config = Config()
 config
 ```
 
-Learn more in [Set configuration](../references/config.md).
+Learn more in [Configuration reference](../references/config.md).
 
 ## Step 2: Upload relevant documents
 
