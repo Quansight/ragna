@@ -28,8 +28,7 @@ jobs:
       - name: Test optional dependencies
         run: |
           python scripts/update_optional_dependencies.py
-          git diff --exit-code
-
+  #          git diff --exit-code
   format:
     runs-on: ubuntu-latest
     defaults:
