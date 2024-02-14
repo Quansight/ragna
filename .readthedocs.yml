@@ -9,7 +9,9 @@ build:
     python: "mambaforge-22.9"
   jobs:
     post_checkout:
-      # Enable checking out git-lfs files on RTD
+      # Check out the full depth for setuptools-scm
+      - git fetch --unshallow || true
+      # Check out git-lfs files
       # See https://docs.readthedocs.io/en/stable/build-customization.html#support-git-lfs-large-file-storage
       - wget
         https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz

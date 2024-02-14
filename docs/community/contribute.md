@@ -90,7 +90,7 @@ This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 ### View, add, or update images
 
-Ragna tracks all image files with [`git-lfs`](https://git-lfs.com).
+Ragna tracks most image files with [`git-lfs`](https://git-lfs.com).
 
 As a first-time user of `git-lfs`, set it up with:
 
