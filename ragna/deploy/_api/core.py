@@ -107,10 +107,7 @@ def app(config: Config) -> FastAPI:
             ],
         )
 
-    database_url = config.api.database_url
-    if database_url == "memory":
-        database_url = "sqlite://"
-    make_session = database.get_sessionmaker(database_url)
+    make_session = database.get_sessionmaker(config.api.database_url)
 
     @contextlib.contextmanager
     def get_session() -> Iterator[database.Session]:

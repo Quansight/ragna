@@ -11,12 +11,12 @@ from ragna.deploy import Config
 from tests.utils import ragna_api
 
 
-@pytest.mark.parametrize("database", ["memory", "sqlite"])
+@pytest.mark.parametrize("database", ["memory", "local"])
 @pytest.mark.parametrize("stream_answer", [True, False])
 def test_e2e(tmp_local_root, database, stream_answer):
     if database == "memory":
-        database_url = "memory"
-    elif database == "sqlite":
+        database_url = "sqlite://"
+    elif database == "local":
         database_url = f"sqlite:///{tmp_local_root / 'ragna.db'}"
 
     config = Config(
