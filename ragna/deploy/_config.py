@@ -102,6 +102,15 @@ class Config(ConfigBase):
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 
+    @classmethod
+    def from_file(cls, path: Union[str, Path]) -> Config:
+        path = Path(path).expanduser().resolve()
+        if not path.is_file():
+            raise RagnaException(f"{path} does not exist.")
+
+        with open(path) as file:
+            return cls.model_validate(tomlkit.load(file).unwrap())
+
     def __str__(self) -> str:
         toml = tomlkit.item(self.model_dump(mode="json"))
         self._set_multiline_array(toml)
@@ -119,15 +128,6 @@ class Config(ConfigBase):
             (value for _, value in container.body), container.value.values()
         ):
             self._set_multiline_array(child)
-
-    @classmethod
-    def from_file(cls, path: Union[str, Path]) -> Config:
-        path = Path(path).expanduser().resolve()
-        if not path.is_file():
-            raise RagnaException(f"{path} does not exist.")
-
-        with open(path) as file:
-            return cls.model_validate(tomlkit.load(file).unwrap())
 
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
