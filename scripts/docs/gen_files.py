@@ -1,10 +1,7 @@
 import contextlib
 import io
 import json
-import shutil
-import tempfile
 import unittest.mock
-from pathlib import Path
 
 import fastapi.openapi.utils
 import mkdocs_gen_files
@@ -59,18 +56,11 @@ def api_reference():
 
 
 def config_reference():
-    directory = Path(tempfile.mkdtemp())
-    config_path = directory / "ragna.toml"
-    Config().to_file(config_path)
-    with open(config_path) as file:
-        config_content = file.read()
-    shutil.rmtree(str(directory))
-
-    with mkdocs_gen_files.open("references/config.md", "r") as file:
-        content = file.read().replace("{{ config }}", config_content)
-
-    with mkdocs_gen_files.open("references/config.md", "w") as file:
+    with mkdocs_gen_files.open("references/config.md", "r+") as file:
+        content = file.read().replace("{{ config }}", str(Config()))
+        file.seek(0)
         file.write(content)
+        file.truncate()
 
 
 main()

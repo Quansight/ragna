@@ -102,14 +102,10 @@ class Config(ConfigBase):
     api: ApiConfig = Field(default_factory=ApiConfig)
     ui: UiConfig = Field(default_factory=UiConfig)
 
-    @classmethod
-    def from_file(cls, path: Union[str, Path]) -> Config:
-        path = Path(path).expanduser().resolve()
-        if not path.is_file():
-            raise RagnaException(f"{path} does not exist.")
-
-        with open(path) as file:
-            return cls.model_validate(tomlkit.load(file).unwrap())
+    def __str__(self) -> str:
+        toml = tomlkit.item(self.model_dump(mode="json"))
+        self._set_multiline_array(toml)
+        return toml.as_string()
 
     def _set_multiline_array(self, item: tomlkit.items.Item) -> None:
         if isinstance(item, tomlkit.items.Array):
@@ -124,13 +120,19 @@ class Config(ConfigBase):
         ):
             self._set_multiline_array(child)
 
+    @classmethod
+    def from_file(cls, path: Union[str, Path]) -> Config:
+        path = Path(path).expanduser().resolve()
+        if not path.is_file():
+            raise RagnaException(f"{path} does not exist.")
+
+        with open(path) as file:
+            return cls.model_validate(tomlkit.load(file).unwrap())
+
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
 
-        toml = tomlkit.item(self.model_dump(mode="json"))
-        self._set_multiline_array(toml)
-
         with open(path, "w") as file:
-            file.write(toml.as_string())
+            file.write(str(self))
