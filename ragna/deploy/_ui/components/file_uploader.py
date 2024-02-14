@@ -150,7 +150,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                             name="fileUpload"
                             class="fileUpload" 
                             id="fileUpload" 
-                            multiple="multiple" 
+                            multiple
                             onchange="${script('file_input_on_change')}" 
                             accept="${allowed_documents_str}"
                     /> 
