@@ -1,0 +1,8 @@
+# Track all images through git-lfs
+*.webp filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+# but keep the brand images as regular images
+docs/assets/brand/logo-**/* !filter !diff !merge binary
