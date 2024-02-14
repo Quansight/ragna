@@ -14,7 +14,7 @@ It will open in a browser window automatically and you should see the login scre
 password are filled with the string "ragna" and the password is visible and not
 censored](images/ragna-ui-login.png)
 
-By default [ragna.core.RagnaDemoAuthentication][] is used. Thus, you can use any
+By default [ragna.deploy.RagnaDemoAuthentication][] is used. Thus, you can use any
 username and a matching password to authenticate. For example, you can leave both fields
 blank or use `ragna` / `ragna` as in the image above.
 
