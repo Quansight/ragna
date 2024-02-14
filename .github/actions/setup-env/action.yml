@@ -14,7 +14,7 @@ runs:
 
   steps:
     - name: Setup mambaforge and development environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
