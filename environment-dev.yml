@@ -21,5 +21,4 @@ dependencies:
       - mkdocstrings[python]
       - mkdocs-gen-files
       - material-plausible-plugin
-      - mktestdocs
       - mkdocs-gallery >=0.10
