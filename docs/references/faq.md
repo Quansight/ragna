@@ -39,3 +39,38 @@
    ```bash
    export MOSAICML_API_KEY="XXXXX"
    ```
+
+### [Google](https://ai.google.dev/)
+
+1. > To use the API, you need an API key. You can create a key with one click in Google
+   > AI Studio.
+   >
+   > ~ [Google AI API](https://ai.google.dev/tutorials/setup)
+2. Set the `GOOGLE_API_KEY` environment variable with your Google API key:
+   ```bash
+   export GOOGLE_API_KEY="XXXXX"
+   ```
+
+### [Cohere](https://cohere.com/)
+
+1. > To use the API, you need an API key. You can create a key in the Cohere dashboard
+   > using your Cohere account.
+   >
+   > ~ [Cohere Dashboard](https://dashboard.cohere.com/api-keys)
+2. Set the `COHERE_API_KEY` environment variable with your Cohere API key:
+   ```bash
+   export COHERE_API_KEY="XXXXX"
+   ```
+
+### [AI21 Labs](https://www.ai21.com/)
+
+1. To use the API, you need an API key. You can create one in AI21 Studio
+   > [Create your account on AI21 Studio](https://studio.ai21.com/sign-up) and start
+   > building with Jurassic-2. We offer flexible pay-as-you-go plans as well as a free
+   > trial with a generous amount of free credits to get you started.
+   >
+   > ~ [AI21 Labs API key creation page](https://studio.ai21.com/account/api-key)
+2. Set the `AI21_API_KEY` environment variable with your AI21 Labs API key:
+   ```bash
+   export AI21_API_KEY="XXXXX"
+   ```

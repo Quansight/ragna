@@ -1,17 +1,17 @@
 # Read the Docs configuration file for MkDocs projects
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Set the version of Python and other tools you might need
 build:
   os: ubuntu-22.04
   tools:
     python: "mambaforge-22.9"
   jobs:
     post_checkout:
-      # Enable checking out git-lfs files on RTD
+      # Check out the full depth for setuptools-scm
+      - git fetch --unshallow || true
+      # Check out git-lfs files
       # See https://docs.readthedocs.io/en/stable/build-customization.html#support-git-lfs-large-file-storage
       - wget
         https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz
@@ -28,7 +28,6 @@ mkdocs:
   configuration: mkdocs.yml
   fail_on_warning: true
 
-# Optionally declare the Python requirements required to build your docs
 conda:
   environment: environment-dev.yml
 
@@ -37,4 +36,4 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - complete
+        - all

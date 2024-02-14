@@ -8,6 +8,9 @@ on:
       - "tests/**"
       - "environment-dev.yml"
       - "pyproject.toml"
+  push:
+    branches:
+      - release/*
 
 jobs:
   importable:

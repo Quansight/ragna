@@ -1,4 +1,7 @@
+import json
 import os
+import re
+import subprocess
 
 from mkdocs.plugins import get_plugin_logger
 
@@ -26,9 +29,23 @@ RTD_ENV_VARS = {
 RTD = RTD_ENV_VARS["READTHEDOCS"] == "True"
 
 
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True).stdout.decode()
+
+
 def on_startup(command, dirty):
     if not RTD:
         return
 
     for name, value in RTD_ENV_VARS.items():
         logger.info(f"{name}={value}")
+
+    # RTD makes some modifications to existing files and adds some new ones
+    logger.info(
+        json.dumps(
+            {
+                "files": re.findall(r"add '(.*?)'\n", git("add", "--dry-run", ".")),
+                "diff": git("diff"),
+            }
+        )
+    )

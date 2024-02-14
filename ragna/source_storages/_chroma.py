@@ -1,7 +1,7 @@
 import uuid
 
+import ragna
 from ragna.core import (
-    Config,
     Document,
     Source,
 )
@@ -20,15 +20,15 @@ class Chroma(VectorDatabaseSourceStorage):
     # Note that this class has no extra requirements, since the chromadb package is
     # already required for the base class.
 
-    def __init__(self, config: Config) -> None:
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
 
         import chromadb
 
         self._client = chromadb.Client(
             chromadb.config.Settings(
                 is_persistent=True,
-                persist_directory=str(self.config.local_cache_root / "chroma"),
+                persist_directory=str(ragna.local_root() / "chroma"),
                 anonymized_telemetry=False,
             )
         )

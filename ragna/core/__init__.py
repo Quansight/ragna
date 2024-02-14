@@ -1,11 +1,12 @@
 __all__ = [
     "Assistant",
-    "Authentication",
     "Chat",
     "Component",
-    "Config",
     "Document",
     "DocumentHandler",
+    "DocumentUploadParameters",
+    "DocxDocumentHandler",
+    "PptxDocumentHandler",
     "EnvVarRequirement",
     "LocalDocument",
     "Message",
@@ -14,13 +15,11 @@ __all__ = [
     "Page",
     "PdfDocumentHandler",
     "Rag",
-    "RagnaDemoAuthentication",
     "RagnaException",
     "Requirement",
     "Source",
     "SourceStorage",
-    "TxtDocumentHandler",
-    "task_config",
+    "PlainTextDocumentHandler",
 ]
 
 from ._utils import (
@@ -35,10 +34,13 @@ from ._utils import (
 from ._document import (
     Document,
     DocumentHandler,
+    DocumentUploadParameters,
+    DocxDocumentHandler,
     LocalDocument,
     Page,
     PdfDocumentHandler,
-    TxtDocumentHandler,
+    PlainTextDocumentHandler,
+    PptxDocumentHandler,
 )
 
 # isort: split
@@ -54,12 +56,6 @@ from ._components import (
 
 # isort: split
 
-from ._authentication import Authentication, RagnaDemoAuthentication
-
-# isort: split
-
-from ._config import Config
-from ._queue import task_config
 from ._rag import Chat, Rag
 
 # isort: split

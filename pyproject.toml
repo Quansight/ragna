@@ -24,11 +24,11 @@ dependencies = [
     "aiofiles",
     "emoji",
     "fastapi",
-    "huey",
     "httpx",
+    "httpx-sse",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
-    "panel>=1.3,<1.4",
+    "panel==1.3.8",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",
@@ -38,6 +38,8 @@ dependencies = [
     "questionary",
     "rich",
     "sqlalchemy>=2",
+    "sse-starlette",
+    "starlette",
     "tomlkit",
     "typer",
     "uvicorn",
@@ -54,18 +56,22 @@ Repository = "https://github.com/Quansight/ragna"
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
     "chromadb>=0.4.13",
+    "ijson",
     "lancedb>=0.2",
     "pyarrow",
     "pymupdf>=1.23.6",
+    "python-docx",
+    "python-pptx",
     "tiktoken",
 ]
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
+version_scheme = "release-branch-semver"
 local_scheme = "node-and-timestamp"
 
 [project.scripts]
-ragna = "ragna._cli:app"
+ragna = "ragna.__main__:app"
 
 [tool.setuptools.packages.find]
 include = [
@@ -95,9 +101,12 @@ testpaths = [
     "tests",
 ]
 filterwarnings = [
-#    "error",
-    # FIXME: find a way to use the BaseSettings from pydantic-settings with ConfigDict
-    "ignore:Support for class-based `config` is deprecated:pydantic.warnings.PydanticDeprecatedSince20",
+    "error",
+    # This is coming from the nested dependency
+    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
+    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
+    "ignore::DeprecationWarning:pkg_resources",
+    "ignore::DeprecationWarning:google.rpc",
 ]
 xfail_strict = true
 
@@ -123,7 +132,7 @@ warn_unused_configs = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna._ui.*",
+    "ragna.deploy._ui.*",
 ]
 disallow_untyped_calls = false
 disallow_untyped_defs = false
@@ -131,10 +140,12 @@ disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
 module = [
+    "docx",
     "fitz",
-    "huey.*",
+    "ijson",
     "lancedb",
     "param",
+    "pptx",
     "pyarrow",
     "sentence_transformers",
 ]
@@ -142,7 +153,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna._api.orm",
+    "ragna.deploy._api.orm",
 ]
 # Our ORM schema doesn't really work with mypy. There are some other ways to define it
 # to play ball. We should do that in the future.

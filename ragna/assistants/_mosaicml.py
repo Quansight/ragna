@@ -1,4 +1,4 @@
-from typing import cast
+from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
@@ -27,12 +27,12 @@ class MosaicmlApiAssistant(ApiAssistant):
         instruction += "\n\n".join(source.content for source in sources)
         return f"{instruction}### Instruction: {prompt}\n### Response:"
 
-    def _call_api(
+    async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> str:
+    ) -> AsyncIterator[str]:
         instruction = self._instructize_prompt(prompt, sources)
         # https://docs.mosaicml.com/en/latest/inference.html#text-completion-requests
-        response = self._client.post(
+        response = await self._client.post(
             f"https://models.hosted-on.mosaicml.hosting/{self._MODEL}/v1/predict",
             headers={
                 "Authorization": f"{self._api_key}",
@@ -47,7 +47,7 @@ class MosaicmlApiAssistant(ApiAssistant):
             raise RagnaException(
                 status_code=response.status_code, response=response.json()
             )
-        return cast(str, response.json()["outputs"][0]).replace(instruction, "").strip()
+        yield cast(str, response.json()["outputs"][0]).replace(instruction, "").strip()
 
 
 class Mpt7bInstruct(MosaicmlApiAssistant):

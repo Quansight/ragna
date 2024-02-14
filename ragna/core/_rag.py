@@ -1,64 +1,80 @@
 from __future__ import annotations
 
 import datetime
-import itertools
+import inspect
 import uuid
-from typing import Any, Iterable, Optional, Type, TypeVar, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Generic,
+    Iterable,
+    Iterator,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import pydantic
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
-from ._config import Config
-from ._document import Document
-from ._queue import Queue
+from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
-T = TypeVar("T", bound=Component)
+T = TypeVar("T")
+C = TypeVar("C", bound=Component)
 
 
-class Rag:
-    """RAG workflow.
+class Rag(Generic[C]):
+    """RAG workflow."""
 
-    Args:
-        config: Ragna configuration.
-        load_components: Whether to load the configured components in the current
-            process. If omitted, components will be loaded if a memory queue is
-            configured.
-    """
+    def __init__(self) -> None:
+        self._components: dict[Type[C], C] = {}
 
-    def __init__(
-        self,
-        config: Optional[Config] = None,
-        *,
-        load_components: Optional[bool] = None,
-    ):
-        self.config = config or Config()
-        self._queue = Queue(self.config, load_components=load_components)
+    def _load_component(self, component: Union[Type[C], C]) -> C:
+        cls: Type[C]
+        instance: Optional[C]
+
+        if isinstance(component, Component):
+            instance = cast(C, component)
+            cls = type(instance)
+        elif isinstance(component, type) and issubclass(component, Component):
+            cls = component
+            instance = None
+        else:
+            raise RagnaException
+
+        if cls not in self._components:
+            if instance is None:
+                if not cls.is_available():
+                    raise RagnaException(
+                        "Component not available", name=cls.display_name()
+                    )
+                instance = cls()
+
+            self._components[cls] = instance
+
+        return self._components[cls]
 
     def chat(
         self,
         *,
         documents: Iterable[Any],
-        source_storage: Union[Type[SourceStorage], SourceStorage, str],
-        assistant: Union[Type[Assistant], Assistant, str],
+        source_storage: Union[Type[SourceStorage], SourceStorage],
+        assistant: Union[Type[Assistant], Assistant],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. Items that are not [ragna.core.Document][]s are
-                passed as positional argument to the configured document class.
-
-                !!! note
-
-                    The default configuration uses [ragna.core.LocalDocument][] as
-                    document class. It accepts a path as positional input to create it.
-                    Thus, in this configuration you can pass paths as documents.
-            source_storage: Source storage to use. If [str][] can be the
-                [ragna.core.Component.display_name][] of any configured source
-                storage.
-            assistant: Assistant to use. If [str][] can be the
-                [ragna.core.Component.display_name][] of any configured assistant.
+            documents: Documents to use. If any item is not a [ragna.core.Document][],
+                [ragna.core.LocalDocument.from_path][] is invoked on it.
+            source_storage: Source storage to use.
+            assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -104,18 +120,10 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. Items that are not [ragna.core.Document][]s are
-            passed as positional argument to the configured document class.
-
-            !!! note
-
-                The default configuration uses [ragna.core.LocalDocument][] as document
-                class. It accepts a path as positional input to create it. Thus, in
-                this configuration you can pass paths as documents.
-        source_storage: Source storage to use. If [str][] can be the
-            [ragna.core.Component.display_name][] of any configured source storage.
-        assistant: Assistant to use. If [str][] can be the
-            [ragna.core.Component.display_name][] of any configured assistant.
+        documents: Documents to use. If any item is not a [ragna.core.Document][],
+            [ragna.core.LocalDocument.from_path][] is invoked on it.
+        source_storage: Source storage to use.
+        assistant: Assistant to use.
         **params: Additional parameters passed to the source storage and assistant.
     """
 
@@ -124,15 +132,15 @@ class Chat:
         rag: Rag,
         *,
         documents: Iterable[Any],
-        source_storage: Union[Type[SourceStorage], SourceStorage, str],
-        assistant: Union[Type[Assistant], Assistant, str],
+        source_storage: Union[Type[SourceStorage], SourceStorage],
+        assistant: Union[Type[Assistant], Assistant],
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
-        self.source_storage = self._rag._queue.parse_component(source_storage)
-        self.assistant = self._rag._queue.parse_component(assistant)
+        self.source_storage = self._rag._load_component(source_storage)
+        self.assistant = self._rag._load_component(assistant)
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -164,7 +172,7 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._enqueue(self.source_storage, "store", self.documents)
+        await self._run(self.source_storage.store, self.documents)
         self._prepared = True
 
         welcome = Message(
@@ -174,7 +182,7 @@ class Chat:
         self._messages.append(welcome)
         return welcome
 
-    async def answer(self, prompt: str) -> Message:
+    async def answer(self, prompt: str, *, stream: bool = False) -> Message:
         """Answer a prompt.
 
         Returns:
@@ -192,27 +200,19 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        prompt = Message(content=prompt, role=MessageRole.USER)
-        self._messages.append(prompt)
+        self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._enqueue(
-            self.source_storage, "retrieve", self.documents, prompt.content
-        )
+        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+
         answer = Message(
-            content=await self._enqueue(
-                self.assistant, "answer", prompt.content, sources
-            ),
+            content=self._run_gen(self.assistant.answer, prompt, sources),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
-        self._messages.append(answer)
+        if not stream:
+            await answer.read()
 
-        # FIXME: add error handling
-        # return (
-        #     "I'm sorry, but I'm having trouble helping you at this time. "
-        #     "Please retry later. "
-        #     "If this issue persists, please contact your administrator."
-        # )
+        self._messages.append(answer)
 
         return answer
 
@@ -220,9 +220,7 @@ class Chat:
         documents_ = []
         for document in documents:
             if not isinstance(document, Document):
-                document = self._rag.config.core.document(
-                    document  # type: ignore[misc, call-arg]
-                )
+                document = LocalDocument.from_path(document)
 
             if not document.is_readable():
                 raise RagnaException(
@@ -236,15 +234,17 @@ class Chat:
 
     def _unpack_chat_params(
         self, params: dict[str, Any]
-    ) -> dict[tuple[Type[Component], str], dict[str, Any]]:
-        source_storage_models = self.source_storage._protocol_models()
-        assistant_models = self.assistant._protocol_models()
+    ) -> dict[Callable, dict[str, Any]]:
+        component_models = {
+            getattr(component, name): model
+            for component in [self.source_storage, self.assistant]
+            for (_, name), model in component._protocol_models().items()
+        }
 
         ChatModel = merge_models(
             str(self.params["chat_id"]),
             SpecialChatParams,
-            *source_storage_models.values(),
-            *assistant_models.values(),
+            *component_models.values(),
             config=pydantic.ConfigDict(extra="forbid"),
         )
 
@@ -252,23 +252,38 @@ class Chat:
             exclude_none=True
         )
         return {
-            component_and_action: model(**chat_params).model_dump()
-            for component_and_action, model in itertools.chain(
-                source_storage_models.items(), assistant_models.items()
-            )
+            fn: model(**chat_params).model_dump()
+            for fn, model in component_models.items()
         }
 
-    async def _enqueue(
-        self, component: Type[Component], action: str, *args: Any
-    ) -> Any:
-        try:
-            return await self._rag._queue.enqueue(
-                component, action, args, self._unpacked_params[(component, action)]
-            )
-        except RagnaException as exc:
-            exc.extra["component"] = component.display_name()
-            exc.extra["action"] = action
-            raise exc
+    async def _run(
+        self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
+    ) -> T:
+        kwargs = self._unpacked_params[fn]
+        if inspect.iscoroutinefunction(fn):
+            fn = cast(Callable[..., Awaitable[T]], fn)
+            coro = fn(*args, **kwargs)
+        else:
+            fn = cast(Callable[..., T], fn)
+            coro = run_in_threadpool(fn, *args, **kwargs)
+
+        return await coro
+
+    async def _run_gen(
+        self,
+        fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+        *args: Any,
+    ) -> AsyncIterator[T]:
+        kwargs = self._unpacked_params[fn]
+        if inspect.isasyncgenfunction(fn):
+            fn = cast(Callable[..., AsyncIterator[T]], fn)
+            async_gen = fn(*args, **kwargs)
+        else:
+            fn = cast(Callable[..., Iterator[T]], fn)
+            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
+
+        async for item in async_gen:
+            yield item
 
     async def __aenter__(self) -> Chat:
         await self.prepare()

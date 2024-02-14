@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import abc
+import io
 import os
 import secrets
 import time
 import uuid
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
 
 import jwt
 from pydantic import BaseModel
@@ -14,7 +15,13 @@ from pydantic import BaseModel
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
 
 if TYPE_CHECKING:
-    from ._config import Config
+    from ragna.deploy import Config
+
+
+class DocumentUploadParameters(BaseModel):
+    method: str
+    url: str
+    data: dict
 
 
 class Document(RequirementsMixin, abc.ABC):
@@ -59,7 +66,7 @@ class Document(RequirementsMixin, abc.ABC):
     @abc.abstractmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
         pass
 
     @abc.abstractmethod
@@ -75,49 +82,47 @@ class Document(RequirementsMixin, abc.ABC):
 
 
 class LocalDocument(Document):
-    def __init__(
-        self,
-        path: Optional[str | Path] = None,
+    """Document class for files on the local file system.
+
+    !!! tip
+
+        This object is usually not instantiated manually, but rather through
+        [ragna.core.LocalDocument.from_path][].
+    """
+
+    @classmethod
+    def from_path(
+        cls,
+        path: Union[str, Path],
         *,
         id: Optional[uuid.UUID] = None,
-        name: Optional[str] = None,
         metadata: Optional[dict[str, Any]] = None,
         handler: Optional[DocumentHandler] = None,
-    ) -> None:
-        """Document class for files on the local file system.
+    ) -> LocalDocument:
+        """Create a [ragna.core.LocalDocument][] from a path.
 
         Args:
-            path: Path to a file.
+            path: Local path to the file.
             id: ID of the document. If omitted, one is generated.
-            name: Name of the document. If omitted, is inferred from the `path` or the
-                `metadata`.
-            metadata: Metadata of the document. If not included, `path` will be added
-                under the `"path"` key.
+            metadata: Optional metadata of the document.
             handler: Document handler. If omitted, a builtin handler is selected based
                 on the suffix of the `path`.
 
         Raises:
-            RagnaException: If `path` is omitted and and also not passed as part of
-                `metadata`.
-            RagnaException: If `path` is passed directly and as part of `metadata`.
+            RagnaException: If `metadata` is passed and contains a `"path"` key.
         """
         if metadata is None:
             metadata = {}
-        metadata_path = metadata.get("path")
-
-        if path is None and metadata_path is None:
+        elif "path" in metadata:
             raise RagnaException(
-                "Path was neither passed directly or as part of the metadata"
+                "The metadata already includes a 'path' key. "
+                "Did you mean to instantiate the class directly?"
             )
-        elif path is not None and metadata_path is not None:
-            raise RagnaException("Path was passed directly and as part of the metadata")
-        elif path is not None:
-            metadata["path"] = str(Path(path).expanduser().resolve())
 
-        if name is None:
-            name = Path(metadata["path"]).name
+        path = Path(path).expanduser().resolve()
+        metadata["path"] = str(path)
 
-        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
+        return cls(id=id, name=path.name, metadata=metadata, handler=handler)
 
     @property
     def path(self) -> Path:
@@ -138,7 +143,7 @@ class LocalDocument(Document):
     @classmethod
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
         url = f"{config.api.url}/document"
         data = {
             "token": jwt.encode(
@@ -152,7 +157,7 @@ class LocalDocument(Document):
             )
         }
         metadata = {"path": str(config.local_cache_root / "documents" / str(id))}
-        return url, data, metadata
+        return metadata, DocumentUploadParameters(method="PUT", url=url, data=data)
 
     @classmethod
     def decode_upload_token(cls, token: str) -> tuple[str, uuid.UUID]:
@@ -225,12 +230,14 @@ DOCUMENT_HANDLERS = DocumentHandlerRegistry()
 
 
 @DOCUMENT_HANDLERS.load_if_available
-class TxtDocumentHandler(DocumentHandler):
-    """Document handler for `.txt` documents."""
+class PlainTextDocumentHandler(DocumentHandler):
+    """Document handler for plain-text documents.
+    Currently supports `.txt` and `.md` extensions.
+    """
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
-        return [".txt"]
+        return [".txt", ".md"]
 
     def extract_pages(self, document: Document) -> Iterator[Page]:
         yield Page(text=document.read().decode())
@@ -263,3 +270,64 @@ class PdfDocumentHandler(DocumentHandler):
         ) as document:
             for number, page in enumerate(document, 1):
                 yield Page(text=page.get_text(sort=True), number=number)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class DocxDocumentHandler(DocumentHandler):
+    """Document handler for `.docx` documents.
+
+    !!! note
+
+        This does *not* extract text from headers or footers.
+
+    !!! info "Package requirements"
+
+        - [`python-docx`](https://github.com/python-openxml/python-docx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-docx")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".docx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import docx
+
+        document_docx = docx.Document(io.BytesIO(document.read()))
+        for paragraph in document_docx.paragraphs:
+            text = paragraph.text
+            if len(text) > 0:
+                yield Page(text=text)
+
+
+@DOCUMENT_HANDLERS.load_if_available
+class PptxDocumentHandler(DocumentHandler):
+    """Document handler for `.pptx` documents.
+
+    !!! info "Package requirements"
+
+        - [`python-pptx`](https://github.com/scanny/python-pptx)
+    """
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("python-pptx")]
+
+    @classmethod
+    def supported_suffixes(cls) -> list[str]:
+        return [".pptx"]
+
+    def extract_pages(self, document: Document) -> Iterator[Page]:
+        import pptx
+
+        document_pptx = pptx.Presentation(io.BytesIO(document.read()))
+        for number, slide in enumerate(document_pptx.slides, 1):
+            text = "\n\n".join(
+                shape.text
+                for shape in slide.shapes
+                if shape.has_text_frame and shape.text
+            )
+            yield Page(text=text, number=number)
