@@ -8,7 +8,15 @@ You can launch the web application from the CLI:
 ragna ui
 ```
 
-It open in a browser window automatically.
+It will open in a browser window automatically and you should see the login screen:
+
+![ragna UI login screen with a username and password form. Both the username and
+password are filled with the string "ragna" and the password is visible and not
+censored](images/ragna-ui-login.png)
+
+By default [ragna.deploy.RagnaDemoAuthentication][] is used. Thus, you can use any
+username and a matching password to authenticate. For example, you can leave both fields
+blank or use `ragna` / `ragna` as in the image above.
 
 !!! tip "Under development"
 
