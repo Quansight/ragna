@@ -1,25 +1,25 @@
 name: ragna-dev
 channels:
-  - conda-forge
+    - conda-forge
 dependencies:
-  - python =3.9
-  - pip
-  - git-lfs
-  - pip:
-      - python-dotenv
-      - boto3
-      - pytest >=6
-      - pytest-mock
-      - mypy ==1.6.1
-      - pre-commit
-      - types-aiofiles
-      - sqlalchemy-stubs
-      - setuptools-scm
-      - pip-tools
-      # documentation
-      - mkdocs
-      - mkdocs-material
-      - mkdocstrings[python]
-      - mkdocs-gen-files
-      - material-plausible-plugin
-      - mktestdocs
+    - python =3.9
+    - pip
+    - git-lfs
+    - pip:
+          - python-dotenv
+          - boto3
+          - pytest >=6
+          - pytest-mock
+          - mypy ==1.6.1
+          - pre-commit
+          - types-aiofiles
+          - sqlalchemy-stubs
+          - setuptools-scm
+          - pip-tools
+          # documentation
+          - mkdocs
+          - mkdocs-material
+          - mkdocstrings[python]
+          - mkdocs-gen-files
+          - material-plausible-plugin
+          - mktestdocs

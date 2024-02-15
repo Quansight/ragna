@@ -113,12 +113,12 @@ git lfs ls-files
 
 ## Contribution best practices
 
-- Before opening new issues, go through the tracker to ensure there aren't any previous
-  issues related to your topic.
-- Write clear and descriptive issues and include all the necessary context like library
-  versions and the complete error traceback.
-- Eagerly communicate if you are interested in contributing to any open issues.
-- To contribute new features and enhancements, open issues to discuss the work before
-  creating a pull request.
-- Make sure to test your pull request locally, and include relevant unit tests and
-  documentation.
+-   Before opening new issues, go through the tracker to ensure there aren't any
+    previous issues related to your topic.
+-   Write clear and descriptive issues and include all the necessary context like
+    library versions and the complete error traceback.
+-   Eagerly communicate if you are interested in contributing to any open issues.
+-   To contribute new features and enhancements, open issues to discuss the work before
+    creating a pull request.
+-   Make sure to test your pull request locally, and include relevant unit tests and
+    documentation.

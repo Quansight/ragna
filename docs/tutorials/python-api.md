@@ -61,10 +61,10 @@ with open(path, "w") as file:
 The sources and information (in our case the `demo_document.txt`) need be to stored in a
 vector database[^1]. Similar to assistants, Ragna has a few built-in options:
 
-- **`RagnaDemoSourceStorage`** - Not an actual database. Instead stores tokens and
-  sources as objects in memory. It provides a quick way to try out Ragna.
-- **`Chroma`** - Learn more in the [official website](https://www.trychroma.com/)
-- **`LanceDB`** - Learn more in the [official website](https://lancedb.com/)
+-   **`RagnaDemoSourceStorage`** - Not an actual database. Instead stores tokens and
+    sources as objects in memory. It provides a quick way to try out Ragna.
+-   **`Chroma`** - Learn more in the [official website](https://www.trychroma.com/)
+-   **`LanceDB`** - Learn more in the [official website](https://lancedb.com/)
 
 [^1]:
     Vector databases can effectively store
@@ -84,11 +84,11 @@ Pick the Large Language Model you want to use as your chat assistant.
 
 Ragna has the following built-in options:
 
-- **`RagnaDemoAssistant`** - Not an actual LLM. Instead replies with your prompt and a
-  static message. It provides a quick way to setup and use Ragna.
-- **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
-- **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
-- **Anthropic's `ClaudeInstant` and `Claude`**
+-   **`RagnaDemoAssistant`** - Not an actual LLM. Instead replies with your prompt and a
+    static message. It provides a quick way to setup and use Ragna.
+-   **OpenAI's `Gpt35Turbo16k` and `Gpt4`**
+-   **MosaicML's `Mpt7bInstruct` and `Mpt30bInstruct`**
+-   **Anthropic's `ClaudeInstant` and `Claude`**
 
 Pick the demo assistant for this tutorial:
 

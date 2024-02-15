@@ -1,77 +1,77 @@
 name: test
 
 on:
-  pull_request:
-    paths:
-      - ".github/**"
-      - "ragna/**"
-      - "tests/**"
-      - "environment-dev.yml"
-      - "pyproject.toml"
-  push:
-    branches:
-      - release/*
+    pull_request:
+        paths:
+            - ".github/**"
+            - "ragna/**"
+            - "tests/**"
+            - "environment-dev.yml"
+            - "pyproject.toml"
+    push:
+        branches:
+            - release/*
 
 jobs:
-  importable:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -el {0}
+    importable:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: bash -el {0}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-        with:
-          optional-dependencies: "false"
+            - name: Setup environment
+              uses: ./.github/actions/setup-env
+              with:
+                  optional-dependencies: "false"
 
-      - name: Check if all public packages are importable
-        run: python tests/test_importable.py
+            - name: Check if all public packages are importable
+              run: python tests/test_importable.py
 
-  pytest:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-        python-version: ["3.9"]
-        include:
-          - os: ubuntu-latest
-            python-version: "3.10"
-          - os: ubuntu-latest
-            python-version: "3.11"
+    pytest:
+        strategy:
+            matrix:
+                os:
+                    - ubuntu-latest
+                    - windows-latest
+                    - macos-latest
+                python-version: ["3.9"]
+                include:
+                    - os: ubuntu-latest
+                      python-version: "3.10"
+                    - os: ubuntu-latest
+                      python-version: "3.11"
 
-      fail-fast: false
+            fail-fast: false
 
-    runs-on: ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
 
-    defaults:
-      run:
-        shell: bash -el {0}
+        defaults:
+            run:
+                shell: bash -el {0}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-        with:
-          python-version: ${{ matrix.python-version }}
+            - name: Setup environment
+              uses: ./.github/actions/setup-env
+              with:
+                  python-version: ${{ matrix.python-version }}
 
-      - name: Run unit tests
-        id: tests
-        run: pytest --junit-xml=test-results.xml --durations=25
+            - name: Run unit tests
+              id: tests
+              run: pytest --junit-xml=test-results.xml --durations=25
 
-      - name: Surface failing tests
-        if: steps.tests.outcome != 'success'
-        uses: pmeier/pytest-results-action@v0.3.0
-        with:
-          path: test-results.xml
+            - name: Surface failing tests
+              if: steps.tests.outcome != 'success'
+              uses: pmeier/pytest-results-action@v0.3.0
+              with:
+                  path: test-results.xml

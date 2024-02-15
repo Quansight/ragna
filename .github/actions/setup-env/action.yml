@@ -2,73 +2,73 @@ name: setup-dev-env
 description: "Setup development environment"
 
 inputs:
-  python-version:
-    default: "3.9"
-    description: "Python version to install."
-  optional-dependencies:
-    default: "true"
-    description: "Install ragna with [all], i.e. all optional dependencies"
+    python-version:
+        default: "3.9"
+        description: "Python version to install."
+    optional-dependencies:
+        default: "true"
+        description: "Install ragna with [all], i.e. all optional dependencies"
 
 runs:
-  using: composite
+    using: composite
 
-  steps:
-    - name: Setup mambaforge and development environment
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        miniforge-variant: Mambaforge
-        miniforge-version: latest
-        activate-environment: ragna-dev
+    steps:
+        - name: Setup mambaforge and development environment
+          uses: conda-incubator/setup-miniconda@v2
+          with:
+              miniforge-variant: Mambaforge
+              miniforge-version: latest
+              activate-environment: ragna-dev
 
-    - name: Display conda info
-      shell: bash -el {0}
-      run: conda info
+        - name: Display conda info
+          shell: bash -el {0}
+          run: conda info
 
-    - name: Set cache date
-      id: cache-key
-      shell: bash
-      run: |
-        DATE=$(date +'%Y%m%d')
-        echo $DATE
-        echo "DATE=$DATE" >> $GITHUB_OUTPUT
+        - name: Set cache date
+          id: cache-key
+          shell: bash
+          run: |
+              DATE=$(date +'%Y%m%d')
+              echo $DATE
+              echo "DATE=$DATE" >> $GITHUB_OUTPUT
 
-    - name: Restore conda environment
-      id: cache
-      uses: actions/cache@v3
-      with:
-        path: ${{ env.CONDA }}/envs
-        key:
-          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
-          }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml',
-          'pyproject.toml') }}
-        restore-keys: |
-          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
+        - name: Restore conda environment
+          id: cache
+          uses: actions/cache@v3
+          with:
+              path: ${{ env.CONDA }}/envs
+              key:
+                  env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
+                  }}|${{steps.cache-key.outputs.date }}-${{
+                  hashFiles('environment-dev.yml', 'pyproject.toml') }}
+              restore-keys: |
+                  env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
 
-    - name: Update conda environment if necessary
-      if: steps.cache.outputs.cache-hit != 'true'
-      shell: bash
-      run: |
-        sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
-        cat environment-dev.yml
-        mamba env update --file environment-dev.yml
-        git checkout -- environment-dev.yml
+        - name: Update conda environment if necessary
+          if: steps.cache.outputs.cache-hit != 'true'
+          shell: bash
+          run: |
+              sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
+              cat environment-dev.yml
+              mamba env update --file environment-dev.yml
+              git checkout -- environment-dev.yml
 
-    - name: Install redis-server if necessary
-      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
-      shell: bash -el {0}
-      run: mamba install --yes --channel conda-forge redis-server
+        - name: Install redis-server if necessary
+          if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
+          shell: bash -el {0}
+          run: mamba install --yes --channel conda-forge redis-server
 
-    - name: Install ragna
-      shell: bash -el {0}
-      run: |
-        if [[ ${{ inputs.optional-dependencies }} == true ]]
-        then
-          PROJECT_PATH='.[all]'
-        else
-          PROJECT_PATH='.'
-        fi
-        pip install --editable "${PROJECT_PATH}"
+        - name: Install ragna
+          shell: bash -el {0}
+          run: |
+              if [[ ${{ inputs.optional-dependencies }} == true ]]
+              then
+                PROJECT_PATH='.[all]'
+              else
+                PROJECT_PATH='.'
+              fi
+              pip install --editable "${PROJECT_PATH}"
 
-    - name: Display development environment
-      shell: bash -el {0}
-      run: conda list
+        - name: Display development environment
+          shell: bash -el {0}
+          run: conda list
