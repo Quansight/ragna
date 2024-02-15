@@ -9,7 +9,20 @@ build:
     python: "mambaforge-22.9"
   jobs:
     post_checkout:
+      # Check out the full depth for setuptools-scm
       - git fetch --unshallow || true
+      # Check out git-lfs files
+      # See https://docs.readthedocs.io/en/stable/build-customization.html#support-git-lfs-large-file-storage
+      - wget
+        https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz
+      - tar xvfz git-lfs-linux-amd64-v3.4.0.tar.gz
+      - ln -s git-lfs-3.4.0/git-lfs git-lfs
+      - git config filter.lfs.process "`pwd`/git-lfs filter-process"
+      - git config filter.lfs.smudge  "`pwd`/git-lfs smudge -- %f"
+      - git config filter.lfs.clean "`pwd`/git-lfs clean -- %f"
+      - ./git-lfs install
+      - ./git-lfs fetch
+      - ./git-lfs checkout
 
 mkdocs:
   configuration: mkdocs.yml
