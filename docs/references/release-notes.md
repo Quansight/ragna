@@ -4,16 +4,71 @@
 
 ### Feature changes and enhancements
 
-- remove task queue
-- direct result: async components
-- direct result: streaming
-- support for markdown / docx / pptx
+- Ragnas `0.1.x` releases were build on a task queue backend. This turned out to be a
+  premature optimization that limited us in other features we wanted to implement. Thus,
+  we removed it without impacting the API. This enabled us to add two new features:
+  - The abstract methods on the RAG components, i.e. [ragna.core.SourceStorage.store][],
+    [ragna.core.SourceStorage.retrieve][], and [ragna.core.Assistant.answer][], can now
+    also be declared as `async def`. Asynchronous methods will be called on the main
+    event loop while the synchronous methods (`def`) will be called in a separate thread
+    to avoid blocking the main thread.
+  - [ragna.core.Assistant.answer][] now returns iterator, which allows streaming an
+    answer. Check out the
+    [streaming example](../generated/examples/gallery_streaming.md) to learn how you can
+    stream answers from the Python and REST API. The Ragna web UI will always stream to
+    enhance the UX.
+- Ragna gained support for Markdown ([`.md`][ragna.core.PlainTextDocumentHandler]),
+  Microsoft Word ([`.docx`][ragna.core.DocxDocumentHandler]), and Microsoft Powerpoint
+  ([`.pptx`][ragna.core.PptxDocumentHandler]) documents.
+- Ragna now has an official [docker](https://www.docker.com/) image. Try it with
+
+  ```
+  $ docker run -p 31476:31476 -p 31477:31477 quay.io/quansight/ragna:latest
+  ```
+
+- Instead of just returning the location of a source, e.g. page numbers in a PDF
+  document but potentially nothing for other formats that don't have this kind of
+  information, the REST API now also returns the full source content. This aligns it
+  with the Python API. The source view in the web UI now also shows the source content.
 
 ### Breaking Changes
 
-- ragna worker was removed and the `--start-worker` option of `ragna api`
-- config structure
-- DB scheme
+- As a result of the removal of the task queue, `ragna worker` is no longer needed and
+  was removed. The same applies to the `--start-worker` option of `ragna api`.
+- The return type of [ragna.core.Assistant.answer][] changed from `str` to
+  `Iterator[str]` / `AsyncIterator[str]`. To reflect that in the implementation, replace
+  `return` with `yield`. To stream the response, `yield` multiple times.
+- The classes [ragna.deploy.Authentication][], [ragna.deploy.RagnaDemoAuthentication][],
+  and [ragna.deploy.Config][] moved from the [ragna.core][] module to a new
+  [ragna.deploy][] module.
+- [ragna.core.Component][], which is the superclass for [ragna.core.Assistant][] and
+  [ragna.core.SourceStorage][], no longer takes a [ragna.deploy.Config][] to
+  instantiate. For example
+
+  ```python
+  class MyAssistant(ragna.core.Assistant):
+      def __init__(self, config):
+          super().__init__(config)
+  ```
+
+  needs to change to
+
+  ```python
+  class MyAssistant(ragna.core.Assistant):
+      def __init__(self):
+          super().__init__()
+  ```
+
+  You can use the new [ragna.local_root][] function as replacement for
+  [`config.local_cache_root`](config.md).
+
+- config structure ADDME
+- The database scheme changed and is no longer compatible with the tables used in
+  previous releases. The default database set by the configuration wizard is located at
+  `~/.cache/ragna/ragna.db`. Please delete it. It will be created anew the next time the
+  REST API is started.
+- The `/chat/{chat_id}/prepare` and `/chat/{chat_id}/answer` endpoints of the REST API
+  now no longer return the chat object, but only the message.
 
 ### What's Changed
 
@@ -78,8 +133,6 @@
   in [#280](https://github.com/Quansight/ragna/280)
 - Pptx support by [@davidedigrande](https://github.com/davidedigrande) in
   [#296](https://github.com/Quansight/ragna/296)
-- Update requirements-docker.lock by [@github](https://github.com/github)-actions in
-  [#298](https://github.com/Quansight/ragna/298)
 - Increase API timeout and add custom message by
   [@smokestacklightnin](https://github.com/smokestacklightnin) in
   [#299](https://github.com/Quansight/ragna/299)
@@ -141,6 +194,44 @@
   [#252](https://github.com/Quansight/ragna/pull/252)
 
 ## Version 0.1.2
+
+### Breaking changes
+
+- The `/document` endpoints on the REST API have changed
+
+  - The `GET /document` endpoint of the REST API to register the document and get the
+    upload information changed to `POST /document`. The document name now needs to be
+    passed as part of the body as JSON rather than as query parameter.
+  - The JSON object returned by the new `POST /document` endpoint of the REST API now
+    bundles the `url` and `data` fields under one `parameters` fields. In addition, the
+    `parameters` field also now includes a `method` field that specifies how the upload
+    request should be sent.
+  - The `POST /document` endpoint of the REST API to upload documents stored locally
+    changed to `PUT /document`.
+
+  For example
+
+  ```python
+  document_upload = client.get("/document", params={"name": name}).json()
+  client.post(
+      document_upload["url"],
+      data=document_upload["data"],
+      files={"file": ...},
+  )
+  ```
+
+  needs to change to
+
+  ```python
+  document_upload = client.post("/document", json={"name": name}).json()
+  parameters = document_upload["parameters"]
+  client.request(
+      parameters["method"],
+      parameters["url"],
+      data=parameters["data"],
+      files={"file": ...},
+  )
+  ```
 
 ### What's Changed
 
