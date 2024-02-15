@@ -4,6 +4,14 @@ title: Home
 
 # ![Ragna logo](assets/brand/logo-lockup-horizontal/logo-lockup-horizontal.png)
 
+- Here is a nested list with a tab width of 2
+  - First item
+  - Second item
+- Here is a nested list with a tab width of 4
+    - First item
+    - Second item
+
+
 Ragna is an open source RAG orchestration framework.
 
 With an intuitive API for quick experimentation and built-in tools for creating
