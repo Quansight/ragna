@@ -87,6 +87,29 @@
   [#301](https://github.com/Quansight/ragna/301)
 - RTD git debug by [@pmeier](https://github.com/pmeier) in
   [#302](https://github.com/Quansight/ragna/302)
+- bump minimum panel version to 1.3.8 by [@pmeier](https://github.com/pmeier) in
+  [#284](https://github.com/Quansight/ragna/pull/284)
+- move BC policy into documentation by [@pmeier](https://github.com/pmeier) in
+  [#309](https://github.com/Quansight/ragna/pull/309)
+- remove invalid font CSS declaration by [@pmeier](https://github.com/pmeier) in
+  [#308](https://github.com/Quansight/ragna/pull/308)
+- make arrays in config multiline by [@pmeier](https://github.com/pmeier) in
+  [#311](https://github.com/Quansight/ragna/pull/311)
+- [ENH] - add support for Cohere assistants by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#307](https://github.com/Quansight/ragna/pull/307)
+- fix invalid escape warning when building docs by [@pmeier](https://github.com/pmeier)
+  in [#314](https://github.com/Quansight/ragna/pull/314)
+- [ENH] - Add support for AI21labs assistants by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#303](https://github.com/Quansight/ragna/pull/303)
+- re-add Authentication documentation by [@pmeier](https://github.com/pmeier) in
+  [#316](https://github.com/Quansight/ragna/pull/316)
+- Set up git-lfs and track relevant files by
+  [@pavithraes](https://github.com/pavithraes) in
+  [#315](https://github.com/Quansight/ragna/pull/315)
+- document default login credentials by [@pmeier](https://github.com/pmeier) in
+  [#168](https://github.com/Quansight/ragna/pull/168)
 
 ### New Contributors
 
