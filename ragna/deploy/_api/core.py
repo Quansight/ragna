@@ -241,9 +241,8 @@ def app(config: Config) -> FastAPI:
             )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-        core_answer = await core_chat.answer(prompt, stream=True)
-
         if stream:
+            core_answer = await core_chat.answer(prompt, stream=True)
             message_chunk = schemas.Message(
                 content="",
                 role=core_answer.role,
