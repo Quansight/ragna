@@ -14,6 +14,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+import ragna
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
@@ -62,7 +63,8 @@ class ApiConfig(ConfigBase):
     url: str = "http://127.0.0.1:31476"
     # FIXME: this needs to be dynamic for the UI url
     origins: list[str] = ["http://127.0.0.1:31477"]
-    database_url: str = "memory"
+    # FIXME: this needs to be dynamic from the local cache root
+    database_url: str = f"sqlite:///{ragna.local_root()}/ragna.db"
     root_path: str = ""
 
 
@@ -79,10 +81,7 @@ class Config(ConfigBase):
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
 
-    # FIXME: make this local root and use that as default factory
-    local_cache_root: Path = Field(
-        default_factory=lambda: Path.home() / ".cache" / "ragna"
-    )
+    local_cache_root: Path = Field(default_factory=ragna.local_root)
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
 

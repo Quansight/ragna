@@ -252,18 +252,11 @@ def _wizard_common() -> Config:
         qmark=QMARK,
     ).unsafe_ask()
 
-    if questionary.confirm(
-        "Do you want to use a SQL database to persist the chats between runs?",
-        default=True,
+    config.api.database_url = questionary.text(
+        "What is the URL of the database?",
+        default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
         qmark=QMARK,
-    ).unsafe_ask():
-        config.api.database_url = questionary.text(
-            "What is the URL of the database?",
-            default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
-            qmark=QMARK,
-        ).unsafe_ask()
-    else:
-        config.api.database_url = "memory"
+    ).unsafe_ask()
 
     config.ui.url = questionary.text(
         "At what URL do you want the ragna web UI to be served?",
