@@ -241,7 +241,7 @@ def app(config: Config) -> FastAPI:
             )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-        core_answer = await core_chat.answer(prompt, stream=True)
+        core_answer = await core_chat.answer(prompt, stream=stream)
 
         if stream:
             message_chunk = schemas.Message(
@@ -269,7 +269,7 @@ def app(config: Config) -> FastAPI:
                 message_chunks()
             )
         else:
-            answer = schemas.Message.from_core(await core_chat.answer(prompt))
+            answer = schemas.Message.from_core(core_answer)
 
             with get_session() as session:
                 chat.messages.append(answer)

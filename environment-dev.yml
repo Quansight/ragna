@@ -23,3 +23,4 @@ dependencies:
       - mkdocs-gen-files
       - material-plausible-plugin
       - mktestdocs
+      - mdx_truly_sane_lists
