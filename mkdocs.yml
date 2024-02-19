@@ -93,5 +93,6 @@ nav:
       - references/python-api.md
       - references/rest-api.md
       - references/cli.md
+      - references/config.md
       - references/faq.md
       - references/release-notes.md

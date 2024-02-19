@@ -23,6 +23,7 @@ from ragna.deploy._cli import app as cli_app  # noqa: E402
 def main():
     cli_reference()
     api_reference()
+    config_reference()
 
 
 def cli_reference():
@@ -60,6 +61,14 @@ def api_reference():
     )
     with mkdocs_gen_files.open("references/openapi.json", "w") as file:
         json.dump(openapi_json, file)
+
+
+def config_reference():
+    with mkdocs_gen_files.open("references/config.md", "r+") as file:
+        content = file.read().replace("{{ config }}", str(Config()))
+        file.seek(0)
+        file.write(content)
+        file.truncate()
 
 
 main()
