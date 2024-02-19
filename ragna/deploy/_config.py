@@ -110,6 +110,11 @@ class Config(ConfigBase):
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
 
+    def __str__(self) -> str:
+        toml = tomlkit.item(self.model_dump(mode="json"))
+        self._set_multiline_array(toml)
+        return toml.as_string()
+
     def _set_multiline_array(self, item: tomlkit.items.Item) -> None:
         if isinstance(item, tomlkit.items.Array):
             item.multiline(True)
@@ -128,8 +133,5 @@ class Config(ConfigBase):
         if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
 
-        toml = tomlkit.item(self.model_dump(mode="json"))
-        self._set_multiline_array(toml)
-
         with open(path, "w") as file:
-            file.write(toml.as_string())
+            file.write(str(self))
