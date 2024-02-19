@@ -12,10 +12,16 @@ _LOCAL_ROOT = (
 )
 
 
+def make_directory(path: Union[str, Path]) -> Path:
+    path = Path(path).expanduser().resolve()
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def local_root(path: Optional[Union[str, Path]] = None) -> Path:
     global _LOCAL_ROOT
     if path is not None:
-        _LOCAL_ROOT = Path(path).expanduser().resolve()
+        _LOCAL_ROOT = make_directory(path)
 
     return _LOCAL_ROOT
 
