@@ -97,8 +97,7 @@ to connect to the REST API. The URL of the web UI is required for it function.
 
 URL of a SQL database that will be used to store the Ragna state. See
 [this reference](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls) on
-how to format the URL. `"memory"` is a special case, which will use a non-persistent,
-in-memory [SQLite](https://www.sqlite.org/index.html) database.
+how to format the URL.
 
 #### `root_path`
 
