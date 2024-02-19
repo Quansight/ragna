@@ -11,7 +11,7 @@ The CLI option takes precedence over the environment variable.
 
 There are two main ways to generate a configuration file:
 
-1. Running `ragna init` in a terminal starts an interactive wizard that guides through
+1. Running `ragna init` in a terminal starts an interactive wizard that guides you through
    the generation. The example configuration below is the result of choosing the first
    option the wizard offers you.
 2. The configuration can also be created programmatically from Python. The example
@@ -69,7 +69,7 @@ is equivalent to
 
 ### `authentication`
 
-[ragna.deploy.Authentication][] class to use.
+[ragna.deploy.Authentication][] class to use for authenticating users.
 
 ### `components`
 
@@ -91,7 +91,7 @@ is equivalent to
 #### `origins`
 
 [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) origins that are allowed
-to connect to the REST API. The URL of the web UI is required for it function.
+to connect to the REST API. The URL of the web UI is required for it to function.
 
 #### `database_url`
 
