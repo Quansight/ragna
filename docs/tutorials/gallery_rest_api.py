@@ -48,7 +48,7 @@ from ragna.deploy import Config
 config = Config()
 
 rest_api = documentation_helpers.RestApi()
-rest_api.start(config)
+_ = rest_api.start(config)
 
 # %%
 # Let's make sure the REST API is started correctly and can be reached.
@@ -145,8 +145,12 @@ client.request(
 # The configuration we are using only supports demo components for the source storage
 # and assistant and so we pick them here.
 
-source_storage = "Ragna/DemoSourceStorage"
-assistant = "Ragna/DemoAssistant"
+from ragna import source_storages, assistants
+
+source_storage = source_storages.RagnaDemoSourceStorage.display_name()
+assistant = assistants.RagnaDemoAssistant.display_name()
+
+print(f"{source_storage=}, {assistant=}")
 
 # %%
 # ## Step 5: Start chatting

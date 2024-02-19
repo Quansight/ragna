@@ -75,22 +75,22 @@ from ragna.assistants import RagnaDemoAssistant
 #     Ragna has builtin support for the following assistants:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#         - [ragna.assistants.Claude][]
-#         - [ragna.assistants.ClaudeInstant][]
+#       - [ragna.assistants.Claude][]
+#       - [ragna.assistants.ClaudeInstant][]
 #     - [Cohere](https://cohere.com/)
-#         - [ragna.assistants.Command][]
-#         - [ragna.assistants.CommandLight][]
+#       - [ragna.assistants.Command][]
+#       - [ragna.assistants.CommandLight][]
 #     - [Google](https://ai.google.dev/)
-#         - [ragna.assistants.GeminiPro][]
-#         - [ragna.assistants.GeminiUltra][]
+#       - [ragna.assistants.GeminiPro][]
+#       - [ragna.assistants.GeminiUltra][]
 #     - [OpenAI](https://openai.com/)
-#         - [ragna.assistants.Gpt35Turbo16k][]
-#         - [ragna.assistants.Gpt4][]
+#       - [ragna.assistants.Gpt35Turbo16k][]
+#       - [ragna.assistants.Gpt4][]
 #     - [AI21 Labs](https://www.ai21.com/)
-#         - [ragna.assistants.Jurassic2Ultra][]
+#       - [ragna.assistants.Jurassic2Ultra][]
 #     - [MosaicML](https://www.mosaicml.com/)
-#         - [ragna.assistants.Mpt7bInstruct][]
-#         - [ragna.assistants.Mpt30bInstruct][]
+#       - [ragna.assistants.Mpt7bInstruct][]
+#       - [ragna.assistants.Mpt30bInstruct][]
 #
 #     !!! note
 #

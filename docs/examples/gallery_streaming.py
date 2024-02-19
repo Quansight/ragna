@@ -27,17 +27,17 @@ import documentation_helpers
 #     Of the assistants that Ragna has built in, the following ones support streaming:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#         - [ragna.assistants.Claude][]
-#         - [ragna.assistants.ClaudeInstant][]
+#       - [ragna.assistants.Claude][]
+#       - [ragna.assistants.ClaudeInstant][]
 #     - [Cohere](https://cohere.com/)
-#         - [ragna.assistants.Command][]
-#         - [ragna.assistants.CommandLight][]
+#       - [ragna.assistants.Command][]
+#       - [ragna.assistants.CommandLight][]
 #     - [Google](https://ai.google.dev/)
-#         - [ragna.assistants.GeminiPro][]
-#         - [ragna.assistants.GeminiUltra][]
+#       - [ragna.assistants.GeminiPro][]
+#       - [ragna.assistants.GeminiUltra][]
 #     - [OpenAI](https://openai.com/)
-#         - [ragna.assistants.Gpt35Turbo16k][]
-#         - [ragna.assistants.Gpt4][]
+#       - [ragna.assistants.Gpt35Turbo16k][]
+#       - [ragna.assistants.Gpt4][]
 
 from ragna import assistants
 
@@ -133,7 +133,7 @@ chat = (
         json={
             "name": "Tutorial REST API",
             "documents": [document],
-            "source_storage": "Ragna/DemoSourceStorage",
+            "source_storage": source_storages.RagnaDemoSourceStorage.display_name(),
             "assistant": DemoStreamingAssistant.display_name(),
             "params": {},
         },
@@ -177,3 +177,9 @@ print(json.dumps(chunks[1], indent=2))
 # Joining the chunks together results in the full message.
 
 print("".join(chunk["content"] for chunk in chunks))
+
+# %%
+# Before we close the tutorial, let's stop the REST API and have a look at what would
+# have printed in the terminal if we had started it the regular way.
+
+rest_api.stop()
