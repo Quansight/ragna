@@ -22,3 +22,4 @@ dependencies:
       - mkdocs-gen-files
       - material-plausible-plugin
       - mkdocs-gallery >=0.10
+      - mdx_truly_sane_lists
