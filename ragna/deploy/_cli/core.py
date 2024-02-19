@@ -3,7 +3,6 @@ import sys
 import time
 from pathlib import Path
 from typing import Annotated, Optional
-from urllib.parse import urlsplit
 
 import httpx
 import rich
@@ -80,15 +79,7 @@ def api(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
 ) -> None:
-    components = urlsplit(config.api.url)
-    if components.hostname is None or components.port is None:
-        # TODO: make this part of the config validation
-        rich.print(f"Unable to extract hostname and port from {config.api.url}.")
-        raise typer.Exit(1)
-
-    uvicorn.run(
-        api_app(config), host=components.hostname, port=components.port or 31476
-    )
+    uvicorn.run(api_app(config), host=config.api.hostname, port=config.api.port)
 
 
 @app.command(help="Start the UI.")

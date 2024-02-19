@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, Callable, Type, TypeVar, Union
+from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
 
 import tomlkit
 import tomlkit.container
@@ -13,7 +13,6 @@ from pydantic import (
     ImportString,
     model_validator,
 )
-from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -29,7 +28,7 @@ from ._authentication import Authentication
 T = TypeVar("T")
 
 
-class AfterModelValidateDefaultFactory:
+class AfterModelValidateDefaultFactory(Generic[T]):
     """This class exists for a specific use case:
 
     - We have values for which we need the validated config to compute the default,
@@ -39,10 +38,10 @@ class AfterModelValidateDefaultFactory:
       `str` vs. `Optional[str]`.
     """
 
+    make_default: Callable[[Config], T]
+
     @classmethod
-    def make(
-        cls, *, source_type: Type[T], make_default: Callable[[ConfigBase], T]
-    ) -> FieldInfo:
+    def make(cls, *, source_type: Type[T], make_default: Callable[[Config], T]) -> Any:
         """Creates a default sentinel that is resolved after the config is validated.
 
         This is achieved by creating a new type at runtime that bases the `source_type`.
@@ -115,7 +114,7 @@ class ConfigBase(BaseSettings):
             self._set_multiline_array(child)
 
 
-def make_default_origins(config):
+def make_default_origins(config: Config) -> list[str]:
     return [f"http://{config.ui.hostname}:{config.ui.port}"]
 
 
