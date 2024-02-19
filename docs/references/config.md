@@ -11,9 +11,9 @@ The CLI option takes precedence over the environment variable.
 
 There are two main ways to generate a configuration file:
 
-1. Running `ragna init` in a terminal starts an interactive wizard that guides you through
-   the generation. The example configuration below is the result of choosing the first
-   option the wizard offers you.
+1. Running `ragna init` in a terminal starts an interactive wizard that guides you
+   through the generation. The example configuration below is the result of choosing the
+   first option the wizard offers you.
 2. The configuration can also be created programmatically from Python. The example
    configuration below is the result of the following snippet.
 
@@ -59,7 +59,7 @@ assistants = [
 is equivalent to
 `RAGNA_COMPONENTS_ASSISTANTS='["ragna.assistants.RagnaDemoAssistant"]'`.
 
-## Reference
+## Configuration options
 
 ### `local_cache_root`
 
@@ -96,8 +96,8 @@ to connect to the REST API. The URL of the web UI is required for it to function
 #### `database_url`
 
 URL of a SQL database that will be used to store the Ragna state. See
-[this reference](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls) on
-how to format the URL.
+[SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls)
+on how to format the URL.
 
 #### `root_path`
 
