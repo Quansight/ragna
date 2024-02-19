@@ -14,7 +14,7 @@ runs:
 
   steps:
     - name: Setup mambaforge and development environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
@@ -34,7 +34,7 @@ runs:
 
     - name: Restore conda environment
       id: cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ env.CONDA }}/envs
         key:
