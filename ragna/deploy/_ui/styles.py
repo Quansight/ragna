@@ -77,30 +77,7 @@ def add_modifier(
 
 
 """
-CSS constants
-"""
-
-MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
-
-# set modal height
-CONFIG_MODAL_MIN_HEIGHT = 610
-CONFIG_MODAL_MAX_HEIGHT = 850
-CONFIG_MODAL_WIDTH = 800
-
-WELCOME_MODAL_HEIGHT = 275
-WELCOME_MODAL_WIDTH = 530
-
-
-CSS_VARS = """
-:root {
-    --body-font: 'Inter', sans-serif !important;
-    --accent-color: {{MAIN_COLOR}} !important;
-}
-""".replace("{{MAIN_COLOR}}", MAIN_COLOR)
-
-
-"""
-CSS and UI Helpers
+CSS helpers, constants and UI Helpers
 """
 
 
@@ -116,6 +93,26 @@ def css(selectors: Union[str, Iterable[str]], declarations: dict[str, str]) -> s
             "}",
         ]
     )
+
+
+MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
+
+# set modal height
+CONFIG_MODAL_MIN_HEIGHT = 610
+CONFIG_MODAL_MAX_HEIGHT = 850
+CONFIG_MODAL_WIDTH = 800
+
+WELCOME_MODAL_HEIGHT = 275
+WELCOME_MODAL_WIDTH = 530
+
+
+CSS_VARS = css(
+    ":root",
+    {
+        "--body-font": "'Inter', sans-serif !important",
+        "--accent-color": f"{MAIN_COLOR} !important",
+    },
+)
 
 
 message_loading_indicator = f""" 
