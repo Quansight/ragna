@@ -59,9 +59,9 @@ def apply_design_modifiers():
     css_filepaths = []
     for dir, classes in css_modifiers.items():
         for cls in classes:
-            css_filename = f"{cls.__name__.lower()}.css"
-            add_modifier(cls, f"css/{dir}/{css_filename}")
-            css_filepaths.append(f"css/{dir}/{css_filename}")
+            css_filepath = f"css/{dir}/{cls.__name__.lower()}.css"
+            add_modifier(cls, css_filepath)
+            css_filepaths.append(css_filepath)
 
     return css_filepaths
 
