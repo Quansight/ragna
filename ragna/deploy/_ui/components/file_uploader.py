@@ -62,7 +62,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     _child_config = {
         "custom_js": "template",
         "uploaded_documents_json": "template",
-        "allowed_documents_str": "literal",
+        "allowed_documents_str": "template",
     }
 
     _template = """
