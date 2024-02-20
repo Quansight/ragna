@@ -152,10 +152,12 @@ class Config(ConfigBase):
     local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
         default_factory=ragna.local_root
     )
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
+
     authentication: ImportString[
         type[Authentication]
     ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [
         "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
     ]

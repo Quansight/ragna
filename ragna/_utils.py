@@ -19,6 +19,17 @@ def make_directory(path: Union[str, Path]) -> Path:
 
 
 def local_root(path: Optional[Union[str, Path]] = None) -> Path:
+    """Get or set the local root directory Ragna uses for storing files.
+
+    Defaults to the value of the `RAGNA_LOCAL_ROOT` environment variable or otherwise to
+    `~/.cache/ragna`.
+
+    Args:
+        path: If passed, this is set as new local root directory.
+
+    Returns:
+        Ragnas local root directory.
+    """
     global _LOCAL_ROOT
     if path is not None:
         _LOCAL_ROOT = make_directory(path)
