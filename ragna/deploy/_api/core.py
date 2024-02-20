@@ -4,7 +4,16 @@ from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
 import sse_starlette
-from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -47,7 +56,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def get_component(display_name: str) -> Component:
         component = components_map.get(display_name)
         if component is None:
-            raise RagnaException("Unknown component", display_name=display_name)
+            raise RagnaException(
+                "Unknown component",
+                display_name=display_name,
+                http_status_code=status.HTTP_404_NOT_FOUND,
+                http_detail=RagnaException.MESSAGE,
+            )
 
         return component
 

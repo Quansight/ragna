@@ -1,4 +1,5 @@
 import pytest
+from fastapi import status
 from fastapi.testclient import TestClient
 
 from ragna import assistants
@@ -53,3 +54,51 @@ def test_ignore_unavailable_components_at_least_one():
             config=config,
             ignore_unavailable_components=True,
         )
+
+
+def test_unknown_component(tmp_local_root):
+    config = Config(local_cache_root=tmp_local_root)
+
+    document_root = config.local_cache_root / "documents"
+    document_root.mkdir()
+    document_path = document_root / "test.txt"
+    with open(document_path, "w") as file:
+        file.write("!\n")
+
+    with TestClient(
+        app(config=Config(), ignore_unavailable_components=False)
+    ) as client:
+        authenticate(client)
+
+        document_upload = (
+            client.post("/document", json={"name": document_path.name})
+            .raise_for_status()
+            .json()
+        )
+        document = document_upload["document"]
+        assert document["name"] == document_path.name
+
+        parameters = document_upload["parameters"]
+        with open(document_path, "rb") as file:
+            client.request(
+                parameters["method"],
+                parameters["url"],
+                data=parameters["data"],
+                files={"file": file},
+            )
+
+        response = client.post(
+            "/chats",
+            json={
+                "name": "test-chat",
+                "source_storage": "unknown_source_storage",
+                "assistant": "unknown_assistant",
+                "params": {},
+                "documents": [document],
+            },
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+        error = response.json()["error"]
+        assert "Unknown component" in error["message"]
