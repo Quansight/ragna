@@ -1,13 +1,13 @@
 import json
-import os
 
 import httpx_sse
 import pytest
 from fastapi.testclient import TestClient
 
-from ragna.core._utils import default_user
 from ragna.deploy import Config
 from ragna.deploy._api import app
+
+from .utils import authenticate
 
 
 @pytest.mark.parametrize("stream_answer", [True, False])
@@ -26,22 +26,8 @@ def check_api(config, *, stream_answer):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with TestClient(app(config)) as client:
-        username = default_user()
-        token = (
-            client.post(
-                "/token",
-                data={
-                    "username": username,
-                    "password": os.environ.get(
-                        "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-                    ),
-                },
-            )
-            .raise_for_status()
-            .json()
-        )
-        client.headers["Authorization"] = f"Bearer {token}"
+    with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
+        authenticate(client)
 
         assert client.get("/chats").raise_for_status().json() == []
 

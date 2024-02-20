@@ -79,6 +79,15 @@ def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assign
 def api(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+            )
+        ),
+    ] = False,
 ) -> None:
     components = urlsplit(config.api.url)
     if components.hostname is None or components.port is None:
@@ -87,7 +96,11 @@ def api(
         raise typer.Exit(1)
 
     uvicorn.run(
-        api_app(config), host=components.hostname, port=components.port or 31476
+        api_app(
+            config=config, ignore_unavailable_components=ignore_unavailable_components
+        ),
+        host=components.hostname,
+        port=components.port or 31476,
     )
 
 
@@ -102,6 +115,16 @@ def ui(
             show_default="Start if the API is not served at the configured URL.",
         ),
     ] = None,
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+                "This option as no effect if --no-start-api is used."
+            )
+        ),
+    ] = False,
 ) -> None:
     def check_api_available() -> bool:
         try:
@@ -121,6 +144,7 @@ def ui(
                 "api",
                 "--config",
                 config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
+                f"--{'' if ignore_unavailable_components else 'no-'}ignore-unavailable-components",
             ],
             stdout=sys.stdout,
             stderr=sys.stderr,
