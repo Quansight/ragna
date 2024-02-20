@@ -134,7 +134,7 @@ class App(param.Parameterized):
             admin=True,
             start=True,
             location=True,
-            show=False,
+            show=True,
             keep_alive=30 * 1000,  # 30s
             autoreload=True,
             profiler="pyinstrument",

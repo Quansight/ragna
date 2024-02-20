@@ -8,6 +8,9 @@ except ModuleNotFoundError:
 
     __version__ = "UNKNOWN"
 
-from . import assistants, core, deploy, source_storages
 from ._utils import local_root
+
+# isort: split
+
+from . import assistants, core, deploy, source_storages
 from .core import Rag

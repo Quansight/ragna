@@ -4,6 +4,7 @@ channels:
 dependencies:
   - python =3.9
   - pip
+  - git-lfs
   - pip:
       - python-dotenv
       - boto3
@@ -22,3 +23,4 @@ dependencies:
       - mkdocs-gen-files
       - material-plausible-plugin
       - mktestdocs
+      - mdx_truly_sane_lists

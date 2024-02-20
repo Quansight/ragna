@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 
 import ragna
 import ragna.core
+from ragna._compat import aiter, anext
 from ragna._utils import handle_localhost_origins
 from ragna.core import Component, Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
@@ -107,10 +108,7 @@ def app(config: Config) -> FastAPI:
             ],
         )
 
-    database_url = config.api.database_url
-    if database_url == "memory":
-        database_url = "sqlite://"
-    make_session = database.get_sessionmaker(database_url)
+    make_session = database.get_sessionmaker(config.api.database_url)
 
     @contextlib.contextmanager
     def get_session() -> Iterator[database.Session]:
@@ -241,27 +239,34 @@ def app(config: Config) -> FastAPI:
             )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-        core_answer = await core_chat.answer(prompt, stream=True)
+        core_answer = await core_chat.answer(prompt, stream=stream)
 
         if stream:
-            message_chunk = schemas.Message(
-                content="",
-                role=core_answer.role,
-                sources=[
-                    schemas.Source.from_core(source) for source in core_answer.sources
-                ],
-            )
 
             async def message_chunks() -> AsyncIterator[sse_starlette.ServerSentEvent]:
-                chunks = []
-                async for chunk in core_answer:
-                    chunks.append(chunk)
-                    message_chunk.content = chunk
-                    yield sse_starlette.ServerSentEvent(message_chunk.model_dump_json())
+                core_answer_stream = aiter(core_answer)
+                content_chunk = await anext(core_answer_stream)
+
+                answer = schemas.Message(
+                    content=content_chunk,
+                    role=core_answer.role,
+                    sources=[
+                        schemas.Source.from_core(source)
+                        for source in core_answer.sources
+                    ],
+                )
+                yield sse_starlette.ServerSentEvent(answer.model_dump_json())
+
+                # Avoid sending the sources multiple times
+                answer_chunk = answer.model_copy(update=dict(sources=None))
+                content_chunks = [answer_chunk.content]
+                async for content_chunk in core_answer_stream:
+                    content_chunks.append(content_chunk)
+                    answer_chunk.content = content_chunk
+                    yield sse_starlette.ServerSentEvent(answer_chunk.model_dump_json())
 
                 with get_session() as session:
-                    answer = message_chunk
-                    answer.content = "".join(chunks)
+                    answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
 
@@ -269,7 +274,7 @@ def app(config: Config) -> FastAPI:
                 message_chunks()
             )
         else:
-            answer = schemas.Message.from_core(await core_chat.answer(prompt))
+            answer = schemas.Message.from_core(core_answer)
 
             with get_session() as session:
                 chat.messages.append(answer)
