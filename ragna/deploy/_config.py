@@ -123,7 +123,10 @@ class ApiConfig(ConfigBase):
 
     hostname: str = "localhost"
     port: int = 31476
-    url: str = "http://localhost:31476"
+    url: str = AfterModelValidateDefaultFactory.make(
+        source_type=str,
+        make_default=lambda config: f"http://{config.api.hostname}:{config.api.port}",
+    )
     origins: list[str] = AfterModelValidateDefaultFactory.make(
         source_type=list, make_default=make_default_origins
     )

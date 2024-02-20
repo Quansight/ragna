@@ -159,11 +159,16 @@ def _select_components(
     module: ModuleType,
     base_cls: Type[T],
 ) -> list[Type[T]]:
-    components = [
-        obj
-        for obj in module.__dict__.values()
-        if isinstance(obj, type) and issubclass(obj, base_cls) and obj is not base_cls
-    ]
+    components = sorted(
+        (
+            obj
+            for obj in module.__dict__.values()
+            if isinstance(obj, type)
+            and issubclass(obj, base_cls)
+            and obj is not base_cls
+        ),
+        key=lambda component: component.display_name(),
+    )
     return cast(
         list[Type[T]],
         questionary.checkbox(
@@ -262,13 +267,13 @@ def _wizard_common() -> Config:
         )
 
     config.api.database_url = questionary.text(
-        "Which database do you want to use?",
+        "What is the URL of the SQL database?",
         default=Config(local_root=config.local_root).api.database_url,
         qmark=QMARK,
     ).unsafe_ask()
 
     config.api.url = questionary.text(
-        "At what URL do you want the Ragna REST API to be served?",
+        "At which URL will the Ragna REST API be served?",
         default=Config(
             api=dict(  # type: ignore[arg-type]
                 hostname=config.api.hostname,
@@ -277,6 +282,19 @@ def _wizard_common() -> Config:
         ).api.url,
         qmark=QMARK,
     ).unsafe_ask()
+
+    config.api.origins = config.ui.origins = [
+        questionary.text(
+            "At which URL will the Ragna web UI be served?",
+            default=Config(
+                ui=dict(  # type: ignore[arg-type]
+                    hostname=config.ui.hostname,
+                    port=config.ui.port,
+                )
+            ).api.origins[0],
+            qmark=QMARK,
+        ).unsafe_ask()
+    ]
 
     return config
 
