@@ -185,7 +185,7 @@ class Config(ConfigBase):
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
-            raise RagnaException(f"{path} already exist.")
+            raise RagnaException(f"{path} already exists.")
 
         with open(path, "w") as file:
             file.write(str(self))
