@@ -39,6 +39,7 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - mdx_truly_sane_lists
 
 plugins:
   - search
@@ -79,14 +80,13 @@ nav:
       - "tutorials/python-api.md"
       - "tutorials/rest-api.md"
       - "tutorials/web-app.md"
-  - How-to:
-      - "how-tos/set-configuration.md"
   - Community:
       - "community/welcome.md"
       - "community/contribute.md"
   - References:
       - "references/python-api.md"
-      - "references/rest-api.md"
       - "references/cli.md"
+      - "references/config.md"
+      - "references/rest-api.md"
       - "references/faq.md"
       - "references/release-notes.md"
