@@ -24,6 +24,9 @@ ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA
 RUN pip install --progress-bar=off --no-deps .
 
 WORKDIR /var/ragna
+# See https://github.com/Quansight/ragna/issues/329
+ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb.config
+
 COPY ragna-docker.toml ragna.toml
 
 ENTRYPOINT ["ragna"]
