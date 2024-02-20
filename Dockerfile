@@ -27,4 +27,4 @@ WORKDIR /var/ragna
 COPY ragna-docker.toml ragna.toml
 
 ENTRYPOINT ["ragna"]
-CMD ["ui"]
+CMD ["ui", "--ignore-unavailable-components"]
