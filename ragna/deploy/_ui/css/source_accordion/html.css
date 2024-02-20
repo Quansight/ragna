@@ -1,0 +1,16 @@
+:host(.card-title) {
+  height: var(--ragna-accordion-header-height);
+  margin: 0px;
+}
+
+:host(.card-title) div {
+  height: var(--ragna-accordion-header-height);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+:host(.card-title) h3 {
+  font-weight: normal;
+}

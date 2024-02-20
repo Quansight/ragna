@@ -1,0 +1,44 @@
+:host(.modal_configuration_int_slider) {
+  --handle-width: 16px !important;
+  --handle-height: 16px !important;
+}
+
+:host(.modal_configuration_int_slider) {
+  margin-top: 20px;
+}
+
+:host(.modal_configuration_int_slider) .bk-slider-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+:host(.modal_configuration_int_slider) .bk-slider-value {
+  font-weight: normal;
+}
+
+:host(.modal_configuration_int_slider) .noUi-target {
+  border-color: var(--accent-fill-active);
+  height: 4px;
+}
+
+:host(.modal_configuration_int_slider) .noUi-handle {
+  border-radius: 50%;
+  top: -6px !important;
+}
+
+:host(.modal_configuration_int_slider) .noUi-handle,
+:host(.modal_configuration_int_slider) .noUi-connects {
+  background-color: var(--clear-button-active);
+}
+
+:host(.modal_configuration_int_slider) .noUi-target[disabled="true"] {
+  border-color: darkgray;
+}
+
+:host(.modal_configuration_int_slider) .noUi-target[disabled="true"] .noUi-connect {
+  background-color: darkgray !important;
+}
+
+:host(.modal_configuration_int_slider) :host(.disabled) div.bk-slider-title {
+  color: darkgray !important;
+}

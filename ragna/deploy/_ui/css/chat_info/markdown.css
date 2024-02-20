@@ -1,0 +1,26 @@
+:host(.chat_info_markdown) {
+  width: 100%;
+}
+
+:host(.chat_info_markdown) .pills_list {
+  display: grid;
+  grid-auto-flow: row;
+  row-gap: 10px;
+  max-height: 200px;
+  overflow: scroll;
+}
+
+:host(.chat_info_markdown) .chat_document_pill {
+  background-color: rgb(241, 241, 241);
+  margin-left: 5px;
+  margin-right: 5px;
+  padding: 5px 15px;
+  border-radius: 10px;
+  color: var(--accent-color);
+  width: fit-content;
+  grid-column: span 1;
+}
+
+:host(.chat_info_markdown) ul {
+  list-style-type: none;
+}

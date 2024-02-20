@@ -1,0 +1,13 @@
+:host(.central-view-main-column) {
+  background-color: #f9f9f9;
+  height: 100%;
+  max-width: 100%;
+  margin-left: min(15px, 2%);
+  border-left: 1px solid #eeeeee;
+  border-right: 1px solid #eeeeee;
+}
+
+/* This is a patch for a side effect. Move this somewhere else */
+:host(.chat-feed-log) .scroll-button {
+  display: none;
+}

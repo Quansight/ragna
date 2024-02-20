@@ -1,0 +1,12 @@
+:host(.solid) .bk-btn.bk-btn-primary {
+  background-color: var(--accent-fill-rest);
+  border-color: var(--accent-fill-rest);
+  color: var(--foreground-on-accent-rest);
+  font-size: 14px;
+}
+
+:host(.solid) .bk-btn.bk-btn-primary:hover {
+  background-color: var(--accent-fill-hover);
+  border-color: var(--accent-fill-hover);
+  color: var(--foreground-on-accent-hover);
+}

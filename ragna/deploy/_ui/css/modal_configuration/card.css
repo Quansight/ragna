@@ -1,0 +1,5 @@
+:host(.modal_configuration_advanced_card) {
+  border: none !important;
+  outline: none !important;
+  background-color: unset !important;
+}

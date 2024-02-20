@@ -19,7 +19,7 @@ class ModalWelcome(pn.viewable.Viewer):
         close_button = pn.widgets.Button(
             name="Okay, let's go",
             button_type="primary",
-            stylesheets=[""" :host { width:35%; margin-left:60%; }"""],
+            css_classes=["modal_welcome_close_button"],
         )
         close_button.on_click(self.did_click_on_close_button)
 

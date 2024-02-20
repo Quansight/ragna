@@ -1,0 +1,37 @@
+:host(.left_sidebar_header) {
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #eeeeee;
+
+  width: 100%;
+  height: 54px;
+  margin: 0;
+}
+
+:host(.left_sidebar_header) div {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+:host(.left_sidebar_header) img {
+  margin: 5px;
+  margin-left: 12px;
+}
+
+:host(.left_sidebar_header) span {
+  margin-left: 20px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+:host(.left_sidebar_footer) {
+  height: 64px;
+  width: 100%;
+  margin: 0;
+}
+
+:host(.left_sidebar_footer) .user_block {
+  height: 64px;
+  background-color: rgb(248, 248, 248);
+  border-top: solid 1px rgb(248, 248, 248);
+}

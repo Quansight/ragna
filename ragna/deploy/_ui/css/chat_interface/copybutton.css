@@ -1,0 +1,11 @@
+div.container {
+  display: flex;
+  flex-direction: row;
+  margin: 7px 10px;
+
+  color: gray;
+}
+
+svg {
+  margin-right: 5px;
+}

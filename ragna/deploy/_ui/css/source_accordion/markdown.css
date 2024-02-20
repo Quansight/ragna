@@ -1,0 +1,7 @@
+/* Styles the content of the sources content (the expanding areas of the Accordion).
+This fixes a small margin-top that is added by default and that leads to overflowing content 
+in some cases.
+*/
+:host(.source-content) p:nth-of-type(1) {
+  margin-top: 0px;
+}

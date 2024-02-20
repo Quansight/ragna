@@ -1,0 +1,6 @@
+:host(.right_sidebar_header) {
+  background-color: rgb(238, 238, 238);
+  margin: 0;
+  padding-left: 15px !important;
+  width: 100%;
+}

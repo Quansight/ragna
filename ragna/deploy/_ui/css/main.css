@@ -1,0 +1,42 @@
+* {
+  font-family: var(--body-font);
+}
+
+.main {
+  padding: 0px !important;
+}
+
+.pn-wrapper {
+  padding: 0px;
+}
+
+div.card-margin {
+  margin: 0px !important;
+  height: 100% !important;
+}
+
+/* Hide the whole header */
+
+#header {
+  display: none !important;
+}
+
+div#content {
+  height: calc(100vh);
+}
+
+/* Fix the size of the modal */
+#pn-Modal {
+  --dialog-width: 800px !important;
+  --dialog-height: 500px !important;
+}
+
+/* Hide the default close button of the modal */
+.pn-modal-close {
+  display: none !important;
+}
+
+/* Hide the fullscreen button of the template */
+span.fullscreen-button {
+  display: none;
+}

@@ -1,0 +1,9 @@
+:host(.chat-interface-input-widget) input[type="text"] {
+  border: none !important;
+  box-shadow: 0px 0px 6px 0px rgba(0, 0, 0, 0.2);
+  padding: 10px 10px 10px 15px;
+}
+
+:host(.chat-interface-input-widget) input[type="text"]:focus {
+  box-shadow: 0px 0px 8px 0px rgba(0, 0, 0, 0.3);
+}

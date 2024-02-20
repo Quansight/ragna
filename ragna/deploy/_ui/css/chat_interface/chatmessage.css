@@ -1,0 +1,25 @@
+:host .right,
+:host .center {
+  width: 100% !important;
+}
+
+:host .left {
+  height: unset !important;
+  min-height: unset !important;
+}
+
+:host div.bk-panel-models-layout-Column:not(.left) {
+  width: 100% !important;
+}
+
+:host .message {
+  width: calc(100% - 15px);
+  box-shadow: unset;
+  font-size: unset;
+  background-color: unset;
+}
+
+:host .avatar {
+  margin-top: 0px;
+  box-shadow: unset;
+}
