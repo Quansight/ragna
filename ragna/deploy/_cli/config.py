@@ -8,6 +8,7 @@ import pydantic
 import questionary
 import rich
 import typer
+from rich.markup import escape
 from rich.table import Table
 
 import ragna
@@ -213,7 +214,7 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
             f"$ pip install {' '.join(unmet_package_requirements)}\n\n"
             f"Optionally, you can also install Ragna with all optional dependencies"
             f"for the builtin components\n\n"
-            f"$ pip install 'ragna\[all]'"
+            f"$ pip install '{escape('ragna[all]')}"
         )
 
     unmet_env_var_requirements = sorted(
@@ -251,18 +252,11 @@ def _wizard_common() -> Config:
         qmark=QMARK,
     ).unsafe_ask()
 
-    if questionary.confirm(
-        "Do you want to use a SQL database to persist the chats between runs?",
-        default=True,
+    config.api.database_url = questionary.text(
+        "What is the URL of the database?",
+        default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
         qmark=QMARK,
-    ).unsafe_ask():
-        config.api.database_url = questionary.text(
-            "What is the URL of the database?",
-            default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
-            qmark=QMARK,
-        ).unsafe_ask()
-    else:
-        config.api.database_url = "memory"
+    ).unsafe_ask()
 
     config.ui.url = questionary.text(
         "At what URL do you want the ragna web UI to be served?",

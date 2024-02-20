@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 from typing import Type, Union
 
 import tomlkit
+import tomlkit.container
+import tomlkit.items
 from pydantic import Field, ImportString, field_validator
 from pydantic_settings import (
     BaseSettings,
@@ -11,6 +14,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+import ragna
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
@@ -59,7 +63,8 @@ class ApiConfig(ConfigBase):
     url: str = "http://127.0.0.1:31476"
     # FIXME: this needs to be dynamic for the UI url
     origins: list[str] = ["http://127.0.0.1:31477"]
-    database_url: str = "memory"
+    # FIXME: this needs to be dynamic from the local cache root
+    database_url: str = f"sqlite:///{ragna.local_root()}/ragna.db"
     root_path: str = ""
 
 
@@ -76,10 +81,7 @@ class Config(ConfigBase):
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
 
-    # FIXME: make this local root and use that as default factory
-    local_cache_root: Path = Field(
-        default_factory=lambda: Path.home() / ".cache" / "ragna"
-    )
+    local_cache_root: Path = Field(default_factory=ragna.local_root)
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
 
@@ -108,10 +110,28 @@ class Config(ConfigBase):
         with open(path) as file:
             return cls.model_validate(tomlkit.load(file).unwrap())
 
+    def __str__(self) -> str:
+        toml = tomlkit.item(self.model_dump(mode="json"))
+        self._set_multiline_array(toml)
+        return toml.as_string()
+
+    def _set_multiline_array(self, item: tomlkit.items.Item) -> None:
+        if isinstance(item, tomlkit.items.Array):
+            item.multiline(True)
+
+        if not isinstance(item, tomlkit.items.Table):
+            return
+
+        container = item.value
+        for child in itertools.chain(
+            (value for _, value in container.body), container.value.values()
+        ):
+            self._set_multiline_array(child)
+
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
             raise RagnaException(f"{path} already exist.")
 
         with open(path, "w") as file:
-            tomlkit.dump(self.model_dump(mode="json"), file)
+            file.write(str(self))

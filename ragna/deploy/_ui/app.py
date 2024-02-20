@@ -48,7 +48,7 @@ class App(param.Parameterized):
             # main_layout=None
             raw_css=[ui.APP_RAW],
             favicon="imgs/ragna_logo.svg",
-            css_files=["https://rsms.me/", "https://rsms.me/inter/inter.css"],
+            css_files=["https://rsms.me/inter/inter.css"],
         )
 
         template.modal.objects = [
@@ -121,7 +121,7 @@ class App(param.Parameterized):
             admin=True,
             start=True,
             location=True,
-            show=False,
+            show=True,
             keep_alive=30 * 1000,  # 30s
             autoreload=True,
             profiler="pyinstrument",
