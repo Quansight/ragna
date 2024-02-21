@@ -34,8 +34,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     rag = Rag()  # type: ignore[var-annotated]
     components_map: dict[str, Component] = {}
     for components in [config.components.source_storages, config.components.assistants]:
+        components = cast(list[Type[Component]], components)
         at_least_one = False
-        for component in components:  # type: ignore[attr-defined]
+        for component in components:
             loaded_component = rag._load_component(
                 component, ignore_unavailable=ignore_unavailable_components
             )
