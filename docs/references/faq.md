@@ -1,5 +1,36 @@
 # Frequently asked questions
 
+## Why should I use Ragna and not X?
+
+!!! tip "TL;DR"
+
+    Ragna is the only tool out there that specialized in orchestrating RAG uses cases with arbitrary components while simultaneously offering a Python API, a
+    REST API, as well as web UI for that.
+
+!!! note
+
+    ALthough we try to be objective as possible, this section is inheritly biased. If
+    you are the author of a package we don't mention below but think we should or your
+    package is mentiond but you feel we have mischaracterized it, please
+    [get in touch](https://github.com/Quansight/ragna/discussions).
+
+After the emergence of ChatGPT in November of 2022 the field of LLMs exploded. Today
+there are many providers for LLM REST APIs out there. And with that also came a plethora
+of Python packages to build applications around the provided APIs. We cannot summarize
+the whole field here so we stick to large projects in the Python ecosystem for
+comparison.
+
+| library or application                                |        RAG         | arbitrary components |     Python API     |      REST API      |       web UI       |
+| ----------------------------------------------------- | :----------------: | :------------------: | :----------------: | :----------------: | :----------------: |
+| Ragna                                                 | :heavy_check_mark: |  :heavy_check_mark:  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| [LangChain](https://www.langchain.com/)               | :heavy_check_mark: |  :heavy_check_mark:  | :heavy_check_mark: |        :x:         |        :x:         |
+| [Langroid](https://langroid.github.io/langroid/)      | :heavy_check_mark: |  :heavy_check_mark:  | :heavy_check_mark: |        :x:         |        :x:         |
+| [LlamaIndex](https://www.llamaindex.ai/)              | :heavy_check_mark: |  :heavy_check_mark:  | :heavy_check_mark: |        :x:         |        :x:         |
+| [Ollama](https://ollama.com/)                         |        :x:         |         :x:          | :heavy_check_mark: | :heavy_check_mark: |        :x:         |
+| [vLLM](https://github.com/vllm-project/vllm)          |        :x:         |         :x:          | :heavy_check_mark: | :heavy_check_mark: |        :x:         |
+| [PrivateGPT](https://privategpt.dev)                  | :heavy_check_mark: |         :x:          |        :x:         | :heavy_check_mark: | :heavy_check_mark: |
+| [LocalGPT](https://github.com/PromtEngineer/localGPT) | :heavy_check_mark: |         :x:          |        :x:         | :heavy_check_mark: | :heavy_check_mark: |
+
 ## Where do I get API keys for the builtin assistants?
 
 ### [OpenAI](https://openai.com/)
