@@ -40,7 +40,7 @@ class RestApi:
         )
         config_path = str(deploy_directory / "ragna.toml")
 
-        config.local_cache_root = deploy_directory
+        config.local_root = deploy_directory
 
         sys.modules["__main__"].__file__ = inspect.getouterframes(
             inspect.currentframe()
@@ -51,7 +51,7 @@ class RestApi:
             #  to source storages.
             file.write("from ragna import assistants\n\n")
 
-            for assistant in config.components.assistants:
+            for assistant in config.assistants:
                 if assistant.__module__ == "__main__":
                     file.write(f"{inspect.getsource(assistant)}\n\n")
                     assistant.__module__ = custom_module

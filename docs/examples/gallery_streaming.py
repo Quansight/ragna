@@ -99,7 +99,7 @@ print("".join(chunks))
 
 from ragna.deploy import Config
 
-config = Config(components={"assistants": [DemoStreamingAssistant]})
+config = Config(assistants=[DemoStreamingAssistant])
 
 rest_api = documentation_helpers.RestApi()
 
