@@ -90,6 +90,11 @@ class CopyToClipboardButton(ReactiveHTML):
 
 
 class RagnaChatMessage(pn.chat.ChatMessage):
+    _stylesheets = [
+        *pn.chat.ChatMessage._stylesheets,
+        *message_stylesheets,
+    ]
+
     role: str = param.Selector(objects=["system", "user", "assistant"])
     sources = param.List(allow_None=True)
     on_click_source_info_callback = param.Callable(allow_None=True)
@@ -158,9 +163,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
         )
-        for val in message_stylesheets:
-            if val not in self._stylesheets:
-                self._stylesheets.append(val)
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
         return pn.Row(
