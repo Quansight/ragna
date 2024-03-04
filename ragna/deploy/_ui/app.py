@@ -30,10 +30,11 @@ RES = HERE / "resources"
 
 
 class App(param.Parameterized):
-    def __init__(self, *, url, api_url, origins):
+    def __init__(self, *, hostname, port, api_url, origins):
         super().__init__()
         ui.apply_design_modifiers()
-        self.url = url
+        self.hostname = hostname
+        self.port = port
         self.api_url = api_url
         self.origins = origins
 
@@ -117,7 +118,8 @@ class App(param.Parameterized):
         pn.serve(
             all_pages,
             titles=titles,
-            port=urlsplit(self.url).port,
+            address=self.hostname,
+            port=self.port,
             admin=True,
             start=True,
             location=True,
@@ -132,7 +134,8 @@ class App(param.Parameterized):
 
 def app(config: Config) -> App:
     return App(
-        url=config.ui.url,
+        hostname=config.ui.hostname,
+        port=config.ui.port,
         api_url=config.api.url,
         origins=handle_localhost_origins(config.ui.origins),
     )
