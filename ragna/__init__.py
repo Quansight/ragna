@@ -16,6 +16,7 @@ from . import assistants, core, deploy, source_storages
 from .core import Rag
 
 __all__ = [
+    "__version__",
     "Rag",
     "assistants",
     "core",
