@@ -110,7 +110,7 @@ def make_default_origins(config: Config) -> list[str]:
 class ApiConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_api_")
 
-    hostname: str = "localhost"
+    hostname: str = "127.0.0.1"
     port: int = 31476
     url: str = AfterConfigValidateDefault.make(
         lambda config: f"http://{config.api.hostname}:{config.api.port}",
@@ -125,7 +125,7 @@ class ApiConfig(ConfigBase):
 class UiConfig(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_ui_")
 
-    hostname: str = "localhost"
+    hostname: str = "127.0.0.1"
     port: int = 31477
     origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
 
