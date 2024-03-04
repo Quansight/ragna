@@ -91,8 +91,9 @@ ignore = ["E501"]
 [tool.ruff.per-file-ignores]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
-"*.ipynb" = ["E402"]
-
+# The examples often have imports below the top of the file to follow the narrative
+"docs/examples/**/*.py" = ["E402", "F704", "I001"]
+"docs/tutorials/**/*.py" = ["E402", "F704", "I001"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -101,12 +102,11 @@ testpaths = [
     "tests",
 ]
 filterwarnings = [
-#    "error",
-    # This is coming from the nested dependency
-    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
-    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
-    "ignore::DeprecationWarning:pkg_resources",
-    "ignore::DeprecationWarning:google.rpc",
+    "error",
+    # httpx 0.27.0 deprecated some functionality that the test client of starlette /
+    # FastApi use. This should be resolved by the next release of these libraries.
+    # See https://github.com/encode/starlette/issues/2524
+    "ignore:The 'app' shortcut is now deprecated:DeprecationWarning"
 ]
 xfail_strict = true
 
