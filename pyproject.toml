@@ -102,11 +102,10 @@ testpaths = [
 ]
 filterwarnings = [
     "error",
-    # This is coming from the nested dependency
-    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
-    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
-    "ignore::DeprecationWarning:pkg_resources",
-    "ignore::DeprecationWarning:google.rpc",
+    # httpx 0.27.0 deprecated some functionality that the test client of starlette /
+    # FastApi use. This should be resolved by the next release of these libraries.
+    # See https://github.com/encode/starlette/issues/2524
+    "ignore:The 'app' shortcut is now deprecated:DeprecationWarning"
 ]
 xfail_strict = true
 
