@@ -158,7 +158,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
         )
-        self._stylesheets.extend(message_stylesheets)
+        for val in message_stylesheets:
+            if val not in self._stylesheets:
+                self._stylesheets.append(val)
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
         return pn.Row(
