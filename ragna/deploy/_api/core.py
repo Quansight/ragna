@@ -200,6 +200,13 @@ def app(config: Config) -> FastAPI:
             database.add_chat(session, user=user, chat=chat)
             return chat
 
+    @app.get("/chat-identifiers")
+    async def get_chat_identifiers(
+        user: UserDependency
+    ) -> list[schemas.ChatIdentifier]:
+        with get_session() as session:
+            return database.get_chat_identifiers(session, user=user)
+
     @app.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
         with get_session() as session:
