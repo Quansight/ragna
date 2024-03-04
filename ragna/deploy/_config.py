@@ -28,7 +28,7 @@ from ._authentication import Authentication
 T = TypeVar("T")
 
 
-class AfterModelValidateDefaultFactory(Generic[T]):
+class AfterConfigValidateDefault(Generic[T]):
     """This class exists for a specific use case:
 
     - We have values for which we need the validated config to compute the default,
@@ -38,29 +38,18 @@ class AfterModelValidateDefaultFactory(Generic[T]):
       `str` vs. `Optional[str]`.
     """
 
-    make_default: Callable[[Config], T]
+    def __init__(self, make_default: Callable[[Config], T]) -> None:
+        self.make_default = make_default
 
     @classmethod
-    def make(cls, *, source_type: Type[T], make_default: Callable[[Config], T]) -> Any:
+    def make(cls, make_default: Callable[[Config], T]) -> Any:
         """Creates a default sentinel that is resolved after the config is validated.
 
-        This is achieved by creating a new type at runtime that bases the `source_type`.
-        The new type triggers the default value resolution in
-        `ConfigBase._resolve_default_sentinels`.
-
         Args:
-            source_type: Type of the field to create a sentinel for.
             make_default: Callable that takes the validated config and returns the
                 resolved value.
         """
-        return Field(
-            default_factory=type(
-                f"{source_type.__name__.title()}{cls.__name__}",
-                (cls, source_type),
-                dict(make_default=staticmethod(make_default)),
-            ),
-            validate_default=False,
-        )
+        return Field(default=cls(make_default), validate_default=False)
 
 
 class ConfigBase(BaseSettings):
@@ -92,7 +81,7 @@ class ConfigBase(BaseSettings):
             value = getattr(self, name)
             if isinstance(value, ConfigBase):
                 value._resolve_default_sentinels(config)
-            elif isinstance(value, AfterModelValidateDefaultFactory):
+            elif isinstance(value, AfterConfigValidateDefault):
                 setattr(self, name, value.make_default(config))
 
     def __str__(self) -> str:
@@ -123,16 +112,12 @@ class ApiConfig(ConfigBase):
 
     hostname: str = "localhost"
     port: int = 31476
-    url: str = AfterModelValidateDefaultFactory.make(
-        source_type=str,
-        make_default=lambda config: f"http://{config.api.hostname}:{config.api.port}",
+    url: str = AfterConfigValidateDefault.make(
+        lambda config: f"http://{config.api.hostname}:{config.api.port}",
     )
-    origins: list[str] = AfterModelValidateDefaultFactory.make(
-        source_type=list, make_default=make_default_origins
-    )
-    database_url: str = AfterModelValidateDefaultFactory.make(
-        source_type=str,
-        make_default=lambda config: f"sqlite:///{config.local_root}/ragna.db",
+    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
+    database_url: str = AfterConfigValidateDefault.make(
+        lambda config: f"sqlite:///{config.local_root}/ragna.db",
     )
     root_path: str = ""
 
@@ -142,9 +127,7 @@ class UiConfig(ConfigBase):
 
     hostname: str = "localhost"
     port: int = 31477
-    origins: list[str] = AfterModelValidateDefaultFactory.make(
-        source_type=list, make_default=make_default_origins
-    )
+    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
 
 
 class Config(ConfigBase):
