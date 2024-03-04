@@ -15,10 +15,10 @@
     [get in touch](https://github.com/Quansight/ragna/discussions).
 
 After the emergence of ChatGPT in November of 2022, the field of LLMs exploded. Today,
-there are many providers for LLM REST APIs out there. With these, we also have a plethora
-of Python packages to build applications around the provided APIs. We cannot summarize
-the whole field here, so we stick to large projects in the Python ecosystem for
-comparison.
+there are many providers for LLM REST APIs out there. With these, we also have a
+plethora of Python packages to build applications around the provided APIs. We cannot
+summarize the whole field here, so we stick to large projects in the Python ecosystem
+for comparison.
 
 | library or application                                |        RAG         | arbitrary components |     Python API     |      REST API      |       web UI       |
 | ----------------------------------------------------- | :----------------: | :------------------: | :----------------: | :----------------: | :----------------: |
