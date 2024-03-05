@@ -34,10 +34,104 @@
 ### Breaking Changes
 
 - As a result of the removal of the task queue, `ragna worker` is no longer needed and
-  was removed. The same applies to the `--start-worker` option of `ragna api`.
+  was removed. The same applies to the `--start-worker` option of `ragna api` and the
+  `queue_url` configuration option (see below).
 - The return type of [ragna.core.Assistant.answer][] changed from `str` to
   `Iterator[str]` / `AsyncIterator[str]`. To reflect that in the implementation, replace
   `return` with `yield`. To stream the response, `yield` multiple times.
+- We introduced a couple of changes to the configuration file.
+
+  - The top level `local_cache_root` option was renamed to `local_root` to align with
+    the new [ragna.local_root][] function.
+  - The `[core]` section was dissolved and its options merged into the top level. The
+    `queue_url` option was removed.
+  - The `authentication` option was moved from the `[api]` section to the top level.
+  - Both the `[api]` and `[ui]` section gained a `hostname` and `port` parameter that
+    are used to bind the application. The `url` option, previously used for the same
+    purpose, option was removed from the `[ui]` section. It was retained in the `[api]`
+    section, but now only indicates the URL the REST API can be contacted on, e.g. by
+    the web UI, and has no effect on how the REST API is bound.
+  - The default value of `database_url` in the `[api]` section changed to use a
+    persistent database by default. The `"memory"` option is no longer available. Use
+    `sqlite://` if you want to retain the non-persistent behavior.
+  - The `[api]` section gained a new [`root_path`](config.md#root_path) option to help
+    deploying Ragna behind a proxy. By default, the behavior does not change compared to
+    before.
+
+  Below you can find a comparison between two equivalent configuration files
+
+  <table>
+  <tr>
+  <td> v0.1.3 </td>
+  <td>
+
+  ```toml
+  local_cache_root = "/home/user/.cache/ragna"
+
+  [core]
+  queue_url = "memory"
+  document = "ragna.core.LocalDocument"
+  source_storages = [
+      "ragna.source_storages.Chroma",
+      ...
+  ]
+  assistants = [
+      "ragna.assistants.Claude",
+      ...
+  ]
+
+  [api]
+  url = "http://127.0.0.1:31476"
+  origins = ["http://127.0.0.1:31477"]
+  database_url = "memory"
+  authentication = "ragna.core.RagnaDemoAuthentication"
+
+  [ui]
+  url = "http://127.0.0.1:31477"
+  origins = ["http://127.0.0.1:31477"]
+  ```
+
+  </td>
+  </tr>
+  <tr>
+  <td> v0.2.0 </td>
+  <td>
+
+  ```toml
+  local_root = "/home/user/.cache/ragna"
+  authentication = "ragna.deploy.RagnaDemoAuthentication"
+  document = "ragna.core.LocalDocument"
+  source_storages = [
+      "ragna.source_storages.Chroma",
+      ...
+  ]
+  assistants = [
+      "ragna.assistants.Claude",
+      ...
+  ]
+
+  [api]
+  hostname = "127.0.0.1"
+  port = 31476
+  url = "http://127.0.0.1:31476"
+  origins = [
+      "http://127.0.0.1:31477",
+  ]
+  database_url = "sqlite://"
+  root_path = ""
+
+  [ui]
+  hostname = "127.0.0.1"
+  port = 31477
+  origins = [
+      "http://127.0.0.1:31477",
+  ]
+  ```
+
+  </td>
+  </tr>
+  </table>
+
 - The classes [ragna.deploy.Authentication][], [ragna.deploy.RagnaDemoAuthentication][],
   and [ragna.deploy.Config][] moved from the [ragna.core][] module to a new
   [ragna.deploy][] module.
@@ -60,9 +154,8 @@
   ```
 
   You can use the new [ragna.local_root][] function as replacement for
-  [`config.local_cache_root`](config.md).
+  [`config.local_root`](config.md) if needed.
 
-- config structure ADDME
 - The database scheme changed and is no longer compatible with the tables used in
   previous releases. The default database set by the configuration wizard is located at
   `~/.cache/ragna/ragna.db`. Please delete it. It will be created anew the next time the
