@@ -1,5 +1,5 @@
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import panel as pn
 import param
@@ -33,9 +33,10 @@ class App(param.Parameterized):
     def __init__(self, *, hostname, port, api_url, root_path, origins):
         super().__init__()
         ui.apply_design_modifiers()
+
         self.hostname = hostname
         self.port = port
-        self.api_url = f"{api_url}{root_path}"
+        self.api_url = urljoin(api_url, root_path)
         self.origins = origins
 
     def get_template(self):

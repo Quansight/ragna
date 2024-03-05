@@ -1,5 +1,6 @@
 import json
 from datetime import datetime
+from urllib.parse import urljoin
 
 import emoji
 import httpx
@@ -26,7 +27,9 @@ class ApiWrapper(param.Parameterized):
             # If no auth token is provided, we use the API base URL and only test the API is up.
             # else, we test the API is up *and* the token is valid.
             endpoint = (
-                api_url + "/components" if self.auth_token is not None else api_url
+                urljoin(api_url, "components")
+                if self.auth_token is not None
+                else api_url
             )
             httpx.get(
                 endpoint, headers={"Authorization": f"Bearer {self.auth_token}"}
@@ -79,7 +82,7 @@ class ApiWrapper(param.Parameterized):
     # Upload and related functions
     def upload_endpoints(self):
         return {
-            "informations_endpoint": f"{self.client.base_url}/document",
+            "informations_endpoint": urljoin(str(self.client.base_url), "document"),
         }
 
     async def start_and_prepare(

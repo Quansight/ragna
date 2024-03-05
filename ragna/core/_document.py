@@ -8,6 +8,7 @@ import time
 import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
+from urllib.parse import urljoin
 
 import jwt
 from pydantic import BaseModel
@@ -144,7 +145,8 @@ class LocalDocument(Document):
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[dict[str, Any], DocumentUploadParameters]:
-        url = f"{config.api.url}/document"
+        api_url = config.api.proxy_url or config.api.url
+        url = urljoin(urljoin(api_url, config.api.root_path), "document")
         data = {
             "token": jwt.encode(
                 payload={
