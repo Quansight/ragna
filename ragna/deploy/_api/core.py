@@ -21,14 +21,12 @@ from . import database, schemas
 
 
 def app(config: Config) -> FastAPI:
-    ragna.local_root(config.local_cache_root)
+    ragna.local_root(config.local_root)
 
     rag = Rag()  # type: ignore[var-annotated]
     components_map: dict[str, Component] = {
         component.display_name(): rag._load_component(component)
-        for component in itertools.chain(
-            config.components.source_storages, config.components.assistants
-        )
+        for component in itertools.chain(config.source_storages, config.assistants)
     }
 
     def get_component(display_name: str) -> Component:
@@ -100,11 +98,10 @@ def app(config: Config) -> FastAPI:
             documents=sorted(config.document.supported_suffixes()),
             source_storages=[
                 _get_component_json_schema(source_storage)
-                for source_storage in config.components.source_storages
+                for source_storage in config.source_storages
             ],
             assistants=[
-                _get_component_json_schema(assistant)
-                for assistant in config.components.assistants
+                _get_component_json_schema(assistant) for assistant in config.assistants
             ],
         )
 

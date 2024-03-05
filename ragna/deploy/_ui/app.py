@@ -30,12 +30,13 @@ RES = HERE / "resources"
 
 
 class App(param.Parameterized):
-    def __init__(self, *, config):
+    def __init__(self, *, hostname, port, api_url, root_path, origins):
         super().__init__()
         ui.apply_design_modifiers()
-        self.url = config.ui.url
-        self.api_url = f"{config.api.url}{config.api.root_path}"
-        self.origins = handle_localhost_origins(config.ui.origins)
+        self.hostname = hostname
+        self.port = port
+        self.api_url = f"{api_url}{root_path}"
+        self.origins = origins
 
     def get_template(self):
         template = pn.template.FastListTemplate(
@@ -117,7 +118,8 @@ class App(param.Parameterized):
         pn.serve(
             all_pages,
             titles=titles,
-            port=urlsplit(self.url).port,
+            address=self.hostname,
+            port=self.port,
             admin=True,
             start=True,
             location=True,
@@ -131,4 +133,10 @@ class App(param.Parameterized):
 
 
 def app(config: Config) -> App:
-    return App(config=config)
+    return App(
+        hostname=config.ui.hostname,
+        port=config.ui.port,
+        api_url=config.api.url,
+        root_path=config.api.root_path,
+        origins=handle_localhost_origins(config.ui.origins),
+    )
