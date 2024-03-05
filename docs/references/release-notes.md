@@ -182,13 +182,6 @@
   [#228](https://github.com/Quansight/ragna/pull/228)
 - Fix timeouts by [@pmeier](https://github.com/pmeier) in
   [#234](https://github.com/Quansight/ragna/pull/234)
-- set hard limit of visible document pills by [@pmeier](https://github.com/pmeier) in
-  [#235](https://github.com/Quansight/ragna/pull/235)
-- supply document name as part of the request body rather than query by
-  [@pmeier](https://github.com/pmeier) in
-  [#186](https://github.com/Quansight/ragna/pull/186)
-- Make document upload method flexible by [@pmeier](https://github.com/pmeier) in
-  [#238](https://github.com/Quansight/ragna/pull/238)
 - don't return full chat as part of message output by
   [@pmeier](https://github.com/pmeier) in
   [#249](https://github.com/Quansight/ragna/pull/249)
