@@ -163,6 +163,38 @@
   [#315](https://github.com/Quansight/ragna/pull/315)
 - document default login credentials by [@pmeier](https://github.com/pmeier) in
   [#168](https://github.com/Quansight/ragna/pull/168)
+- Remove duplicate call to answer method when not streaming by
+  [@nenb](https://github.com/nenb) in
+  [#325](https://github.com/Quansight/ragna/pull/325)
+- use truly-sane-lists plugin by [@pmeier](https://github.com/pmeier) in
+  [#324](https://github.com/Quansight/ragna/pull/324)
+- use FastAPI test client for testing by [@pmeier](https://github.com/pmeier) in
+  [#322](https://github.com/Quansight/ragna/pull/322)
+- update outdated actions by [@pmeier](https://github.com/pmeier) in
+  [#321](https://github.com/Quansight/ragna/pull/321)
+- remove memory option for state db by [@pmeier](https://github.com/pmeier) in
+  [#320](https://github.com/Quansight/ragna/pull/320)
+- only send sources on first chunk when streaming by
+  [@pmeier](https://github.com/pmeier) in
+  [#317](https://github.com/Quansight/ragna/pull/317)
+- refactor config docs by [@pmeier](https://github.com/pmeier) in
+  [#318](https://github.com/Quansight/ragna/pull/318)
+- restrict accepted files in file uploader by [@pmeier](https://github.com/pmeier) in
+  [#319](https://github.com/Quansight/ragna/pull/319)
+- add 'why should I use Ragna?' to FAQ by [@pmeier](https://github.com/pmeier) in
+  [#335](https://github.com/Quansight/ragna/pull/335)
+- ignore httpx deprecation warning by [@pmeier](https://github.com/pmeier) in
+  [#342](https://github.com/Quansight/ragna/pull/342)
+- use mkdocs-gallery for example / tutorial documentation by
+  [@pmeier](https://github.com/pmeier) in
+  [#89](https://github.com/Quansight/ragna/pull/89)
+- set LanceDB config dir in Dockerfile by [@pmeier](https://github.com/pmeier) in
+  [#330](https://github.com/Quansight/ragna/pull/330)
+- Prevent creation of large \_stylesheet class variable by
+  [@nenb](https://github.com/nenb) in
+  [#341](https://github.com/Quansight/ragna/pull/341)
+- Config refactor by [@pmeier](https://github.com/pmeier) in
+  [#328](https://github.com/Quansight/ragna/pull/328)
 
 ### New Contributors
 
