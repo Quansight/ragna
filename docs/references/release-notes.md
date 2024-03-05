@@ -4,7 +4,7 @@
 
 ### Feature changes and enhancements
 
-- Ragnas `0.1.x` releases were build on a task queue backend. This turned out to be a
+- Ragna's `0.1.x` releases were built on a task queue backend. This turned out to be a
   premature optimization that limited us in other features we wanted to implement. Thus,
   we removed it without impacting the API. This enabled us to add two new features:
   - The abstract methods on the RAG components, i.e. [ragna.core.SourceStorage.store][],
