@@ -58,8 +58,8 @@ class RagnaDemoAssistant(Assistant):
         return (
             textwrap.dedent(
                 """
-                I'm a demo assistant and can be used to try Ragnas workflow. I will only
-                mirror back my inputs. 
+                I'm a demo assistant and can be used to try Ragnas workflow.
+                I will only mirror back my inputs. 
                 
                 Your prompt was:
 

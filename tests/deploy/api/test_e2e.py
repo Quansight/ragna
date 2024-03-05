@@ -1,39 +1,29 @@
 import json
 import os
 
-import httpx
 import httpx_sse
 import pytest
+from fastapi.testclient import TestClient
 
-from ragna._utils import timeout_after
 from ragna.core._utils import default_user
 from ragna.deploy import Config
-from tests.utils import ragna_api
+from ragna.deploy._api import app
 
 
-@pytest.mark.parametrize("database", ["memory", "sqlite"])
 @pytest.mark.parametrize("stream_answer", [True, False])
-def test_e2e(tmp_local_root, database, stream_answer):
-    if database == "memory":
-        database_url = "memory"
-    elif database == "sqlite":
-        database_url = f"sqlite:///{tmp_local_root / 'ragna.db'}"
-
-    config = Config(
-        local_cache_root=tmp_local_root, api=dict(database_url=database_url)
-    )
+def test_e2e(tmp_local_root, stream_answer):
+    config = Config(local_root=tmp_local_root)
     check_api(config, stream_answer=stream_answer)
 
 
-@timeout_after()
 def check_api(config, *, stream_answer):
-    document_root = config.local_cache_root / "documents"
+    document_root = config.local_root / "documents"
     document_root.mkdir()
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with ragna_api(config), httpx.Client(base_url=config.api.url) as client:
+    with TestClient(app(config)) as client:
         username = default_user()
         token = (
             client.post(
@@ -41,7 +31,7 @@ def check_api(config, *, stream_answer):
                 data={
                     "username": username,
                     "password": os.environ.get(
-                        "AI_PROXY_DEMO_AUTHENTICATION_PASSWORD", username
+                        "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
                     ),
                 },
             )
@@ -76,12 +66,11 @@ def check_api(config, *, stream_answer):
             json_schema["title"] for json_schema in components["source_storages"]
         ]
         assert source_storages == [
-            source_storage.display_name()
-            for source_storage in config.components.source_storages
+            source_storage.display_name() for source_storage in config.source_storages
         ]
         assistants = [json_schema["title"] for json_schema in components["assistants"]]
         assert assistants == [
-            assistant.display_name() for assistant in config.components.assistants
+            assistant.display_name() for assistant in config.assistants
         ]
 
         source_storage = source_storages[0]

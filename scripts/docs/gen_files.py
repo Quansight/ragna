@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import io
 import json
@@ -9,12 +10,20 @@ import typer.rich_utils
 
 from ragna.deploy import Config
 from ragna.deploy._api import app as api_app
-from ragna.deploy._cli import app as cli_app
+
+# This is currently needed when using top-level async code in the galleries. It has to
+# be placed before the ragna.deploy._cli import as this ultimately import panel, which
+# uses async functionality that is no longer possible.
+# See https://github.com/smarie/mkdocs-gallery/issues/93
+asyncio.get_event_loop_policy()._local._set_called = False
+
+from ragna.deploy._cli import app as cli_app  # noqa: E402
 
 
 def main():
     cli_reference()
     api_reference()
+    config_reference()
 
 
 def cli_reference():
@@ -52,6 +61,14 @@ def api_reference():
     )
     with mkdocs_gen_files.open("references/openapi.json", "w") as file:
         json.dump(openapi_json, file)
+
+
+def config_reference():
+    with mkdocs_gen_files.open("references/config.md", "r+") as file:
+        content = file.read().replace("{{ config }}", str(Config()))
+        file.seek(0)
+        file.write(content)
+        file.truncate()
 
 
 main()

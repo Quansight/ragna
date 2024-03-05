@@ -1,4 +1,5 @@
 site_name: Ragna
+
 repo_url: https://github.com/Quansight/ragna
 copyright: Copyright &copy; 2023 Ragna Development Team at Quansight LLC
 extra:
@@ -39,6 +40,7 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - mdx_truly_sane_lists
 
 plugins:
   - search
@@ -54,6 +56,15 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
             - https://fastapi.tiangolo.com/objects.inv
+  - gallery:
+      examples_dirs:
+        - docs/examples
+        - docs/tutorials
+      gallery_dirs:
+        - docs/generated/examples
+        - docs/generated/tutorials
+      filename_pattern: "/gallery_"
+      default_thumb_file: docs/assets/brand/logo-symbol/logo-symbol.svg
   - gen-files:
       scripts:
         - scripts/docs/gen_files.py
@@ -71,22 +82,17 @@ extra_css:
 
 # Explicit navigation
 nav:
-  - "index.md"
-  - "install.md"
-  # - Explanations:
-  #     - "explanations/what-is-rag.md" # Hide for 0.1.0 release
-  - Tutorials:
-      - "tutorials/python-api.md"
-      - "tutorials/rest-api.md"
-      - "tutorials/web-app.md"
-  - How-to:
-      - "how-tos/set-configuration.md"
+  - index.md
+  - install.md
+  - Examples: generated/examples
+  - Tutorials: generated/tutorials
   - Community:
-      - "community/welcome.md"
-      - "community/contribute.md"
+      - community/welcome.md
+      - community/contribute.md
   - References:
-      - "references/python-api.md"
-      - "references/rest-api.md"
-      - "references/cli.md"
-      - "references/faq.md"
-      - "references/release-notes.md"
+      - references/python-api.md
+      - references/rest-api.md
+      - references/cli.md
+      - references/config.md
+      - references/faq.md
+      - references/release-notes.md

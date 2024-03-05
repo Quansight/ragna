@@ -30,14 +30,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     @param.depends("allowed_documents", watch=True)
     def update_allowed_documents_str(self):
-        if len(self.allowed_documents) == 1:
-            self.allowed_documents_str = (
-                "Only " + self.allowed_documents[0] + " files are allowed."
-            )
-        else:
-            self.allowed_documents_str = "Allowed files : " + ", ".join(
-                self.allowed_documents
-            )
+        self.allowed_documents_str = ", ".join(self.allowed_documents)
 
     @param.depends("uploaded_documents_json", watch=True)
     async def did_finish_upload(self):
@@ -69,7 +62,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     _child_config = {
         "custom_js": "template",
         "uploaded_documents_json": "template",
-        "allowed_documents_str": "literal",
+        "allowed_documents_str": "template",
     }
 
     _template = """
@@ -151,14 +144,16 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                     <img src="/imgs/cloud-upload.svg" width="24px" height="24px" />
                     <span><b>Click to upload</b> or drag and drop.<br /></span>
                     <div id='allowedDocuments'>
-                        ${allowed_documents_str}
+                        Allowed files: ${allowed_documents_str}
                     </div>
                     <input  type="file" 
                             name="fileUpload"
                             class="fileUpload" 
                             id="fileUpload" 
-                            multiple="multiple" 
-                            onchange="${script('file_input_on_change')}" /> 
+                            multiple
+                            onchange="${script('file_input_on_change')}" 
+                            accept="${allowed_documents_str}"
+                    /> 
                 </div>
                 <div id="fileListContainer" class="fileListContainer">
                     
