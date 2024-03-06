@@ -112,14 +112,14 @@ class ApiConfig(ConfigBase):
 
     hostname: str = "127.0.0.1"
     port: int = 31476
+    root_path: str = ""
     url: str = AfterConfigValidateDefault.make(
-        lambda config: f"http://{config.api.hostname}:{config.api.port}",
+        lambda config: f"http://{config.api.hostname}:{config.api.port}{config.api.root_path}",
     )
-    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
     database_url: str = AfterConfigValidateDefault.make(
         lambda config: f"sqlite:///{config.local_root}/ragna.db",
     )
-    root_path: str = ""
+    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
 
 
 class UiConfig(ConfigBase):

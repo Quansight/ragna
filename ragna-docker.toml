@@ -13,10 +13,10 @@ assistants = [
 [api]
 hostname = "0.0.0.0"
 port = 31476
+root_path = ""
 url = "http://localhost:31476"
 origins = ["http://localhost:31477"]
 database_url = "sqlite:////var/ragna/ragna.db"
-root_path = ""
 
 [ui]
 hostname = "0.0.0.0"
