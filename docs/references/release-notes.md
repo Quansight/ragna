@@ -113,12 +113,12 @@
   [api]
   hostname = "127.0.0.1"
   port = 31476
+  root_path = ""
   url = "http://127.0.0.1:31476"
   origins = [
       "http://127.0.0.1:31477",
   ]
   database_url = "sqlite://"
-  root_path = ""
 
   [ui]
   hostname = "127.0.0.1"
