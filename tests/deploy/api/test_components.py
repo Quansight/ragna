@@ -18,9 +18,7 @@ def test_ignore_unavailable_components(ignore_unavailable_components):
     unavailable_assistant = assistants.Gpt4
     assert not unavailable_assistant.is_available()
 
-    config = Config(
-        components=dict(assistants=[available_assistant, unavailable_assistant])
-    )
+    config = Config(assistants=[available_assistant, unavailable_assistant])
 
     if ignore_unavailable_components:
         with TestClient(
@@ -47,7 +45,7 @@ def test_ignore_unavailable_components_at_least_one():
     unavailable_assistant = assistants.Gpt4
     assert not unavailable_assistant.is_available()
 
-    config = Config(components=dict(assistants=[unavailable_assistant]))
+    config = Config(assistants=[unavailable_assistant])
 
     with pytest.raises(RagnaException, match="No component available"):
         app(
@@ -57,9 +55,9 @@ def test_ignore_unavailable_components_at_least_one():
 
 
 def test_unknown_component(tmp_local_root):
-    config = Config(local_cache_root=tmp_local_root)
+    config = Config(local_root=tmp_local_root)
 
-    document_root = config.local_cache_root / "documents"
+    document_root = config.local_root / "documents"
     document_root.mkdir()
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
