@@ -30,4 +30,4 @@ ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb.config
 COPY ragna-docker.toml ragna.toml
 
 ENTRYPOINT ["ragna"]
-CMD ["ui"]
+CMD ["ui", "--start-api", "--no-open-browser"]
