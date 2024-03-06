@@ -82,17 +82,21 @@ def api(
     uvicorn.run(api_app(config), host=config.api.hostname, port=config.api.port)
 
 
-@app.command(help="Start the UI.")
+@app.command(help="Start the web UI.")
 def ui(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_api: Annotated[
         Optional[bool],
         typer.Option(
-            help="Start the ragna REST API alongside the UI in a subprocess.",
+            help="Start the ragna REST API alongside the web UI in a subprocess.",
             show_default="Start if the API is not served at the configured URL.",
         ),
     ] = None,
+    open_browser: Annotated[
+        bool,
+        typer.Option(help="Open the web UI in the browser when it is started."),
+    ] = True,
 ) -> None:
     def check_api_available() -> bool:
         try:
@@ -136,7 +140,7 @@ def ui(
                 )
                 raise typer.Exit(1)
 
-        ui_app(config).serve()  # type: ignore[no-untyped-call]
+        ui_app(config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
     finally:
         if process is not None:
             process.kill()
