@@ -145,8 +145,7 @@ class LocalDocument(Document):
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[dict[str, Any], DocumentUploadParameters]:
-        api_url = config.api.proxy_url or config.api.url
-        url = urljoin(urljoin(api_url, config.api.root_path), "document")
+        url = urljoin(urljoin(config.api.url, config.api.root_path), "document")
         data = {
             "token": jwt.encode(
                 payload={

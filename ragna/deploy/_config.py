@@ -120,7 +120,6 @@ class ApiConfig(ConfigBase):
         lambda config: f"sqlite:///{config.local_root}/ragna.db",
     )
     root_path: str = ""
-    proxy_url: str = ""
 
 
 class UiConfig(ConfigBase):
