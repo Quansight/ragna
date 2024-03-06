@@ -90,9 +90,15 @@ Hostname the REST API will be bound to.
 
 Port the REST API will be bound to.
 
+#### `root_path`
+
+A path prefix handled by a proxy that is not seen by the REST API, but is seen by
+external clients.
+
 #### `url`
 
-URL of the REST API to be accessed by the web UI.
+URL of the REST API to be accessed by the web UI. Make sure to include the
+[`root_path`](#root_path) if set.
 
 #### `origins`
 
@@ -104,11 +110,6 @@ to connect to the REST API. The URL of the web UI is required for it to function
 URL of a SQL database that will be used to store the Ragna state. See
 [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls)
 on how to format the URL.
-
-#### `root_path`
-
-A path prefix handled by a proxy that is not seen by the REST API, but is seen by
-external clients.
 
 ### `ui`
 
