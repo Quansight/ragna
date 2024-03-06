@@ -12,15 +12,12 @@ from .utils import authenticate
 
 @pytest.mark.parametrize("stream_answer", [True, False])
 def test_e2e(tmp_local_root, stream_answer):
-    config = Config(
-        local_cache_root=tmp_local_root,
-        api=dict(database_url=f"sqlite:///{tmp_local_root / 'ragna.db'}"),
-    )
+    config = Config(local_root=tmp_local_root)
     check_api(config, stream_answer=stream_answer)
 
 
 def check_api(config, *, stream_answer):
-    document_root = config.local_cache_root / "documents"
+    document_root = config.local_root / "documents"
     document_root.mkdir()
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
@@ -55,12 +52,11 @@ def check_api(config, *, stream_answer):
             json_schema["title"] for json_schema in components["source_storages"]
         ]
         assert source_storages == [
-            source_storage.display_name()
-            for source_storage in config.components.source_storages
+            source_storage.display_name() for source_storage in config.source_storages
         ]
         assistants = [json_schema["title"] for json_schema in components["assistants"]]
         assert assistants == [
-            assistant.display_name() for assistant in config.components.assistants
+            assistant.display_name() for assistant in config.assistants
         ]
 
         source_storage = source_storages[0]

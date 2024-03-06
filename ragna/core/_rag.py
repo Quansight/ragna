@@ -30,7 +30,16 @@ C = TypeVar("C", bound=Component)
 
 
 class Rag(Generic[C]):
-    """RAG workflow."""
+    """RAG workflow.
+
+    !!! tip
+
+        This class can be imported from `ragna` directly, e.g.
+
+        ```python
+        from ragna import Rag
+        ```
+    """
 
     def __init__(self) -> None:
         self._components: dict[Type[C], C] = {}

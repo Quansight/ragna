@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Type, Union
+from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
 
 import tomlkit
 import tomlkit.container
 import tomlkit.items
-from pydantic import Field, ImportString, field_validator
+from pydantic import (
+    AfterValidator,
+    Field,
+    ImportString,
+    model_validator,
+)
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -15,9 +20,36 @@ from pydantic_settings import (
 )
 
 import ragna
+from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
+
+T = TypeVar("T")
+
+
+class AfterConfigValidateDefault(Generic[T]):
+    """This class exists for a specific use case:
+
+    - We have values for which we need the validated config to compute the default,
+      e.g. the API default origins can only be computed after we know the UI hostname
+      and port.
+    - We want to use the plain annotations rather than allowing a sentinel type, e.g.
+      `str` vs. `Optional[str]`.
+    """
+
+    def __init__(self, make_default: Callable[[Config], T]) -> None:
+        self.make_default = make_default
+
+    @classmethod
+    def make(cls, make_default: Callable[[Config], T]) -> Any:
+        """Creates a default sentinel that is resolved after the config is validated.
+
+        Args:
+            make_default: Callable that takes the validated config and returns the
+                resolved value.
+        """
+        return Field(default=cls(make_default), validate_default=False)
 
 
 class ConfigBase(BaseSettings):
@@ -35,8 +67,8 @@ class ConfigBase(BaseSettings):
         # a config file goes through the regular constructor of the Python object, we
         # are also implicitly prioritizing environment variables over values passed
         # explicitly passed to the constructor. For example, if the environment variable
-        # 'RAGNA_RAG_DATABASE_URL' is set, any values passed to
-        # `RagnaConfig(rag=RagConfig(database_url=...))` is ignored.
+        # 'RAGNA_LOCAL_ROOT' is set, any values passed to `Config(local_root=...)` are
+        # ignored.
         # FIXME: Find a way to achieve the following priorities:
         #  1. Explicitly passed to Python object
         #  2. Environment variable
@@ -44,71 +76,13 @@ class ConfigBase(BaseSettings):
         #  4. Default
         return env_settings, init_settings
 
-
-class ComponentsConfig(ConfigBase):
-    model_config = SettingsConfigDict(env_prefix="ragna_core_")
-
-    source_storages: list[ImportString[type[SourceStorage]]] = [
-        "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
-    ]
-    assistants: list[ImportString[type[Assistant]]] = [
-        "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
-    ]
-
-
-class ApiConfig(ConfigBase):
-    # FIXME: check if we need these?
-    model_config = SettingsConfigDict(env_prefix="ragna_api_")
-
-    url: str = "http://127.0.0.1:31476"
-    # FIXME: this needs to be dynamic for the UI url
-    origins: list[str] = ["http://127.0.0.1:31477"]
-    # FIXME: this needs to be dynamic from the local cache root
-    database_url: str = f"sqlite:///{ragna.local_root()}/ragna.db"
-    root_path: str = ""
-
-
-class UiConfig(ConfigBase):
-    model_config = SettingsConfigDict(env_prefix="ragna_ui_")
-
-    url: str = "http://127.0.0.1:31477"
-    # FIXME: this needs to be dynamic for the url
-    origins: list[str] = ["http://127.0.0.1:31477"]
-
-
-class Config(ConfigBase):
-    """Ragna configuration"""
-
-    model_config = SettingsConfigDict(env_prefix="ragna_")
-
-    local_cache_root: Path = Field(default_factory=ragna.local_root)
-
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
-
-    authentication: ImportString[
-        type[Authentication]
-    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
-
-    @field_validator("local_cache_root")
-    @classmethod
-    def _resolve_and_make_path(cls, path: Path) -> Path:
-        # FIXME: move this into the util
-        path = path.expanduser().resolve()
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-    components: ComponentsConfig = Field(default_factory=ComponentsConfig)
-    api: ApiConfig = Field(default_factory=ApiConfig)
-    ui: UiConfig = Field(default_factory=UiConfig)
-
-    @classmethod
-    def from_file(cls, path: Union[str, Path]) -> Config:
-        path = Path(path).expanduser().resolve()
-        if not path.is_file():
-            raise RagnaException(f"{path} does not exist.")
-
-        with open(path) as file:
-            return cls.model_validate(tomlkit.load(file).unwrap())
+    def _resolve_default_sentinels(self, config: Config) -> None:
+        for name, info in self.model_fields.items():
+            value = getattr(self, name)
+            if isinstance(value, ConfigBase):
+                value._resolve_default_sentinels(config)
+            elif isinstance(value, AfterConfigValidateDefault):
+                setattr(self, name, value.make_default(config))
 
     def __str__(self) -> str:
         toml = tomlkit.item(self.model_dump(mode="json"))
@@ -128,10 +102,76 @@ class Config(ConfigBase):
         ):
             self._set_multiline_array(child)
 
+
+def make_default_origins(config: Config) -> list[str]:
+    return [f"http://{config.ui.hostname}:{config.ui.port}"]
+
+
+class ApiConfig(ConfigBase):
+    model_config = SettingsConfigDict(env_prefix="ragna_api_")
+
+    hostname: str = "127.0.0.1"
+    port: int = 31476
+    root_path: str = ""
+    url: str = AfterConfigValidateDefault.make(
+        lambda config: f"http://{config.api.hostname}:{config.api.port}{config.api.root_path}",
+    )
+    database_url: str = AfterConfigValidateDefault.make(
+        lambda config: f"sqlite:///{config.local_root}/ragna.db",
+    )
+    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
+
+
+class UiConfig(ConfigBase):
+    model_config = SettingsConfigDict(env_prefix="ragna_ui_")
+
+    hostname: str = "127.0.0.1"
+    port: int = 31477
+    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
+
+
+class Config(ConfigBase):
+    """Ragna configuration"""
+
+    model_config = SettingsConfigDict(env_prefix="ragna_")
+
+    local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
+        default_factory=ragna.local_root
+    )
+
+    authentication: ImportString[
+        type[Authentication]
+    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
+    source_storages: list[ImportString[type[SourceStorage]]] = [
+        "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
+    ]
+    assistants: list[ImportString[type[Assistant]]] = [
+        "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
+    ]
+
+    api: ApiConfig = Field(default_factory=ApiConfig)
+    ui: UiConfig = Field(default_factory=UiConfig)
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> Config:
+        self._resolve_default_sentinels(self)
+        return self
+
+    @classmethod
+    def from_file(cls, path: Union[str, Path]) -> Config:
+        path = Path(path).expanduser().resolve()
+        if not path.is_file():
+            raise RagnaException(f"{path} does not exist.")
+
+        with open(path) as file:
+            return cls.model_validate(tomlkit.load(file).unwrap())
+
     def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
-            raise RagnaException(f"{path} already exist.")
+            raise RagnaException(f"{path} already exists.")
 
         with open(path, "w") as file:
             file.write(str(self))

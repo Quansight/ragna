@@ -29,11 +29,11 @@ from . import database, schemas
 
 
 def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
-    ragna.local_root(config.local_cache_root)
+    ragna.local_root(config.local_root)
 
     rag = Rag()  # type: ignore[var-annotated]
     components_map: dict[str, Component] = {}
-    for components in [config.components.source_storages, config.components.assistants]:
+    for components in [config.source_storages, config.assistants]:
         components = cast(list[Type[Component]], components)
         at_least_one = False
         for component in components:

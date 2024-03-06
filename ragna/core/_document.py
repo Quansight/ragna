@@ -156,7 +156,7 @@ class LocalDocument(Document):
                 algorithm=cls._JWT_ALGORITHM,
             )
         }
-        metadata = {"path": str(config.local_cache_root / "documents" / str(id))}
+        metadata = {"path": str(config.local_root / "documents" / str(id))}
         return metadata, DocumentUploadParameters(method="PUT", url=url, data=data)
 
     @classmethod

@@ -47,46 +47,58 @@ All configuration options can be set or overritten by environment variables by u
 file is equivalent to setting `RAGNA_DOCUMENT=ragna.core.LocalDocument`.
 
 For configuration options in subsections, the subsection name needs to be appended to
-the prefix, e.g. `RAGNA_COMPONENTS_`. The value needs to be in JSON format. For example
+the prefix, e.g. `RAGNA_API_`. The value needs to be in JSON format. For example
 
 ```toml
-[components]
-assistants = [
-    "ragna.assistants.RagnaDemoAssistant",
+[api]
+origins = [
+    "http://localhost:31477",
 ]
 ```
 
-is equivalent to
-`RAGNA_COMPONENTS_ASSISTANTS='["ragna.assistants.RagnaDemoAssistant"]'`.
+is equivalent to `RAGNA_API_ORIGINS='["http://localhost:31477"]'`.
 
 ## Configuration options
 
-### `local_cache_root`
+### `local_root`
 
-### `document`
-
-[ragna.core.Document][] class to use to upload and read documents.
+Local root directory Ragna uses for storing files. See [ragna.local_root][].
 
 ### `authentication`
 
 [ragna.deploy.Authentication][] class to use for authenticating users.
 
-### `components`
+### `document`
 
-#### `source_storages`
+[ragna.core.Document][] class to use to upload and read documents.
+
+### `source_storages`
 
 [ragna.core.SourceStorage][]s to be available for the user to use.
 
-#### `assistants`
+### `assistants`
 
 [ragna.core.Assistant][]s to be available for the user to use.
 
 ### `api`
 
+#### `hostname`
+
+Hostname the REST API will be bound to.
+
+#### `port`
+
+Port the REST API will be bound to.
+
+#### `root_path`
+
+A path prefix handled by a proxy that is not seen by the REST API, but is seen by
+external clients.
+
 #### `url`
 
-1. Hostname and port the REST API server will be bound to.
-2. URL of the REST API to be accessed by the web UI.
+URL of the REST API to be accessed by the web UI. Make sure to include the
+[`root_path`](#root_path) if set.
 
 #### `origins`
 
@@ -99,16 +111,15 @@ URL of a SQL database that will be used to store the Ragna state. See
 [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls)
 on how to format the URL.
 
-#### `root_path`
-
-A path prefix handled by a proxy that is not seen by the REST API, but is seen by
-external clients.
-
 ### `ui`
 
-#### `url`
+#### `hostname`
 
-Hostname and port the web UI server will be bound to.
+Hostname the web UI will be bound to.
+
+#### `port`
+
+Port the web UI will be bound to.
 
 #### `origins`
 

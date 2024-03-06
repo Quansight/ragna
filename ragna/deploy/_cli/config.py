@@ -133,19 +133,19 @@ def _wizard_builtin() -> Config:
         "If the requirements of a selected component are not met, "
         "I'll show you instructions how to meet them later."
     )
-    config.components.source_storages = _select_components(
+    config.source_storages = _select_components(
         "source storages",
         ragna.source_storages,
         SourceStorage,  # type: ignore[type-abstract]
     )
-    config.components.assistants = _select_components(
+    config.assistants = _select_components(
         "assistants",
         ragna.assistants,
         Assistant,  # type: ignore[type-abstract]
     )
 
     _handle_unmet_requirements(
-        itertools.chain(config.components.source_storages, config.components.assistants)
+        itertools.chain(config.source_storages, config.assistants)
     )
 
     return config
@@ -159,11 +159,16 @@ def _select_components(
     module: ModuleType,
     base_cls: Type[T],
 ) -> list[Type[T]]:
-    components = [
-        obj
-        for obj in module.__dict__.values()
-        if isinstance(obj, type) and issubclass(obj, base_cls) and obj is not base_cls
-    ]
+    components = sorted(
+        (
+            obj
+            for obj in module.__dict__.values()
+            if isinstance(obj, type)
+            and issubclass(obj, base_cls)
+            and obj is not base_cls
+        ),
+        key=lambda component: component.display_name(),
+    )
     return cast(
         list[Type[T]],
         questionary.checkbox(
@@ -238,31 +243,58 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
 def _wizard_common() -> Config:
     config = _wizard_builtin()
 
-    config.local_cache_root = Path(
+    config.local_root = Path(
         questionary.path(
             "Where should local files be stored?",
-            default=str(config.local_cache_root),
+            default=str(config.local_root),
             qmark=QMARK,
         ).unsafe_ask()
     )
 
-    config.api.url = questionary.text(
-        "At what URL do you want the ragna REST API to be served?",
-        default=config.api.url,
-        qmark=QMARK,
-    ).unsafe_ask()
+    for sub_config, title in [(config.api, "REST API"), (config.ui, "web UI")]:
+        sub_config.hostname = questionary.text(
+            f"What hostname do you want to bind the the Ragna {title} to?",
+            default=sub_config.hostname,  # type: ignore[attr-defined]
+            qmark=QMARK,
+        ).unsafe_ask()
+
+        sub_config.port = int(
+            questionary.text(
+                f"What port do you want to bind the the Ragna {title} to?",
+                default=str(sub_config.port),  # type: ignore[attr-defined]
+                qmark=QMARK,
+            ).unsafe_ask()
+        )
 
     config.api.database_url = questionary.text(
-        "What is the URL of the database?",
-        default=f"sqlite:///{config.local_cache_root / 'ragna.db'}",
+        "What is the URL of the SQL database?",
+        default=Config(local_root=config.local_root).api.database_url,
         qmark=QMARK,
     ).unsafe_ask()
 
-    config.ui.url = questionary.text(
-        "At what URL do you want the ragna web UI to be served?",
-        default=config.ui.url,
+    config.api.url = questionary.text(
+        "At which URL will the Ragna REST API be served?",
+        default=Config(
+            api=dict(  # type: ignore[arg-type]
+                hostname=config.api.hostname,
+                port=config.api.port,
+            )
+        ).api.url,
         qmark=QMARK,
     ).unsafe_ask()
+
+    config.api.origins = config.ui.origins = [
+        questionary.text(
+            "At which URL will the Ragna web UI be served?",
+            default=Config(
+                ui=dict(  # type: ignore[arg-type]
+                    hostname=config.ui.hostname,
+                    port=config.ui.port,
+                )
+            ).api.origins[0],
+            qmark=QMARK,
+        ).unsafe_ask()
+    ]
 
     return config
 
@@ -310,8 +342,8 @@ def check_config(config: Config) -> bool:
     fully_available = True
 
     for title, components in [
-        ("source storages", config.components.source_storages),
-        ("assistants", config.components.assistants),
+        ("source storages", config.source_storages),
+        ("assistants", config.assistants),
     ]:
         components = cast(list[Type[Component]], components)
 

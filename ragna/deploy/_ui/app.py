@@ -30,12 +30,14 @@ RES = HERE / "resources"
 
 
 class App(param.Parameterized):
-    def __init__(self, *, url, api_url, origins):
+    def __init__(self, *, hostname, port, api_url, origins, open_browser):
         super().__init__()
         ui.apply_design_modifiers()
-        self.url = url
+        self.hostname = hostname
+        self.port = port
         self.api_url = api_url
         self.origins = origins
+        self.open_browser = open_browser
 
     def get_template(self):
         template = pn.template.FastListTemplate(
@@ -117,11 +119,12 @@ class App(param.Parameterized):
         pn.serve(
             all_pages,
             titles=titles,
-            port=urlsplit(self.url).port,
+            address=self.hostname,
+            port=self.port,
             admin=True,
             start=True,
             location=True,
-            show=True,
+            show=self.open_browser,
             keep_alive=30 * 1000,  # 30s
             autoreload=True,
             profiler="pyinstrument",
@@ -130,9 +133,11 @@ class App(param.Parameterized):
         )
 
 
-def app(config: Config) -> App:
+def app(*, config: Config, open_browser: bool) -> App:
     return App(
-        url=config.ui.url,
+        hostname=config.ui.hostname,
+        port=config.ui.port,
         api_url=config.api.url,
         origins=handle_localhost_origins(config.ui.origins),
+        open_browser=open_browser,
     )
