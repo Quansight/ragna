@@ -7,7 +7,18 @@ source_storages = [
     "ragna.source_storages.LanceDB"
 ]
 assistants = [
-    "ragna.assistants.RagnaDemoAssistant"
+    "ragna.assistants.Jurassic2Ultra",
+    "ragna.assistants.Claude",
+    "ragna.assistants.ClaudeInstant",
+    "ragna.assistants.Command",
+    "ragna.assistants.CommandLight",
+    "ragna.assistants.RagnaDemoAssistant",
+    "ragna.assistants.GeminiPro",
+    "ragna.assistants.GeminiUltra",
+    "ragna.assistants.Mpt7bInstruct",
+    "ragna.assistants.Mpt30bInstruct",
+    "ragna.assistants.Gpt4",
+    "ragna.assistants.Gpt35Turbo16k",
 ]
 
 [api]

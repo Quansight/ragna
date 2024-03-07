@@ -44,7 +44,9 @@ class Rag(Generic[C]):
     def __init__(self) -> None:
         self._components: dict[Type[C], C] = {}
 
-    def _load_component(self, component: Union[Type[C], C]) -> C:
+    def _load_component(
+        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False
+    ) -> Optional[C]:
         cls: Type[C]
         instance: Optional[C]
 
@@ -60,6 +62,9 @@ class Rag(Generic[C]):
         if cls not in self._components:
             if instance is None:
                 if not cls.is_available():
+                    if ignore_unavailable:
+                        return None
+
                     raise RagnaException(
                         "Component not available", name=cls.display_name()
                     )
@@ -148,8 +153,10 @@ class Chat:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
-        self.source_storage = self._rag._load_component(source_storage)
-        self.assistant = self._rag._load_component(assistant)
+        self.source_storage = cast(
+            SourceStorage, self._rag._load_component(source_storage)
+        )
+        self.assistant = cast(Assistant, self._rag._load_component(assistant))
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)

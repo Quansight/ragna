@@ -133,7 +133,7 @@ class App(param.Parameterized):
         )
 
 
-def app(config: Config, *, open_browser: bool) -> App:
+def app(*, config: Config, open_browser: bool) -> App:
     return App(
         hostname=config.ui.hostname,
         port=config.ui.port,

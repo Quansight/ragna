@@ -78,8 +78,23 @@ def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assign
 def api(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+            )
+        ),
+    ] = False,
 ) -> None:
-    uvicorn.run(api_app(config), host=config.api.hostname, port=config.api.port)
+    uvicorn.run(
+        api_app(
+            config=config, ignore_unavailable_components=ignore_unavailable_components
+        ),
+        host=config.api.hostname,
+        port=config.api.port,
+    )
 
 
 @app.command(help="Start the web UI.")
@@ -93,6 +108,16 @@ def ui(
             show_default="Start if the API is not served at the configured URL.",
         ),
     ] = None,
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+                "This option as no effect if --no-start-api is used."
+            )
+        ),
+    ] = False,
     open_browser: Annotated[
         bool,
         typer.Option(help="Open the web UI in the browser when it is started."),
@@ -116,6 +141,7 @@ def ui(
                 "api",
                 "--config",
                 config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
+                f"--{'' if ignore_unavailable_components else 'no-'}ignore-unavailable-components",
             ],
             stdout=sys.stdout,
             stderr=sys.stderr,
@@ -140,7 +166,7 @@ def ui(
                 )
                 raise typer.Exit(1)
 
-        ui_app(config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
+        ui_app(config=config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
     finally:
         if process is not None:
             process.kill()

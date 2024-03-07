@@ -51,7 +51,7 @@ def cli_reference():
 
 
 def api_reference():
-    app = api_app(Config())
+    app = api_app(config=Config(), ignore_unavailable_components=False)
     openapi_json = fastapi.openapi.utils.get_openapi(
         title=app.title,
         version=app.version,
