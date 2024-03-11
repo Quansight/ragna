@@ -53,6 +53,8 @@ class AnthropicApiAssistant(ApiAssistant):
                 "stream": True,
             },
         ) as event_source:
+            await self._assert_api_call_is_success(event_source.response)
+
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
                 if data["type"] != "completion":

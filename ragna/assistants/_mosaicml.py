@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Source
 
 from ._api import ApiAssistant
 
@@ -43,10 +43,8 @@ class MosaicmlApiAssistant(ApiAssistant):
                 "parameters": {"temperature": 0.0, "max_new_tokens": max_new_tokens},
             },
         )
-        if response.is_error:
-            raise RagnaException(
-                status_code=response.status_code, response=response.json()
-            )
+        await self._assert_api_call_is_success(response)
+
         yield cast(str, response.json()["outputs"][0]).replace(instruction, "").strip()
 
 

@@ -54,12 +54,15 @@ class CohereApiAssistant(ApiAssistant):
                 "documents": self._make_source_documents(sources),
             },
         ) as response:
-            if response.is_error:
-                raise RagnaException(status_code=response.status_code)
+            await self._assert_api_call_is_success(response)
+
             async for chunk in response.aiter_lines():
                 event = json.loads(chunk)
                 if event["event_type"] == "stream-end":
-                    break
+                    if event["event_type"] == "COMPLETE":
+                        break
+
+                    raise RagnaException(event["error_message"])
                 if "text" in event:
                     yield cast(str, event["text"])
 

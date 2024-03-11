@@ -87,6 +87,8 @@ class GoogleApiAssistant(ApiAssistant):
                 },
             },
         ) as response:
+            await self._assert_api_call_is_success(response)
+
             async for chunk in ijson.items(
                 AsyncIteratorReader(response.aiter_bytes(1024)),
                 "item.candidates.item.content.parts.item.text",

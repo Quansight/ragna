@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Source
 
 from ._api import ApiAssistant
 
@@ -53,11 +53,7 @@ class Ai21LabsAssistant(ApiAssistant):
                 "system": self._make_system_content(sources),
             },
         )
-
-        if response.is_error:
-            raise RagnaException(
-                status_code=response.status_code, response=response.json()
-            )
+        await self._assert_api_call_is_success(response)
 
         yield cast(str, response.json()["outputs"][0]["text"])
 
