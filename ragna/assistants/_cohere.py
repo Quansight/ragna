@@ -1,7 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-from ragna.core import Source
+from ragna.core import RagnaException, Source
 
 from ._api import ApiAssistant
 
@@ -59,7 +59,10 @@ class CohereApiAssistant(ApiAssistant):
             async for chunk in response.aiter_lines():
                 event = json.loads(chunk)
                 if event["event_type"] == "stream-end":
-                    break
+                    if event["event_type"] == "COMPLETE":
+                        break
+
+                    raise RagnaException(event["error_message"])
                 if "text" in event:
                     yield cast(str, event["text"])
 
