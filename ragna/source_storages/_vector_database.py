@@ -74,7 +74,8 @@ class VectorDatabaseSourceStorage(SourceStorage):
         # )
         # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#all-minilm-l6-v2
 
-    def _page_numbers_to_str(self, page_numbers: Optional[Iterable[int]]) -> str:
+    @classmethod
+    def _page_numbers_to_str(cls, page_numbers: Optional[Iterable[int]]) -> str:
         if not page_numbers:
             return ""
 
@@ -100,8 +101,9 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
         return ", ".join(ranges_str)
 
+    @classmethod
     def _take_sources_up_to_max_tokens(
-        self, sources: Iterable[Source], *, max_tokens: int
+        cls, sources: Iterable[Source], *, max_tokens: int
     ) -> list[Source]:
         taken_sources = []
         total = 0

@@ -3,13 +3,12 @@ from abc import ABC, abstractmethod
 from sentence_transformers import SentenceTransformer
 import torch
 
-import pydantic
+from ragna.core._components import Component
+
+from ragna.source_storages._vector_database import Chunk
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-from ragna.core._components import Component, Document
-
-from ragna.source_storages._vector_database import Chunk
 
 class Embedding:
     embedding: list[float]

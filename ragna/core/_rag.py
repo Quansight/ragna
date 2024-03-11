@@ -48,7 +48,7 @@ class Rag(Generic[C]):
         self._components: dict[Type[C], C] = {}
 
     def _load_component(
-        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False, **kwargs
+        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False
     ) -> Optional[C]:
         cls: Type[C]
         instance: Optional[C]
@@ -71,7 +71,7 @@ class Rag(Generic[C]):
                     raise RagnaException(
                         "Component not available", name=cls.display_name()
                     )
-                instance = cls(**kwargs)
+                instance = cls()
 
             self._components[cls] = instance
 
@@ -168,7 +168,7 @@ class Chat:
 
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage, embedding_dimensions=self.embedding_model.get_embedding_dimensions())
+            SourceStorage, self._rag._load_component(source_storage)
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
 

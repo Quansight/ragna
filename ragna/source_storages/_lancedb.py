@@ -8,6 +8,7 @@ from ragna.core import Document, PackageRequirement, Requirement, Source
 from ._vector_database import VectorDatabaseSourceStorage
 
 from ._embedding_model import Embedding
+import pyarrow as pa
 
 class LanceDB(VectorDatabaseSourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
@@ -31,28 +32,12 @@ class LanceDB(VectorDatabaseSourceStorage):
             ),
         ]
 
-    def __init__(self, embedding_dimensions: int) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
         import lancedb
-        import pyarrow as pa
-
-        self._embedding_dimensions = embedding_dimensions
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
-        self._schema = pa.schema(
-            [
-                pa.field("id", pa.string()),
-                pa.field("document_id", pa.string()),
-                pa.field("page_numbers", pa.string()),
-                pa.field("text", pa.string()),
-                pa.field(
-                    self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._embedding_dimensions),
-                ),
-                pa.field("num_tokens", pa.int32()),
-            ]
-        )
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
@@ -62,7 +47,21 @@ class LanceDB(VectorDatabaseSourceStorage):
         *,
         chat_id: uuid.UUID,
     ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
+        _schema = pa.schema(
+            [
+                pa.field("id", pa.string()),
+                pa.field("document_id", pa.string()),
+                pa.field("page_numbers", pa.string()),
+                pa.field("text", pa.string()),
+                pa.field(
+                    self._VECTOR_COLUMN_NAME,
+                    pa.list_(pa.float32(), len(documents[0].embedding)),
+                ),
+                pa.field("num_tokens", pa.int32()),
+            ]
+        )
+
+        table = self._db.create_table(name=str(chat_id), schema=_schema)
 
         for embedding in documents:
             table.add(

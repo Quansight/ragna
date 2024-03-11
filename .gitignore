@@ -8,6 +8,7 @@ __pycache__/
 
 # Ignore my entrypoint
 test.py
+doctest/
 
 # C extensions
 *.so
