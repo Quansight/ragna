@@ -8,8 +8,9 @@ from ragna.core import (
 
 from ._vector_database import VectorDatabaseSourceStorage
 
-from ._embedding_model import MiniLML6v2
+from ._embedding_model import MiniLML6v2, Embedding
 from ._chunking_model import NLTKChunkingModel
+
 
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
@@ -40,33 +41,33 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        documents: list[Document],
+        documents: list[Embedding],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
     ) -> None:
         collection = self._client.create_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            str(chat_id)
         )
 
         ids = []
         texts = []
+        embeddings = []
         metadatas = []
-        for document in documents:
-            for chunk in self._chunking_model.chunk_document(document):
+        for embedding in documents:
                 ids.append(str(uuid.uuid4()))
-                texts.append(chunk.text)
+                texts.append(embedding.chunk.text)
                 metadatas.append(
                     {
-                        "document_id": str(document.id),
-                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
-                        "num_tokens": chunk.num_tokens,
+                        "document_id": str(embedding.chunk.document_id),
+                        "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
+                        "num_tokens": embedding.chunk.num_tokens,
                     }
                 )
+                embeddings.append(embedding.embedding)
 
         collection.add(
             ids=ids,
+            embeddings=embeddings,
             documents=texts,
             metadatas=metadatas,  # type: ignore[arg-type]
         )

@@ -85,8 +85,6 @@ class LanceDB(VectorDatabaseSourceStorage):
         prompt: list[float],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        num_tokens: int = 1024,
     ) -> list[Source]:
         table = self._db.open_table(str(chat_id))
 
