@@ -37,6 +37,12 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
     with open(document_path, "w") as file:
         file.write("!\n")
 
+    # Reset starlette_sse AppStatus for each run
+    # See https://github.com/sysid/sse-starlette/issues/59
+    from sse_starlette.sse import AppStatus
+
+    AppStatus.should_exit_event = None
+
     with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
         authenticate(client)
 
