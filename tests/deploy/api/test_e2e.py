@@ -112,6 +112,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
                 for sse in event_source.iter_sse():
                     chunks.append(json.loads(sse.data))
             message = chunks[0]
+            assert all(chunk["sources"] is None for chunk in chunks[1:])
             message["content"] = "".join(chunk["content"] for chunk in chunks)
         else:
             message = (
