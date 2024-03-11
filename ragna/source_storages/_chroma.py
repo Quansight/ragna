@@ -8,6 +8,8 @@ from ragna.core import (
 
 from ._vector_database import VectorDatabaseSourceStorage
 
+from ._embedding_model import MiniLML6v2
+from ._chunking_model import NLTKChunkingModel
 
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
@@ -24,6 +26,9 @@ class Chroma(VectorDatabaseSourceStorage):
         super().__init__()
 
         import chromadb
+
+        self._embedding_model = MiniLML6v2()
+        self._chunking_model = NLTKChunkingModel()
 
         self._client = chromadb.Client(
             chromadb.config.Settings(
@@ -49,11 +54,7 @@ class Chroma(VectorDatabaseSourceStorage):
         texts = []
         metadatas = []
         for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
+            for chunk in self._chunking_model.chunk_document(document):
                 ids.append(str(uuid.uuid4()))
                 texts.append(chunk.text)
                 metadatas.append(

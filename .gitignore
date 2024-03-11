@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore my entrypoint
+test.py
+
 # C extensions
 *.so
 

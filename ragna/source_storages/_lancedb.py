@@ -1,10 +1,13 @@
 import uuid
 
+from typing import cast
+
 import ragna
 from ragna.core import Document, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
+from ._embedding_model import Embedding
 
 class LanceDB(VectorDatabaseSourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
@@ -28,11 +31,13 @@ class LanceDB(VectorDatabaseSourceStorage):
             ),
         ]
 
-    def __init__(self) -> None:
+    def __init__(self, embedding_dimensions: int) -> None:
         super().__init__()
 
         import lancedb
         import pyarrow as pa
+
+        self._embedding_dimensions = embedding_dimensions
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
         self._schema = pa.schema(
@@ -53,41 +58,32 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        documents: list[Document],
+        documents: list[Embedding],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
     ) -> None:
         table = self._db.create_table(name=str(chat_id), schema=self._schema)
 
-        for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
-                table.add(
-                    [
-                        {
-                            "id": str(uuid.uuid4()),
-                            "document_id": str(document.id),
-                            "page_numbers": self._page_numbers_to_str(
-                                chunk.page_numbers
-                            ),
-                            "text": chunk.text,
-                            self._VECTOR_COLUMN_NAME: self._embedding_function(
-                                [chunk.text]
-                            )[0],
-                            "num_tokens": chunk.num_tokens,
-                        }
-                    ]
-                )
+        for embedding in documents:
+            table.add(
+                [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": str(embedding.chunk.document_id),
+                        "page_numbers": self._page_numbers_to_str(
+                            embedding.chunk.page_numbers
+                        ),
+                        "text": embedding.chunk.text,
+                        self._VECTOR_COLUMN_NAME: embedding.embedding,
+                        "num_tokens": embedding.chunk.num_tokens,
+                    }
+                ]
+            )
 
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
@@ -101,7 +97,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         limit = int(num_tokens * 2 / chunk_size)
         results = (
             table.search(
-                self._embedding_function([prompt])[0],
+                prompt,
                 vector_column_name=self._VECTOR_COLUMN_NAME,
             )
             .limit(limit)

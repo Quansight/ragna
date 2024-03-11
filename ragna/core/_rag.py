@@ -25,6 +25,9 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
+from ragna.source_storages._embedding_model import GenericEmbeddingModel
+from ragna.source_storages._chunking_model import GenericChunkingModel
+
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
 
@@ -45,7 +48,7 @@ class Rag(Generic[C]):
         self._components: dict[Type[C], C] = {}
 
     def _load_component(
-        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False
+        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False, **kwargs
     ) -> Optional[C]:
         cls: Type[C]
         instance: Optional[C]
@@ -68,7 +71,7 @@ class Rag(Generic[C]):
                     raise RagnaException(
                         "Component not available", name=cls.display_name()
                     )
-                instance = cls()
+                instance = cls(**kwargs)
 
             self._components[cls] = instance
 
@@ -80,6 +83,8 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -89,6 +94,8 @@ class Rag(Generic[C]):
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
+            embedding_model: Embedding Model to use
+            chunking_model: Chunking Model to use
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -96,6 +103,8 @@ class Rag(Generic[C]):
             documents=documents,
             source_storage=source_storage,
             assistant=assistant,
+            embedding_model=embedding_model,
+            chunking_model=chunking_model,
             **params,
         )
 
@@ -148,13 +157,18 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> None:
         self._rag = rag
 
+        self.embedding_model = cast(GenericEmbeddingModel, self._rag._load_component(embedding_model))
+        self.chunking_model = cast(GenericChunkingModel, self._rag._load_component(chunking_model))
+
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage)
+            SourceStorage, self._rag._load_component(source_storage, embedding_dimensions=self.embedding_model.get_embedding_dimensions())
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
 
@@ -188,7 +202,14 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
+        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+            await self._run(self.source_storage.store, self.documents)
+        else:
+            # Here we need to generate the list of embeddings
+            chunks = self.chunking_model.chunk_documents(self.documents)
+            embeddings = self.embedding_model.embed_chunks(chunks)
+            await self._run(self.source_storage.store, embeddings)
+
         self._prepared = True
 
         welcome = Message(
@@ -218,7 +239,10 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+            sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        else:
+            sources = await self._run(self.source_storage.retrieve, self.documents, self.embedding_model.embed_text(prompt))
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),

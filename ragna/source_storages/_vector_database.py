@@ -45,6 +45,7 @@ def _windowed_ragged(
 class Chunk:
     text: str
     page_numbers: Optional[list[int]]
+    document_id: int
     num_tokens: int
 
 
@@ -65,36 +66,13 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
     def __init__(self) -> None:
         import chromadb.api
-        import chromadb.utils.embedding_functions
-        import tiktoken
+        # import chromadb.utils.embedding_functions
 
-        self._embedding_function = cast(
-            chromadb.api.types.EmbeddingFunction,
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction(),
-        )
+        # self._embedding_function = cast(
+        #     chromadb.api.types.EmbeddingFunction,
+        #     chromadb.utils.embedding_functions.DefaultEmbeddingFunction(),
+        # )
         # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#all-minilm-l6-v2
-        self._embedding_dimensions = 384
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
-
-    def _chunk_pages(
-        self, pages: Iterable[Page], *, chunk_size: int, chunk_overlap: int
-    ) -> Iterator[Chunk]:
-        for window in _windowed_ragged(
-            (
-                (tokens, page.number)
-                for page in pages
-                for tokens in self._tokenizer.encode(page.text)
-            ),
-            n=chunk_size,
-            step=chunk_size - chunk_overlap,
-        ):
-            tokens, page_numbers = zip(*window)
-            yield Chunk(
-                text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
-                page_numbers=list(filter(lambda n: n is not None, page_numbers))
-                or None,
-                num_tokens=len(tokens),
-            )
 
     def _page_numbers_to_str(self, page_numbers: Optional[Iterable[int]]) -> str:
         if not page_numbers:
