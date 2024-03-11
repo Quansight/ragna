@@ -39,6 +39,9 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
+        self._tokens = 0
+        self._embeddings = 0
+
     def store(
         self,
         documents: list[Embedding],
@@ -54,16 +57,19 @@ class Chroma(VectorDatabaseSourceStorage):
         embeddings = []
         metadatas = []
         for embedding in documents:
-                ids.append(str(uuid.uuid4()))
-                texts.append(embedding.chunk.text)
-                metadatas.append(
-                    {
-                        "document_id": str(embedding.chunk.document_id),
-                        "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
-                        "num_tokens": embedding.chunk.num_tokens,
-                    }
-                )
-                embeddings.append(embedding.embedding)
+            self._tokens += embedding.chunk.num_tokens
+            self._embeddings += 1
+
+            ids.append(str(uuid.uuid4()))
+            texts.append(embedding.chunk.text)
+            metadatas.append(
+                {
+                    "document_id": str(embedding.chunk.document_id),
+                    "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
+                    "num_tokens": embedding.chunk.num_tokens,
+                }
+            )
+            embeddings.append(embedding.embedding)
 
         collection.add(
             ids=ids,
@@ -75,18 +81,17 @@ class Chroma(VectorDatabaseSourceStorage):
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
         collection = self._client.get_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            str(chat_id)
         )
 
         result = collection.query(
-            query_texts=prompt,
+            query_embeddings=prompt,
             n_results=min(
                 # We cannot retrieve source by a maximum number of tokens. Thus, we
                 # estimate how many sources we have to query. We overestimate by a
@@ -99,7 +104,7 @@ class Chroma(VectorDatabaseSourceStorage):
                 #  Instead of just querying more documents here, we should use the
                 #  appropriate index parameters when creating the collection. However,
                 #  they are undocumented for now.
-                max(int(num_tokens * 2 / chunk_size), 100),
+                max(int(num_tokens * 2 / self._tokens * self._embeddings), 100),
                 collection.count(),
             ),
             include=["distances", "metadatas", "documents"],

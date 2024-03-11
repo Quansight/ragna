@@ -37,6 +37,9 @@ class LanceDB(VectorDatabaseSourceStorage):
 
         import lancedb
 
+        self._tokens = 0
+        self._embeddings = 0
+
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
 
     _VECTOR_COLUMN_NAME = "embedded_text"
@@ -64,6 +67,8 @@ class LanceDB(VectorDatabaseSourceStorage):
         table = self._db.create_table(name=str(chat_id), schema=_schema)
 
         for embedding in documents:
+            self._tokens += embedding.chunk.num_tokens
+            self._embeddings += 1
             table.add(
                 [
                     {
@@ -85,13 +90,14 @@ class LanceDB(VectorDatabaseSourceStorage):
         prompt: list[float],
         *,
         chat_id: uuid.UUID,
+        num_tokens: int = 1024,
     ) -> list[Source]:
         table = self._db.open_table(str(chat_id))
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
-        limit = int(num_tokens * 2 / chunk_size)
+        limit = int(num_tokens * 2 / self._tokens * self._embeddings)
         results = (
             table.search(
                 prompt,
