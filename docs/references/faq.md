@@ -4,8 +4,9 @@
 
 !!! tip "TL;DR"
 
-    Ragna is the only tool out there that specializes in orchestrating RAG uses cases with arbitrary components,
-    as well as offers a Python API, a REST API, and a web UI for that.
+    Ragna is the only tool out there that specializes in orchestrating RAG use cases
+    with arbitrary components, as well as offering a Python API, a REST API, and a web
+    UI for that.
 
 !!! note
 
