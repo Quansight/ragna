@@ -19,28 +19,6 @@ from ragna.core import (
     SourceStorage,
 )
 
-T = TypeVar("T")
-
-
-# The function is adapted from more_itertools.windowed to allow a ragged last window
-# https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.windowed
-def _windowed_ragged(
-    iterable: Iterable[T], *, n: int, step: int
-) -> Iterator[tuple[T, ...]]:
-    window: Deque[T] = deque(maxlen=n)
-    i = n
-    for _ in map(window.append, iterable):
-        i -= 1
-        if not i:
-            i = step
-            yield tuple(window)
-
-    if len(window) < n:
-        yield tuple(window)
-    elif 0 < i < min(step, n):
-        yield tuple(window)[i:]
-
-
 @dataclasses.dataclass
 class Chunk:
     text: str
