@@ -1,6 +1,5 @@
 import json
 
-import httpx_sse
 import pytest
 from fastapi.testclient import TestClient
 
@@ -36,12 +35,6 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
         file.write("!\n")
-
-    # Reset starlette_sse AppStatus for each run
-    # See https://github.com/sysid/sse-starlette/issues/59
-    from sse_starlette.sse import AppStatus
-
-    AppStatus.should_exit_event = None
 
     with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
         authenticate(client)
@@ -108,15 +101,12 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         prompt = "?"
         if stream_answer:
-            chunks = []
-            with httpx_sse.connect_sse(
-                client,
+            with client.stream(
                 "POST",
                 f"/chats/{chat['id']}/answer",
                 json={"prompt": prompt, "stream": True},
-            ) as event_source:
-                for sse in event_source.iter_sse():
-                    chunks.append(json.loads(sse.data))
+            ) as response:
+                chunks = [json.loads(chunk) for chunk in response.iter_lines()]
             message = chunks[0]
             assert all(chunk["sources"] is None for chunk in chunks[1:])
             message["content"] = "".join(chunk["content"] for chunk in chunks)

@@ -1,9 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-import httpx_sse
-
-from ragna.core import RagnaException, Source
+from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
 from ._api import ApiAssistant
 
@@ -12,6 +10,10 @@ class AnthropicApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _MODEL: str
     _CONTEXT_SIZE: int
+
+    @classmethod
+    def _extra_requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("httpx_sse")]
 
     @classmethod
     def display_name(cls) -> str:
@@ -34,6 +36,8 @@ class AnthropicApiAssistant(ApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
+        import httpx_sse
+
         # See https://docs.anthropic.com/claude/reference/streaming
         async with httpx_sse.aconnect_sse(
             self._client,
