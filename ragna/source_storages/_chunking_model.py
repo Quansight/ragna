@@ -22,6 +22,11 @@ class GenericChunkingModel(Component, ABC):
     def chunk_documents(self, documents: list[Document]) -> list[Chunk]:
         raise NotImplementedError
 
+    def generate_chunks_from_pages(self, chunks: list[str], pages: Iterable[Page], document_id: int) -> list[Chunk]:
+
+        return [Chunk(page_numbers=[1], text=chunks[i], document_id=document_id,
+                         num_tokens=len(self._tokenizer.encode(chunks[i]))) for i in range(len(chunks))]
+
 
 class NLTKChunkingModel(GenericChunkingModel):
     def __init__(self):
@@ -32,12 +37,14 @@ class NLTKChunkingModel(GenericChunkingModel):
         self.text_splitter = NLTKTextSplitter()
 
     def chunk_documents(self, documents: list[Document]) -> list[Chunk]:
-        # Problem: chunk need to preserve its page number
+        # This is not perfect, but it's the only way I could get this to somewhat work
         chunks = []
         for document in documents:
-            for page in document.extract_pages():
-                chunks_raw = self.text_splitter.split_text(page.text)
-                chunks += [Chunk(page_numbers=[page.number], text=chunk, document_id=document.id, num_tokens=len(self._tokenizer.encode(chunk))) for chunk in chunks_raw]
+            pages = list(document.extract_pages())
+            text = "".join([page.text for page in pages])
+
+            chunks += self.generate_chunks_from_pages(self.text_splitter.split_text(text), pages, document.id)
+
         return chunks
 
 
@@ -53,10 +60,11 @@ class SpacyChunkingModel(GenericChunkingModel):
         # Problem: chunk need to preserve its page number
         chunks = []
         for document in documents:
-            for page in document.extract_pages():
-                chunks_raw = self.text_splitter.split_text(page.text)
-                chunks += [Chunk(page_numbers=[page.number], text=chunk, document_id=document.id,
-                                 num_tokens=len(self._tokenizer.encode(chunk))) for chunk in chunks_raw]
+            pages = list(document.extract_pages())
+            text = "".join([page.text for page in pages])
+
+            chunks += self.generate_chunks_from_pages(self.text_splitter.split_text(text), pages, document.id)
+
         return chunks
 
 
