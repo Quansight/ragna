@@ -38,7 +38,13 @@ class TutorialAssistant(Assistant):
         Returns:
             Answer.
         """
-        ...
+        yield self._default_answer(prompt, sources)
+
+    def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+        return (
+            f"This is a default answer. There were {len(sources)} sources."
+            f"The prompt was\n{prompt}"
+        )
 
 
 # %%
