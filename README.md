@@ -50,6 +50,7 @@ A RAG orchestration framework.
 
 Check out the Ragna documentation to get started:
 
+- [Overview video](https://youtu.be/xuNnjFS1XqQ?si=AssQq_1CF2o1jv3M)
 - [Installation steps](https://ragna.chat/en/stable/install/)
 - Tutorials
   - [Python API](https://ragna.chat/en/stable/tutorials/python-api/)
