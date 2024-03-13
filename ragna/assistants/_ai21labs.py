@@ -8,16 +8,10 @@ from ._api import ApiAssistant
 class Ai21LabsAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
     _MODEL_TYPE: str
-    _CONTEXT_SIZE: int = 8_192
-    # See https://docs.ai21.com/docs/model-availability-across-platforms#ai21-studio
 
     @classmethod
     def display_name(cls) -> str:
         return f"AI21Labs/jurassic-2-{cls._MODEL_TYPE}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (

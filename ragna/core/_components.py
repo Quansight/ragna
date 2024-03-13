@@ -212,11 +212,6 @@ class Assistant(Component, abc.ABC):
 
     __ragna_protocol_methods__ = ["answer"]
 
-    @property
-    @abc.abstractmethod
-    def max_input_size(self) -> int:
-        ...
-
     @abc.abstractmethod
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         """Answer a prompt given some sources.
