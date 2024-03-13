@@ -8,15 +8,10 @@ from ._api import ApiAssistant
 class MosaicmlApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "MOSAICML_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
 
     @classmethod
     def display_name(cls) -> str:
         return f"MosaicML/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
         # See https://huggingface.co/mosaicml/mpt-7b-instruct#formatting
@@ -58,7 +53,6 @@ class Mpt7bInstruct(MosaicmlApiAssistant):
 
     # https://huggingface.co/mosaicml/mpt-7b-instruct#model-description
     _MODEL = "mpt-7b-instruct"
-    _CONTEXT_SIZE = 2048
 
 
 class Mpt30bInstruct(MosaicmlApiAssistant):
@@ -71,4 +65,3 @@ class Mpt30bInstruct(MosaicmlApiAssistant):
 
     # https://huggingface.co/mosaicml/mpt-30b-instruct#model-description
     _MODEL = "mpt-30b-instruct"
-    _CONTEXT_SIZE = 8_192

@@ -12,10 +12,6 @@ from .utils import authenticate
 
 
 class TestAssistant(RagnaDemoAssistant):
-    @property
-    def max_input_size(self) -> int:
-        return 0
-
     def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
         content = next(super().answer(prompt, sources))
 
