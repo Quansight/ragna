@@ -44,16 +44,13 @@ A RAG orchestration framework.
 </tr>
 </table>
 
-## Overview
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/xuNnjFS1XqQ?si=zKMVXSSjQWZvYvkf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
 ## Get started ⛵️
 
 <!-- Link to documentation pages to avoid keeping README + Docs in sync -->
 
 Check out the Ragna documentation to get started:
 
+- [Overview video](https://youtu.be/xuNnjFS1XqQ?si=AssQq_1CF2o1jv3M)
 - [Installation steps](https://ragna.chat/en/stable/install/)
 - Tutorials
   - [Python API](https://ragna.chat/en/stable/tutorials/python-api/)
