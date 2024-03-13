@@ -9,7 +9,6 @@ from ._api import ApiAssistant
 class AnthropicApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
 
     @classmethod
     def _extra_requirements(cls) -> list[Requirement]:
@@ -18,10 +17,6 @@ class AnthropicApiAssistant(ApiAssistant):
     @classmethod
     def display_name(cls) -> str:
         return f"Anthropic/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
         # See https://docs.anthropic.com/claude/docs/introduction-to-prompt-design#human--assistant-formatting
@@ -84,7 +79,6 @@ class ClaudeInstant(AnthropicApiAssistant):
     """
 
     _MODEL = "claude-instant-1"
-    _CONTEXT_SIZE = 100_000
 
 
 class Claude(AnthropicApiAssistant):
@@ -100,4 +94,3 @@ class Claude(AnthropicApiAssistant):
     """
 
     _MODEL = "claude-2"
-    _CONTEXT_SIZE = 100_000

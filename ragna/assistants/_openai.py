@@ -9,7 +9,6 @@ from ._api import ApiAssistant
 class OpenaiApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
 
     @classmethod
     def _extra_requirements(cls) -> list[Requirement]:
@@ -18,10 +17,6 @@ class OpenaiApiAssistant(ApiAssistant):
     @classmethod
     def display_name(cls) -> str:
         return f"OpenAI/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
@@ -88,7 +83,6 @@ class Gpt35Turbo16k(OpenaiApiAssistant):
     """
 
     _MODEL = "gpt-3.5-turbo-16k"
-    _CONTEXT_SIZE = 16_384
 
 
 class Gpt4(OpenaiApiAssistant):
@@ -104,4 +98,3 @@ class Gpt4(OpenaiApiAssistant):
     """
 
     _MODEL = "gpt-4"
-    _CONTEXT_SIZE = 8_192

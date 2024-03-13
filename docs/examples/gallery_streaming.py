@@ -43,10 +43,6 @@ from ragna import assistants
 
 
 class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
-    @property
-    def max_input_size(self) -> int:
-        return 0
-
     def answer(self, prompt, sources):
         content = next(super().answer(prompt, sources))
         for chunk in content.split(" "):
