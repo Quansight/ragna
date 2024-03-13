@@ -39,6 +39,9 @@
 - The return type of [ragna.core.Assistant.answer][] changed from `str` to
   `Iterator[str]` / `AsyncIterator[str]`. To reflect that in the implementation, replace
   `return` with `yield`. To stream the response, `yield` multiple times.
+- The abstract property `ragna.core.Assistant.max_input_size` was removed. This
+  information was never used anywhere. Note that you don't have to remove it from
+  existing implementations. It will just stay unused by Ragna.
 - We introduced a couple of changes to the configuration file.
 
   - The top level `local_cache_root` option was renamed to `local_root` to align with
