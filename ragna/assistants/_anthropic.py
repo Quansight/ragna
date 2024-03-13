@@ -77,6 +77,10 @@ class ClaudeInstant(AnthropicApiAssistant):
     !!! info "Required environment variables"
 
         - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "claude-instant-1"
@@ -89,6 +93,10 @@ class Claude(AnthropicApiAssistant):
     !!! info "Required environment variables"
 
         - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "claude-2"

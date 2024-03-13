@@ -81,6 +81,10 @@ class Gpt35Turbo16k(OpenaiApiAssistant):
     !!! info "Required environment variables"
 
         - `OPENAI_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "gpt-3.5-turbo-16k"
@@ -93,6 +97,10 @@ class Gpt4(OpenaiApiAssistant):
     !!! info "Required environment variables"
 
         - `OPENAI_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "gpt-4"
