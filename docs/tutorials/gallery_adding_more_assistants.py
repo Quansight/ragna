@@ -90,7 +90,7 @@ class TutorialAssistant(Assistant):
 # `ragna/assistants/__init__.py`, and import it in the same file. An example is shown below:
 
 # %%
-# ```
+# ```python
 # __all__ = [
 #     # [Other assistants...]
 #     "Gpt35Turbo16k",
