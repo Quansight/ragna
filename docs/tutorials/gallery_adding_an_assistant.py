@@ -1,5 +1,5 @@
 """
-# Adding More Assistants
+# Adding an Assistant
 
 Ragna has builtin support for [several assistants][ragna.assistants], but there may be cases where you 
 want to use one that is not currently supported.
