@@ -56,3 +56,33 @@ class TutorialAssistant(Assistant):
 # The [`answer`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
 # This could ball an API directly, call other member functions of your assistant that call an API,
 # or call a local LLM. Ragna is designed to give you that flexibility.
+
+# %%
+# ## Include the Assistant in Ragna
+
+# %%
+# Once you have created your assistant, you must add it to the system so that it is recognized.
+# To do this, add your custom assistant to the `__all__` list in the file
+# `ragna/assistants/__init__.py`, and import it in the same file. An example is shown below
+# with the assumption that our `TutorialAssistant` is located in the file
+# `ragna/assistants/_tutorial`:
+
+# %%
+# ```
+# __all__ = [
+#     # [Other assistants...]
+#     "Gpt35Turbo16k",
+#     "Gpt4",
+#     "TutorialAssistant",
+# ]
+#
+# # [Other imports...]
+# from ._openai import Gpt4, Gpt35Turbo16k
+# from ._tutorial import TutorialAssistant
+#
+# # [Rest of file...]
+# ```
+
+# %%
+# Although it is not a strict requirement, it is a convention that the items added to
+# `ragna/assistants/__init__.py` appear in alphabetical order.
