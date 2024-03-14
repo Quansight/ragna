@@ -9,6 +9,9 @@ currently supported.
 """
 
 # %%
+# ## Write the Assistant
+
+# %%
 # First start by importing some necessary components:
 
 from typing import Iterator
@@ -43,9 +46,13 @@ class TutorialAssistant(Assistant):
     def _default_answer(self, prompt: str, sources: list[Source]) -> str:
         return (
             f"This is a default answer. There were {len(sources)} sources."
-            f"The prompt was\n{prompt}"
+            ""
+            f"The prompt was"
+            f"{prompt}"
         )
 
 
 # %%
-# The [`answer`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM. This could ball an API directly, call other member functions of your assistant that call an API, or call a local LLM. Ragna is designed to give you that flexibility.
+# The [`answer`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
+# This could ball an API directly, call other member functions of your assistant that call an API,
+# or call a local LLM. Ragna is designed to give you that flexibility.
