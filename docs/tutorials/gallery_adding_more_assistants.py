@@ -9,7 +9,7 @@ currently supported.
 """
 
 # %%
-# ## Write the Assistant
+# ## Step 1: Write the Assistant
 
 # %%
 # First start by importing some necessary components:
@@ -58,7 +58,7 @@ class TutorialAssistant(Assistant):
 # or call a local LLM. Ragna is designed to give you that flexibility.
 
 # %%
-# ## Include the Assistant in Ragna
+# ## Step 2: Include the Assistant in Ragna
 
 # %%
 # Once you have created your assistant, you must add it to the system so that it is recognized.
