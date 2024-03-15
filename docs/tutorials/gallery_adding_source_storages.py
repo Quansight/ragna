@@ -19,7 +19,7 @@ This tutorial walks you through the basics of adding a source storage that is no
 #     The code snippet below only includes up to Step 1. To actually include your source storage
 #     in Ragna, you must still perform Step 2.
 
-from ragna.core import Source, SourceStorage
+from ragna.core import Document, Source, SourceStorage
 
 
 class TutorialSourceStorage(SourceStorage):
@@ -27,17 +27,21 @@ class TutorialSourceStorage(SourceStorage):
         # import database api
 
         # set up database
-        ...
+        self._storage: dict[int, list[Source]] = {}
 
-    def store(self, sources: list[Source]) -> None:
+    def store(self, documents: list[Document], chat_id: int) -> None:
         """Store content of sources.
 
         Args:
-            sources: Sources to store.
+            documents: Documents to store.
+            chat_id: Identifier for the chat
         """
-        for document in sources:
-            # store sources using database api
-            ...
+        self._storage[chat_id] = [
+            Source(
+                document=document,
+            )
+            for document in documents
+        ]
 
     def retrieve(self, sources: list[Source], prompt: str) -> list[Source]:
         """Retrieve sources for a given prompt.
@@ -79,7 +83,7 @@ class TutorialSourceStorage(SourceStorage):
 #         # import database api
 #
 #         # set up database
-#         ...
+#         self._storage: dict[int, list[Source]] = {}
 # ```
 
 # %%
@@ -106,7 +110,12 @@ class TutorialSourceStorage(SourceStorage):
 #         """
 #         for document in sources:
 #             # store sources using database api
-#             ...
+#             self._storage[chat_id] = [
+#             Source(
+#                 document=document,
+#             )
+#             for document in documents
+#         ]
 # ```
 
 # %%
