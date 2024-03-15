@@ -98,6 +98,12 @@ class TutorialAssistant(Assistant):
 # ```
 
 # %%
+# !!! note
+#     Ragna also supports streaming responses from the assistant. See the
+#     [example how to use streaming responses](../../generated/examples/gallery_streaming.md)
+#     for more information.
+
+# %%
 # See the documentation on [how to include external objects in Ragna](../../references/config.md#referencing-python-objects)
 
 # %%
