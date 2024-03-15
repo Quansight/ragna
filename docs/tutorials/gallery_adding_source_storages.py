@@ -96,3 +96,25 @@ class tutorial_source_storage(SourceStorage):
 #             # store sources using database api
 #             ...
 # ```
+
+# %%
+# #### Step 1b: Implement [`retrieve()`][ragna.core.SourceStorage.retrieve]
+
+# %%
+# [`retrieve()`][ragna.core.SourceStorage.retrieve] returns sources matching
+# the given prompt in order of relevance.
+
+# %%
+# ```python
+#     def retrieve(self, sources: list[Source], prompt: str) -> list[Source]:
+#         """Retrieve sources for a given prompt.
+#
+#         Args:
+#             sources: Sources to retrieve sources from.
+#             prompt: Prompt to retrieve sources for.
+#
+#         Returns:
+#             Matching sources for the given prompt ordered by relevance.
+#         """
+#         return sources
+# ```
