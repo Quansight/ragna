@@ -35,21 +35,7 @@ class TutorialAssistant(Assistant):
         Returns:
             Answer.
         """
-        yield self._default_answer(prompt, sources)
-
-    def _default_answer(self, prompt, sources):
-        """
-        "Compute" the response to a given prompt. In this case,
-        the "computation" is a default string.
-
-        Args:
-            prompt: Prompt to be answered.
-            sources: Sources to use when answering answer the prompt.
-
-        Returns:
-            Answer.
-        """
-        return (
+        yield (
             f"This is a default answer. There were {len(sources)} sources."
             ""
             f"The prompt was"
@@ -103,35 +89,13 @@ class TutorialAssistant(Assistant):
 #         Returns:
 #             Answer.
 #         """
-#         yield self._default_answer(prompt, sources)
-#
-#     def _default_answer(self, prompt, sources):
-#         """
-#         "Compute" the response to a given prompt. In this case,
-#         the "computation" is a default string.
-#
-#         Args:
-#             prompt: Prompt to be answered.
-#             sources: Sources to use when answering answer the prompt.
-#
-#         Returns:
-#             Answer.
-#         """
-#         return (
+#         yield (
 #             f"This is a default answer. There were {len(sources)} sources."
 #             ""
 #             f"The prompt was"
 #             f"{prompt}"
 #          )
 # ```
-
-
-# %%
-# !!! note
-#     While including the `_default_answer` method seems to obfuscate the code, it is meant
-#     to demonstrate that you can add multiple methods to your assistant that help compute
-#     the response. Examples include calling an external API or preparing the sources to be
-#     used by the model.
 
 # %%
 # ### Step 2: Include the Assistant in Ragna
