@@ -18,6 +18,12 @@ This tutorial walks you through the basics of adding a source storage that is no
 # %%
 # Here is the tutorial example printed in its entirety which will be explained below
 
+# %%
+# !!! note
+#
+#     The code snippet below only includes up to Step 1. To actually include your source storage
+#     in Ragna, you must still perform Step 2.
+
 from ragna.core import Source, SourceStorage
 
 
@@ -53,6 +59,12 @@ class TutorialSourceStorage(SourceStorage):
 
 # %%
 # ## The Explanation
+
+# %%
+# !!! tip
+#
+#     For organizational purposes, this tutorial is divided into steps, but you may wish to perform
+#     Step 2 during Step 1 for manual testing or debugging.
 
 # %%
 # ### Step 0: Import source storage module and write the class initializer
