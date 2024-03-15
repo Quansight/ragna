@@ -143,32 +143,8 @@ class TutorialSourceStorage(SourceStorage):
 # ```
 
 # %%
-# ### Step 2: Include the Source Storage in Ragna
+# See the documentation on
+# [how to include external objects in Ragna](../../references/config.md#referencing-python-objects)
 
 # %%
-# Once you have created your source storage, you must add it to the system so that it
-# is recognized. To do this, add your custom source storage to the `__all__` list in the file
-# `ragna/source_storages/__init__.py`, and import it in the same file. An example is shown
-# below.
-
-# %%
-# ```python
-# __all__ = [
-#     "Chroma",
-#     "LanceDB",
-#     "RagnaDemoSourceStorage",
-#     "TutorialSourceStorage"
-# ]
-#
-# from ._chroma import Chroma
-# from ._demo import RagnaDemoSourceStorage
-# from ._lancedb import LanceDB
-# from ._tutorial import TutorialSourceStorage
-#
-# # [Rest of file...]
-# ```
-
-# %%
-# !!! note
-#     Although it is not a strict requirement, it is a convention that the items added to
-#     `ragna/source_storages/__init__.py` appear in alphabetical order.
+# ### Step 2: Use the Source Storage in Ragna
