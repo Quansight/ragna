@@ -5,6 +5,11 @@ Ragna has builtin support for [several source storage types][ragna.source_storag
 where you want to use one that is not currently supported. 
 
 This tutorial walks you through the basics of adding a source storage that is not currently supported. 
+
+!!! note
+
+    This tutorial assumes that our `TutorialSourceStorage` class (shown below) is located in the file
+    `ragna/source_storages/_tutorial.py`.
 """
 
 # %%
@@ -16,7 +21,7 @@ This tutorial walks you through the basics of adding a source storage that is no
 from ragna.core import Source, SourceStorage
 
 
-class tutorial_source_storage(SourceStorage):
+class TutorialSourceStorage(SourceStorage):
     def __init__(self):
         # import database api
 
@@ -62,7 +67,7 @@ class tutorial_source_storage(SourceStorage):
 # from ragna.core import Source, SourceStorage
 #
 #
-# class tutorial_source_storage(SourceStorage):
+# class TutorialSourceStorage(SourceStorage):
 #     def __init__(self):
 #         # import database api
 #
@@ -118,3 +123,34 @@ class tutorial_source_storage(SourceStorage):
 #         """
 #         return sources
 # ```
+
+# %%
+# ### Step 2: Include the Source Storage in Ragna
+
+# %%
+# Once you have created your source storage, you must add it to the system so that it
+# is recognized. To do this, add your custom source storage to the `__all__` list in the file
+# `ragna/source_storages/__init__.py`, and import it in the same file. An example is shown
+# below.
+
+# %%
+# ```python
+# __all__ = [
+#     "Chroma",
+#     "LanceDB",
+#     "RagnaDemoSourceStorage",
+#     "TutorialSourceStorage"
+# ]
+#
+# from ._chroma import Chroma
+# from ._demo import RagnaDemoSourceStorage
+# from ._lancedb import LanceDB
+# from ._tutorial import TutorialSourceStorage
+#
+# # [Rest of file...]
+# ```
+
+# %%
+# !!! note
+#     Although it is not a strict requirement, it is a convention that the items added to
+#     `ragna/source_storages/__init__.py` appear in alphabetical order.
