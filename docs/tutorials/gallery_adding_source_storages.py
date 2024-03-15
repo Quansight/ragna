@@ -5,11 +5,6 @@ Ragna has builtin support for [several source storage types][ragna.source_storag
 where you want to use one that is not currently supported. 
 
 This tutorial walks you through the basics of adding a source storage that is not currently supported. 
-
-!!! note
-
-    This tutorial assumes that our `TutorialSourceStorage` class (shown below) is located in the file
-    `ragna/source_storages/_tutorial.py`.
 """
 
 # %%
