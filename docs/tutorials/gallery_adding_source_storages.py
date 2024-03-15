@@ -43,7 +43,9 @@ class TutorialSourceStorage(SourceStorage):
             for document in documents
         ]
 
-    def retrieve(self, sources: list[Source], prompt: str) -> list[Source]:
+    def retrieve(
+        self, documents: list[Document], prompt: str, *, chat_id: int
+    ) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
@@ -53,7 +55,7 @@ class TutorialSourceStorage(SourceStorage):
         Returns:
             Matching sources for the given prompt ordered by relevance.
         """
-        return sources
+        return self._storage[chat_id]
 
 
 # %%
@@ -137,7 +139,7 @@ class TutorialSourceStorage(SourceStorage):
 #         Returns:
 #             Matching sources for the given prompt ordered by relevance.
 #         """
-#         return sources
+#         return self._storage[chat_id]
 # ```
 
 # %%
