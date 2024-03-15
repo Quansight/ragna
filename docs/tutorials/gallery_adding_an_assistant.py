@@ -7,34 +7,26 @@ want to use one that is not currently supported.
 This tutorial walks you through the basics of creating an assistant for LLMs that are not
 currently supported. 
 
-!!! tip
+!!! note
 
-    For organizational purposes, this tutorial is divided into steps, but you may wish to perform
-    Step 2 during Step 1 for manual testing or debugging.
+    This tutorial assumes that our TutorialAssistant class (shown below) is located in the
+    file ragna/assistants/_tutorial.py.
+
+
 """
 
 # %%
-# ## Step 1: Write the Assistant
+# ## The Finished Product
 
 # %%
-# For this tutorial, we assume the code in this step is located in the file
-# `ragna/assistants/_tutorial.py`
+# !!! note
 #
-# First start by importing some necessary components. Ragna uses the `typing` library:
+#     The code snippet below only includes up to Step 1. To actually include your source
+#     storage in Ragna, you must still perform Step 2.
 
 from typing import Iterator
 
-# %%
-# Your assistant will subclass the [`Assistant`][ragna.core.Assistant] abstract base class and
-# [`Source`][ragna.core.Source] will be used to hold the documents or files sent to the LLM.
-
 from ragna.core import Assistant, Source
-
-# %%
-# The main thing to do is to implement the `answer` abstract method. The
-# [`answer`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
-# This could call an API directly, call other member functions of your assistant that call an API,
-# or call a local LLM. Ragna is designed to give you that flexibility.
 
 
 class TutorialAssistant(Assistant):
@@ -75,6 +67,80 @@ class TutorialAssistant(Assistant):
 
 
 # %%
+# ## The Explanation
+
+# %%
+# !!! tip
+#
+#     For organizational purposes, this tutorial is divided into steps, but you may wish to perform
+#     Step 2 during Step 1 for manual testing or debugging.
+
+
+# %%
+# ### Step 0: Import Necessary Modules
+
+# %%
+# First start by importing some necessary components. Ragna uses the `typing` library:
+
+# %%
+# ```python
+# from typing import Iterator
+# ```
+
+# %%
+# Your assistant will subclass the [`Assistant`][ragna.core.Assistant] abstract base class and
+# [`Source`][ragna.core.Source] will be used to hold the documents or files sent to the LLM.
+
+# %%
+# ```python
+# from ragna.core import Assistant, Source
+# ```
+
+# %%
+# ### Step 1: Write the Assistant
+
+# %%
+# The main thing to do is to implement the `answer` abstract method. The
+# [`answer`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
+# This could call an API directly, call other member functions of your assistant that call an API,
+# or call a local LLM. Ragna is designed to give you that flexibility.
+
+# %%
+# ```python
+#     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+#         """Answer a prompt given some sources.
+#
+#         Args:
+#             prompt: Prompt to be answered.
+#             sources: Sources to use when answering answer the prompt.
+#
+#         Returns:
+#             Answer.
+#         """
+#         yield self._default_answer(prompt, sources)
+#
+#     def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+#         """
+#         "Compute" the response to a given prompt. In this case,
+#         the "computation" is a default string.
+#
+#         Args:
+#             prompt: Prompt to be answered.
+#             sources: Sources to use when answering answer the prompt.
+#
+#         Returns:
+#             Answer.
+#         """
+#         return (
+#             f"This is a default answer. There were {len(sources)} sources."
+#             ""
+#             f"The prompt was"
+#             f"{prompt}"
+#          )
+# ```
+
+
+# %%
 # !!! note
 #     While including the `_default_answer` method seems to obfuscate the code, it is meant
 #     to demonstrate that you can add multiple methods to your assistant that help compute
@@ -82,7 +148,7 @@ class TutorialAssistant(Assistant):
 #     used by the model.
 
 # %%
-# ## Step 2: Include the Assistant in Ragna
+# ### Step 2: Include the Assistant in Ragna
 
 # %%
 # Once you have created your assistant, you must add it to the system so that Ragna recognizes it.
