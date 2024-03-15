@@ -6,13 +6,6 @@ want to use one that is not currently supported.
 
 This tutorial walks you through the basics of creating an assistant for LLMs that are not
 currently supported. 
-
-!!! note
-
-    This tutorial assumes that our TutorialAssistant class (shown below) is located in the
-    file ragna/assistants/_tutorial.py.
-
-
 """
 
 # %%
