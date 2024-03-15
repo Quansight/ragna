@@ -69,3 +69,30 @@ class tutorial_source_storage(SourceStorage):
 #         # set up database
 #         ...
 # ```
+
+# %%
+# ### Step 1: Implement Abstract Methods
+
+# %%
+# [`SourceStorage`][ragna.core.SourceStorage] has two abstract methods, [`store()`][ragna.core.SourceStorage.store] and [`retrieve()`][ragna.core.SourceStorage.retrieve].
+
+# %%
+# #### Step 1a: Implement [`store()`][ragna.core.SourceStorage.store]
+
+# %%
+# [`store()`][ragna.core.SourceStorage.store] takes a list of [`Source`][ragna.core.Source]s
+# as an argument and places them in the database that you are using to hold them. This is
+# different for each different source storage implementation.
+
+# %%
+# ```python
+#     def store(self, sources: list[Source]) -> None:
+#         """Store content of sources.
+#
+#         Args:
+#             sources: Sources to store.
+#         """
+#         for document in sources:
+#             # store sources using database api
+#             ...
+# ```
