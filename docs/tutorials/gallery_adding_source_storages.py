@@ -67,7 +67,7 @@ class TutorialSourceStorage(SourceStorage):
 #     Step 2 during Step 1 for manual testing or debugging.
 
 # %%
-# ### Step 0: Import source storage module and write the class initializer
+# ### Step 0: Import Source Storage Module and Write the Class Initializer
 
 # %%
 # Our source storage class will subclass the [`SourceStorage`][ragna.core.SourceStorage]
