@@ -98,30 +98,7 @@ class TutorialAssistant(Assistant):
 # ```
 
 # %%
-# ### Step 2: Include the Assistant in Ragna
+# See the documentation on [how to include external objects in Ragna](../../references/config.md#referencing-python-objects)
 
 # %%
-# Once you have created your assistant, you must add it to the system so that Ragna recognizes it.
-# To do this, add your custom assistant to the `__all__` list in the file
-# `ragna/assistants/__init__.py`, and import it in the same file. An example is shown below:
-
-# %%
-# ```python
-# __all__ = [
-#     # [Other assistants...]
-#     "Gpt35Turbo16k",
-#     "Gpt4",
-#     "TutorialAssistant",
-# ]
-#
-# # [Other imports...]
-# from ._openai import Gpt4, Gpt35Turbo16k
-# from ._tutorial import TutorialAssistant
-#
-# # [Rest of file...]
-# ```
-
-# %%
-# !!! note
-#     Although it is not a strict requirement, it is a convention that the items added to
-#     `ragna/assistants/__init__.py` appear in alphabetical order.
+# ### Step 2: Use the Assistant in Ragna
