@@ -30,11 +30,8 @@ class GoogleApiAssistant(ApiAssistant):
     _MODEL: str
 
     @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [
-            *super().requirements(),
-            PackageRequirement("ijson"),
-        ]
+    def _extra_requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("ijson")]
 
     @classmethod
     def display_name(cls) -> str:

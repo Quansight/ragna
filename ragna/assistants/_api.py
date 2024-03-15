@@ -16,7 +16,11 @@ class ApiAssistant(Assistant):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
+        return [EnvVarRequirement(cls._API_KEY_ENV_VAR), *cls._extra_requirements()]
+
+    @classmethod
+    def _extra_requirements(cls) -> list[Requirement]:
+        return []
 
     def __init__(self) -> None:
         self._client = httpx.AsyncClient(
