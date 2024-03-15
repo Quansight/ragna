@@ -17,9 +17,7 @@ currently supported.
 #     The code snippet below only includes up to Step 1. To actually include your source
 #     storage in Ragna, you must still perform Step 2.
 
-from typing import Iterator
-
-from ragna.core import Assistant, Source
+from ragna.core import Assistant
 
 
 class TutorialAssistant(Assistant):
@@ -27,7 +25,7 @@ class TutorialAssistant(Assistant):
     This is a basic assistant created for didactic purposes
     """
 
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+    def answer(self, prompt, sources):
         """Answer a prompt given some sources.
 
         Args:
@@ -39,7 +37,7 @@ class TutorialAssistant(Assistant):
         """
         yield self._default_answer(prompt, sources)
 
-    def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+    def _default_answer(self, prompt, sources):
         """
         "Compute" the response to a given prompt. In this case,
         the "computation" is a default string.
@@ -73,12 +71,7 @@ class TutorialAssistant(Assistant):
 # ### Step 0: Import Necessary Modules
 
 # %%
-# First start by importing some necessary components. Ragna uses the `typing` library:
-
-# %%
-# ```python
-# from typing import Iterator
-# ```
+# First start by importing some necessary components.
 
 # %%
 # Your assistant will subclass the [`Assistant`][ragna.core.Assistant] abstract base class and
@@ -100,7 +93,7 @@ class TutorialAssistant(Assistant):
 
 # %%
 # ```python
-#     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+#     def answer(self, prompt, sources):
 #         """Answer a prompt given some sources.
 #
 #         Args:
@@ -112,7 +105,7 @@ class TutorialAssistant(Assistant):
 #         """
 #         yield self._default_answer(prompt, sources)
 #
-#     def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+#     def _default_answer(self, prompt, sources):
 #         """
 #         "Compute" the response to a given prompt. In this case,
 #         the "computation" is a default string.
