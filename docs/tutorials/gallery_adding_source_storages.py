@@ -14,7 +14,6 @@ This tutorial walks you through the basics of adding a source storage that is no
 # Here is the tutorial example printed in its entirety which will be explained below
 
 from ragna.core import Source, SourceStorage
-from ragna.core._document import Document
 
 
 class tutorial_source_storage(SourceStorage):
@@ -24,24 +23,49 @@ class tutorial_source_storage(SourceStorage):
         # set up database
         ...
 
-    def store(self, documents: list[Document]) -> None:
-        """Store content of documents.
+    def store(self, sources: list[Source]) -> None:
+        """Store content of sources.
 
         Args:
-            documents: Documents to store.
+            sources: Sources to store.
         """
-        for document in documents:
-            # store documents using database api
+        for document in sources:
+            # store sources using database api
             ...
 
-    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+    def retrieve(self, sources: list[Source], prompt: str) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
-            documents: Documents to retrieve sources from.
+            sources: Sources to retrieve sources from.
             prompt: Prompt to retrieve sources for.
 
         Returns:
             Matching sources for the given prompt ordered by relevance.
         """
-        return documents
+        return sources
+
+
+# %%
+# ## The Explanation
+
+# %%
+# ### Step 0: Import source storage module and write the class initializer
+
+# %%
+# Our source storage class will subclass the [`SourceStorage`][ragna.core.SourceStorage]
+# abstract base class, so we import it. We also import [`Source`][ragna.core.Source]
+# to use with the typing system.
+
+# %%
+# ```python
+# from ragna.core import Source, SourceStorage
+#
+#
+# class tutorial_source_storage(SourceStorage):
+#     def __init__(self):
+#         # import database api
+#
+#         # set up database
+#         ...
+# ```
