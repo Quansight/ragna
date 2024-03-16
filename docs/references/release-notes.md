@@ -23,7 +23,7 @@
 - Ragna now has an official [docker](https://www.docker.com/) image. Try it with
 
   ```
-  $ docker run -p 31476:31476 -p 31477:31477 quay.io/quansight/ragna:latest
+  $ docker run -p 31476:31476 -p 31477:31477 quay.io/quansight/ragna:0.2.0
   ```
 
   The web UI can be accessed under `http://localhost:31477`.
