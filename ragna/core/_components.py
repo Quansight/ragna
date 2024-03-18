@@ -14,7 +14,7 @@ from typing import (
     Union,
     get_args,
     get_origin,
-    get_type_hints
+    get_type_hints,
 )
 
 import pydantic
@@ -86,6 +86,7 @@ class Component(RequirementsMixin):
     def _protocol_model(cls) -> Type[pydantic.BaseModel]:
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
+
 # Just for demo purposes. We need to move the actual class here.
 # See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
 class Embedding:
@@ -151,7 +152,6 @@ class SourceStorage(Component, abc.ABC):
             input_type = Document
 
         cls.__ragna_input_type__ = input_type
-
 
     @abc.abstractmethod
     def store(self, documents: list[Document]) -> None:
