@@ -21,10 +21,6 @@ from ragna.core import Assistant
 
 
 class TutorialAssistant(Assistant):
-    """
-    This is a basic assistant created for didactic purposes
-    """
-
     def answer(self, prompt, sources):
         """Answer a prompt given some sources.
 
