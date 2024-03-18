@@ -17,11 +17,13 @@ currently supported.
 #     The code snippet below only includes up to Step 1. To actually include your source
 #     storage in Ragna, you must still perform Step 2.
 
-from ragna.core import Assistant
+from typing import Iterator
+
+from ragna.core import Assistant, Source
 
 
 class TutorialAssistant(Assistant):
-    def answer(self, prompt, sources):
+    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         """Answer a prompt given some sources.
 
         Args:
@@ -61,6 +63,8 @@ class TutorialAssistant(Assistant):
 
 # %%
 # ```python
+# from typing import Iterator
+#
 # from ragna.core import Assistant, Source
 # ```
 
@@ -75,7 +79,7 @@ class TutorialAssistant(Assistant):
 
 # %%
 # ```python
-#     def answer(self, prompt, sources):
+#     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
 #         """Answer a prompt given some sources.
 #
 #         Args:
