@@ -4,7 +4,18 @@ import abc
 import enum
 import functools
 import inspect
-from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
+import warnings
+from typing import (
+    AsyncIterable,
+    AsyncIterator,
+    Iterator,
+    Optional,
+    Type,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 import pydantic
 import pydantic.utils
@@ -76,6 +87,12 @@ class Component(RequirementsMixin):
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
+# Just for demo purposes. We need to move the actual class here.
+# See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
+class Embedding:
+    pass
+
+
 class Source(pydantic.BaseModel):
     """Data class for sources stored inside a source storage.
 
@@ -98,6 +115,43 @@ class Source(pydantic.BaseModel):
 
 class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
+    __ragna_input_type__: Union[Document, Embedding]
+
+    def __init_subclass__(cls):
+        if inspect.isabstract(cls):
+            return
+
+        valid_input_types = get_args(get_type_hints(cls)["__ragna_input_type__"])
+
+        input_parameter_name = list(inspect.signature(cls.store).parameters.keys())[1]
+        input_parameter_annotation = get_type_hints(cls.store).get(input_parameter_name)
+
+        if input_parameter_annotation is None:
+            input_type = None
+        else:
+
+            def extract_input_type():
+                origin = get_origin(input_parameter_annotation)
+                if origin is None:
+                    return None
+
+                args = get_args(input_parameter_annotation)
+                if len(args) != 1:
+                    return None
+
+                input_type = args[0]
+                if not issubclass(input_type, valid_input_types):
+                    return None
+
+                return input_type
+
+            input_type = extract_input_type()
+
+        if input_type is None:
+            warnings.warn("ADDME")
+            input_type = Document
+
+        cls.__ragna_input_type__ = input_type
 
     @abc.abstractmethod
     def store(self, documents: list[Document]) -> None:
