@@ -11,12 +11,6 @@ currently supported.
 # %%
 # ## The Finished Product
 
-# %%
-# !!! note
-#
-#     The code snippet below only includes up to Step 1. To actually include your source
-#     storage in Ragna, you must still perform Step 2.
-
 from typing import Iterator
 
 from ragna.core import Assistant, Source
@@ -34,13 +28,6 @@ class TutorialAssistant(Assistant):
 
 # %%
 # ## The Explanation
-
-# %%
-# !!! tip
-#
-#     For organizational purposes, this tutorial is divided into steps, but you may wish to perform
-#     Step 2 during Step 1 for manual testing or debugging.
-
 
 # %%
 # ### Step 0: Import Necessary Modules
