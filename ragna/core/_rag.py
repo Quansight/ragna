@@ -25,6 +25,9 @@ from ._components import Assistant, Component, Message, MessageRole, SourceStora
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
+from ragna.source_storages._embedding import GenericEmbeddingModel
+from ragna.source_storages import VectorDatabaseSourceStorage
+
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
 
@@ -80,6 +83,7 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -96,6 +100,7 @@ class Rag(Generic[C]):
             documents=documents,
             source_storage=source_storage,
             assistant=assistant,
+            embedding_model=embedding_model,
             **params,
         )
 
@@ -148,13 +153,16 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
         **params: Any,
     ) -> None:
         self._rag = rag
 
+        self.embedding_model = cast(GenericEmbeddingModel, self._rag._load_component(embedding_model))
+
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage)
+            VectorDatabaseSourceStorage, self._rag._load_component(source_storage)
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
 
@@ -188,7 +196,16 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
+        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+            await self._run(self.source_storage.store, self.documents)
+        else:
+            # Here we need to generate the list of embeddings
+            chunks = []
+            for document in self.documents:
+                chunks += self.source_storage._chunk_pages(document.extract_pages(), document_id=document.id, chunk_size=500, chunk_overlap=250)
+            embeddings = self.embedding_model.embed_chunks(chunks)
+            await self._run(self.source_storage.store, embeddings)
+
         self._prepared = True
 
         welcome = Message(
@@ -218,7 +235,11 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+            sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        else:
+            sources = await self._run(self.source_storage.retrieve, self.documents,
+                                      self.embedding_model.embed_text(prompt))
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),

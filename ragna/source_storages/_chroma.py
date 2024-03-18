@@ -7,7 +7,7 @@ from ragna.core import (
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
-
+from ._embedding import MiniLML6v2, Embedding
 
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
@@ -25,6 +25,8 @@ class Chroma(VectorDatabaseSourceStorage):
 
         import chromadb
 
+        self._embedding_model = MiniLML6v2()
+
         self._client = chromadb.Client(
             chromadb.config.Settings(
                 is_persistent=True,
@@ -32,59 +34,62 @@ class Chroma(VectorDatabaseSourceStorage):
                 anonymized_telemetry=False,
             )
         )
+        self._tokens = 0
+        self._embeddings = 0
 
     def store(
         self,
-        documents: list[Document],
+        documents: list[Embedding],
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
         collection = self._client.create_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            str(chat_id)
         )
 
         ids = []
         texts = []
         metadatas = []
-        for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
-                ids.append(str(uuid.uuid4()))
-                texts.append(chunk.text)
-                metadatas.append(
-                    {
-                        "document_id": str(document.id),
-                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
-                        "num_tokens": chunk.num_tokens,
-                    }
-                )
+        embeddings = []
+        for embedding in documents:
+            self._tokens += embedding.chunk.num_tokens
+            self._embeddings += 1
+
+            ids.append(str(uuid.uuid4()))
+            texts.append(embedding.chunk.text)
+            metadatas.append(
+                {
+                    "document_id": str(embedding.chunk.document_id),
+                    "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
+                    "num_tokens": embedding.chunk.num_tokens,
+                }
+            )
+            embeddings.append(embedding.embedding)
 
         collection.add(
             ids=ids,
             documents=texts,
+            embeddings=embeddings,
             metadatas=metadatas,  # type: ignore[arg-type]
         )
 
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
         collection = self._client.get_collection(
-            str(chat_id), embedding_function=self._embedding_function
+            str(chat_id)
         )
 
         result = collection.query(
-            query_texts=prompt,
+            query_embeddings=prompt,
             n_results=min(
                 # We cannot retrieve source by a maximum number of tokens. Thus, we
                 # estimate how many sources we have to query. We overestimate by a
@@ -97,7 +102,7 @@ class Chroma(VectorDatabaseSourceStorage):
                 #  Instead of just querying more documents here, we should use the
                 #  appropriate index parameters when creating the collection. However,
                 #  they are undocumented for now.
-                max(int(num_tokens * 2 / chunk_size), 100),
+                max(int(num_tokens * 2 / self._tokens * self._embeddings), 100),
                 collection.count(),
             ),
             include=["distances", "metadatas", "documents"],

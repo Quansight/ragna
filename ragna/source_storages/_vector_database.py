@@ -1,6 +1,7 @@
 import dataclasses
 import itertools
 from collections import deque
+from uuid import UUID
 from typing import (
     Deque,
     Iterable,
@@ -18,6 +19,7 @@ from ragna.core import (
     Source,
     SourceStorage,
 )
+
 
 T = TypeVar("T")
 
@@ -45,6 +47,7 @@ def _windowed_ragged(
 class Chunk:
     text: str
     page_numbers: Optional[list[int]]
+    document_id: UUID
     num_tokens: int
 
 
@@ -64,20 +67,11 @@ class VectorDatabaseSourceStorage(SourceStorage):
         ]
 
     def __init__(self) -> None:
-        import chromadb.api
-        import chromadb.utils.embedding_functions
         import tiktoken
-
-        self._embedding_function = cast(
-            chromadb.api.types.EmbeddingFunction,
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction(),
-        )
-        # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#all-minilm-l6-v2
-        self._embedding_dimensions = 384
         self._tokenizer = tiktoken.get_encoding("cl100k_base")
 
     def _chunk_pages(
-        self, pages: Iterable[Page], *, chunk_size: int, chunk_overlap: int
+        self, pages: Iterable[Page], document_id: UUID, *, chunk_size: int, chunk_overlap: int
     ) -> Iterator[Chunk]:
         for window in _windowed_ragged(
             (
@@ -91,12 +85,14 @@ class VectorDatabaseSourceStorage(SourceStorage):
             tokens, page_numbers = zip(*window)
             yield Chunk(
                 text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
+                document_id=document_id,
                 page_numbers=list(filter(lambda n: n is not None, page_numbers))
                 or None,
                 num_tokens=len(tokens),
             )
 
-    def _page_numbers_to_str(self, page_numbers: Optional[Iterable[int]]) -> str:
+    @classmethod
+    def _page_numbers_to_str(cls, page_numbers: Optional[Iterable[int]]) -> str:
         if not page_numbers:
             return ""
 
@@ -122,8 +118,9 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
         return ", ".join(ranges_str)
 
+    @classmethod
     def _take_sources_up_to_max_tokens(
-        self, sources: Iterable[Source], *, max_tokens: int
+        cls, sources: Iterable[Source], *, max_tokens: int
     ) -> list[Source]:
         taken_sources = []
         total = 0

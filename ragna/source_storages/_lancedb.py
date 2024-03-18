@@ -1,10 +1,14 @@
 import uuid
 
+from typing import cast
+
 import ragna
 from ragna.core import Document, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
+from ._embedding import Embedding
+import pyarrow as pa
 
 class LanceDB(VectorDatabaseSourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
@@ -32,10 +36,21 @@ class LanceDB(VectorDatabaseSourceStorage):
         super().__init__()
 
         import lancedb
-        import pyarrow as pa
+
+        self._tokens = 0
+        self._embeddings = 0
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
-        self._schema = pa.schema(
+
+    _VECTOR_COLUMN_NAME = "embedded_text"
+
+    def store(
+        self,
+        documents: list[Embedding],
+        *,
+        chat_id: uuid.UUID,
+    ) -> None:
+        _schema = pa.schema(
             [
                 pa.field("id", pa.string()),
                 pa.field("document_id", pa.string()),
@@ -43,54 +58,38 @@ class LanceDB(VectorDatabaseSourceStorage):
                 pa.field("text", pa.string()),
                 pa.field(
                     self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._embedding_dimensions),
+                    pa.list_(pa.float32(), len(documents[0].embedding)),
                 ),
                 pa.field("num_tokens", pa.int32()),
             ]
         )
 
-    _VECTOR_COLUMN_NAME = "embedded_text"
+        table = self._db.create_table(name=str(chat_id), schema=_schema)
 
-    def store(
-        self,
-        documents: list[Document],
-        *,
-        chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
-    ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
-
-        for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
-                table.add(
-                    [
-                        {
-                            "id": str(uuid.uuid4()),
-                            "document_id": str(document.id),
-                            "page_numbers": self._page_numbers_to_str(
-                                chunk.page_numbers
-                            ),
-                            "text": chunk.text,
-                            self._VECTOR_COLUMN_NAME: self._embedding_function(
-                                [chunk.text]
-                            )[0],
-                            "num_tokens": chunk.num_tokens,
-                        }
-                    ]
-                )
+        for embedding in documents:
+            self._tokens += embedding.chunk.num_tokens
+            self._embeddings += 1
+            table.add(
+                [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": str(embedding.chunk.document_id),
+                        "page_numbers": self._page_numbers_to_str(
+                            embedding.chunk.page_numbers
+                        ),
+                        "text": embedding.chunk.text,
+                        self._VECTOR_COLUMN_NAME: embedding.embedding,
+                        "num_tokens": embedding.chunk.num_tokens,
+                    }
+                ]
+            )
 
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
         table = self._db.open_table(str(chat_id))
@@ -98,10 +97,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
-        limit = int(num_tokens * 2 / chunk_size)
+        limit = int(num_tokens * 2 / self._tokens * self._embeddings)
         results = (
             table.search(
-                self._embedding_function([prompt])[0],
+                prompt,
                 vector_column_name=self._VECTOR_COLUMN_NAME,
             )
             .limit(limit)
