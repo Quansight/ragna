@@ -24,15 +24,6 @@ from ragna.core import Assistant, Source
 
 class TutorialAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-        """Answer a prompt given some sources.
-
-        Args:
-            prompt: Prompt to be answered.
-            sources: Sources to use when answering answer the prompt.
-
-        Returns:
-            Answer.
-        """
         yield (
             f"This is a default answer. There were {len(sources)} sources."
             ""
@@ -78,23 +69,17 @@ class TutorialAssistant(Assistant):
 # or call a local LLM. Ragna is designed to give you that flexibility.
 
 # %%
+# Your `answer()` method should take a prompt in the form of a string, and a list of `Source`s, in addition to whatever other arguments you find necessary for your particular assistant. The return type is an `Iterator` of strings.
+
+# %%
 # ```python
 #     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-#         """Answer a prompt given some sources.
-#
-#         Args:
-#             prompt: Prompt to be answered.
-#             sources: Sources to use when answering answer the prompt.
-#
-#         Returns:
-#             Answer.
-#         """
 #         yield (
 #             f"This is a default answer. There were {len(sources)} sources."
 #             ""
 #             f"The prompt was"
 #             f"{prompt}"
-#          )
+#         )
 # ```
 
 # %%
