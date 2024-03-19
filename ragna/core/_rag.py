@@ -21,7 +21,7 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage
+from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage, GenericChunkingModel
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
@@ -84,6 +84,7 @@ class Rag(Generic[C]):
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -101,6 +102,7 @@ class Rag(Generic[C]):
             source_storage=source_storage,
             assistant=assistant,
             embedding_model=embedding_model,
+            chunking_model=chunking_model,
             **params,
         )
 
@@ -154,11 +156,14 @@ class Chat:
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.embedding_model = cast(GenericEmbeddingModel, self._rag._load_component(embedding_model))
+
+        self.chunking_model = cast(GenericChunkingModel, self._rag._load_component(chunking_model))
 
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
@@ -201,9 +206,7 @@ class Chat:
             await self._run(self.source_storage.store, self.documents)
         else:
             # Here we need to generate the list of embeddings
-            chunks = []
-            for document in self.documents:
-                chunks += self.source_storage._chunk_pages(document.extract_pages(), document_id=document.id, chunk_size=500, chunk_overlap=250)
+            chunks = self.chunking_model.chunk_documents(documents=self.documents)
             embeddings = self.embedding_model.embed_chunks(chunks)
             await self._run(self.source_storage.store, embeddings)
 

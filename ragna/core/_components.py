@@ -8,6 +8,7 @@ import warnings
 from typing import (
     AsyncIterable,
     AsyncIterator,
+    Iterable,
     Iterator,
     Optional,
     Type,
@@ -20,9 +21,11 @@ from typing import (
 import pydantic
 import pydantic.utils
 
+from uuid import UUID
+
 from abc import ABC, abstractmethod
 
-from ._document import Document, Chunk
+from ._document import Chunk, Document, Page
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -89,8 +92,21 @@ class Component(RequirementsMixin):
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
-# Just for demo purposes. We need to move the actual class here.
-# See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
+class GenericChunkingModel(Component, ABC):
+    def __init__(self):
+        import tiktoken
+        # we need a way of estimating tokens that is common to all chunking models
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
+    @abstractmethod
+    def chunk_documents(self, documents: list[Document]) -> list[Chunk]:
+        raise NotImplementedError
+
+    def generate_chunks_from_pages(self, chunks: list[str], pages: Iterable[Page], document_id: UUID) -> list[Chunk]:
+
+        return [Chunk(page_numbers=[1], text=chunks[i], document_id=document_id,
+                         num_tokens=len(self._tokenizer.encode(chunks[i]))) for i in range(len(chunks))]
+
+
 class Embedding:
     embedding: list[float]
     chunk: Chunk
