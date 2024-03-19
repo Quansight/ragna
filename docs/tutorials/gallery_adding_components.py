@@ -72,7 +72,8 @@ class TutorialSourceStorage(SourceStorage):
 
 
 # %%
-# [`SourceStorage`][ragna.core.SourceStorage] has two abstract methods, [`store()`][ragna.core.SourceStorage.store] and [`retrieve()`][ragna.core.SourceStorage.retrieve].
+# [`SourceStorage`][ragna.core.SourceStorage] has two abstract methods,
+# [`store()`][ragna.core.SourceStorage.store] and [`retrieve()`][ragna.core.SourceStorage.retrieve].
 
 # %%
 # [`store()`][ragna.core.SourceStorage.store] takes a list of [`Source`][ragna.core.Source]s
