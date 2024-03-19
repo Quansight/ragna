@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Source
 
 from ._api import ApiAssistant
 
@@ -8,16 +8,10 @@ from ._api import ApiAssistant
 class Ai21LabsAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
     _MODEL_TYPE: str
-    _CONTEXT_SIZE: int = 8_192
-    # See https://docs.ai21.com/docs/model-availability-across-platforms#ai21-studio
 
     @classmethod
     def display_name(cls) -> str:
         return f"AI21Labs/jurassic-2-{cls._MODEL_TYPE}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (
@@ -53,11 +47,7 @@ class Ai21LabsAssistant(ApiAssistant):
                 "system": self._make_system_content(sources),
             },
         )
-
-        if response.is_error:
-            raise RagnaException(
-                status_code=response.status_code, response=response.json()
-            )
+        await self._assert_api_call_is_success(response)
 
         yield cast(str, response.json()["outputs"][0]["text"])
 

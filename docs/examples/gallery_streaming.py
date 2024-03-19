@@ -43,10 +43,6 @@ from ragna import assistants
 
 
 class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
-    @property
-    def max_input_size(self) -> int:
-        return 0
-
     def answer(self, prompt, sources):
         content = next(super().answer(prompt, sources))
         for chunk in content.split(" "):
@@ -145,41 +141,38 @@ chat = (
 client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
 
 # %%
-# Streaming the response is performed with
-# [server-sent events (SSE)](https://en.wikipedia.org/wiki/Server-sent_events).
+# Streaming the response is performed with [JSONL](https://jsonlines.org/). Each line
+# in the response is valid JSON and corresponds to one chunk.
 
-import httpx_sse
 import json
 
-chunks = []
-with httpx_sse.connect_sse(
-    client,
+
+with client.stream(
     "POST",
     f"/chats/{chat['id']}/answer",
     json={"prompt": "What is Ragna?", "stream": True},
-) as event_source:
-    for sse in event_source.iter_sse():
-        chunks.append(json.loads(sse.data))
+) as response:
+    chunks = [json.loads(data) for data in response.iter_lines()]
 
 # %%
-# The first event contains the full message object including the sources along the first
+# The first chunk contains the full message object including the sources along the first
 # chunk of the content.
 
 print(len(chunks))
 print(json.dumps(chunks[0], indent=2))
 
 # %%
-# Subsequent events no longer contain the sources.
+# Subsequent chunks no longer contain the sources.
 
 print(json.dumps(chunks[1], indent=2))
 
 # %%
-# Joining the chunks together results in the full message.
+# Joining the content of the chunks together results in the full message.
 
 print("".join(chunk["content"] for chunk in chunks))
 
 # %%
-# Before we close the tutorial, let's stop the REST API and have a look at what would
+# Before we close the example, let's stop the REST API and have a look at what would
 # have printed in the terminal if we had started it the regular way.
 
 rest_api.stop()

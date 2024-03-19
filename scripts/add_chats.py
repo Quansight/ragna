@@ -66,7 +66,7 @@ def main():
     client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
     client.post(
         f"/chats/{chat['id']}/answer",
-        params={"prompt": "Hello!"},
+        json={"prompt": "Hello!"},
     ).raise_for_status()
 
     ## chat 2
@@ -89,7 +89,7 @@ def main():
     for _ in range(3):
         client.post(
             f"/chats/{chat['id']}/answer",
-            params={"prompt": "What is Ragna? Please, I need to know!"},
+            json={"prompt": "What is Ragna? Please, I need to know!"},
         ).raise_for_status()
 
     ## chat 3
@@ -114,11 +114,11 @@ def main():
     client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
     client.post(
         f"/chats/{chat['id']}/answer",
-        params={"prompt": "Hello!"},
+        json={"prompt": "Hello!"},
     ).raise_for_status()
     client.post(
         f"/chats/{chat['id']}/answer",
-        params={"prompt": "Ok, in that case show me some pretty markdown!"},
+        json={"prompt": "Ok, in that case show me some pretty markdown!"},
     ).raise_for_status()
 
     chats = client.get("/chats").raise_for_status().json()

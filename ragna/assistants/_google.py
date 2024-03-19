@@ -28,22 +28,14 @@ class AsyncIteratorReader:
 class GoogleApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "GOOGLE_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
 
     @classmethod
-    def requirements(cls) -> list[Requirement]:
-        return [
-            *super().requirements(),
-            PackageRequirement("ijson"),
-        ]
+    def _extra_requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("ijson")]
 
     @classmethod
     def display_name(cls) -> str:
         return f"Google/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
         # https://ai.google.dev/docs/prompt_best_practices#add-contextual-information
@@ -87,6 +79,8 @@ class GoogleApiAssistant(ApiAssistant):
                 },
             },
         ) as response:
+            await self._assert_api_call_is_success(response)
+
             async for chunk in ijson.items(
                 AsyncIteratorReader(response.aiter_bytes(1024)),
                 "item.candidates.item.content.parts.item.text",
@@ -107,7 +101,6 @@ class GeminiPro(GoogleApiAssistant):
     """
 
     _MODEL = "gemini-pro"
-    _CONTEXT_SIZE = 30_720
 
 
 class GeminiUltra(GoogleApiAssistant):
@@ -123,4 +116,3 @@ class GeminiUltra(GoogleApiAssistant):
     """
 
     _MODEL = "gemini-ultra"
-    _CONTEXT_SIZE = 30_720
