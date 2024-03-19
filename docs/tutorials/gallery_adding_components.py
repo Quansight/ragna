@@ -12,21 +12,6 @@ that are not currently officially supported.
 # %%
 # ## Adding an LLM Assistant
 
-from typing import Iterator
-
-from ragna.core import Assistant, Source
-
-
-class TutorialAssistant(Assistant):
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-        yield (
-            f"This is a default answer. There were {len(sources)} sources."
-            ""
-            f"The prompt was"
-            f"{prompt}"
-        )
-
-
 # %%
 # The main thing to do is to implement the [`answer()`][ragna.core.Assistant.answer] abstract method.
 # The [`answer()`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
@@ -43,6 +28,21 @@ class TutorialAssistant(Assistant):
 #     Ragna also supports streaming responses from the assistant. See the
 #     [example how to use streaming responses](../../generated/examples/gallery_streaming.md)
 #     for more information.
+
+from typing import Iterator
+
+from ragna.core import Assistant, Source
+
+
+class TutorialAssistant(Assistant):
+    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+        yield (
+            f"This is a default answer. There were {len(sources)} sources."
+            ""
+            f"The prompt was"
+            f"{prompt}"
+        )
+
 
 # %%
 # ## Adding a Source Storage
