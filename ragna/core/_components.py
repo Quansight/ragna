@@ -20,7 +20,9 @@ from typing import (
 import pydantic
 import pydantic.utils
 
-from ._document import Document
+from abc import ABC, abstractmethod
+
+from ._document import Document, Chunk
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -90,7 +92,24 @@ class Component(RequirementsMixin):
 # Just for demo purposes. We need to move the actual class here.
 # See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
 class Embedding:
-    pass
+    embedding: list[float]
+    chunk: Chunk
+
+    def __init__(self, embedding: list[float], chunk: Chunk):
+        super().__init__()
+        self.embedding = embedding
+        self.chunk = chunk
+
+
+class GenericEmbeddingModel(Component, ABC):
+    _EMBEDDING_DIMENSIONS: int
+
+    @abstractmethod
+    def embed_chunks(self, chunks: list[Chunk]) -> list[Embedding]:
+        ...
+
+    def embed_text(self, text: str) -> list[float]:
+        ...
 
 
 class Source(pydantic.BaseModel):

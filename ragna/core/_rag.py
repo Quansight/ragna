@@ -21,7 +21,7 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._components import Assistant, Component, Message, MessageRole, SourceStorage
+from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
@@ -196,7 +196,8 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+        from ragna.core import Document
+        if type(self.source_storage).__ragna_input_type__ == Document:
             await self._run(self.source_storage.store, self.documents)
         else:
             # Here we need to generate the list of embeddings
@@ -235,7 +236,7 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        if list[Document] in inspect.signature(self.source_storage.store).parameters.values():
+        if type(self.source_storage).__ragna_input_type__ == Document:
             sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
         else:
             sources = await self._run(self.source_storage.retrieve, self.documents,

@@ -7,7 +7,7 @@ from ragna.core import (
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
-from ._embedding import MiniLML6v2, Embedding
+from ._embedding import Embedding
 
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
@@ -24,8 +24,6 @@ class Chroma(VectorDatabaseSourceStorage):
         super().__init__()
 
         import chromadb
-
-        self._embedding_model = MiniLML6v2()
 
         self._client = chromadb.Client(
             chromadb.config.Settings(

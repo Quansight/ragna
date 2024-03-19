@@ -1,4 +1,3 @@
-import dataclasses
 import itertools
 from collections import deque
 from uuid import UUID
@@ -14,6 +13,7 @@ from typing import (
 from ragna._compat import itertools_pairwise
 from ragna.core import (
     PackageRequirement,
+    Chunk,
     Page,
     Requirement,
     Source,
@@ -41,14 +41,6 @@ def _windowed_ragged(
         yield tuple(window)
     elif 0 < i < min(step, n):
         yield tuple(window)[i:]
-
-
-@dataclasses.dataclass
-class Chunk:
-    text: str
-    page_numbers: Optional[list[int]]
-    document_id: UUID
-    num_tokens: int
 
 
 class VectorDatabaseSourceStorage(SourceStorage):

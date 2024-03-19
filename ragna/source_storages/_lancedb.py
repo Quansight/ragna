@@ -8,7 +8,6 @@ from ragna.core import Document, PackageRequirement, Requirement, Source
 from ._vector_database import VectorDatabaseSourceStorage
 
 from ._embedding import Embedding
-import pyarrow as pa
 
 class LanceDB(VectorDatabaseSourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
@@ -50,6 +49,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         *,
         chat_id: uuid.UUID,
     ) -> None:
+        import pyarrow as pa
         _schema = pa.schema(
             [
                 pa.field("id", pa.string()),
