@@ -21,9 +21,12 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._components import Assistant, Component, Message, MessageRole, SourceStorage
+from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage, GenericChunkingModel
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
+
+from ragna.source_storages._embedding import GenericEmbeddingModel
+from ragna.source_storages import VectorDatabaseSourceStorage
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -80,6 +83,8 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -96,6 +101,8 @@ class Rag(Generic[C]):
             documents=documents,
             source_storage=source_storage,
             assistant=assistant,
+            embedding_model=embedding_model,
+            chunking_model=chunking_model,
             **params,
         )
 
@@ -148,13 +155,19 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        chunking_model: Union[Type[GenericChunkingModel], GenericChunkingModel],
         **params: Any,
     ) -> None:
         self._rag = rag
 
+        self.embedding_model = cast(GenericEmbeddingModel, self._rag._load_component(embedding_model))
+
+        self.chunking_model = cast(GenericChunkingModel, self._rag._load_component(chunking_model))
+
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage)
+            VectorDatabaseSourceStorage, self._rag._load_component(source_storage)
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
 
@@ -188,7 +201,17 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
+        from ragna.core import Document, Chunk
+        if type(self.source_storage).__ragna_input_type__ == Document:
+            await self._run(self.source_storage.store, self.documents)
+        else:
+            chunks = self.chunking_model.chunk_documents(documents=self.documents)
+            if type(self.source_storage).__ragna_input_type__ == Chunk:
+                await self._run(self.source_storage.store, chunks)
+            else:
+                embeddings = self.embedding_model.embed_chunks(chunks)
+                await self._run(self.source_storage.store, embeddings)
+
         self._prepared = True
 
         welcome = Message(
@@ -218,7 +241,11 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        if type(self.source_storage).__ragna_input_type__ == Document:
+            sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        else:
+            sources = await self._run(self.source_storage.retrieve, self.documents,
+                                      self.embedding_model.embed_text(prompt))
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),

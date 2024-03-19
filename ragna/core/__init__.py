@@ -1,6 +1,7 @@
 __all__ = [
     "Assistant",
     "Chat",
+    "Chunk",
     "Component",
     "Document",
     "DocumentHandler",
@@ -32,6 +33,7 @@ from ._utils import (
 # isort: split
 
 from ._document import (
+    Chunk,
     Document,
     DocumentHandler,
     DocumentUploadParameters,
