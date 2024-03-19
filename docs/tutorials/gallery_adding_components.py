@@ -69,3 +69,16 @@ class TutorialSourceStorage(SourceStorage):
         self, documents: list[Document], prompt: str, *, chat_id: int
     ) -> list[Source]:
         return self._storage[chat_id]
+
+
+# %%
+# [`SourceStorage`][ragna.core.SourceStorage] has two abstract methods, [`store()`][ragna.core.SourceStorage.store] and [`retrieve()`][ragna.core.SourceStorage.retrieve].
+
+# %%
+# [`store()`][ragna.core.SourceStorage.store] takes a list of [`Source`][ragna.core.Source]s
+# as an argument and places them in the database that you are using to hold them. This is
+# different for each different source storage implementation.
+
+# %%
+# [`retrieve()`][ragna.core.SourceStorage.retrieve] returns sources matching
+# the given prompt in order of relevance.
