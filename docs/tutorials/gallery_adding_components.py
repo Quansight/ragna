@@ -43,3 +43,29 @@ class TutorialAssistant(Assistant):
 #     Ragna also supports streaming responses from the assistant. See the
 #     [example how to use streaming responses](../../generated/examples/gallery_streaming.md)
 #     for more information.
+
+# %%
+# ## Adding a Source Storage
+
+from ragna.core import Document, Source, SourceStorage
+
+
+class TutorialSourceStorage(SourceStorage):
+    def __init__(self):
+        # import database api here
+
+        # set up database
+        self._storage: dict[int, list[Source]] = {}
+
+    def store(self, documents: list[Document], chat_id: int) -> None:
+        self._storage[chat_id] = [
+            Source(
+                document=document,
+            )
+            for document in documents
+        ]
+
+    def retrieve(
+        self, documents: list[Document], prompt: str, *, chat_id: int
+    ) -> list[Source]:
+        return self._storage[chat_id]
