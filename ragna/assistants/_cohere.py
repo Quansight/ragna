@@ -9,16 +9,10 @@ from ._api import ApiAssistant
 class CohereApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int = 4_000
-    # See https://docs.cohere.com/docs/models#command
 
     @classmethod
     def display_name(cls) -> str:
         return f"Cohere/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _make_preamble(self) -> str:
         return (
@@ -54,12 +48,15 @@ class CohereApiAssistant(ApiAssistant):
                 "documents": self._make_source_documents(sources),
             },
         ) as response:
-            if response.is_error:
-                raise RagnaException(status_code=response.status_code)
+            await self._assert_api_call_is_success(response)
+
             async for chunk in response.aiter_lines():
                 event = json.loads(chunk)
                 if event["event_type"] == "stream-end":
-                    break
+                    if event["event_type"] == "COMPLETE":
+                        break
+
+                    raise RagnaException(event["error_message"])
                 if "text" in event:
                     yield cast(str, event["text"])
 

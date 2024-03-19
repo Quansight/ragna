@@ -1,9 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-import httpx_sse
-
-from ragna.core import Source
+from ragna.core import PackageRequirement, Requirement, Source
 
 from ._api import ApiAssistant
 
@@ -11,15 +9,14 @@ from ._api import ApiAssistant
 class OpenaiApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
+
+    @classmethod
+    def _extra_requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("httpx_sse")]
 
     @classmethod
     def display_name(cls) -> str:
         return f"OpenAI/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
@@ -33,6 +30,8 @@ class OpenaiApiAssistant(ApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
+        import httpx_sse
+
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         async with httpx_sse.aconnect_sse(
@@ -60,6 +59,8 @@ class OpenaiApiAssistant(ApiAssistant):
                 "stream": True,
             },
         ) as event_source:
+            await self._assert_api_call_is_success(event_source.response)
+
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
                 choice = data["choices"][0]
@@ -75,10 +76,13 @@ class Gpt35Turbo16k(OpenaiApiAssistant):
     !!! info "Required environment variables"
 
         - `OPENAI_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "gpt-3.5-turbo-16k"
-    _CONTEXT_SIZE = 16_384
 
 
 class Gpt4(OpenaiApiAssistant):
@@ -87,7 +91,10 @@ class Gpt4(OpenaiApiAssistant):
     !!! info "Required environment variables"
 
         - `OPENAI_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "gpt-4"
-    _CONTEXT_SIZE = 8_192

@@ -9,6 +9,7 @@ dependencies:
       - python-dotenv
       - pytest >=6
       - pytest-mock
+      - pytest-asyncio
       - mypy ==1.6.1
       - pre-commit
       - types-aiofiles

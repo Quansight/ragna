@@ -3,7 +3,6 @@ from datetime import datetime
 
 import emoji
 import httpx
-import httpx_sse
 import param
 
 
@@ -64,14 +63,13 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def answer(self, chat_id, prompt):
-        async with httpx_sse.aconnect_sse(
-            self.client,
+        async with self.client.stream(
             "POST",
             f"/chats/{chat_id}/answer",
             json={"prompt": prompt, "stream": True},
-        ) as event_source:
-            async for sse in event_source.aiter_sse():
-                yield self.improve_message(json.loads(sse.data))
+        ) as response:
+            async for data in response.aiter_lines():
+                yield self.improve_message(json.loads(data))
 
     async def get_components(self):
         return (await self.client.get("/components")).raise_for_status().json()

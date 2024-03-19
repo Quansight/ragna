@@ -23,8 +23,10 @@
 - Ragna now has an official [docker](https://www.docker.com/) image. Try it with
 
   ```
-  $ docker run -p 31476:31476 -p 31477:31477 quay.io/quansight/ragna:latest
+  $ docker run -p 31476:31476 -p 31477:31477 quay.io/quansight/ragna:0.2.0
   ```
+
+  The web UI can be accessed under `http://localhost:31477`.
 
 - Instead of just returning the location of a source, e.g. page numbers in a PDF
   document but potentially nothing for other formats that don't have this kind of
@@ -39,6 +41,9 @@
 - The return type of [ragna.core.Assistant.answer][] changed from `str` to
   `Iterator[str]` / `AsyncIterator[str]`. To reflect that in the implementation, replace
   `return` with `yield`. To stream the response, `yield` multiple times.
+- The abstract property `ragna.core.Assistant.max_input_size` was removed. This
+  information was never used anywhere. Note that you don't have to remove it from
+  existing implementations. It will just stay unused by Ragna.
 - We introduced a couple of changes to the configuration file.
 
   - The top level `local_cache_root` option was renamed to `local_root` to align with
@@ -281,6 +286,31 @@
   [#341](https://github.com/Quansight/ragna/pull/341)
 - Config refactor by [@pmeier](https://github.com/pmeier) in
   [#328](https://github.com/Quansight/ragna/pull/328)
+- add option to not open the browser when starting the web UI by
+  [@pmeier](https://github.com/pmeier) in
+  [#345](https://github.com/Quansight/ragna/pull/345)
+- use root_path in api.url by [@pmeier](https://github.com/pmeier) in
+  [#346](https://github.com/Quansight/ragna/pull/346)
+- Add option to ignore unavailable components by [@pmeier](https://github.com/pmeier) in
+  [#333](https://github.com/Quansight/ragna/pull/333)
+- decrease default number of tokens in UI by [@pmeier](https://github.com/pmeier) in
+  [#351](https://github.com/Quansight/ragna/pull/351)
+- improve error handling for builtin assistants by [@pmeier](https://github.com/pmeier)
+  in [#350](https://github.com/Quansight/ragna/pull/350)
+- add test for a streaming assistant by [@pmeier](https://github.com/pmeier) in
+  [#349](https://github.com/Quansight/ragna/pull/349)
+- remove max_input_size property from assistants by [@pmeier](https://github.com/pmeier)
+  in [#362](https://github.com/Quansight/ragna/pull/362)
+- Add overview video to docs & README by [@pavithraes](https://github.com/pavithraes) in
+  [#363](https://github.com/Quansight/ragna/pull/363)
+- fix typo in FAQ by [@pmeier](https://github.com/pmeier) in
+  [#348](https://github.com/Quansight/ragna/pull/348)
+- fix release notes link in project metadata by [@pmeier](https://github.com/pmeier) in
+  [#361](https://github.com/Quansight/ragna/pull/361)
+- break recursion cycle for chat message repr by [@pmeier](https://github.com/pmeier) in
+  [#360](https://github.com/Quansight/ragna/pull/360)
+- use JSONL streaming over SSE by [@pmeier](https://github.com/pmeier) in
+  [#357](https://github.com/Quansight/ragna/pull/357)
 
 ### New Contributors
 

@@ -50,14 +50,15 @@ A RAG orchestration framework.
 
 Check out the Ragna documentation to get started:
 
+- [Overview video](https://youtu.be/xuNnjFS1XqQ?si=AssQq_1CF2o1jv3M)
 - [Installation steps](https://ragna.chat/en/stable/install/)
 - Tutorials
-  - [Python API](https://ragna.chat/en/stable/tutorials/python-api/)
-  - [REST API](https://ragna.chat/en/stable/tutorials/rest-api/)
-  - [Web application](https://ragna.chat/en/stable/tutorials/web-app/)
+  - [Python API](https://ragna.chat/en/stable/generated/tutorials/gallery_python_api/)
+  - [REST API](https://ragna.chat/en/stable/generated/tutorials/gallery_rest_api/)
+  - [Web application](https://ragna.chat/en/stable/generated/tutorials/gallery_web_ui/)
 - [Frequently asked questions](https://ragna.chat/en/stable/references/faq/)
 - [Contribution guidelines](https://ragna.chat/en/stable/community/contribute/)
-- [Changelog](https://ragna.chat/en/stable/references/changelog/)
+- [Release notes](https://ragna.chat/en/stable/references/release-notes/)
 
 ## Code of Conduct 📜
 

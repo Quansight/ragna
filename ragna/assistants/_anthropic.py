@@ -1,9 +1,7 @@
 import json
 from typing import AsyncIterator, cast
 
-import httpx_sse
-
-from ragna.core import RagnaException, Source
+from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
 from ._api import ApiAssistant
 
@@ -11,15 +9,14 @@ from ._api import ApiAssistant
 class AnthropicApiAssistant(ApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _MODEL: str
-    _CONTEXT_SIZE: int
+
+    @classmethod
+    def _extra_requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("httpx_sse")]
 
     @classmethod
     def display_name(cls) -> str:
         return f"Anthropic/{cls._MODEL}"
-
-    @property
-    def max_input_size(self) -> int:
-        return self._CONTEXT_SIZE
 
     def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
         # See https://docs.anthropic.com/claude/docs/introduction-to-prompt-design#human--assistant-formatting
@@ -34,6 +31,8 @@ class AnthropicApiAssistant(ApiAssistant):
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
+        import httpx_sse
+
         # See https://docs.anthropic.com/claude/reference/streaming
         async with httpx_sse.aconnect_sse(
             self._client,
@@ -53,6 +52,8 @@ class AnthropicApiAssistant(ApiAssistant):
                 "stream": True,
             },
         ) as event_source:
+            await self._assert_api_call_is_success(event_source.response)
+
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
                 if data["type"] != "completion":
@@ -71,10 +72,13 @@ class ClaudeInstant(AnthropicApiAssistant):
     !!! info "Required environment variables"
 
         - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "claude-instant-1"
-    _CONTEXT_SIZE = 100_000
 
 
 class Claude(AnthropicApiAssistant):
@@ -83,7 +87,10 @@ class Claude(AnthropicApiAssistant):
     !!! info "Required environment variables"
 
         - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
     """
 
     _MODEL = "claude-2"
-    _CONTEXT_SIZE = 100_000
