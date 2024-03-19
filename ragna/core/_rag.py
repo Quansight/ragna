@@ -201,14 +201,16 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        from ragna.core import Document
+        from ragna.core import Document, Chunk
         if type(self.source_storage).__ragna_input_type__ == Document:
             await self._run(self.source_storage.store, self.documents)
         else:
-            # Here we need to generate the list of embeddings
             chunks = self.chunking_model.chunk_documents(documents=self.documents)
-            embeddings = self.embedding_model.embed_chunks(chunks)
-            await self._run(self.source_storage.store, embeddings)
+            if type(self.source_storage).__ragna_input_type__ == Chunk:
+                await self._run(self.source_storage.store, chunks)
+            else:
+                embeddings = self.embedding_model.embed_chunks(chunks)
+                await self._run(self.source_storage.store, embeddings)
 
         self._prepared = True
 

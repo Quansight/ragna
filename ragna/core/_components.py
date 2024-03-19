@@ -150,7 +150,7 @@ class Source(pydantic.BaseModel):
 
 class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
-    __ragna_input_type__: Union[Document, Embedding]
+    __ragna_input_type__: Union[Document, Embedding, Chunk]
 
     def __init_subclass__(cls):
         if inspect.isabstract(cls):

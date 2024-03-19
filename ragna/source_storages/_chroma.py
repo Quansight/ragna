@@ -9,6 +9,7 @@ from ragna.core import (
 from ._vector_database import VectorDatabaseSourceStorage
 from ._embedding import Embedding
 
+
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
 
@@ -40,8 +41,6 @@ class Chroma(VectorDatabaseSourceStorage):
         documents: list[Embedding],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
     ) -> None:
         collection = self._client.create_collection(
             str(chat_id)
