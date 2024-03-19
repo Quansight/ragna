@@ -1,5 +1,5 @@
 """
-# Adding Components to Ragna
+# Adding Components
 
 Ragna has builtin support for several [assistants][ragna.assistants] and 
 [source storages][ragna.source_storages], but there may be cases where you 
