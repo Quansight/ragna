@@ -10,7 +10,7 @@ that are not currently officially supported.
 """
 
 # %%
-# ## Adding an LLM Assistant
+# ## Assistant
 
 # %%
 # The main thing to do is to implement the [`answer()`][ragna.core.Assistant.answer] abstract method.
@@ -45,7 +45,7 @@ class TutorialAssistant(Assistant):
 
 
 # %%
-# ## Adding a Source Storage
+# ## Source Storage
 
 from ragna.core import Document, Source, SourceStorage
 
