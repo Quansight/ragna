@@ -3,7 +3,6 @@ import uuid
 from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
-import sse_starlette
 from fastapi import (
     Body,
     Depends,
@@ -15,7 +14,8 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 import ragna
 import ragna.core
@@ -273,7 +273,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
         if stream:
 
-            async def message_chunks() -> AsyncIterator[sse_starlette.ServerSentEvent]:
+            async def message_chunks() -> AsyncIterator[BaseModel]:
                 core_answer_stream = aiter(core_answer)
                 content_chunk = await anext(core_answer_stream)
 
@@ -285,7 +285,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                         for source in core_answer.sources
                     ],
                 )
-                yield sse_starlette.ServerSentEvent(answer.model_dump_json())
+                yield answer
 
                 # Avoid sending the sources multiple times
                 answer_chunk = answer.model_copy(update=dict(sources=None))
@@ -293,15 +293,19 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 async for content_chunk in core_answer_stream:
                     content_chunks.append(content_chunk)
                     answer_chunk.content = content_chunk
-                    yield sse_starlette.ServerSentEvent(answer_chunk.model_dump_json())
+                    yield answer_chunk
 
                 with get_session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
 
-            return sse_starlette.EventSourceResponse(  # type: ignore[return-value]
-                message_chunks()
+            async def to_jsonl(models: AsyncIterator[Any]) -> AsyncIterator[str]:
+                async for model in models:
+                    yield f"{model.model_dump_json()}\n"
+
+            return StreamingResponse(  # type: ignore[return-value]
+                to_jsonl(message_chunks())
             )
         else:
             answer = schemas.Message.from_core(core_answer)

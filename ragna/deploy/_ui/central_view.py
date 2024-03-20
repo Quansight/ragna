@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from typing import Callable, Literal, Optional, cast
 
 import panel as pn
@@ -162,6 +163,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
+            avatar_lookup=functools.partial(self._ragna_avatar_lookup, role=role),
         )
 
     def _copy_and_source_view_buttons(self) -> pn.Row:
@@ -185,10 +187,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ),
         )
 
-    def avatar_lookup(self, user: str) -> str:
-        if self.role == "system":
+    # This cannot be a bound method, because it creates a reference cycle when trying
+    # to access the repr of the message. See
+    # https://github.com/Quansight/ragna/issues/359 for details.
+    @staticmethod
+    def _ragna_avatar_lookup(user: str, *, role: str) -> str:
+        if role == "system":
             return "imgs/ragna_logo.svg"
-        elif self.role == "user":
+        elif role == "user":
             return "👤"
 
         try:
