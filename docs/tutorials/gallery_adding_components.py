@@ -1,12 +1,9 @@
 """
 # Adding Components
 
-Ragna has builtin support for several [assistants][ragna.assistants] and 
-[source storages][ragna.source_storages], but there may be cases where you 
-want to use one that is not currently supported.
-
-This tutorial walks you through the basics of adding components
-that are not currently officially supported. 
+While Ragna has builtin support for a few [assistants][ragna.assistants] and 
+[source storages][ragna.source_storages], its real strength is allowing users
+to incorporate custom components. This tutorial covers the basics of how to do that. 
 """
 
 # %%
