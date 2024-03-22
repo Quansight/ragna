@@ -101,7 +101,7 @@ class Embedding:
         self.chunk = chunk
 
 
-class GenericEmbeddingModel(Component, ABC):
+class EmbeddingModel(Component, ABC):
     _EMBEDDING_DIMENSIONS: int
 
     @abstractmethod
