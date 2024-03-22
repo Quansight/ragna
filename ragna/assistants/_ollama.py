@@ -20,3 +20,35 @@ class OllamaApiAssistant(Assistant):
             "Only use the following sources to generate the answer."
         )
         return instruction + "\n\n".join(source.content for source in sources)
+
+    async def _call_api(self, prompt: str, sources: list[Source]) -> AsyncIterator[str]:
+        import ijson
+
+        async with self._client.stream(
+            "POST",
+            "http://localhost:11434/api/chat",  # TODO: Make this url customizable
+            headers={
+                "Content-Type": "application/json",
+            },
+            json={
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": self._make_system_content(sources),
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    },
+                ],
+                "model": self._MODEL,
+                "stream": True,
+            },  # TODO: Add optional parameters for the model
+        ) as response:
+            await self._assert_api_call_is_success(response)
+
+            async for chunk in ijson.items(
+                AsyncIteratorReader(response.aiter_bytes(1024)),
+                "message.content",
+            ):
+                yield chunk
