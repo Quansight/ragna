@@ -7,6 +7,8 @@ __all__ = [
     "DocumentHandler",
     "DocumentUploadParameters",
     "DocxDocumentHandler",
+    "Embedding",
+    "EmbeddingModel",
     "PptxDocumentHandler",
     "EnvVarRequirement",
     "LocalDocument",
@@ -50,6 +52,8 @@ from ._document import (
 from ._components import (
     Assistant,
     Component,
+    Embedding,
+    EmbeddingModel,
     Message,
     MessageRole,
     Source,

@@ -1,11 +1,12 @@
 from ragna.core import Chunk
 
-from ragna.core._components import Embedding, GenericEmbeddingModel
+from ragna.core._components import Embedding, EmbeddingModel
 
 
-class MiniLML6v2(GenericEmbeddingModel):
+class MiniLML6v2(EmbeddingModel):
 
     def __init__(self):
+        super().__init__()
         from sentence_transformers import SentenceTransformer
         self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 

@@ -8,6 +8,8 @@ from ragna.core import (
 
 from ._vector_database import VectorDatabaseSourceStorage
 from ._embedding import Embedding
+from ..core._components import EmbeddingModel
+
 
 class Chroma(VectorDatabaseSourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
@@ -60,7 +62,7 @@ class Chroma(VectorDatabaseSourceStorage):
             metadatas.append(
                 {
                     "document_id": str(embedding.chunk.document_id),
-                    "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
+                    "page_numbers": EmbeddingModel._page_numbers_to_str(embedding.chunk.page_numbers),
                     "num_tokens": embedding.chunk.num_tokens,
                 }
             )
@@ -127,7 +129,7 @@ class Chroma(VectorDatabaseSourceStorage):
         #  Thus, we likely need to have a callable parameter for this class
 
         document_map = {str(document.id): document for document in documents}
-        return self._take_sources_up_to_max_tokens(
+        return EmbeddingModel._take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["id"],

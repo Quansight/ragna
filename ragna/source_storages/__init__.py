@@ -3,10 +3,8 @@ __all__ = [
     "LanceDB",
     "RagnaDemoSourceStorage",
     "MiniLML6v2",
-    "VectorDatabaseSourceStorage",
 ]
 
-from ._vector_database import VectorDatabaseSourceStorage
 from ._chroma import Chroma
 from ._demo import RagnaDemoSourceStorage
 from ._lancedb import LanceDB

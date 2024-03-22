@@ -25,8 +25,8 @@ from ._components import Assistant, Component, Embedding, Message, MessageRole, 
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
-from ragna.source_storages._embedding import GenericEmbeddingModel
-from ragna.source_storages import VectorDatabaseSourceStorage
+from ragna.source_storages._embedding import EmbeddingModel
+from ragna.source_storages._vector_database import VectorDatabaseSourceStorage
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -83,7 +83,7 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        embedding_model: Optional[Union[Type[GenericEmbeddingModel], GenericEmbeddingModel]] = None,
+        embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]] = None,
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -153,12 +153,15 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        embedding_model: Union[Type[EmbeddingModel], EmbeddingModel],
         **params: Any,
     ) -> None:
         self._rag = rag
 
-        self.embedding_model = cast(GenericEmbeddingModel, self._rag._load_component(embedding_model))
+        if embedding_model is None and issubclass(source_storage.__ragna_input_type__, Embedding):
+            raise RagnaException
+
+        self.embedding_model = cast(EmbeddingModel, self._rag._load_component(embedding_model))
 
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
@@ -197,13 +200,13 @@ class Chat:
             )
 
         from ragna.core import Document
-        if type(self.source_storage).__ragna_input_type__ == Document:
+        if issubclass(self.source_storage.__ragna_input_type__, Document):
             await self._run(self.source_storage.store, self.documents)
         else:
             # Here we need to generate the list of embeddings
             chunks = []
             for document in self.documents:
-                chunks += self.source_storage._chunk_pages(document.extract_pages(), document_id=document.id, chunk_size=500, chunk_overlap=250)
+                chunks += self.embedding_model._chunk_pages(document.extract_pages(), document_id=document.id, chunk_size=500, chunk_overlap=250)
             embeddings = self.embedding_model.embed_chunks(chunks)
             await self._run(self.source_storage.store, embeddings)
 
@@ -236,7 +239,7 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        if type(self.source_storage).__ragna_input_type__ == Document:
+        if issubclass(self.source_storage.__ragna_input_type__, Document):
             sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
         else:
             sources = await self._run(self.source_storage.retrieve, self.documents,
