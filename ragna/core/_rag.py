@@ -83,7 +83,7 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        embedding_model: Union[Type[GenericEmbeddingModel], GenericEmbeddingModel],
+        embedding_model: Optional[Union[Type[GenericEmbeddingModel], GenericEmbeddingModel]] = None,
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
