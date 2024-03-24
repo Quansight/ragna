@@ -7,8 +7,7 @@ from ragna.core import (
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
-from ._embedding import Embedding
-from ..core._components import EmbeddingModel
+from ragna.core import Embedding, EmbeddingModel
 
 
 class Chroma(VectorDatabaseSourceStorage):

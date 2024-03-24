@@ -20,6 +20,8 @@ from typing import (
 )
 from uuid import UUID
 
+from dataclasses import dataclass
+
 import pydantic
 import pydantic.utils
 
@@ -96,6 +98,7 @@ class Component(RequirementsMixin):
 
 # Just for demo purposes. We need to move the actual class here.
 # See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
+@dataclass
 class Embedding:
     embedding: list[float]
     chunk: Chunk
@@ -104,7 +107,6 @@ class Embedding:
         super().__init__()
         self.embedding = embedding
         self.chunk = chunk
-
 
 
 T = TypeVar("T")

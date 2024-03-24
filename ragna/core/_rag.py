@@ -25,7 +25,7 @@ from ._components import Assistant, Component, Embedding, Message, MessageRole, 
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
-from ragna.source_storages._embedding import EmbeddingModel
+from ragna.embedding_models._embedding import EmbeddingModel
 from ragna.source_storages._vector_database import VectorDatabaseSourceStorage
 
 T = TypeVar("T")
