@@ -96,7 +96,7 @@ def test_unknown_component(tmp_local_root):
             },
         )
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
         error = response.json()["error"]
         assert "Unknown component" in error["message"]

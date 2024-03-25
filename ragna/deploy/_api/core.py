@@ -60,7 +60,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             raise RagnaException(
                 "Unknown component",
                 display_name=display_name,
-                http_status_code=status.HTTP_404_NOT_FOUND,
+                http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 http_detail=RagnaException.MESSAGE,
             )
 
