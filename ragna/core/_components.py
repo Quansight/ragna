@@ -96,8 +96,6 @@ class Component(RequirementsMixin):
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
-# Just for demo purposes. We need to move the actual class here.
-# See https://github.com/Quansight/ragna/pull/354#discussion_r1526235318
 @dataclass
 class Embedding:
     embedding: list[float]
