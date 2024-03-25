@@ -101,11 +101,6 @@ class Embedding:
     embedding: list[float]
     chunk: Chunk
 
-    def __init__(self, embedding: list[float], chunk: Chunk):
-        super().__init__()
-        self.embedding = embedding
-        self.chunk = chunk
-
 
 T = TypeVar("T")
 

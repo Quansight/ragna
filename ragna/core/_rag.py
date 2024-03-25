@@ -26,7 +26,6 @@ from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
 from ragna.embedding_models._embedding import EmbeddingModel
-from ragna.source_storages._vector_database import VectorDatabaseSourceStorage
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -165,7 +164,7 @@ class Chat:
 
         self.documents = self._parse_documents(documents)
         self.source_storage = cast(
-            VectorDatabaseSourceStorage, self._rag._load_component(source_storage)
+            SourceStorage, self._rag._load_component(source_storage)
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
 
@@ -199,7 +198,6 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        from ragna.core import Document
         if issubclass(self.source_storage.__ragna_input_type__, Document):
             await self._run(self.source_storage.store, self.documents)
         else:
