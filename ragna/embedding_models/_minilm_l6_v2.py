@@ -1,7 +1,17 @@
-from ragna.core import Chunk, Embedding, EmbeddingModel
+from ragna.core import Chunk, Embedding, EmbeddingModel, Requirement, PackageRequirement
 
 
 class MiniLML6v2(EmbeddingModel):
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [
+            # Rather than using sentence transformers by itself, the embedding functions module of chroma
+            # Can be used instead as it is a much lighter weight dependency
+            PackageRequirement("chromadb>=0.4.13"),
+            PackageRequirement("tiktoken"),
+        ]
+
     def __init__(self):
         super().__init__()
         from chromadb.utils import embedding_functions

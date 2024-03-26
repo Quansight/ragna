@@ -5,7 +5,7 @@ from ragna.core import Document, PackageRequirement, Requirement, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
-from ragna.embedding_models._embedding import Embedding
+from ragna.core import Embedding, EmbeddingModel
 
 class LanceDB(VectorDatabaseSourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
