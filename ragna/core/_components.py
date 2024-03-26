@@ -129,7 +129,7 @@ def _windowed_ragged(
 
 
 class EmbeddingModel(Component, ABC):
-    _EMBEDDING_DIMENSIONS: int
+
 
     def __init__(self):
         import tiktoken
