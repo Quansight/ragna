@@ -22,6 +22,9 @@ import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage
+
+import ragna.source_storages
+
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
