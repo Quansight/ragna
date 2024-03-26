@@ -6,30 +6,32 @@ import functools
 import inspect
 import itertools
 import warnings
+from abc import ABC, abstractmethod
 from collections import deque
+from dataclasses import dataclass
 from typing import (
     AsyncIterable,
     AsyncIterator,
+    Deque,
+    Iterable,
     Iterator,
     Optional,
     Type,
+    TypeVar,
     Union,
+    cast,
     get_args,
     get_origin,
-    get_type_hints, TypeVar, Iterable, Deque, cast,
+    get_type_hints,
 )
 from uuid import UUID
-
-from dataclasses import dataclass
 
 import pydantic
 import pydantic.utils
 
-from abc import ABC, abstractmethod
-
 from ragna._compat import itertools_pairwise
 
-from ._document import Document, Chunk, Page
+from ._document import Chunk, Document, Page
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -81,9 +83,11 @@ class Component(RequirementsMixin):
                 **{
                     (param := concrete_params[param_name]).name: (
                         param.annotation,
-                        param.default
-                        if param.default is not inspect.Parameter.empty
-                        else ...,
+                        (
+                            param.default
+                            if param.default is not inspect.Parameter.empty
+                            else ...
+                        ),
                     )
                     for param_name in extra_param_names
                 },
@@ -126,28 +130,35 @@ def _windowed_ragged(
 
 class EmbeddingModel(Component, ABC):
     _EMBEDDING_DIMENSIONS: int
+
     def __init__(self):
         import tiktoken
+
         self._tokenizer = tiktoken.get_encoding("cl100k_base")
 
     def _chunk_pages(
-            self, pages: Iterable[Page], document_id: UUID, *, chunk_size: int, chunk_overlap: int
+        self,
+        pages: Iterable[Page],
+        document_id: UUID,
+        *,
+        chunk_size: int,
+        chunk_overlap: int,
     ) -> Iterator[Chunk]:
         for window in _windowed_ragged(
-                (
-                        (tokens, page.number)
-                        for page in pages
-                        for tokens in self._tokenizer.encode(page.text)
-                ),
-                n=chunk_size,
-                step=chunk_size - chunk_overlap,
+            (
+                (tokens, page.number)
+                for page in pages
+                for tokens in self._tokenizer.encode(page.text)
+            ),
+            n=chunk_size,
+            step=chunk_size - chunk_overlap,
         ):
             tokens, page_numbers = zip(*window)
             yield Chunk(
                 text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
                 document_id=document_id,
                 page_numbers=list(filter(lambda n: n is not None, page_numbers))
-                             or None,
+                or None,
                 num_tokens=len(tokens),
             )
 
@@ -163,7 +174,7 @@ class EmbeddingModel(Component, ABC):
         ranges_str = []
         range_int = []
         for current_page_number, next_page_number in itertools_pairwise(
-                itertools.chain(sorted(page_numbers), [None])
+            itertools.chain(sorted(page_numbers), [None])
         ):
             current_page_number = cast(int, current_page_number)
 
@@ -180,7 +191,7 @@ class EmbeddingModel(Component, ABC):
 
     @classmethod
     def _take_sources_up_to_max_tokens(
-            cls, sources: Iterable[Source], *, max_tokens: int
+        cls, sources: Iterable[Source], *, max_tokens: int
     ) -> list[Source]:
         taken_sources = []
         total = 0
@@ -224,13 +235,13 @@ class Source(pydantic.BaseModel):
 
 class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
-    __ragna_input_type__: Union[Document, Embedding]
+    __ragna_input_type__: Union[Type[Document], Type[Embedding]]
 
-    def __init_subclass__(cls):
+    def __init_subclass__(cls) -> None:
         if inspect.isabstract(cls):
             return
 
-        valid_input_types = get_args(get_type_hints(cls)["__ragna_input_type__"])
+        valid_input_types = (Document, Embedding)
 
         input_parameter_name = list(inspect.signature(cls.store).parameters.keys())[1]
         input_parameter_annotation = get_type_hints(cls.store).get(input_parameter_name)
@@ -239,7 +250,9 @@ class SourceStorage(Component, abc.ABC):
             input_type = None
         else:
 
-            def extract_input_type():
+            def extract_input_type() -> (
+                Optional[Union[Type[Document], Type[Embedding]]]
+            ):
                 origin = get_origin(input_parameter_annotation)
                 if origin is None:
                     return None
