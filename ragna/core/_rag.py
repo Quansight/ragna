@@ -21,14 +21,18 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._components import Assistant, Component, Embedding, Message, MessageRole, SourceStorage
+from ragna.embedding_models._embedding import EmbeddingModel
 
-import ragna.source_storages
-
+from ._components import (
+    Assistant,
+    Component,
+    Embedding,
+    Message,
+    MessageRole,
+    SourceStorage,
+)
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
-
-from ragna.embedding_models._embedding import EmbeddingModel
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -160,12 +164,18 @@ class Chat:
     ) -> None:
         self._rag = rag
 
-        if embedding_model is None and issubclass(source_storage.__ragna_input_type__, Embedding):
-            raise RagnaException
-
-        self.embedding_model = cast(EmbeddingModel, self._rag._load_component(embedding_model))
-
         self.documents = self._parse_documents(documents)
+
+        if embedding_model is None and issubclass(
+            source_storage.__ragna_input_type__, Embedding
+        ):
+            raise RagnaException
+        elif embedding_model is not None:
+            embedding_model = cast(
+                EmbeddingModel, self._rag._load_component(embedding_model)
+            )
+        self.embedding_model = embedding_model
+
         self.source_storage = cast(
             SourceStorage, self._rag._load_component(source_storage)
         )
@@ -207,7 +217,12 @@ class Chat:
             # Here we need to generate the list of embeddings
             chunks = []
             for document in self.documents:
-                chunks += self.embedding_model._chunk_pages(document.extract_pages(), document_id=document.id, chunk_size=500, chunk_overlap=250)
+                chunks += self.embedding_model._chunk_pages(
+                    document.extract_pages(),
+                    document_id=document.id,
+                    chunk_size=500,
+                    chunk_overlap=250,
+                )
             embeddings = self.embedding_model.embed_chunks(chunks)
             await self._run(self.source_storage.store, embeddings)
 
@@ -241,10 +256,15 @@ class Chat:
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
         if issubclass(self.source_storage.__ragna_input_type__, Document):
-            sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+            sources = await self._run(
+                self.source_storage.retrieve, self.documents, prompt
+            )
         else:
-            sources = await self._run(self.source_storage.retrieve, self.documents,
-                                      self.embedding_model.embed_text(prompt))
+            sources = await self._run(
+                self.source_storage.retrieve,
+                self.documents,
+                self.embedding_model.embed_text(prompt),
+            )
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),
