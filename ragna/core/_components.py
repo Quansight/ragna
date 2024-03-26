@@ -206,7 +206,7 @@ class EmbeddingModel(Component, ABC):
         return taken_sources
 
     @abstractmethod
-    def embed_chunks(self, chunks: list[Chunk]) -> list[Embedding]:
+    def embed_documents(self, documents: list[Document]) -> list[Embedding]:
         ...
 
     def embed_text(self, text: str) -> list[float]:

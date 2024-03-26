@@ -1,4 +1,4 @@
-from ragna.core import Chunk, Embedding, EmbeddingModel, Requirement, PackageRequirement
+from ragna.core import Document, Embedding, EmbeddingModel, Requirement, PackageRequirement
 
 
 class MiniLML6v2(EmbeddingModel):
@@ -17,7 +17,15 @@ class MiniLML6v2(EmbeddingModel):
         from chromadb.utils import embedding_functions
         self.model = embedding_functions.DefaultEmbeddingFunction()
 
-    def embed_chunks(self, chunks: list[Chunk]) -> list[Embedding]:
+    def embed_documents(self, documents: list[Document]) -> list[Embedding]:
+        chunks = []
+        for document in documents:
+            chunks += self._chunk_pages(
+                document.extract_pages(),
+                document_id=document.id,
+                chunk_size=500,
+                chunk_overlap=250,
+            )
         return [Embedding(embed_chunk[0], embed_chunk[1]) for embed_chunk in zip(self.embed_text([chunk.text for chunk in chunks]), chunks)]
 
     def embed_text(self, text: list[str]) -> list[float]:
