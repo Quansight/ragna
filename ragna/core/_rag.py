@@ -21,12 +21,11 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ragna.embedding_models._embedding import EmbeddingModel
-
 from ._components import (
     Assistant,
     Component,
     Embedding,
+    EmbeddingModel,
     Message,
     MessageRole,
     SourceStorage,
