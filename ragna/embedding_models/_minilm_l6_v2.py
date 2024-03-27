@@ -15,7 +15,7 @@ class MiniLML6v2(EmbeddingModel):
     def __init__(self):
         super().__init__()
         from chromadb.utils import embedding_functions
-        self.model = embedding_functions.DefaultEmbeddingFunction()
+        self._model = embedding_functions.DefaultEmbeddingFunction()
 
     def embed_documents(self, documents: list[Document]) -> list[Embedding]:
         chunks = []
@@ -30,6 +30,6 @@ class MiniLML6v2(EmbeddingModel):
 
     def embed_text(self, text: Union[List[str], str]) -> Union[List[List[float]], List[float]]:
         if type(text) is str:
-            return self.model([text])[0]
+            return self._model([text])[0]
         else:
-            return self.model(text)
+            return self._model(text)
