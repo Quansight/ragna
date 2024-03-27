@@ -4,7 +4,6 @@ import abc
 import enum
 import functools
 import inspect
-import itertools
 import warnings
 from abc import ABC, abstractmethod
 from collections import deque
@@ -19,7 +18,6 @@ from typing import (
     Type,
     TypeVar,
     Union,
-    cast,
     get_args,
     get_origin,
     get_type_hints,
@@ -28,8 +26,6 @@ from uuid import UUID
 
 import pydantic
 import pydantic.utils
-
-from ragna._compat import itertools_pairwise
 
 from ._document import Chunk, Document, Page
 from ._utils import RequirementsMixin, merge_models
@@ -130,7 +126,6 @@ def _windowed_ragged(
 
 class EmbeddingModel(Component, ABC):
 
-
     def __init__(self):
         import tiktoken
 
@@ -161,49 +156,6 @@ class EmbeddingModel(Component, ABC):
                 or None,
                 num_tokens=len(tokens),
             )
-
-    @classmethod
-    def _page_numbers_to_str(cls, page_numbers: Optional[Iterable[int]]) -> str:
-        if not page_numbers:
-            return ""
-
-        page_numbers = sorted(set(page_numbers))
-        if len(page_numbers) == 1:
-            return str(page_numbers[0])
-
-        ranges_str = []
-        range_int = []
-        for current_page_number, next_page_number in itertools_pairwise(
-            itertools.chain(sorted(page_numbers), [None])
-        ):
-            current_page_number = cast(int, current_page_number)
-
-            range_int.append(current_page_number)
-            if next_page_number is None or next_page_number > current_page_number + 1:
-                ranges_str.append(
-                    ", ".join(map(str, range_int))
-                    if len(range_int) < 3
-                    else f"{range_int[0]}-{range_int[-1]}"
-                )
-                range_int = []
-
-        return ", ".join(ranges_str)
-
-    @classmethod
-    def _take_sources_up_to_max_tokens(
-        cls, sources: Iterable[Source], *, max_tokens: int
-    ) -> list[Source]:
-        taken_sources = []
-        total = 0
-        for source in sources:
-            new_total = total + source.num_tokens
-            if new_total > max_tokens:
-                break
-
-            taken_sources.append(source)
-            total = new_total
-
-        return taken_sources
 
     @abstractmethod
     def embed_documents(self, documents: list[Document]) -> list[Embedding]:
