@@ -3,11 +3,11 @@ import uuid
 import ragna
 from ragna.core import (
     Document,
+    Embedding,
     Source,
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
-from ragna.core import Embedding, EmbeddingModel
 
 
 class Chroma(VectorDatabaseSourceStorage):
@@ -44,9 +44,7 @@ class Chroma(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._client.create_collection(
-            str(chat_id)
-        )
+        collection = self._client.create_collection(str(chat_id))
 
         ids = []
         texts = []
@@ -61,7 +59,9 @@ class Chroma(VectorDatabaseSourceStorage):
             metadatas.append(
                 {
                     "document_id": str(embedding.chunk.document_id),
-                    "page_numbers": self._page_numbers_to_str(embedding.chunk.page_numbers),
+                    "page_numbers": self._page_numbers_to_str(
+                        embedding.chunk.page_numbers
+                    ),
                     "num_tokens": embedding.chunk.num_tokens,
                 }
             )
@@ -70,7 +70,7 @@ class Chroma(VectorDatabaseSourceStorage):
         collection.add(
             ids=ids,
             documents=texts,
-            embeddings=embeddings,
+            embeddings=embeddings,  # type: ignore[arg-type]
             metadatas=metadatas,  # type: ignore[arg-type]
         )
 
@@ -83,9 +83,7 @@ class Chroma(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._client.get_collection(
-            str(chat_id)
-        )
+        collection = self._client.get_collection(str(chat_id))
 
         result = collection.query(
             query_embeddings=prompt,

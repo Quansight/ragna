@@ -158,7 +158,7 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        embedding_model: Union[Type[EmbeddingModel], EmbeddingModel],
+        embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]],
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -210,12 +210,10 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        if issubclass(self.source_storage.__ragna_input_type__, Document):
-            await self._run(self.source_storage.store, self.documents)
-        else:
-            # Here we need to generate the list of embeddings
-            embeddings = self.embedding_model.embed_documents(self.documents)
-            await self._run(self.source_storage.store, embeddings)
+        input: Union[list[Document], list[Embedding]] = self.documents
+        if not issubclass(self.source_storage.__ragna_input_type__, Document):
+            input = cast(EmbeddingModel, self.embedding_model).embed_documents(input)
+        await self._run(self.source_storage.store, input)
 
         self._prepared = True
 
@@ -246,16 +244,13 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        if issubclass(self.source_storage.__ragna_input_type__, Document):
-            sources = await self._run(
-                self.source_storage.retrieve, self.documents, prompt
+        input: Union[str, list[float]] = prompt
+        if not issubclass(self.source_storage.__ragna_input_type__, Document):
+            input = cast(
+                list[float],
+                cast(EmbeddingModel, self.embedding_model).embed_text(prompt),
             )
-        else:
-            sources = await self._run(
-                self.source_storage.retrieve,
-                self.documents,
-                self.embedding_model.embed_text(prompt),
-            )
+        sources = await self._run(self.source_storage.retrieve, self.documents, input)
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),

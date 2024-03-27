@@ -1,9 +1,8 @@
-from typing import Optional, Iterable, cast
-import itertools
-from ragna._compat import itertools_pairwise
-
 import abc
+import itertools
+from typing import Iterable, Optional, cast
 
+from ragna._compat import itertools_pairwise
 from ragna.core import (
     Document,
     Source,

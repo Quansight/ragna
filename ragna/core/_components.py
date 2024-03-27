@@ -6,28 +6,24 @@ import functools
 import inspect
 import warnings
 from abc import ABC, abstractmethod
-from collections import deque
 from dataclasses import dataclass
 from typing import (
     AsyncIterable,
     AsyncIterator,
-    Deque,
-    Iterable,
     Iterator,
     Optional,
     Type,
-    TypeVar,
     Union,
+    cast,
     get_args,
     get_origin,
     get_type_hints,
 )
-from uuid import UUID
 
 import pydantic
 import pydantic.utils
 
-from ._document import Chunk, Document, Page
+from ._document import Chunk, Document
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -102,67 +98,13 @@ class Embedding:
     chunk: Chunk
 
 
-T = TypeVar("T")
-
-
-# The function is adapted from more_itertools.windowed to allow a ragged last window
-# https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.windowed
-def _windowed_ragged(
-    iterable: Iterable[T], *, n: int, step: int
-) -> Iterator[tuple[T, ...]]:
-    window: Deque[T] = deque(maxlen=n)
-    i = n
-    for _ in map(window.append, iterable):
-        i -= 1
-        if not i:
-            i = step
-            yield tuple(window)
-
-    if len(window) < n:
-        yield tuple(window)
-    elif 0 < i < min(step, n):
-        yield tuple(window)[i:]
-
-
 class EmbeddingModel(Component, ABC):
-
-    def __init__(self):
-        import tiktoken
-
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
-
-    def _chunk_pages(
-        self,
-        pages: Iterable[Page],
-        document_id: UUID,
-        *,
-        chunk_size: int,
-        chunk_overlap: int,
-    ) -> Iterator[Chunk]:
-        for window in _windowed_ragged(
-            (
-                (tokens, page.number)
-                for page in pages
-                for tokens in self._tokenizer.encode(page.text)
-            ),
-            n=chunk_size,
-            step=chunk_size - chunk_overlap,
-        ):
-            tokens, page_numbers = zip(*window)
-            yield Chunk(
-                text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
-                document_id=document_id,
-                page_numbers=list(filter(lambda n: n is not None, page_numbers))
-                or None,
-                num_tokens=len(tokens),
-            )
-
     @abstractmethod
     def embed_documents(self, documents: list[Document]) -> list[Embedding]:
         ...
 
     @abstractmethod
-    def embed_text(self, text: list[str]) -> list[list[float]]:
+    def embed_text(self, text: Union[list[str], str]) -> list[list[float]]:
         ...
 
 
@@ -218,7 +160,7 @@ class SourceStorage(Component, abc.ABC):
                 if not issubclass(input_type, valid_input_types):
                     return None
 
-                return input_type
+                return cast(Union[Type[Document], Type[Embedding]], input_type)
 
             input_type = extract_input_type()
 
