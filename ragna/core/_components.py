@@ -161,7 +161,8 @@ class EmbeddingModel(Component, ABC):
     def embed_documents(self, documents: list[Document]) -> list[Embedding]:
         ...
 
-    def embed_text(self, text: str) -> list[float]:
+    @abstractmethod
+    def embed_text(self, text: list[str]) -> list[list[float]]:
         ...
 
 

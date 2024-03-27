@@ -54,3 +54,11 @@ class VectorDatabaseSourceStorage(SourceStorage):
             total = new_total
 
         return taken_sources
+
+    @abc.abstractmethod
+    def store(self, documents: list[Document]) -> None:
+        ...
+
+    @abc.abstractmethod
+    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+        ...
