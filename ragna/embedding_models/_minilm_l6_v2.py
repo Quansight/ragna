@@ -26,7 +26,7 @@ class MiniLML6v2(EmbeddingModel):
                 chunk_size=500,
                 chunk_overlap=250,
             )
-        return [Embedding(embed_chunk[0], embed_chunk[1]) for embed_chunk in zip(self.embed_text([chunk.text for chunk in chunks]), chunks)]
+        return [Embedding(embedding=self.embed_text(chunk), chunk=chunk) for chunk in chunks]
 
     def embed_text(self, text: Union[List[str], str]) -> Union[List[List[float]], List[float]]:
         if type(text) is str:
