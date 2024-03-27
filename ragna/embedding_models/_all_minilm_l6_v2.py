@@ -1,11 +1,5 @@
 from collections import deque
-from typing import (
-    Deque,
-    Iterable,
-    Iterator,
-    TypeVar,
-    Union,
-)
+from typing import Deque, Iterable, Iterator, TypeVar, Union
 from uuid import UUID
 
 from ragna.core import (

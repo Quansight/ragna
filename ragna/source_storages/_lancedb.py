@@ -7,12 +7,13 @@ from ragna.core import (
     PackageRequirement,
     Requirement,
     Source,
+    SourceStorage,
 )
 
-from ._vector_database import VectorDatabaseSourceStorage
+from ._utils import page_numbers_to_str, take_sources_up_to_max_tokens
 
 
-class LanceDB(VectorDatabaseSourceStorage):
+class LanceDB(SourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
 
     !!! info "Required packages"
@@ -78,7 +79,7 @@ class LanceDB(VectorDatabaseSourceStorage):
                     {
                         "id": str(uuid.uuid4()),
                         "document_id": str(embedding.chunk.document_id),
-                        "page_numbers": self._page_numbers_to_str(
+                        "page_numbers": page_numbers_to_str(
                             embedding.chunk.page_numbers
                         ),
                         "text": embedding.chunk.text,
@@ -112,7 +113,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         )
 
         document_map = {str(document.id): document for document in documents}
-        return self._take_sources_up_to_max_tokens(
+        return take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["id"],
