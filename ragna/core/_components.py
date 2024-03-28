@@ -100,11 +100,7 @@ class Embedding:
 
 class EmbeddingModel(Component, ABC):
     @abstractmethod
-    def embed_documents(self, documents: list[Document]) -> list[Embedding]:
-        ...
-
-    @abstractmethod
-    def embed_text(self, text: Union[list[str], str]) -> list[list[float]]:
+    def embed_chunks(self, documents: list[Chunk]) -> list[Embedding]:
         ...
 
 
