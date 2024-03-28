@@ -94,7 +94,7 @@ class Component(RequirementsMixin):
 
 @dataclass
 class Embedding:
-    embedding: list[float]
+    values: list[float]
     chunk: Chunk
 
 
