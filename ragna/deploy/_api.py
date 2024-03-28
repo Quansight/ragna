@@ -1,34 +1,36 @@
-import contextlib
 import uuid
-from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
+from typing import Annotated, Any, AsyncIterator, Type, cast
 
 import aiofiles
 from fastapi import (
+    APIRouter,
     Body,
     Depends,
     FastAPI,
     Form,
     HTTPException,
-    Request,
     UploadFile,
     status,
 )
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
 import ragna
 import ragna.core
 from ragna._compat import aiter, anext
-from ragna._utils import handle_localhost_origins
 from ragna.core import Assistant, Component, Rag, RagnaException, SourceStorage
 from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
-from . import database, schemas
+from . import schemas
+from ._session import SessionDependency
 
 
-def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
+def make_router(
+    config: Config, database, ignore_unavailable_components: bool
+) -> FastAPI:
+    router = APIRouter(tags=["api"])
+
     ragna.local_root(config.local_root)
 
     rag = Rag()  # type: ignore[var-annotated]
@@ -66,45 +68,14 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
         return component
 
-    app = FastAPI(
-        title="ragna",
-        version=ragna.__version__,
-        root_path=config.api.root_path,
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=handle_localhost_origins(config.api.origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    @router.get("/health")
+    async def health():
+        return Response(b"", status_code=status.HTTP_200_OK)
 
-    @app.exception_handler(RagnaException)
-    async def ragna_exception_handler(
-        request: Request, exc: RagnaException
-    ) -> JSONResponse:
-        if exc.http_detail is RagnaException.EVENT:
-            detail = exc.event
-        elif exc.http_detail is RagnaException.MESSAGE:
-            detail = str(exc)
-        else:
-            detail = cast(str, exc.http_detail)
-        return JSONResponse(
-            status_code=exc.http_status_code,
-            content={"error": {"message": detail}},
-        )
+    async def _get_user(session: SessionDependency):
+        return session.user.username
 
-    @app.get("/")
-    async def version() -> str:
-        return ragna.__version__
-
-    authentication = config.authentication()
-
-    @app.post("/token")
-    async def create_token(request: Request) -> str:
-        return await authentication.create_token(request)
-
-    UserDependency = Annotated[str, Depends(authentication.get_user)]
+    UserDependency = Annotated[str, Depends(_get_user)]
 
     def _get_component_json_schema(
         component: Type[Component],
@@ -122,7 +93,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 json_schema["required"].remove(special_param)
         return json_schema
 
-    @app.get("/components")
+    @router.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
             documents=sorted(config.document.supported_suffixes()),
@@ -138,19 +109,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             ],
         )
 
-    make_session = database.get_sessionmaker(config.api.database_url)
-
-    @contextlib.contextmanager
-    def get_session() -> Iterator[database.Session]:
-        with make_session() as session:  # type: ignore[attr-defined]
-            yield session
-
-    @app.post("/document")
+    @router.post("/document")
     async def create_document_upload_info(
         user: UserDependency,
         name: Annotated[str, Body(..., embed=True)],
     ) -> schemas.DocumentUpload:
-        with get_session() as session:
+        with database.get_session() as session:
             document = schemas.Document(name=name)
             metadata, parameters = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
@@ -160,7 +124,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             )
             return schemas.DocumentUpload(parameters=parameters, document=document)
 
-    @app.put("/document")
+    @router.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
@@ -169,7 +133,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
-        with get_session() as session:
+        with database.get_session() as session:
             user, id = ragna.core.LocalDocument.decode_upload_token(token)
             document, metadata = database.get_document(session, user=user, id=id)
 
@@ -184,7 +148,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             return document
 
     def schema_to_core_chat(
-        session: database.Session, *, user: str, chat: schemas.Chat
+        session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
             documents=[
@@ -215,12 +179,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
         return core_chat
 
-    @app.post("/chats")
+    @router.post("/chats")
     async def create_chat(
         user: UserDependency,
         chat_metadata: schemas.ChatMetadata,
     ) -> schemas.Chat:
-        with get_session() as session:
+        with database.get_session() as session:
             chat = schemas.Chat(metadata=chat_metadata)
 
             # Although we don't need the actual ragna.core.Chat object here,
@@ -230,39 +194,40 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             database.add_chat(session, user=user, chat=chat)
             return chat
 
-    @app.get("/chats")
+    @router.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
-        with get_session() as session:
+        with database.get_session() as session:
             return database.get_chats(session, user=user)
 
-    @app.get("/chats/{id}")
+    @router.get("/chats/{id}")
     async def get_chat(user: UserDependency, id: uuid.UUID) -> schemas.Chat:
-        with get_session() as session:
+        with database.get_session() as session:
             return database.get_chat(session, user=user, id=id)
 
-    @app.post("/chats/{id}/prepare")
+    @router.post("/chats/{id}/prepare")
     async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
-        with get_session() as session:
+        with database.get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
 
-            core_chat = schema_to_core_chat(session, user=user, chat=chat)
+        core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-            welcome = schemas.Message.from_core(await core_chat.prepare())
+        welcome = schemas.Message.from_core(await core_chat.prepare())
 
+        with database.get_session() as session:
             chat.prepared = True
             chat.messages.append(welcome)
             database.update_chat(session, user=user, chat=chat)
 
-            return welcome
+        return welcome
 
-    @app.post("/chats/{id}/answer")
+    @router.post("/chats/{id}/answer")
     async def answer(
         user: UserDependency,
         id: uuid.UUID,
         prompt: Annotated[str, Body(..., embed=True)],
         stream: Annotated[bool, Body(..., embed=True)] = False,
     ) -> schemas.Message:
-        with get_session() as session:
+        with database.get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
                 schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
@@ -295,7 +260,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                     answer_chunk.content = content_chunk
                     yield answer_chunk
 
-                with get_session() as session:
+                with database.get_session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
@@ -310,15 +275,15 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         else:
             answer = schemas.Message.from_core(core_answer)
 
-            with get_session() as session:
+            with database.get_session() as session:
                 chat.messages.append(answer)
                 database.update_chat(session, user=user, chat=chat)
 
             return answer
 
-    @app.delete("/chats/{id}")
+    @router.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:
-        with get_session() as session:
+        with database.get_session() as session:
             database.delete_chat(session, user=user, id=id)
 
-    return app
+    return router

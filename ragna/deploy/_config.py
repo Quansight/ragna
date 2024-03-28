@@ -23,7 +23,7 @@ import ragna
 from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
-from ._auth import Authentication
+from ._auth import Auth
 
 T = TypeVar("T")
 
@@ -139,9 +139,7 @@ class Config(ConfigBase):
         default_factory=ragna.local_root
     )
 
-    authentication: ImportString[
-        type[Authentication]
-    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+    auth: ImportString[type[Auth]] = "ragna.deploy.DummyBasicAuth"  # type: ignore[assignment]
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [

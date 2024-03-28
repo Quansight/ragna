@@ -1,6 +1,3 @@
-import subprocess
-import sys
-import time
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -10,13 +7,11 @@ import typer
 import uvicorn
 
 import ragna
-from ragna._utils import timeout_after
-from ragna.deploy._api import app as api_app
-from ragna.deploy._ui import app as ui_app
+from ragna.deploy._core import make_app
 
 from .config import ConfigOption, check_config, init_config
 
-app = typer.Typer(
+cli = typer.Typer(
     name="ragna",
     invoke_without_command=True,
     no_args_is_help=True,
@@ -31,7 +26,7 @@ def version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@cli.callback()
 def _main(
     version: Annotated[
         Optional[bool],
@@ -43,7 +38,7 @@ def _main(
     pass
 
 
-@app.command(help="Start a wizard to build a Ragna configuration interactively.")
+@cli.command(help="Start a wizard to build a Ragna configuration interactively.")
 def init(
     *,
     output_path: Annotated[
@@ -68,16 +63,31 @@ def init(
     config.to_file(output_path, force=force)
 
 
-@app.command(help="Check the availability of components.")
+@cli.command(help="Check the availability of components.")
 def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assignment]
     is_available = check_config(config)
     raise typer.Exit(int(not is_available))
 
 
-@app.command(help="Start the REST API.")
-def api(
+@cli.command(help="Deploy Ragna REST API and web UI.")
+def deploy(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
+    # FIXME: --add no-deploy-api
+    deploy_api: Annotated[
+        Optional[bool],
+        typer.Option(
+            "--deploy-api/--no-deploy-api",
+            help="Deploy the Ragna REST API.",
+            show_default="True if UI is not deployed and otherwise check availability",
+        ),
+    ] = None,
+    deploy_ui: Annotated[
+        bool,
+        typer.Option(
+            help="Deploy the Ragna web UI.",
+        ),
+    ] = True,
     ignore_unavailable_components: Annotated[
         bool,
         typer.Option(
@@ -88,86 +98,23 @@ def api(
         ),
     ] = False,
 ) -> None:
+    if deploy_api is None:
+
+        def api_available() -> bool:
+            try:
+                return httpx.get(config.api.url).is_success
+            except httpx.ConnectError:
+                return False
+
+        deploy_api = not api_available() if deploy_ui else True
+
     uvicorn.run(
-        api_app(
-            config=config, ignore_unavailable_components=ignore_unavailable_components
+        make_app(
+            config,
+            deploy_ui=deploy_ui,
+            deploy_api=deploy_api,
+            ignore_unavailable_components=ignore_unavailable_components,
         ),
         host=config.api.hostname,
         port=config.api.port,
     )
-
-
-@app.command(help="Start the web UI.")
-def ui(
-    *,
-    config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    start_api: Annotated[
-        Optional[bool],
-        typer.Option(
-            help="Start the ragna REST API alongside the web UI in a subprocess.",
-            show_default="Start if the API is not served at the configured URL.",
-        ),
-    ] = None,
-    ignore_unavailable_components: Annotated[
-        bool,
-        typer.Option(
-            help=(
-                "Ignore components that are not available, "
-                "i.e. their requirements are not met. "
-                "This option as no effect if --no-start-api is used."
-            )
-        ),
-    ] = False,
-    open_browser: Annotated[
-        bool,
-        typer.Option(help="Open the web UI in the browser when it is started."),
-    ] = True,
-) -> None:
-    def check_api_available() -> bool:
-        try:
-            return httpx.get(config.api.url).is_success
-        except httpx.ConnectError:
-            return False
-
-    if start_api is None:
-        start_api = not check_api_available()
-
-    if start_api:
-        process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "ragna",
-                "api",
-                "--config",
-                config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
-                f"--{'' if ignore_unavailable_components else 'no-'}ignore-unavailable-components",
-            ],
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-        )
-    else:
-        process = None
-
-    try:
-        if process is not None:
-
-            @timeout_after(60)
-            def wait_for_api() -> None:
-                while not check_api_available():
-                    time.sleep(0.5)
-
-            try:
-                wait_for_api()
-            except TimeoutError:
-                rich.print(
-                    "Failed to start the API in 60 seconds. "
-                    "Please start it manually with [bold]ragna api[/bold]."
-                )
-                raise typer.Exit(1)
-
-        ui_app(config=config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
-    finally:
-        if process is not None:
-            process.kill()
-            process.communicate()

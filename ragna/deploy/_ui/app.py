@@ -116,11 +116,6 @@ class App(param.Parameterized):
         }
         titles = {"/": "Home"}
 
-        print(self.origins)
-        allow_websocket_origin = [
-            urlsplit(origin).netloc or urlsplit(origin).path for origin in self.origins
-        ]
-        print(allow_websocket_origin)
         pn.serve(
             all_pages,
             titles=titles,
@@ -138,6 +133,7 @@ class App(param.Parameterized):
                 for origin in self.origins
             ],
             static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
+            threaded=True,
         )
 
 

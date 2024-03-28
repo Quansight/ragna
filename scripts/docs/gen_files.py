@@ -17,7 +17,7 @@ from ragna.deploy._api import app as api_app
 # See https://github.com/smarie/mkdocs-gallery/issues/93
 asyncio.get_event_loop_policy()._local._set_called = False
 
-from ragna.deploy._cli import app as cli_app  # noqa: E402
+from ragna.deploy._cli import cli as cli_app  # noqa: E402
 
 
 def main():
@@ -29,9 +29,10 @@ def main():
 def cli_reference():
     def get_help(command):
         with unittest.mock.patch.object(typer.rich_utils, "MAX_WIDTH", 80):
-            with contextlib.suppress(SystemExit), contextlib.redirect_stdout(
-                io.StringIO()
-            ) as stdout:
+            with (
+                contextlib.suppress(SystemExit),
+                contextlib.redirect_stdout(io.StringIO()) as stdout,
+            ):
                 cli_app(([command] if command else []) + ["--help"], prog_name="ragna")
 
             return "\n".join(

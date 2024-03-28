@@ -1,4 +1,4 @@
-from ragna.deploy._cli import app
+from ragna.deploy._cli import cli
 
 if __name__ == "__main__":
-    app()
+    cli()

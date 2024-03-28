@@ -9,6 +9,14 @@ from pydantic import BaseModel, Field
 import ragna.core
 
 
+class User(BaseModel):
+    username: str
+
+
+class Session(BaseModel):
+    user: User
+
+
 class Components(BaseModel):
     documents: list[str]
     source_storages: list[dict[str, Any]]

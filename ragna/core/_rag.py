@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import inspect
 import uuid
 from typing import (
     Any,
@@ -19,11 +18,12 @@ from typing import (
 )
 
 import pydantic
-from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
+
+from ragna._utils import as_async_iterator, as_awaitable, default_user
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
-from ._utils import RagnaException, default_user, merge_models
+from ._utils import RagnaException, merge_models
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -188,7 +188,7 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
+        await self._as_awaitable(self.source_storage.store, self.documents)
         self._prepared = True
 
         welcome = Message(
@@ -218,10 +218,12 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        sources = await self._as_awaitable(
+            self.source_storage.retrieve, self.documents, prompt
+        )
 
         answer = Message(
-            content=self._run_gen(self.assistant.answer, prompt, sources),
+            content=self._as_async_iterator(self.assistant.answer, prompt, sources),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
@@ -272,34 +274,17 @@ class Chat:
             for fn, model in component_models.items()
         }
 
-    async def _run(
+    def _as_awaitable(
         self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
-    ) -> T:
-        kwargs = self._unpacked_params[fn]
-        if inspect.iscoroutinefunction(fn):
-            fn = cast(Callable[..., Awaitable[T]], fn)
-            coro = fn(*args, **kwargs)
-        else:
-            fn = cast(Callable[..., T], fn)
-            coro = run_in_threadpool(fn, *args, **kwargs)
+    ) -> Awaitable[T]:
+        return as_awaitable(fn, *args, **self._unpacked_params[fn])
 
-        return await coro
-
-    async def _run_gen(
+    def _as_async_iterator(
         self,
         fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
         *args: Any,
     ) -> AsyncIterator[T]:
-        kwargs = self._unpacked_params[fn]
-        if inspect.isasyncgenfunction(fn):
-            fn = cast(Callable[..., AsyncIterator[T]], fn)
-            async_gen = fn(*args, **kwargs)
-        else:
-            fn = cast(Callable[..., Iterator[T]], fn)
-            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
-
-        async for item in async_gen:
-            yield item
+        return as_async_iterator(fn, *args, **self._unpacked_params[fn])
 
     async def __aenter__(self) -> Chat:
         await self.prepare()

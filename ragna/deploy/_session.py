@@ -1,28 +1,12 @@
-import panel as pn
-from bokeh.embed import server_document
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
-from fastapi.middleware import Middleware
-
-from ragna.deploy._ui import app as ui_app
-from ragna.deploy import Config
-
-from functools import partial
-import abc
-import os
-import secrets
-import time
 import uuid
-from typing import Annotated, Awaitable, Callable, Optional, cast
+from typing import Annotated
 
-import jwt
-import pydantic
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.responses import Response, HTMLResponse
+from fastapi import Depends, Request, status
+from fastapi.responses import RedirectResponse, Response
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from fastapi.responses import RedirectResponse, Response
+from .schemas import Session
 
 
 class SessionMiddleware(BaseHTTPMiddleware):
@@ -86,7 +70,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             return self._unauthorized()
         elif session is None:
             # First time the API token is used
-            session = self._sessions[token] = Session(user)
+            session = self._sessions[token] = Session(user=user)
 
         request.state.session = session
         return await call_next(request)
@@ -107,9 +91,9 @@ class SessionMiddleware(BaseHTTPMiddleware):
         return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
     def _unauthorized(self) -> Response:
-        return HTTPException(
+        return Response(
+            content="Not authenticated",
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -117,6 +101,8 @@ class SessionMiddleware(BaseHTTPMiddleware):
         response.set_cookie(
             key=self._COOKIE_NAME,
             value=cookie,
+            # FIXME
+            max_age=3600,
             # max_age=self._config.deploy.cookie_expires,
             httponly=True,
             samesite="lax",
@@ -128,3 +114,10 @@ class SessionMiddleware(BaseHTTPMiddleware):
             httponly=True,
             samesite="lax",
         )
+
+
+async def _get_session(request: Request) -> Session:
+    return request.state.session
+
+
+SessionDependency = Annotated[Session, Depends(_get_session)]
