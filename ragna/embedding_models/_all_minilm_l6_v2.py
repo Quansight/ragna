@@ -31,7 +31,7 @@ class AllMiniLML6v2(EmbeddingModel):
 
     def embed_chunks(self, chunks: list[Chunk]) -> list[Embedding]:
         return [
-            Embedding(embedding=self._embed_text(chunk.text), chunk=chunk)
+            Embedding(values=self._embed_text(chunk.text), chunk=chunk)
             for chunk in chunks
         ]
 
