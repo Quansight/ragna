@@ -29,8 +29,6 @@ class Chroma(SourceStorage):
                 anonymized_telemetry=False,
             )
         )
-        self._tokens = 0
-        self._embeddings = 0
 
     def store(
         self,
@@ -47,8 +45,6 @@ class Chroma(SourceStorage):
         metadatas = []
         embeddings = []
         for embedding in documents:
-            self._tokens += embedding.chunk.num_tokens
-            self._embeddings += 1
 
             ids.append(str(uuid.uuid4()))
             texts.append(embedding.chunk.text)
@@ -81,21 +77,7 @@ class Chroma(SourceStorage):
 
         result = collection.query(
             query_embeddings=prompt,
-            n_results=min(
-                # We cannot retrieve source by a maximum number of tokens. Thus, we
-                # estimate how many sources we have to query. We overestimate by a
-                # factor of two to avoid retrieving to few sources and needed to query
-                # again.
-                # ---
-                # FIXME: querying only a low number of documents can lead to not finding
-                #  the most relevant one.
-                #  See https://github.com/chroma-core/chroma/issues/1205 for details.
-                #  Instead of just querying more documents here, we should use the
-                #  appropriate index parameters when creating the collection. However,
-                #  they are undocumented for now.
-                max(int(num_tokens * 2 / self._tokens * self._embeddings), 100),
-                collection.count(),
-            ),
+            n_results=min(collection.count(), 100),
             include=["distances", "metadatas", "documents"],
         )
 

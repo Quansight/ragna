@@ -40,9 +40,6 @@ class LanceDB(SourceStorage):
 
         import lancedb
 
-        self._tokens = 0
-        self._embeddings = 0
-
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
 
     _VECTOR_COLUMN_NAME = "embedded_text"
@@ -72,8 +69,6 @@ class LanceDB(SourceStorage):
         table = self._db.create_table(name=str(chat_id), schema=_schema)
 
         for embedding in documents:
-            self._tokens += embedding.chunk.num_tokens
-            self._embeddings += 1
             table.add(
                 [
                     {
@@ -102,7 +97,7 @@ class LanceDB(SourceStorage):
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
-        limit = int(num_tokens * 2 / self._tokens * self._embeddings)
+        limit = 100
         results = (
             table.search(
                 prompt,
