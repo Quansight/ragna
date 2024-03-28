@@ -12,7 +12,7 @@ from ragna.deploy._core import make_app
 from .config import ConfigOption, check_config, init_config
 
 cli = typer.Typer(
-    name="ragna",
+    name="Ragna",
     invoke_without_command=True,
     no_args_is_help=True,
     add_completion=False,
@@ -73,16 +73,15 @@ def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assign
 def deploy(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    # FIXME: --add no-deploy-api
-    deploy_api: Annotated[
+    api: Annotated[
         Optional[bool],
         typer.Option(
-            "--deploy-api/--no-deploy-api",
+            "--api/--no-api",
             help="Deploy the Ragna REST API.",
             show_default="True if UI is not deployed and otherwise check availability",
         ),
     ] = None,
-    deploy_ui: Annotated[
+    ui: Annotated[
         bool,
         typer.Option(
             help="Deploy the Ragna web UI.",
@@ -98,21 +97,25 @@ def deploy(
         ),
     ] = False,
 ) -> None:
-    if deploy_api is None:
+    def api_available() -> bool:
+        try:
+            return httpx.get(f"{config.api.url}/api/health").is_success
+        except httpx.ConnectError:
+            return False
 
-        def api_available() -> bool:
-            try:
-                return httpx.get(config.api.url).is_success
-            except httpx.ConnectError:
-                return False
+    if api is None:
+        api = not api_available() if ui else True
 
-        deploy_api = not api_available() if deploy_ui else True
+    if not (api or ui):
+        raise Exception
+    elif ui and not api and not api_available():
+        raise Exception
 
     uvicorn.run(
         make_app(
             config,
-            deploy_ui=deploy_ui,
-            deploy_api=deploy_api,
+            ui=ui,
+            api=api,
             ignore_unavailable_components=ignore_unavailable_components,
         ),
         host=config.api.hostname,

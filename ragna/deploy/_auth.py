@@ -30,7 +30,7 @@ class NoAuth(Auth):
         # - GET /oauth-callback
         # Since we cannot instruct a browser to post when sending redirect response, we
         # use the OAuth callback endpoint here, although this has nothing to do with
-        # OAuth
+        # OAuth.
         return RedirectResponse(
             "/oauth-callback", status_code=status.HTTP_303_SEE_OTHER
         )
@@ -80,8 +80,9 @@ class DummyBasicAuth(Auth):
         return User(username=username)
 
 
-class GithubOauth(Auth):
+class GithubOAuth(Auth):
     def __init__(self):
+        # FIXME: requirements
         self._client_id = os.environ["RAGNA_GITHUB_OAUTH_CLIENT_ID"]
         self._client_secret = os.environ["RAGNA_GITHUB_OAUTH_CLIENT_SECRET"]
 
