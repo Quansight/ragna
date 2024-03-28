@@ -52,7 +52,7 @@ class LanceDB(SourceStorage):
     ) -> None:
         import pyarrow as pa
 
-        embedding_dimensions = len(documents[0].embedding)
+        embedding_dimensions = len(documents[0].values)
 
         _schema = pa.schema(
             [

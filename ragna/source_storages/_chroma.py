@@ -55,7 +55,7 @@ class Chroma(SourceStorage):
                     "num_tokens": embedding.chunk.num_tokens,
                 }
             )
-            embeddings.append(embedding.embedding)
+            embeddings.append(embedding.values)
 
         collection.add(
             ids=ids,
