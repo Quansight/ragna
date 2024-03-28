@@ -4,7 +4,7 @@ __all__ = [
     "RagnaDemoAuthentication",
 ]
 
-from ._authentication import Authentication, RagnaDemoAuthentication
+from ._auth import Authentication, RagnaDemoAuthentication
 from ._config import Config
 
 # isort: split

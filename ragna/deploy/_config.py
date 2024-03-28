@@ -23,7 +23,7 @@ import ragna
 from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
-from ._authentication import Authentication
+from ._auth import Authentication
 
 T = TypeVar("T")
 
