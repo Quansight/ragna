@@ -52,6 +52,8 @@ class LanceDB(SourceStorage):
     ) -> None:
         import pyarrow as pa
 
+        embedding_dimensions = len(documents[0].embedding)
+
         _schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -60,7 +62,7 @@ class LanceDB(SourceStorage):
                 pa.field("text", pa.string()),
                 pa.field(
                     self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), len(documents[0].embedding)),
+                    pa.list_(pa.float32(), embedding_dimensions),
                 ),
                 pa.field("num_tokens", pa.int32()),
             ]
