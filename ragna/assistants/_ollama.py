@@ -21,7 +21,12 @@ class OllamaApiAssistant(Assistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def _call_api(self, prompt: str, sources: list[Source]) -> AsyncIterator[str]:
+    async def _call_api(
+        self, prompt: str, sources: list[Source], **kwargs
+    ) -> AsyncIterator[str]:
+        # The **kwargs argument is not used by this function and is only present
+        # for compatibility with the superclass ApiAssistant.
+        # TODO: Refactor and remove **kwargs
         async with self._client.stream(
             "POST",
             "http://localhost:11434/api/chat",  # TODO: Make this url customizable
