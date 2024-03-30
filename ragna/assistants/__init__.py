@@ -5,6 +5,7 @@ __all__ = [
     "CommandLight",
     "GeminiPro",
     "GeminiUltra",
+    "Gemma2b",
     "Gpt35Turbo16k",
     "Gpt4",
     "Jurassic2Ultra",
@@ -19,6 +20,7 @@ from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
 from ._google import GeminiPro, GeminiUltra
 from ._mosaicml import Mpt7bInstruct, Mpt30bInstruct
+from ._ollama import Gemma2B
 from ._openai import Gpt4, Gpt35Turbo16k
 
 # isort: split
