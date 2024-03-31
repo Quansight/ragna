@@ -18,7 +18,7 @@ API_ASSISTANTS = [
     if isinstance(assistant, type)
     and issubclass(assistant, ApiAssistant)
     and assistant is not ApiAssistant
-    and not all(issubclass(assistant, to_skip) for to_skip in EXCLUDE_ASSISTANTS)
+    and not any(issubclass(assistant, to_skip) for to_skip in EXCLUDE_ASSISTANTS)
 ]
 
 
