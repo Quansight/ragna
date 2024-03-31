@@ -48,7 +48,8 @@ class OllamaApiAssistant(Assistant):
                 ],
                 "model": self._MODEL,
                 "stream": True,
-            },  # TODO: Add optional parameters for the model
+                "temperature": 0.0,
+            },
         ) as response:
             await self._assert_api_call_is_success(response)
 
