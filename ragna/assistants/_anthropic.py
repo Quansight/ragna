@@ -64,13 +64,13 @@ class AnthropicApiAssistant(ApiAssistant):
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
                 # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
-                if data["type"] != "content_block_delta":
-                    continue
-                elif data["type"] == "error":
+                if "error" in data:
                     raise RagnaException(data["error"].pop("message"), **data["error"])
                 elif data["type"] == "message_stop":
                     break
-                # breakpoint()
+                elif data["type"] != "content_block_delta":
+                    continue
+
                 yield cast(str, data["delta"].pop("text"))
 
 
