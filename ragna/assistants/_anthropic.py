@@ -37,7 +37,7 @@ class AnthropicApiAssistant(ApiAssistant):
         async with httpx_sse.aconnect_sse(
             self._client,
             "POST",
-            "https://api.anthropic.com/v1/complete",
+            "https://api.anthropic.com/v1/messages",
             headers={
                 "accept": "application/json",
                 "anthropic-version": "2023-06-01",
