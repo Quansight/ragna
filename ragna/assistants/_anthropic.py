@@ -33,6 +33,7 @@ class AnthropicApiAssistant(ApiAssistant):
     ) -> AsyncIterator[str]:
         import httpx_sse
 
+        # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
         async with httpx_sse.aconnect_sse(
             self._client,
@@ -53,7 +54,7 @@ class AnthropicApiAssistant(ApiAssistant):
                         "content": prompt,
                     }
                 ],
-                "max_tokens_to_sample": max_new_tokens,
+                "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,
             },
@@ -62,29 +63,15 @@ class AnthropicApiAssistant(ApiAssistant):
 
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
-                if data["type"] != "completion":
+                # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
+                if data["type"] != "content_block_delta":
                     continue
-                elif "error" in data:
+                elif data["type"] == "error":
                     raise RagnaException(data["error"].pop("message"), **data["error"])
-                elif data["stop_reason"] is not None:
+                elif data["type"] == "message_stop":
                     break
-
-                yield cast(str, data["completion"])
-
-
-class ClaudeInstant(AnthropicApiAssistant):
-    """[Claude Instant](https://docs.anthropic.com/claude/reference/selecting-a-model)
-
-    !!! info "Required environment variables"
-
-        - `ANTHROPIC_API_KEY`
-
-    !!! info "Required packages"
-
-        - `httpx_sse`
-    """
-
-    _MODEL = "claude-instant-1"
+                # breakpoint()
+                yield cast(str, data["delta"].pop("text"))
 
 
 class Claude(AnthropicApiAssistant):
@@ -99,4 +86,4 @@ class Claude(AnthropicApiAssistant):
         - `httpx_sse`
     """
 
-    _MODEL = "claude-2"
+    _MODEL = "claude-3-opus-20240229"
