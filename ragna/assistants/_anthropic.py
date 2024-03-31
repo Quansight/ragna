@@ -18,15 +18,15 @@ class AnthropicApiAssistant(ApiAssistant):
     def display_name(cls) -> str:
         return f"Anthropic/{cls._MODEL}"
 
-    def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
-        # See https://docs.anthropic.com/claude/docs/introduction-to-prompt-design#human--assistant-formatting
+    def _instructize_system_prompt(self, sources: list[Source]) -> str:
+        # See https://docs.anthropic.com/claude/docs/system-prompts
         instruction = (
-            "\n\nHuman: "
-            "Use the following pieces of context to answer the question at the end. "
-            "If you don't know the answer, just say so. Don't try to make up an answer.\n"
+            "Use the following documents to answer the prompt. "
+            "If you don't know the answer, just say so. Don't try to make up an answer."
+            "Only use the included documents below to generate the answer.\n"
         )
         instruction += "\n\n".join(source.content for source in sources)
-        return f"{instruction}\n\nQuestion: {prompt}\n\nAssistant:"
+        return instruction
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
@@ -46,7 +46,13 @@ class AnthropicApiAssistant(ApiAssistant):
             },
             json={
                 "model": self._MODEL,
-                "prompt": self._instructize_prompt(prompt, sources),
+                "system": self._instructize_system_prompt(sources),
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
                 "max_tokens_to_sample": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,
