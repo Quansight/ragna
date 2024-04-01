@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import json
+import os
 from typing import AsyncIterator
 
 import httpx
@@ -62,3 +63,7 @@ class AuthenticatedApiAssistant(ApiAssistant):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [EnvVarRequirement(cls._API_KEY_ENV_VAR), *cls._extra_requirements()]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._api_key = os.environ[self._API_KEY_ENV_VAR]
