@@ -1,7 +1,6 @@
 import abc
 import contextlib
 import json
-import os
 from typing import AsyncIterator
 
 import httpx
@@ -12,11 +11,9 @@ from ragna.core import Assistant, EnvVarRequirement, RagnaException, Requirement
 
 
 class ApiAssistant(Assistant):
-    _API_KEY_ENV_VAR: str
-
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [EnvVarRequirement(cls._API_KEY_ENV_VAR), *cls._extra_requirements()]
+        return []
 
     @classmethod
     def _extra_requirements(cls) -> list[Requirement]:
@@ -27,7 +24,6 @@ class ApiAssistant(Assistant):
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
         )
-        self._api_key = os.environ[self._API_KEY_ENV_VAR]
 
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
@@ -58,3 +54,11 @@ class ApiAssistant(Assistant):
             response_status_code=response.status_code,
             response_content=content,
         )
+
+
+class AuthenticatedApiAssistant(ApiAssistant):
+    _API_KEY_ENV_VAR: str
+
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [EnvVarRequirement(cls._API_KEY_ENV_VAR), *cls._extra_requirements()]
