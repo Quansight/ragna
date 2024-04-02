@@ -9,10 +9,7 @@ from ragna.deploy import Config
 
 from . import js
 from . import styles as ui
-from .api_wrapper import ApiWrapper, RagnaAuthTokenExpiredException
-from .auth_page import AuthPage
-from .js_utils import redirect_script
-from .logout_page import LogoutPage
+from .api_wrapper import ApiWrapper
 from .main_page import MainPage
 
 pn.extension(
@@ -35,11 +32,13 @@ class App(param.Parameterized):
         ui.apply_design_modifiers()
         self.hostname = hostname
         self.port = port
-        self.api_url = api_url
+        self.api_url = f"{api_url}/api"
         self.origins = origins
+        # FIXME
         self.open_browser = open_browser
 
     def get_template(self):
+        return pn.template.FastListTemplate()
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
@@ -49,7 +48,7 @@ class App(param.Parameterized):
             collapsed_sidebar=True,
             # main_layout=None
             raw_css=[ui.APP_RAW],
-            favicon="imgs/ragna_logo.svg",
+            favicon="static/images/ragna_logo.svg",
             css_files=["https://rsms.me/inter/inter.css"],
         )
 
@@ -66,74 +65,42 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        if "auth_token" not in pn.state.cookies:
-            return redirect_script(remove="", append="auth")
-
-        try:
-            api_wrapper = ApiWrapper(
-                api_url=self.api_url, auth_token=pn.state.cookies["auth_token"]
-            )
-        except RagnaAuthTokenExpiredException:
-            # If the token has expired / is invalid, we redirect to the logout page.
-            # The logout page will delete the cookie and redirect to the auth page.
-            return redirect_script(remove="", append="logout")
+        # Unfortunately, we need to parse the cookies from a non-standard header for
+        # now. See https://github.com/bokeh/bokeh/issues/13792 for details. If that is
+        # resolved, we can just use pn.state.cookies here.
+        cookies = dict(
+            [
+                cookie.strip().split("=")
+                for cookie in pn.state.headers["X-Cookie"].split(";")
+            ]
+        )
 
         template = self.get_template()
-        main_page = MainPage(api_wrapper=api_wrapper, template=template)
+        main_page = MainPage(
+            api_wrapper=ApiWrapper(api_url=self.api_url, cookies=cookies),
+            template=template,
+        )
         template.main.append(main_page)
         return template
 
-    def auth_page(self):
-        # If the user is already authenticated, we receive the auth token in the cookie.
-        # in that case, redirect to the index page.
-        if "auth_token" in pn.state.cookies:
-            # Usually, we do a redirect this way :
-            # >>> pn.state.location.param.update(reload=True, pathname="/")
-            # But it only works once the page is fully loaded.
-            # So we render a javascript redirect instead.
-            return redirect_script(remove="auth")
-
-        template = self.get_template()
-        auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(auth_page)
-        return template
-
-    def logout_page(self):
-        template = self.get_template()
-        logout_page = LogoutPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(logout_page)
-        return template
-
-    def health_page(self):
-        return pn.pane.HTML("<h1>Ok</h1>")
-
     def serve(self):
-        all_pages = {
-            "/": self.index_page,
-            "/auth": self.auth_page,
-            "/logout": self.logout_page,
-            "/health": self.health_page,
-        }
-        titles = {"/": "Home"}
-
         pn.serve(
-            all_pages,
-            titles=titles,
+            self.index_page,
             address=self.hostname,
             port=self.port,
-            admin=True,
+            threaded=True,
             start=True,
-            location=True,
-            show=self.open_browser,
-            keep_alive=30 * 1000,  # 30s
-            autoreload=True,
-            profiler="pyinstrument",
+            show=False,
             allow_websocket_origin=[
                 urlsplit(origin).netloc or urlsplit(origin).path
                 for origin in self.origins
             ],
-            static_dirs={"imgs": str(IMGS), "resources": str(RES)},  # "css": str(CSS),
-            threaded=True,
+            # static_dirs={
+            #     "/static/imgs": str(IMGS),
+            #     "resources": str(RES),
+            # },  # "css": str(CSS),
+            verbose=False,
+            liveness="/health",
         )
 
 

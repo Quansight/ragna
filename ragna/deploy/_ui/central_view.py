@@ -138,15 +138,17 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ui.stylesheets(
                 (
                     f":host(.{css_class})",
-                    {"background-color": "rgb(243, 243, 243) !important"}
-                    if role == "user"
-                    else {
-                        "background-color": "none",
-                        "border": "rgb(234, 234, 234)",
-                        "border-style": "solid",
-                        "border-width": "1.2px",
-                        "border-radius": "5px",
-                    },
+                    (
+                        {"background-color": "rgb(243, 243, 243) !important"}
+                        if role == "user"
+                        else {
+                            "background-color": "none",
+                            "border": "rgb(234, 234, 234)",
+                            "border-style": "solid",
+                            "border-width": "1.2px",
+                            "border-radius": "5px",
+                        }
+                    ),
                 )
             ),
         )
@@ -193,7 +195,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
     @staticmethod
     def _ragna_avatar_lookup(user: str, *, role: str) -> str:
         if role == "system":
-            return "imgs/ragna_logo.svg"
+            return "static/images/ragna_logo.svg"
         elif role == "user":
             return "👤"
 
@@ -204,7 +206,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             model = user
 
         if organization == "Ragna":
-            return "imgs/ragna_logo.svg"
+            return "static/images/ragna_logo.svg"
         elif organization == "OpenAI":
             if model.startswith("gpt-3"):
                 return "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png?20230318122128"

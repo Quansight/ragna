@@ -122,7 +122,7 @@ class LeftSidebar(pn.viewable.Viewer):
                 pass
 
         header = pn.pane.HTML(
-            """<img src="imgs/ragna_logo.svg" height="32px" /><span>Ragna</span>""",
+            """<img src="static/images/ragna_logo.svg" height="32px" /><span>Ragna</span>""",
             stylesheets=[
                 """ 
                                                :host { 

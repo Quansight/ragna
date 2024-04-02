@@ -23,7 +23,7 @@ from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
 from . import schemas
-from ._session import SessionDependency
+from ._session import UserDependency as _UserDependency
 
 
 def make_router(
@@ -72,10 +72,10 @@ def make_router(
     async def health():
         return Response(b"", status_code=status.HTTP_200_OK)
 
-    async def _get_user(session: SessionDependency):
-        return session.user.username
+    async def _get_username(user: _UserDependency):
+        return user.username
 
-    UserDependency = Annotated[str, Depends(_get_user)]
+    UserDependency = Annotated[str, Depends(_get_username)]
 
     def _get_component_json_schema(
         component: Type[Component],
@@ -114,7 +114,7 @@ def make_router(
         user: UserDependency,
         name: Annotated[str, Body(..., embed=True)],
     ) -> schemas.DocumentUpload:
-        with database.get_session() as session:
+        with database.session() as session:
             document = schemas.Document(name=name)
             metadata, parameters = await config.document.get_upload_info(
                 config=config, user=user, id=document.id, name=document.name
@@ -133,7 +133,7 @@ def make_router(
                 status_code=400,
                 detail="Ragna configuration does not support local upload",
             )
-        with database.get_session() as session:
+        with database.session() as session:
             user, id = ragna.core.LocalDocument.decode_upload_token(token)
             document, metadata = database.get_document(session, user=user, id=id)
 
@@ -184,7 +184,7 @@ def make_router(
         user: UserDependency,
         chat_metadata: schemas.ChatMetadata,
     ) -> schemas.Chat:
-        with database.get_session() as session:
+        with database.session() as session:
             chat = schemas.Chat(metadata=chat_metadata)
 
             # Although we don't need the actual ragna.core.Chat object here,
@@ -196,24 +196,24 @@ def make_router(
 
     @router.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
-        with database.get_session() as session:
+        with database.session() as session:
             return database.get_chats(session, user=user)
 
     @router.get("/chats/{id}")
     async def get_chat(user: UserDependency, id: uuid.UUID) -> schemas.Chat:
-        with database.get_session() as session:
+        with database.session() as session:
             return database.get_chat(session, user=user, id=id)
 
     @router.post("/chats/{id}/prepare")
     async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
-        with database.get_session() as session:
+        with database.session() as session:
             chat = database.get_chat(session, user=user, id=id)
 
         core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         welcome = schemas.Message.from_core(await core_chat.prepare())
 
-        with database.get_session() as session:
+        with database.session() as session:
             chat.prepared = True
             chat.messages.append(welcome)
             database.update_chat(session, user=user, chat=chat)
@@ -227,7 +227,7 @@ def make_router(
         prompt: Annotated[str, Body(..., embed=True)],
         stream: Annotated[bool, Body(..., embed=True)] = False,
     ) -> schemas.Message:
-        with database.get_session() as session:
+        with database.session() as session:
             chat = database.get_chat(session, user=user, id=id)
             chat.messages.append(
                 schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
@@ -260,7 +260,7 @@ def make_router(
                     answer_chunk.content = content_chunk
                     yield answer_chunk
 
-                with database.get_session() as session:
+                with database.session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
@@ -275,7 +275,7 @@ def make_router(
         else:
             answer = schemas.Message.from_core(core_answer)
 
-            with database.get_session() as session:
+            with database.session() as session:
                 chat.messages.append(answer)
                 database.update_chat(session, user=user, chat=chat)
 
@@ -283,7 +283,7 @@ def make_router(
 
     @router.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:
-        with database.get_session() as session:
+        with database.session() as session:
             database.delete_chat(session, user=user, id=id)
 
     return router

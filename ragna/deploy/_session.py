@@ -21,6 +21,13 @@ class SessionMiddleware(BaseHTTPMiddleware):
         self._sessions: dict[str, Session] = {}
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        # call_next_orig = call_next
+        #
+        # async def call_next(request):
+        #     response = await call_next_orig(request)
+        #     print(f"{request.method=} {request.url.path=} {response.headers}")
+        #     return response
+
         if (authorization := request.headers.get("Authorization")) is not None:
             return await self._authorization_dispatch(
                 request, call_next, authorization=authorization
@@ -121,3 +128,10 @@ async def _get_session(request: Request) -> Session:
 
 
 SessionDependency = Annotated[Session, Depends(_get_session)]
+
+
+async def _get_user(session: SessionDependency):
+    return session.user
+
+
+UserDependency = Annotated[str, Depends(_get_user)]

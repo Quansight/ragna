@@ -109,4 +109,15 @@ class GithubOAuth(Auth):
             client.headers["Authorization"] = f"Bearer {access_token}"
 
             user_data = (await client.get("https://api.github.com/user")).json()
+
+            organizations_data = (
+                await client.get(user_data["organizations_url"])
+            ).json()
+            organizations = {
+                organization_data["login"] for organization_data in organizations_data
+            }
+            if not (organizations & {"Quansight", "Quansight-Labs"}):
+                # FIXME: send the login page again with a failure message
+                return HTMLResponse("Unauthorized!")
+
             return User(username=user_data["login"])

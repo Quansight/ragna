@@ -3,9 +3,10 @@ __all__ = [
     "Config",
     "DummyBasicAuth",
     "GithubOAuth",
+    "NoAuth",
 ]
 
-from ._auth import Auth, DummyBasicAuth, GithubOAuth
+from ._auth import Auth, DummyBasicAuth, GithubOAuth, NoAuth
 from ._config import Config
 
 # isort: split

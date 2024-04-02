@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import cast
 
 from bokeh.embed import server_document
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 import ragna
 from ragna._utils import as_awaitable
@@ -14,7 +16,8 @@ from . import schemas as schemas
 from ._api import make_router as make_api_router
 from ._config import Config
 from ._database import Database
-from ._session import SessionMiddleware
+from ._session import SessionMiddleware, UserDependency
+from ._ui import app as make_ui_app
 
 
 def make_app(
@@ -28,6 +31,12 @@ def make_app(
 
     database = Database(config)
 
+    app.mount(
+        "/static",
+        StaticFiles(directory=Path(__file__).parent / "_static"),
+        name="static",
+    )
+
     app.add_middleware(
         SessionMiddleware,
         config=config,
@@ -38,13 +47,17 @@ def make_app(
     app.add_middleware(
         CORSMiddleware,
         # FIXME
-        allow_origins="http://localhost:31476",
+        allow_origins=[
+            "http://localhost:31476",
+            # "http://localhost:31477",
+            # "http://127.0.0.1:31477",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    add_auth(app, config, ui=ui)
+    add_auth(app, config)
 
     if api:
         app.include_router(
@@ -57,37 +70,27 @@ def make_app(
         )
 
     if ui:
+        # FIXME: find a way to open the browser
+        make_ui_app(config=config, open_browser=False).serve()
 
         @app.get("/ui", include_in_schema=False)
-        async def ui_():
-            import panel as pn
-
-            pn.serve(
-                {"": pn.chat.ChatInterface().servable()},
-                port=31477,
-                allow_websocket_origin=[
-                    "127.0.0.1:31476",
-                    # "127.0.0.1:31477",
-                    "localhost:31476",
-                    # "localhost:31477",
-                ],
-                address="127.0.0.1",
-                show=False,
-                threaded=True,
-            )
-
-            # FIXME
+        async def ui_(request: Request):
             return HTMLResponse(
                 templates.render(
-                    "ui.html", script=server_document("http://127.0.0.1:31477")
+                    "ui.html",
+                    script=server_document(
+                        # FIXME: from config
+                        "http://127.0.0.1:31477",
+                        # Unfortunately, we currently need to rely on this non-standard
+                        # way of forwarding the cookies to the UI. See
+                        # https://github.com/bokeh/bokeh/issues/13792 for details.
+                        headers={"X-Cookie": request.headers["Cookie"]},
+                    ),
                 )
             )
 
-        # # FIXME: find a way to open the browser
-        # ui.app(config=config, open_browser=False).serve()
-
     @app.get("/", include_in_schema=False)
-    async def base_redirect() -> Response:
+    async def base_redirect(request: Request) -> Response:
         return RedirectResponse(
             "/ui" if ui else "/docs", status_code=status.HTTP_303_SEE_OTHER
         )
@@ -95,6 +98,10 @@ def make_app(
     @app.get("/version")
     async def version():
         return ragna.__version__
+
+    @app.get("/user")
+    async def user(user: UserDependency):
+        return user
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
@@ -114,7 +121,7 @@ def make_app(
     return app
 
 
-def add_auth(app: FastAPI, config: Config, *, ui: bool) -> None:
+def add_auth(app: FastAPI, config: Config) -> None:
     auth = config.auth()
 
     @app.get("/login", include_in_schema=False)
@@ -127,9 +134,7 @@ def add_auth(app: FastAPI, config: Config, *, ui: bool) -> None:
             return result
 
         request.state.session = schemas.Session(user=result)
-        return RedirectResponse(
-            "/ui" if ui else "/docs", status_code=status.HTTP_303_SEE_OTHER
-        )
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
 
     @app.post("/login", include_in_schema=False)
     async def login(request: Request):
@@ -141,4 +146,4 @@ def add_auth(app: FastAPI, config: Config, *, ui: bool) -> None:
 
     @app.post("/logout", include_in_schema=False)
     async def logout():
-        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
