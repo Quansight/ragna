@@ -4,7 +4,11 @@ import pytest
 
 from ragna import assistants
 from ragna._compat import anext
-from ragna.assistants._api import AuthenticatedApiAssistant, _ApiAssistant
+from ragna.assistants._api import (
+    AuthenticatedApiAssistant,
+    UnauthenticatedApiAssistant,
+    _ApiAssistant,
+)
 from ragna.core import RagnaException
 from tests.utils import skip_on_windows
 
@@ -15,6 +19,7 @@ API_ASSISTANTS = [
     and issubclass(assistant, _ApiAssistant)
     and assistant is not _ApiAssistant
     and assistant is not AuthenticatedApiAssistant
+    and assistant is not UnauthenticatedApiAssistant
 ]
 
 
