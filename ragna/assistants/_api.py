@@ -67,3 +67,8 @@ class AuthenticatedApiAssistant(_ApiAssistant):
     def __init__(self) -> None:
         super().__init__()
         self._api_key = os.environ[self._API_KEY_ENV_VAR]
+
+
+class UnauthenticatedApiAssistant(_ApiAssistant):
+    def __init__(self) -> None:
+        super().__init__()
