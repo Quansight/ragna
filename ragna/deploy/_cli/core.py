@@ -3,7 +3,6 @@ import sys
 import time
 from pathlib import Path
 from typing import Annotated, Optional
-from urllib.parse import urlsplit
 
 import httpx
 import rich
@@ -79,29 +78,50 @@ def check(config: ConfigOption = "./ragna.toml") -> None:  # type: ignore[assign
 def api(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+            )
+        ),
+    ] = False,
 ) -> None:
-    components = urlsplit(config.api.url)
-    if components.hostname is None or components.port is None:
-        # TODO: make this part of the config validation
-        rich.print(f"Unable to extract hostname and port from {config.api.url}.")
-        raise typer.Exit(1)
-
     uvicorn.run(
-        api_app(config), host=components.hostname, port=components.port or 31476
+        api_app(
+            config=config, ignore_unavailable_components=ignore_unavailable_components
+        ),
+        host=config.api.hostname,
+        port=config.api.port,
     )
 
 
-@app.command(help="Start the UI.")
+@app.command(help="Start the web UI.")
 def ui(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     start_api: Annotated[
         Optional[bool],
         typer.Option(
-            help="Start the ragna REST API alongside the UI in a subprocess.",
+            help="Start the ragna REST API alongside the web UI in a subprocess.",
             show_default="Start if the API is not served at the configured URL.",
         ),
     ] = None,
+    ignore_unavailable_components: Annotated[
+        bool,
+        typer.Option(
+            help=(
+                "Ignore components that are not available, "
+                "i.e. their requirements are not met. "
+                "This option as no effect if --no-start-api is used."
+            )
+        ),
+    ] = False,
+    open_browser: Annotated[
+        bool,
+        typer.Option(help="Open the web UI in the browser when it is started."),
+    ] = True,
 ) -> None:
     def check_api_available() -> bool:
         try:
@@ -121,6 +141,7 @@ def ui(
                 "api",
                 "--config",
                 config.__ragna_cli_config_path__,  # type: ignore[attr-defined]
+                f"--{'' if ignore_unavailable_components else 'no-'}ignore-unavailable-components",
             ],
             stdout=sys.stdout,
             stderr=sys.stderr,
@@ -145,7 +166,7 @@ def ui(
                 )
                 raise typer.Exit(1)
 
-        ui_app(config).serve()  # type: ignore[no-untyped-call]
+        ui_app(config=config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
     finally:
         if process is not None:
             process.kill()

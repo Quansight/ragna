@@ -1,5 +1,4 @@
 import re
-import sys
 import textwrap
 from typing import Iterator
 
@@ -22,10 +21,6 @@ class RagnaDemoAssistant(Assistant):
     @classmethod
     def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
-
-    @property
-    def max_input_size(self) -> int:
-        return sys.maxsize
 
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         if re.search("markdown", prompt, re.IGNORECASE):
@@ -58,8 +53,8 @@ class RagnaDemoAssistant(Assistant):
         return (
             textwrap.dedent(
                 """
-                I'm a demo assistant and can be used to try Ragnas workflow. I will only
-                mirror back my inputs. 
+                I'm a demo assistant and can be used to try Ragnas workflow.
+                I will only mirror back my inputs. 
                 
                 Your prompt was:
 

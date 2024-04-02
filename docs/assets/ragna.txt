@@ -1,0 +1,8 @@
+Ragna is an open source project built by Quansight. It is designed to allow
+organizations to explore the power of Retrieval-augmented generation (RAG) based
+AI tools. Ragna provides an intuitive API for quick experimentation and built-in
+tools for creating production-ready applications allowing you to quickly leverage
+Large Language Models (LLMs) for your work.
+
+The Ragna website is https://ragna.chat/. The source code is available at
+https://github.com/Quansight/ragna under the BSD 3-Clause license.

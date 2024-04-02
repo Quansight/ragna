@@ -7,9 +7,9 @@ dependencies:
   - git-lfs
   - pip:
       - python-dotenv
-      - boto3
       - pytest >=6
       - pytest-mock
+      - pytest-asyncio
       - mypy ==1.6.1
       - pre-commit
       - types-aiofiles
@@ -22,5 +22,5 @@ dependencies:
       - mkdocstrings[python]
       - mkdocs-gen-files
       - material-plausible-plugin
-      - mktestdocs
+      - mkdocs-gallery >=0.10
       - mdx_truly_sane_lists

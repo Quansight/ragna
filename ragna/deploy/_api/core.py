@@ -1,40 +1,68 @@
 import contextlib
-import itertools
 import uuid
 from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
-import sse_starlette
-from fastapi import Body, Depends, FastAPI, Form, HTTPException, Request, UploadFile
+from fastapi import (
+    Body,
+    Depends,
+    FastAPI,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 import ragna
 import ragna.core
 from ragna._compat import aiter, anext
 from ragna._utils import handle_localhost_origins
-from ragna.core import Component, Rag, RagnaException
+from ragna.core import Assistant, Component, Rag, RagnaException, SourceStorage
 from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
 from . import database, schemas
 
 
-def app(config: Config) -> FastAPI:
-    ragna.local_root(config.local_cache_root)
+def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
+    ragna.local_root(config.local_root)
 
     rag = Rag()  # type: ignore[var-annotated]
-    components_map: dict[str, Component] = {
-        component.display_name(): rag._load_component(component)
-        for component in itertools.chain(
-            config.components.source_storages, config.components.assistants
-        )
-    }
+    components_map: dict[str, Component] = {}
+    for components in [config.source_storages, config.assistants]:
+        components = cast(list[Type[Component]], components)
+        at_least_one = False
+        for component in components:
+            loaded_component = rag._load_component(
+                component, ignore_unavailable=ignore_unavailable_components
+            )
+            if loaded_component is None:
+                print(
+                    f"Ignoring {component.display_name()}, because it is not available."
+                )
+            else:
+                at_least_one = True
+                components_map[component.display_name()] = loaded_component
+
+        if not at_least_one:
+            raise RagnaException(
+                "No component available",
+                components=[component.display_name() for component in components],
+            )
 
     def get_component(display_name: str) -> Component:
         component = components_map.get(display_name)
         if component is None:
-            raise RagnaException("Unknown component", display_name=display_name)
+            raise RagnaException(
+                "Unknown component",
+                display_name=display_name,
+                http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                http_detail=RagnaException.MESSAGE,
+            )
 
         return component
 
@@ -99,12 +127,14 @@ def app(config: Config) -> FastAPI:
         return schemas.Components(
             documents=sorted(config.document.supported_suffixes()),
             source_storages=[
-                _get_component_json_schema(source_storage)
-                for source_storage in config.components.source_storages
+                _get_component_json_schema(type(source_storage))
+                for source_storage in components_map.values()
+                if isinstance(source_storage, SourceStorage)
             ],
             assistants=[
-                _get_component_json_schema(assistant)
-                for assistant in config.components.assistants
+                _get_component_json_schema(type(assistant))
+                for assistant in components_map.values()
+                if isinstance(assistant, Assistant)
             ],
         )
 
@@ -243,7 +273,7 @@ def app(config: Config) -> FastAPI:
 
         if stream:
 
-            async def message_chunks() -> AsyncIterator[sse_starlette.ServerSentEvent]:
+            async def message_chunks() -> AsyncIterator[BaseModel]:
                 core_answer_stream = aiter(core_answer)
                 content_chunk = await anext(core_answer_stream)
 
@@ -255,7 +285,7 @@ def app(config: Config) -> FastAPI:
                         for source in core_answer.sources
                     ],
                 )
-                yield sse_starlette.ServerSentEvent(answer.model_dump_json())
+                yield answer
 
                 # Avoid sending the sources multiple times
                 answer_chunk = answer.model_copy(update=dict(sources=None))
@@ -263,15 +293,19 @@ def app(config: Config) -> FastAPI:
                 async for content_chunk in core_answer_stream:
                     content_chunks.append(content_chunk)
                     answer_chunk.content = content_chunk
-                    yield sse_starlette.ServerSentEvent(answer_chunk.model_dump_json())
+                    yield answer_chunk
 
                 with get_session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
 
-            return sse_starlette.EventSourceResponse(  # type: ignore[return-value]
-                message_chunks()
+            async def to_jsonl(models: AsyncIterator[Any]) -> AsyncIterator[str]:
+                async for model in models:
+                    yield f"{model.model_dump_json()}\n"
+
+            return StreamingResponse(  # type: ignore[return-value]
+                to_jsonl(message_chunks())
             )
         else:
             answer = schemas.Message.from_core(core_answer)

@@ -1,11 +1,14 @@
 import abc
+import contextlib
+import json
 import os
 from typing import AsyncIterator
 
 import httpx
+from httpx import Response
 
 import ragna
-from ragna.core import Assistant, EnvVarRequirement, Requirement, Source
+from ragna.core import Assistant, EnvVarRequirement, RagnaException, Requirement, Source
 
 
 class ApiAssistant(Assistant):
@@ -13,7 +16,11 @@ class ApiAssistant(Assistant):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [EnvVarRequirement(cls._API_KEY_ENV_VAR)]
+        return [EnvVarRequirement(cls._API_KEY_ENV_VAR), *cls._extra_requirements()]
+
+    @classmethod
+    def _extra_requirements(cls) -> list[Requirement]:
+        return []
 
     def __init__(self) -> None:
         self._client = httpx.AsyncClient(
@@ -35,3 +42,19 @@ class ApiAssistant(Assistant):
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
         ...
+
+    async def _assert_api_call_is_success(self, response: Response) -> None:
+        if response.is_success:
+            return
+
+        content = await response.aread()
+        with contextlib.suppress(Exception):
+            content = json.loads(content)
+
+        raise RagnaException(
+            "API call failed",
+            request_method=response.request.method,
+            request_url=str(response.request.url),
+            response_status_code=response.status_code,
+            response_content=content,
+        )

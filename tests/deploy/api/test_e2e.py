@@ -1,47 +1,39 @@
 import json
-import os
 
-import httpx_sse
 import pytest
 from fastapi.testclient import TestClient
 
-from ragna.core._utils import default_user
+from ragna.assistants import RagnaDemoAssistant
 from ragna.deploy import Config
 from ragna.deploy._api import app
 
+from .utils import authenticate
 
+
+class TestAssistant(RagnaDemoAssistant):
+    def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
+        content = next(super().answer(prompt, sources))
+
+        if multiple_answer_chunks:
+            for chunk in content.split(" "):
+                yield f"{chunk} "
+        else:
+            yield content
+
+
+@pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
-def test_e2e(tmp_local_root, stream_answer):
-    config = Config(
-        local_cache_root=tmp_local_root,
-        api=dict(database_url=f"sqlite:///{tmp_local_root / 'ragna.db'}"),
-    )
-    check_api(config, stream_answer=stream_answer)
+def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
+    config = Config(local_root=tmp_local_root, assistants=[TestAssistant])
 
-
-def check_api(config, *, stream_answer):
-    document_root = config.local_cache_root / "documents"
+    document_root = config.local_root / "documents"
     document_root.mkdir()
     document_path = document_root / "test.txt"
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with TestClient(app(config)) as client:
-        username = default_user()
-        token = (
-            client.post(
-                "/token",
-                data={
-                    "username": username,
-                    "password": os.environ.get(
-                        "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-                    ),
-                },
-            )
-            .raise_for_status()
-            .json()
-        )
-        client.headers["Authorization"] = f"Bearer {token}"
+    with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
+        authenticate(client)
 
         assert client.get("/chats").raise_for_status().json() == []
 
@@ -69,12 +61,11 @@ def check_api(config, *, stream_answer):
             json_schema["title"] for json_schema in components["source_storages"]
         ]
         assert source_storages == [
-            source_storage.display_name()
-            for source_storage in config.components.source_storages
+            source_storage.display_name() for source_storage in config.source_storages
         ]
         assistants = [json_schema["title"] for json_schema in components["assistants"]]
         assert assistants == [
-            assistant.display_name() for assistant in config.components.assistants
+            assistant.display_name() for assistant in config.assistants
         ]
 
         source_storage = source_storages[0]
@@ -84,7 +75,7 @@ def check_api(config, *, stream_answer):
             "name": "test-chat",
             "source_storage": source_storage,
             "assistant": assistant,
-            "params": {},
+            "params": {"multiple_answer_chunks": multiple_answer_chunks},
             "documents": [document],
         }
         chat = client.post("/chats", json=chat_metadata).raise_for_status().json()
@@ -106,18 +97,15 @@ def check_api(config, *, stream_answer):
 
         prompt = "?"
         if stream_answer:
-            chunks = []
-            with httpx_sse.connect_sse(
-                client,
+            with client.stream(
                 "POST",
                 f"/chats/{chat['id']}/answer",
                 json={"prompt": prompt, "stream": True},
-            ) as event_source:
-                for sse in event_source.iter_sse():
-                    chunk = json.loads(sse.data)
-                    chunks.append(chunk["content"])
-            message = chunk
-            message["content"] = "".join(chunks)
+            ) as response:
+                chunks = [json.loads(chunk) for chunk in response.iter_lines()]
+            message = chunks[0]
+            assert all(chunk["sources"] is None for chunk in chunks[1:])
+            message["content"] = "".join(chunk["content"] for chunk in chunks)
         else:
             message = (
                 client.post(f"/chats/{chat['id']}/answer", json={"prompt": prompt})

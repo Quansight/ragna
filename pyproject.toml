@@ -25,7 +25,6 @@ dependencies = [
     "emoji",
     "fastapi",
     "httpx",
-    "httpx-sse",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     "panel==1.3.8",
@@ -38,7 +37,6 @@ dependencies = [
     "questionary",
     "rich",
     "sqlalchemy>=2",
-    "sse-starlette",
     "starlette",
     "tomlkit",
     "typer",
@@ -49,13 +47,14 @@ dynamic = ["version"]
 [project.urls]
 Homepage = "https://ragna.chat"
 Documentation = "https://ragna.chat"
-Changelog = "https://ragna.chat/en/latest/references/changelog/"
+Changelog = "https://ragna.chat/en/stable/references/release-notes/"
 Repository = "https://github.com/Quansight/ragna"
 
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
     "chromadb>=0.4.13",
+    "httpx_sse",
     "ijson",
     "lancedb>=0.2",
     "pyarrow",
@@ -91,22 +90,23 @@ ignore = ["E501"]
 [tool.ruff.per-file-ignores]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
-"*.ipynb" = ["E402"]
-
+# The examples often have imports below the top of the file to follow the narrative
+"docs/examples/**/*.py" = ["E402", "F704", "I001"]
+"docs/tutorials/**/*.py" = ["E402", "F704", "I001"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra --tb=short"
+addopts = "-ra --tb=short --asyncio-mode=auto"
 testpaths = [
     "tests",
 ]
 filterwarnings = [
     "error",
-    # This is coming from the nested dependency
-    # chromadb -> opentelemetry-exporter-otlp-proto-grpc -> googleapis-common-protos
-    # This will be resolved by https://github.com/googleapis/python-api-common-protos/pull/187
-    "ignore::DeprecationWarning:pkg_resources",
-    "ignore::DeprecationWarning:google.rpc",
+    "ignore::ResourceWarning",
+    # httpx 0.27.0 deprecated some functionality that the test client of starlette /
+    # FastApi use. This should be resolved by the next release of these libraries.
+    # See https://github.com/encode/starlette/issues/2524
+    "ignore:The 'app' shortcut is now deprecated:DeprecationWarning",
 ]
 xfail_strict = true
 

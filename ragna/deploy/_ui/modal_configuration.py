@@ -36,7 +36,7 @@ class ChatConfig(param.Parameterized):
     max_context_tokens = param.Integer(
         step=500,
         bounds=(1, 8000),
-        default=4000,
+        default=2000,
         doc=(
             "Maximum number of context tokens and in turn the number of document chunks "
             "pulled out of the vector database."
@@ -163,9 +163,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
-            config.allowed_documents = [
-                ext[1:].upper() for ext in components["documents"]
-            ]
+            config.allowed_documents = components["documents"]
 
             assistants = [component["title"] for component in components["assistants"]]
 
