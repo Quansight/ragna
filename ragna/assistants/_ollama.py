@@ -1,7 +1,7 @@
-# import json
-# from typing import AsyncIterator, cast
+import json
+from typing import AsyncIterator, cast
 
-from ragna.core import Source  # RagnaException
+from ragna.core import RagnaException, Source
 
 from ragna.core import Assistant
 
@@ -22,8 +22,6 @@ class OllamaApiAssistant(Assistant):
         return instruction + "\n\n".join(source.content for source in sources)
 
     async def _call_api(self, prompt: str, sources: list[Source]) -> AsyncIterator[str]:
-        import ijson
-
         async with self._client.stream(
             "POST",
             "http://localhost:11434/api/chat",  # TODO: Make this url customizable
@@ -47,8 +45,12 @@ class OllamaApiAssistant(Assistant):
         ) as response:
             await self._assert_api_call_is_success(response)
 
-            async for chunk in ijson.items(
-                AsyncIteratorReader(response.aiter_bytes(1024)),
-                "message.content",
-            ):
-                yield chunk
+            async for chunk in response.aiter_lines():
+                # This part modeled after https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
+                if chunk:
+                    json_data = json.loads(chunk)
+
+                    if not json_data["done"]:
+                        yield cast(str, json_data["message"]["content"])
+                else:
+                    raise RagnaException("The response was empty.")
