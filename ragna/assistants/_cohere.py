@@ -3,10 +3,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
-class CohereApiAssistant(ApiAssistant):
+class CohereApiAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
     _MODEL: str
 

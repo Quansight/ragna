@@ -2,10 +2,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
-class MosaicmlApiAssistant(ApiAssistant):
+class MosaicmlApiAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "MOSAICML_API_KEY"
     _MODEL: str
 

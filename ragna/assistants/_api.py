@@ -11,7 +11,7 @@ import ragna
 from ragna.core import Assistant, EnvVarRequirement, RagnaException, Requirement, Source
 
 
-class ApiAssistant(Assistant):
+class _ApiAssistant(Assistant):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return []
@@ -57,7 +57,7 @@ class ApiAssistant(Assistant):
         )
 
 
-class AuthenticatedApiAssistant(ApiAssistant):
+class AuthenticatedApiAssistant(_ApiAssistant):
     _API_KEY_ENV_VAR: str
 
     @classmethod

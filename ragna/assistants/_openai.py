@@ -3,10 +3,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import PackageRequirement, Requirement, Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
-class OpenaiApiAssistant(ApiAssistant):
+class OpenaiApiAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
     _MODEL: str
 

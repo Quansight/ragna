@@ -3,7 +3,7 @@ from typing import AsyncIterator
 from ragna._compat import anext
 from ragna.core import PackageRequirement, Requirement, Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
 # ijson does not support reading from an (async) iterator, but only from file-like
@@ -25,7 +25,7 @@ class AsyncIteratorReader:
         return await anext(self._ait, b"")  # type: ignore[call-arg]
 
 
-class GoogleApiAssistant(ApiAssistant):
+class GoogleApiAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "GOOGLE_API_KEY"
     _MODEL: str
 

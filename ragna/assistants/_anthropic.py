@@ -3,10 +3,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
-class AnthropicApiAssistant(ApiAssistant):
+class AnthropicApiAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _MODEL: str
 

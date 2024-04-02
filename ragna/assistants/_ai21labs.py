@@ -2,10 +2,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import Source
 
-from ._api import ApiAssistant
+from ._api import AuthenticatedApiAssistant
 
 
-class Ai21LabsAssistant(ApiAssistant):
+class Ai21LabsAssistant(AuthenticatedApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
     _MODEL_TYPE: str
 
