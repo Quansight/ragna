@@ -61,8 +61,6 @@ from ragna.core import Document, Source, SourceStorage
 
 class TutorialSourceStorage(SourceStorage):
     def __init__(self):
-        # import database api here
-
         # set up database
         self._storage: dict[int, list[Source]] = {}
 
