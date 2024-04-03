@@ -2,7 +2,7 @@ function upload(files, token, informationEndpoint, final_callback) {
   uploadBatches(files, token, informationEndpoint).then(final_callback);
 }
 
-async function uploadBatches(files, token, informationEndpoint) {
+async function uploadBatches(files, informationEndpoint) {
   const batchSize = 500;
   const queue = Array.from(files);
 
@@ -10,20 +10,20 @@ async function uploadBatches(files, token, informationEndpoint) {
 
   while (queue.length) {
     const batch = queue.splice(0, batchSize);
-    await Promise.all(
-      batch.map((file) => uploadFile(file, token, informationEndpoint)),
-    ).then((results) => {
-      uploaded.push(...results);
-    });
+    await Promise.all(batch.map((file) => uploadFile(file, informationEndpoint))).then(
+      (results) => {
+        uploaded.push(...results);
+      },
+    );
   }
 
   return uploaded;
 }
 
-async function uploadFile(file, token, informationEndpoint) {
+async function uploadFile(file, informationEndpoint) {
   const response = await fetch(informationEndpoint, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: file.name }),
   });
   const documentUpload = await response.json();

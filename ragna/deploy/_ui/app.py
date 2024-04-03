@@ -95,10 +95,10 @@ class App(param.Parameterized):
                 urlsplit(origin).netloc or urlsplit(origin).path
                 for origin in self.origins
             ],
-            # static_dirs={
-            #     "/static/imgs": str(IMGS),
-            #     "resources": str(RES),
-            # },  # "css": str(CSS),
+            static_dirs={
+                "/static/imgs": str(IMGS),
+                "resources": str(RES),
+            },  # "css": str(CSS),
             verbose=False,
             liveness="/health",
         )

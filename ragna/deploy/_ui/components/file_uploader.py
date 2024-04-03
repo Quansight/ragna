@@ -17,10 +17,9 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     title = param.String(default="")
 
-    def __init__(self, allowed_documents, token, informations_endpoint, **params):
+    def __init__(self, allowed_documents, informations_endpoint, **params):
         super().__init__(**params)
 
-        self.token = token
         self.informations_endpoint = informations_endpoint
 
         self.after_upload_callback = None
@@ -56,7 +55,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         self.custom_js = (
             final_callback_js
             + random_id
-            + f"""upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
+            + f"""upload( self.get_upload_files(), '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {
