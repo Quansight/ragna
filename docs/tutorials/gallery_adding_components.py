@@ -81,41 +81,27 @@ class TutorialSourceStorage(SourceStorage):
 
 
 # %%
-# ## Including External Python Objects
+# ## Including Custom Python Objects
 
 # %%
-# If the module containing external object you want to include is not in your
+# If the module containing the custom object you want to include is in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
+# you can use the [config file](../../../references/config/#referencing-python-objects)
+# to add it.
+
+# %%
+# If the module containing the custom object you want to include is not in your
 # [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
 # suppose it is located at the path `~/tutorials/tutorial.py`. You can add `~/tutorial/` to your
 # [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH) using
 # the command
+#
 # ```bash
 # $ export PYTHONPATH=$PYTHONPATH:~/tutorials/
 # ```
 
 # %%
-# If the external object is already in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH), e.g.
-# already in your virtual environment, then the above `#!bash export` command is not necessary.
-
-# %%
 # Once the module(s) containing your objects is(are) in your
 # [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH), you can
-# you can include them in Ragna by setting their corresponding
-# [environment variables](../../references/config.md#environment-variables):
-
-# %%
-# ```bash
-# $ export RAGNA_ASSISTANTS='["tutorial.TutorialAssistant"]'
-# ```
-
-# %%
-# for importing the [`TutorialAssistant`](../../generated/tutorials/gallery_adding_components.md#adding-an-llm-assistant) from above, and
-
-# %%
-# ```bash
-# $ export RAGNA_SOURCE_STORAGES='["tutorial.TutorialSourceStorage"]'
-# ```
-
-# %%
-# for importing the [`TutorialSourceStorage`](../../generated/tutorials/gallery_adding_components.md#adding-a-source-storage) from above.
+# you can include it(them) in Ragna using the
+# [config file](../../../references/config/#referencing-python-objects).
