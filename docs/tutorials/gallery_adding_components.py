@@ -12,8 +12,7 @@ to incorporate custom components. This tutorial covers the basics of how to do t
 # %%
 # The main thing to do is to implement the [`answer()`][ragna.core.Assistant.answer] abstract method.
 # The [`answer()`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
-# This could call an API directly, call other member functions of your assistant that call an API,
-# or call a local LLM. Ragna is designed to give you that flexibility.
+# This could call an API directly or call a local LLM.
 
 # %%
 # Your [`answer()`][ragna.core.Assistant.answer] method should take a prompt in the form of a
