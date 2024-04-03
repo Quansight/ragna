@@ -65,12 +65,7 @@ class TutorialSourceStorage(SourceStorage):
         self._storage: dict[int, list[Source]] = {}
 
     def store(self, documents: list[Document], chat_id: int) -> None:
-        self._storage[chat_id] = [
-            Source(
-                document=document,
-            )
-            for document in documents
-        ]
+        self._storage[chat_id] = [Source(document=document) for document in documents]
 
     def retrieve(
         self, documents: list[Document], prompt: str, *, chat_id: int
