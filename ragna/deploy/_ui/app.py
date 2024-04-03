@@ -38,7 +38,6 @@ class App(param.Parameterized):
         self.open_browser = open_browser
 
     def get_template(self):
-        return pn.template.FastListTemplate()
         template = pn.template.FastListTemplate(
             # We need to set a title to have it appearing on the browser's tab
             # but it means we need to hide it from the header bar
