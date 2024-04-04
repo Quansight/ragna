@@ -87,3 +87,18 @@ class Claude3Opus(AnthropicApiAssistant):
     """
 
     _MODEL = "claude-3-opus-20240229"
+
+
+class Claude3Sonnet(AnthropicApiAssistant):
+    """[Claude 3 Sonnet](https://docs.anthropic.com/claude/docs/models-overview)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
+    """
+
+    _MODEL = "claude-3-sonnet-20240229"
