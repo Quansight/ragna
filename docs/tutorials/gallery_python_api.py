@@ -75,7 +75,9 @@ from ragna.assistants import RagnaDemoAssistant
 #     Ragna has builtin support for the following assistants:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#       - [ragna.assistants.Claude][]
+#       - [ragna.assistants.ClaudeOpus][]
+#       - [ragna.assistants.ClaudeSonnet][]
+#       - [ragna.assistants.ClaudeHaiku][]
 #     - [Cohere](https://cohere.com/)
 #       - [ragna.assistants.Command][]
 #       - [ragna.assistants.CommandLight][]

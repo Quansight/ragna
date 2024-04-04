@@ -27,7 +27,9 @@ import documentation_helpers
 #     Of the assistants that Ragna has built in, the following ones support streaming:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#       - [ragna.assistants.Claude][]
+#       - [ragna.assistants.ClaudeOpus][]
+#       - [ragna.assistants.ClaudeSonnet][]
+#       - [ragna.assistants.ClaudeHaiku][]
 #     - [Cohere](https://cohere.com/)
 #       - [ragna.assistants.Command][]
 #       - [ragna.assistants.CommandLight][]
