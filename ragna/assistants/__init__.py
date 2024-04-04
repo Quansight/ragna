@@ -1,5 +1,5 @@
 __all__ = [
-    "Claude",
+    "Claude3Opus",
     "Command",
     "CommandLight",
     "GeminiPro",
@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 from ._ai21labs import Jurassic2Ultra
-from ._anthropic import Claude
+from ._anthropic import Claude3Opus
 from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
 from ._google import GeminiPro, GeminiUltra

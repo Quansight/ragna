@@ -74,8 +74,8 @@ class AnthropicApiAssistant(ApiAssistant):
                 yield cast(str, data["delta"].pop("text"))
 
 
-class Claude(AnthropicApiAssistant):
-    """[Claude](https://docs.anthropic.com/claude/reference/selecting-a-model)
+class Claude3Opus(AnthropicApiAssistant):
+    """[Claude 3 Opus](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
 
