@@ -12,7 +12,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 import ragna
@@ -30,8 +30,6 @@ def make_router(
     config: Config, database, ignore_unavailable_components: bool
 ) -> FastAPI:
     router = APIRouter(tags=["api"])
-
-    ragna.local_root(config.local_root)
 
     rag = Rag()  # type: ignore[var-annotated]
     components_map: dict[str, Component] = {}
@@ -67,10 +65,6 @@ def make_router(
             )
 
         return component
-
-    @router.get("/health")
-    async def health():
-        return Response(b"", status_code=status.HTTP_200_OK)
 
     async def _get_username(user: _UserDependency):
         return user.username

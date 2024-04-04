@@ -95,7 +95,13 @@ class App(param.Parameterized):
         return template
 
     def serve(self):
-        pn.serve(
+        print(
+            [
+                urlsplit(origin).netloc or urlsplit(origin).path
+                for origin in self.origins
+            ]
+        )
+        return pn.serve(
             self.index_page,
             address=self.hostname,
             port=self.port,
@@ -110,7 +116,7 @@ class App(param.Parameterized):
             #     "/static/imgs": str(IMGS),
             #     "resources": str(RES),
             # },  # "css": str(CSS),
-            verbose=False,
+            verbose=True,
             liveness="/health",
         )
 

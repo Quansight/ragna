@@ -1,8 +1,9 @@
+import contextlib
 from pathlib import Path
-from typing import cast
+from typing import AsyncContextManager, Optional, cast
 
 from bokeh.embed import server_document
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -31,7 +32,22 @@ def make_app(
     ragna.local_root(config.local_root)
     set_redirect_root_path(config.api.root_path)
 
-    app = FastAPI(title="Ragna", version=ragna.__version__)
+    lifespan: Optional[AsyncContextManager]
+    if ui:
+
+        @contextlib.asynccontextmanager
+        async def lifespan(app):
+            # FIXME threaded and start here? YES!!
+            server = make_ui_app(config=config, open_browser=False).serve()
+            try:
+                yield
+            finally:
+                server.stop()
+
+    else:
+        lifespan = None
+
+    app = FastAPI(title="Ragna", version=ragna.__version__, lifespan=lifespan)
 
     database = Database(config)
 
@@ -50,7 +66,7 @@ def make_app(
     )
     app.add_middleware(
         CORSMiddleware,
-        # FIXME
+        # FIXME from config
         allow_origins=[
             "http://localhost:31476",
             # "http://localhost:31477",
@@ -75,24 +91,22 @@ def make_app(
     # https://nebari.quansight.dev/user/pmeier@quansight.com/proxy/31476/
 
     if ui:
-        # FIXME: find a way to open the browser
-        make_ui_app(config=config, open_browser=False).serve()
 
         @app.get("/ui", include_in_schema=False)
         async def ui_(request: Request):
-            print(request.cookies)
             return HTMLResponse(
                 templates.render(
                     "ui.html",
                     script=server_document(
-                        # FIXME: from config
-                        "http://127.0.0.1:31477",
+                        f"http://{config.ui.hostname}:{config.ui.port}",
                         # Unfortunately, we currently need to rely on this non-standard
                         # way of forwarding the cookies to the UI. See
                         # https://github.com/bokeh/bokeh/issues/13792 for details.
+                        # TODO: When https://github.com/bokeh/bokeh/pull/13800 is
+                        #  released, we need to remove the headers and instead pass
+                        #  with_credentials=True. Plus we also need to fix the UI to
+                        #  just use the standard cookies instead of parsing this header.
                         headers={"X-Cookie": request.headers["Cookie"]},
-                        # headers={"foo": "bar"},
-                        # with_credentials=True,
                     ),
                 )
             )
@@ -100,6 +114,10 @@ def make_app(
     @app.get("/", include_in_schema=False)
     async def base_redirect() -> Response:
         return redirect("/ui" if ui else "/docs")
+
+    @app.get("/health")
+    async def health():
+        return Response(b"", status_code=status.HTTP_200_OK)
 
     @app.get("/version")
     async def version():
