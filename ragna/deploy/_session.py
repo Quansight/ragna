@@ -2,10 +2,11 @@ import uuid
 from typing import Annotated
 
 from fastapi import Depends, Request, status
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import Response
 from fastapi.security.utils import get_authorization_scheme_param
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from ._utils import redirect
 from .schemas import Session
 
 
@@ -39,7 +40,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
         elif self._api and request.url.path.startswith("/api"):
             return self._unauthorized()
         elif self._ui and request.url.path.startswith("/ui"):
-            return self._login_redirect()
+            return redirect("/login")
         else:
             # Either an unknown route or something on the default router. In any case,
             # this doesn't need a session and so we let it pass.
@@ -52,7 +53,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             del self._sessions[cookie]
             session = None
         if session is None:
-            response = self._login_redirect()
+            response = redirect("/login")
             self._delete_cookie(response)
             return response
 
@@ -93,9 +94,6 @@ class SessionMiddleware(BaseHTTPMiddleware):
             self._add_cookie(response, cookie=cookie)
 
         return response
-
-    def _login_redirect(self) -> RedirectResponse:
-        return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
     def _unauthorized(self) -> Response:
         return Response(

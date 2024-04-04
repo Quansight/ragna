@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import cast
 
 from bokeh.embed import server_document
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 import ragna
@@ -18,6 +18,7 @@ from ._config import Config
 from ._database import Database
 from ._session import SessionMiddleware, UserDependency
 from ._ui import app as make_ui_app
+from ._utils import redirect, set_redirect_root_path
 
 
 def make_app(
@@ -27,6 +28,9 @@ def make_app(
     ui: bool,
     ignore_unavailable_components: bool,
 ) -> FastAPI:
+    ragna.local_root(config.local_root)
+    set_redirect_root_path(config.api.root_path)
+
     app = FastAPI(title="Ragna", version=ragna.__version__)
 
     database = Database(config)
@@ -68,6 +72,7 @@ def make_app(
             ),
             prefix="/api",
         )
+    # https://nebari.quansight.dev/user/pmeier@quansight.com/proxy/31476/
 
     if ui:
         # FIXME: find a way to open the browser
@@ -75,6 +80,7 @@ def make_app(
 
         @app.get("/ui", include_in_schema=False)
         async def ui_(request: Request):
+            print(request.cookies)
             return HTMLResponse(
                 templates.render(
                     "ui.html",
@@ -85,15 +91,15 @@ def make_app(
                         # way of forwarding the cookies to the UI. See
                         # https://github.com/bokeh/bokeh/issues/13792 for details.
                         headers={"X-Cookie": request.headers["Cookie"]},
+                        # headers={"foo": "bar"},
+                        # with_credentials=True,
                     ),
                 )
             )
 
     @app.get("/", include_in_schema=False)
-    async def base_redirect(request: Request) -> Response:
-        return RedirectResponse(
-            "/ui" if ui else "/docs", status_code=status.HTTP_303_SEE_OTHER
-        )
+    async def base_redirect() -> Response:
+        return redirect("/ui" if ui else "/docs")
 
     @app.get("/version")
     async def version():
@@ -134,7 +140,7 @@ def add_auth(app: FastAPI, config: Config) -> None:
             return result
 
         request.state.session = schemas.Session(user=result)
-        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+        return redirect("/")
 
     @app.post("/login", include_in_schema=False)
     async def login(request: Request):
@@ -146,4 +152,4 @@ def add_auth(app: FastAPI, config: Config) -> None:
 
     @app.post("/logout", include_in_schema=False)
     async def logout():
-        return RedirectResponse("/", status_code=status.HTTP_303_SEE_OTHER)
+        return redirect("/")

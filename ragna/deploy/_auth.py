@@ -4,12 +4,13 @@ from typing import Optional, Union
 
 import httpx
 from fastapi import Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import HTMLResponse, Response
 
 from ragna._utils import default_user
 from ragna.core import RagnaException
 
 from . import _templates as templates
+from ._utils import redirect
 from .schemas import User
 
 
@@ -31,9 +32,7 @@ class NoAuth(Auth):
         # Since we cannot instruct a browser to post when sending redirect response, we
         # use the OAuth callback endpoint here, although this has nothing to do with
         # OAuth.
-        return RedirectResponse(
-            "/oauth-callback", status_code=status.HTTP_303_SEE_OTHER
-        )
+        return redirect("/oauth-callback")
 
     def login(self, request: Request) -> User:
         return User(username=request.headers.get("X-User", default_user()))

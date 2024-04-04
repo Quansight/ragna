@@ -64,6 +64,18 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
+        import html
+        import pprint
+
+        return pn.pane.HTML(
+            html.escape(
+                "\n".join(
+                    pprint.pformat(item)
+                    for item in [pn.state.cookies, pn.state.headers]
+                )
+            )
+        )
+
         # Unfortunately, we need to parse the cookies from a non-standard header for
         # now. See https://github.com/bokeh/bokeh/issues/13792 for details. If that is
         # resolved, we can just use pn.state.cookies here.
@@ -94,10 +106,10 @@ class App(param.Parameterized):
                 urlsplit(origin).netloc or urlsplit(origin).path
                 for origin in self.origins
             ],
-            static_dirs={
-                "/static/imgs": str(IMGS),
-                "resources": str(RES),
-            },  # "css": str(CSS),
+            # static_dirs={
+            #     "/static/imgs": str(IMGS),
+            #     "resources": str(RES),
+            # },  # "css": str(CSS),
             verbose=False,
             liveness="/health",
         )
