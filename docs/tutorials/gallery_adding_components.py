@@ -70,6 +70,9 @@ class TutorialSourceStorage(SourceStorage):
 # ## Assistant
 
 # %%
+# This is an example of an [`Assistant`][ragna.core.Assistant], which provides an interface between the user and the API for the LLM that they are using. For simplicity, we are not going to implement an actual LLM here, but rather a demo assistant that just mirrors back the inputs. This is similar to the [`RagnaDemoAssistant`][ragna.assistants.RagnaDemoAssistant].
+
+# %%
 # The main thing to do is to implement the [`answer()`][ragna.core.Assistant.answer] abstract method.
 # The [`answer()`][ragna.core.Assistant.answer] method is where you put the logic to access your LLM.
 # This could call an API directly or call a local LLM.
