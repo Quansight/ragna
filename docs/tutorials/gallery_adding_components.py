@@ -37,6 +37,12 @@ to incorporate custom components. This tutorial covers the basics of how to do t
 # ## Source Storage
 
 # %%
+# A [`Source`][ragna.core.Source] is a data class that stores the documents that Ragna will
+# use to augment your prompts. [`SourceStorage`][ragna.core.SourceStorage]s, usually [vector
+# databases][ragna.source_storages], are the tools Ragna uses to store the documents held in the
+# [`Source`][ragna.core.Source]s.
+
+# %%
 # [`SourceStorage`][ragna.core.SourceStorage] has two abstract methods,
 # [`store()`][ragna.core.SourceStorage.store] and [`retrieve()`][ragna.core.SourceStorage.retrieve].
 
