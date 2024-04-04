@@ -1,7 +1,7 @@
 __all__ = [
-    "Claude3Haiku",
-    "Claude3Opus",
-    "Claude3Sonnet",
+    "ClaudeHaiku",
+    "ClaudeOpus",
+    "ClaudeSonnet",
     "Command",
     "CommandLight",
     "GeminiPro",
@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 from ._ai21labs import Jurassic2Ultra
-from ._anthropic import Claude3Haiku, Claude3Opus, Claude3Sonnet
+from ._anthropic import ClaudeHaiku, ClaudeOpus, ClaudeSonnet
 from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
 from ._google import GeminiPro, GeminiUltra

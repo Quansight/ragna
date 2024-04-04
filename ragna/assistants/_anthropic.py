@@ -74,7 +74,7 @@ class AnthropicApiAssistant(ApiAssistant):
                 yield cast(str, data["delta"].pop("text"))
 
 
-class Claude3Opus(AnthropicApiAssistant):
+class ClaudeOpus(AnthropicApiAssistant):
     """[Claude 3 Opus](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
@@ -89,7 +89,7 @@ class Claude3Opus(AnthropicApiAssistant):
     _MODEL = "claude-3-opus-20240229"
 
 
-class Claude3Sonnet(AnthropicApiAssistant):
+class ClaudeSonnet(AnthropicApiAssistant):
     """[Claude 3 Sonnet](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
@@ -104,7 +104,7 @@ class Claude3Sonnet(AnthropicApiAssistant):
     _MODEL = "claude-3-sonnet-20240229"
 
 
-class Claude3Haiku(AnthropicApiAssistant):
+class ClaudeHaiku(AnthropicApiAssistant):
     """[Claude 3 Haiku](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
