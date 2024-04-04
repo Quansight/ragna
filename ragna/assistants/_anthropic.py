@@ -102,3 +102,18 @@ class Claude3Sonnet(AnthropicApiAssistant):
     """
 
     _MODEL = "claude-3-sonnet-20240229"
+
+
+class Claude3Haiku(AnthropicApiAssistant):
+    """[Claude 3 Haiku](https://docs.anthropic.com/claude/docs/models-overview)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
+    """
+
+    _MODEL = "claude-3-haiku-20240307"
