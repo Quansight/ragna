@@ -1,5 +1,6 @@
 import json
 from typing import AsyncIterator, cast
+from xml.etree import ElementTree
 
 from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
@@ -20,13 +21,24 @@ class AnthropicApiAssistant(ApiAssistant):
 
     def _instructize_system_prompt(self, sources: list[Source]) -> str:
         # See https://docs.anthropic.com/claude/docs/system-prompts
+        # See https://docs.anthropic.com/claude/docs/long-context-window-tips#tips-for-document-qa
         instruction = (
-            "Use the following documents to answer the prompt. "
+            "I'm going to give you a document."
+            "Read the document carefully, because I'm going to ask you a question about it."
             "If you don't know the answer, just say so. Don't try to make up an answer."
             "Only use the included documents below to generate the answer.\n"
         )
-        instruction += "\n\n".join(source.content for source in sources)
-        return instruction
+        # See https://docs.anthropic.com/claude/docs/long-context-window-tips#structuring-long-documents
+        documents = ElementTree.Element("documents")
+        for idx, source in enumerate(sources, start=1):
+            doc_elmnt = ElementTree.SubElement(
+                documents,
+                "document",
+                attrib={"index": str(idx)},
+            )
+            ElementTree.SubElement(doc_elmnt, "id").text = source.id
+            ElementTree.SubElement(doc_elmnt, "document_content").text = source.content
+        return instruction + ElementTree.tostring(documents, encoding="unicode")
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
