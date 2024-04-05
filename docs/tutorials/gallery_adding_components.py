@@ -6,32 +6,6 @@ While Ragna has builtin support for a few [assistants][ragna.assistants] and
 to incorporate custom components. This tutorial covers the basics of how to do that. 
 """
 
-# %%
-# ## Including Custom Python Objects
-
-# %%
-# If the module containing the custom object you want to include is in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-# you can use the [config file](../../../references/config/#referencing-python-objects)
-# to add it.
-
-# %%
-# If the module containing the custom object you want to include is not in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-# suppose it is located at the path `~/tutorials/tutorial.py`. You can add `~/tutorial/` to your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH) using
-# the command
-#
-# ```bash
-# $ export PYTHONPATH=$PYTHONPATH:~/tutorials/
-# ```
-
-# %%
-# Once the module(s) containing your objects is(are) in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH), you can
-# you can include it(them) in Ragna using the
-# [config file](../../../references/config/#referencing-python-objects).
-
 
 # %%
 # ## Source Storage
@@ -106,3 +80,30 @@ class TutorialAssistant(Assistant):
             f"The prompt was:"
             f"{prompt}"
         )
+
+
+# %%
+# ## Including Custom Python Objects
+
+# %%
+# If the module containing the custom object you want to include is in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
+# you can use the [config file](../../../references/config/#referencing-python-objects)
+# to add it.
+
+# %%
+# If the module containing the custom object you want to include is not in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
+# suppose it is located at the path `~/tutorials/tutorial.py`. You can add `~/tutorial/` to your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH) using
+# the command
+#
+# ```bash
+# $ export PYTHONPATH=$PYTHONPATH:~/tutorials/
+# ```
+
+# %%
+# Once the module(s) containing your objects is(are) in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH), you can
+# you can include it(them) in Ragna using the
+# [config file](../../../references/config/#referencing-python-objects).
