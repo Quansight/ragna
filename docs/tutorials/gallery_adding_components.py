@@ -29,6 +29,8 @@ to incorporate custom components. This tutorial covers the basics of how to do t
 # [`retrieve()`][ragna.core.SourceStorage.retrieve] returns sources matching
 # the given prompt in order of relevance.
 
+import uuid
+
 from ragna.core import Document, Source, SourceStorage
 
 
@@ -37,11 +39,22 @@ class TutorialSourceStorage(SourceStorage):
         # set up database
         self._storage: dict[int, list[Source]] = {}
 
-    def store(self, documents: list[Document], chat_id: int) -> None:
-        self._storage[chat_id] = [Source(document=document) for document in documents]
+    def store(self, documents: list[Document], chat_id: uuid.UUID) -> None:
+        self._storage[chat_id] = [
+            Source(
+                id=str(uuid.uuid4()),
+                document=document,
+                location=f"page {page.number}"
+                if (page := next(document.extract_pages())).number
+                else "",
+                content=(content := textwrap.shorten(page.text, width=100)),
+                num_tokens=len(content.split()),
+            )
+            for document in documents
+        ]
 
     def retrieve(
-        self, documents: list[Document], prompt: str, *, chat_id: int
+        self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
     ) -> list[Source]:
         return self._storage[chat_id]
 
@@ -72,6 +85,8 @@ from typing import Iterator
 
 from ragna.core import Assistant, Source
 
+import textwrap
+
 
 class TutorialAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
@@ -88,8 +103,8 @@ class TutorialAssistant(Assistant):
 # %%
 # If the module containing the custom object you want to include is in your
 # [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-# you can use the [config file](../../../references/config/#referencing-python-objects)
-# to add it.
+# you can either use the [config file](../../../references/config/#referencing-python-objects)
+# to add it, or follow the [Python API](./#using-the-python-api-with-custom-objects) instructions below.
 
 # %%
 # If the module containing the custom object you want to include is not in your
@@ -103,7 +118,41 @@ class TutorialAssistant(Assistant):
 # ```
 
 # %%
-# Once the module(s) containing your objects is(are) in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH), you can
-# you can include it(them) in Ragna using the
-# [config file](../../../references/config/#referencing-python-objects).
+# ## Using the Python API with Custom Objects
+
+# We first import some helpers that tell Python where to find our demo document that we will
+# use for RAG
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.cwd().parent))
+
+import documentation_helpers
+
+document_path = documentation_helpers.assets / "ragna.txt"
+
+with open(document_path) as file:
+    print(file.read())
+
+# %%
+# We next import the [ragna.Rag][] class and set up a chat using the custom objects from above
+
+from ragna import Rag
+
+chat = Rag().chat(
+    documents=[document_path],
+    source_storage=TutorialSourceStorage,
+    assistant=TutorialAssistant,
+)
+
+# %%
+# Before we can ask a question, we need to [`prepare`][ragna.core.Chat.prepare] the chat, which
+# under the hood stores the documents we have selected in the source storage.
+
+_ = await chat.prepare()
+
+# %%
+# Finally, we can get an [`answer`][ragna.core.Chat.answer] to a question.
+
+print(await chat.answer("What is Ragna?"))
