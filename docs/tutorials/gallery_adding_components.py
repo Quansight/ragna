@@ -208,7 +208,11 @@ print(await chat.answer("What is Ragna?"))
 
 # %%
 # This section will follow the steps of
-# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md).
+# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md). More detail
+# can be found there. This section focuses specifically on using custom objects.
+
+# %%
+# We first set up the [configuration](../../references/config.md) and start the API
 
 import sys
 from pathlib import Path
@@ -220,7 +224,6 @@ import documentation_helpers
 from ragna.deploy import Config
 
 import httpx
-import json
 
 config = Config()
 
@@ -230,6 +233,8 @@ config.assistants = [TutorialAssistant]
 rest_api = documentation_helpers.RestApi()
 _ = rest_api.start(config)
 
+# %%
+# Next, let's authenticate ourselves.
 
 username = password = "Ragna"
 
@@ -240,8 +245,18 @@ response = client.post(
 ).raise_for_status()
 token = response.json()
 
+# %%
+# We set the API token on our HTTP client so we don't have to manually supply it
+# for each request below.
 
 client.headers["Authorization"] = f"Bearer {token}"
+
+# %%
+# Uploading the documents takes place in two steps. See
+# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md#step-3-uploading-documents)
+# for more details.
+
+import json
 
 document_name = "ragna.txt"
 
@@ -261,6 +276,15 @@ client.request(
     files={"file": content},
 ).raise_for_status()
 
+# %%
+# We can now start chatting, which also takes place in two steps.
+# See
+# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md#step-5-start-chatting)
+# for more details.
+
+# %%
+# Note how the names of our source storage and assistant are quoted in the JSON payload below.
+
 response = client.post(
     "/chats",
     json={
@@ -274,6 +298,9 @@ response = client.post(
 chat = response.json()
 
 client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+
+# %%
+# We finally actually ask a question to our assistant.
 
 response = client.post(
     f"/chats/{chat['id']}/answer",
