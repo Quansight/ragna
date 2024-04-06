@@ -201,3 +201,87 @@ print(await chat.answer("What is Ragna?"))
 # %%
 # Note how the `tutorial.TutorialSourceStorage` and `tutorial.TutorialAssistant` classes are listed
 # in the `source_storages` and `assistants` fields, respectively.
+
+
+# %%
+# ## Using the REST API with Custom Objects
+
+# %%
+# This section will follow the steps of
+# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md).
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path.cwd().parent))
+
+import documentation_helpers
+
+from ragna.deploy import Config
+
+import httpx
+import json
+
+config = Config()
+
+config.source_storages = [TutorialSourceStorage]
+config.assistants = [TutorialAssistant]
+
+rest_api = documentation_helpers.RestApi()
+_ = rest_api.start(config)
+
+
+username = password = "Ragna"
+
+client = httpx.Client(base_url=config.api.url)
+response = client.post(
+    "/token",
+    data={"username": username, "password": password},
+).raise_for_status()
+token = response.json()
+
+
+client.headers["Authorization"] = f"Bearer {token}"
+
+document_name = "ragna.txt"
+
+with open(documentation_helpers.assets / document_name, "rb") as file:
+    content = file.read()
+
+response = client.post("/document", json={"name": document_name}).raise_for_status()
+document_upload = response.json()
+
+document = document_upload["document"]
+
+parameters = document_upload["parameters"]
+client.request(
+    parameters["method"],
+    parameters["url"],
+    data=parameters["data"],
+    files={"file": content},
+).raise_for_status()
+
+response = client.post(
+    "/chats",
+    json={
+        "name": "Tutorial REST API",
+        "documents": [document],
+        "source_storage": "TutorialSourceStorage",
+        "assistant": "TutorialAssistant",
+        "params": {},
+    },
+).raise_for_status()
+chat = response.json()
+
+client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+
+response = client.post(
+    f"/chats/{chat['id']}/answer",
+    json={"prompt": "What is Ragna?"},
+).raise_for_status()
+answer = response.json()
+print(json.dumps(answer, indent=2))
+
+print(answer["content"])
+
+rest_api.stop()
