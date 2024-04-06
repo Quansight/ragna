@@ -155,7 +155,7 @@ _ = await chat.prepare()
 print(await chat.answer("What is Ragna?"))
 
 # %%
-# ## Using the Web UI
+# ## Using the Web UI with Custom Objects
 
 # %%
 # To include our custom objects in the Web UI, make sure they are in your
