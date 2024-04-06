@@ -92,7 +92,7 @@ class TutorialAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
         yield (
             f"This is a default answer. There were {len(sources)} sources."
-            f"The prompt was:"
+            f"The prompt was: "
             f"{prompt}"
         )
 
