@@ -132,9 +132,6 @@ import documentation_helpers
 
 document_path = documentation_helpers.assets / "ragna.txt"
 
-with open(document_path) as file:
-    print(file.read())
-
 # %%
 # We next import the [ragna.Rag][] class and set up a chat using the custom objects from above
 
