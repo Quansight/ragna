@@ -33,6 +33,8 @@ import uuid
 
 from ragna.core import Document, Source, SourceStorage
 
+import textwrap
+
 
 class TutorialSourceStorage(SourceStorage):
     def __init__(self):
@@ -85,8 +87,6 @@ from typing import Iterator
 
 from ragna.core import Assistant, Source
 
-import textwrap
-
 
 class TutorialAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
@@ -103,8 +103,8 @@ class TutorialAssistant(Assistant):
 # %%
 # If the module containing the custom object you want to include is in your
 # [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-# you can either use the [config file](../../../references/config/#referencing-python-objects)
-# to add it, or follow the [Python API](./#using-the-python-api-with-custom-objects) instructions below.
+# you can either use the [config file](../../references/config.md#referencing-python-objects)
+# to add it, or follow the [Python API](#using-the-python-api-with-custom-objects) instructions below.
 
 # %%
 # If the module containing the custom object you want to include is not in your
@@ -156,3 +156,48 @@ _ = await chat.prepare()
 # Finally, we can get an [`answer`][ragna.core.Chat.answer] to a question.
 
 print(await chat.answer("What is Ragna?"))
+
+# %%
+# ## Using the Web UI
+
+# %%
+# To include our custom objects in the Web UI, make sure they are in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
+# and list them in your [configuration file](../../references/config.md).
+
+# %%
+# Here is an example configuration file in the case that you would like to use one:
+
+# %%
+# ```toml
+# local_root = "/home/ragnauser/.cache/ragna"
+# authentication = "ragna.deploy.RagnaDemoAuthentication"
+# document = "ragna.core.LocalDocument"
+# source_storages = [
+#     "tutorial.TutorialSourceStorage"
+# ]
+# assistants = [
+#     "tutorial.TutorialAssistant"
+# ]
+#
+# [api]
+# hostname = "127.0.0.1"
+# port = 31476
+# root_path = ""
+# url = "http://127.0.0.1:31476"
+# database_url = "sqlite:////home/ragnauser/.cache/ragna/ragna.db"
+# origins = [
+#     "http://127.0.0.1:31477",
+# ]
+#
+# [ui]
+# hostname = "127.0.0.1"
+# port = 31477
+# origins = [
+#     "http://127.0.0.1:31477",
+# ]
+# ```
+
+# %%
+# Note how the `tutorial.TutorialSourceStorage` and `tutorial.TutorialAssistant` classes are listed
+# in the `source_storages` and `assistants` fields, respectively.
