@@ -61,12 +61,7 @@ class AnthropicApiAssistant(ApiAssistant):
             json={
                 "model": self._MODEL,
                 "system": self._instructize_system_prompt(sources),
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    }
-                ],
+                "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,
