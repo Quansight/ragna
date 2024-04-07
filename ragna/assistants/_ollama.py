@@ -1,9 +1,10 @@
+import contextlib
 import json
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from httpx import Response
 
-from ragna.core import Assistant
+from ragna.core import Assistant, RagnaException, Source
 
 
 class OllamaApiAssistant(Assistant):
@@ -20,6 +21,22 @@ class OllamaApiAssistant(Assistant):
             "Only use the following sources to generate the answer."
         )
         return instruction + "\n\n".join(source.content for source in sources)
+
+    async def _assert_api_call_is_success(self, response: Response) -> None:
+        if response.is_success:
+            return
+
+        content = await response.aread()
+        with contextlib.suppress(Exception):
+            content = json.loads(content)
+
+        raise RagnaException(
+            "API call failed",
+            request_method=response.request.method,
+            request_url=str(response.request.url),
+            response_status_code=response.status_code,
+            response_content=content,
+        )
 
     async def _call_api(
         self,
