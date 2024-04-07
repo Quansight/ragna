@@ -24,6 +24,20 @@ class OllamaApiAssistant(Assistant):
         )
         self._url = os.environ.get("RAGNA_ASSISTANTS_OLLAMA_URL", url)
 
+    @classmethod
+    def is_available(cls):
+        requirements_available = super().is_available()
+        if not requirements_available:
+            return False
+
+        try:
+            response = httpx.get("http://localhost:11434/")
+            response.raise_for_status()
+        except httpx.HTTPError:
+            return False
+
+        return response.is_success
+
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (
             "You are an helpful assistants that answers user questions given the context below. "
