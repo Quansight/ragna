@@ -1,5 +1,6 @@
 import contextlib
 import json
+import os
 from typing import AsyncIterator, cast
 
 import httpx
@@ -16,11 +17,12 @@ class OllamaApiAssistant(Assistant):
     def display_name(cls) -> str:
         return f"Ollama/{cls._MODEL}"
 
-    def __init__(self) -> None:
+    def __init__(self, url="http://localhost:11434/api/chat") -> None:
         self._client = httpx.AsyncClient(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
         )
+        self._url = os.environ.get("RAGNA_ASSISTANTS_OLLAMA_URL", url)
 
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (
@@ -52,11 +54,10 @@ class OllamaApiAssistant(Assistant):
         sources: list[Source],
         *,
         max_new_tokens: int,
-        api_url: str = "http://localhost:11434/api/chat",
     ) -> AsyncIterator[str]:
         async with self._client.stream(
             "POST",
-            api_url,
+            self._url,
             headers={
                 "Content-Type": "application/json",
             },
