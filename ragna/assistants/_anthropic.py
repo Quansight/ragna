@@ -27,7 +27,7 @@ class AnthropicApiAssistant(ApiAssistant):
             f"I'm going to give you {len(sources)} document{'s' if plural else ''}. "
             f"Read the document{'s' if plural else ''} carefully because I'm going to ask you a question about {'them' if plural else 'it'}. "
             f"If you can't answer the question with just the given document{'s' if plural else ''}, just say so. "
-            "Don't try to make up an answer."
+            "Don't try to make up an answer.\n\n"
         )
         # See https://docs.anthropic.com/claude/docs/long-context-window-tips#structuring-long-documents
         documents = ElementTree.Element("documents")
