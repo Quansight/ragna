@@ -2,8 +2,10 @@ import contextlib
 import json
 from typing import AsyncIterator, cast
 
+import httpx
 from httpx import Response
 
+import ragna
 from ragna.core import Assistant, RagnaException, Source
 
 
@@ -13,6 +15,12 @@ class OllamaApiAssistant(Assistant):
     @classmethod
     def display_name(cls) -> str:
         return f"Ollama/{cls._MODEL}"
+
+    def __init__(self) -> None:
+        self._client = httpx.AsyncClient(
+            headers={"User-Agent": f"{ragna.__version__}/{self}"},
+            timeout=60,
+        )
 
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (
