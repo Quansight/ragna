@@ -112,5 +112,5 @@ class OllamaApiAssistant(Assistant):
             yield chunk
 
 
-class Gemma2B(OllamaApiAssistant):
+class OllamaGemma2B(OllamaApiAssistant):
     _MODEL = "gemma:2b"
