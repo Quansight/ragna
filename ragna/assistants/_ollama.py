@@ -80,6 +80,14 @@ class OllamaApiAssistant(Assistant):
                 else:
                     raise RagnaException("The response was empty.")
 
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        async for chunk in self._call_api(  # type: ignore[attr-defined, misc]
+            prompt, sources, max_new_tokens=max_new_tokens
+        ):
+            yield chunk
+
 
 class Gemma2B(OllamaApiAssistant):
     _MODEL = "gemma:2b"
