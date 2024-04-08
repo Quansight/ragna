@@ -1,10 +1,15 @@
 __all__ = [
     "Authentication",
     "Config",
+    "InJupyterHubAuthentication",
     "RagnaDemoAuthentication",
 ]
 
-from ._authentication import Authentication, RagnaDemoAuthentication
+from ._authentication import (
+    Authentication,
+    InJupyterHubAuthentication,
+    RagnaDemoAuthentication,
+)
 from ._config import Config
 
 # isort: split

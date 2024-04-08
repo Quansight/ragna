@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 
 import emoji
@@ -6,55 +7,18 @@ import httpx
 import param
 
 
-class RagnaAuthTokenExpiredException(Exception):
-    """Just a wrapper around Exception"""
-
-    pass
-
-
 # The goal is this class is to provide ready-to-use functions to interact with the API
 class ApiWrapper(param.Parameterized):
     auth_token = param.String(default=None)
 
-    def __init__(self, api_url, **params):
-        self.client = httpx.AsyncClient(base_url=api_url, timeout=60)
+    def __init__(self, api_url):
+        super().__init__(auth_token=os.environ["JUPYTERHUB_API_TOKEN"])
 
-        super().__init__(**params)
-
-        try:
-            # If no auth token is provided, we use the API base URL and only test the API is up.
-            # else, we test the API is up *and* the token is valid.
-            endpoint = (
-                api_url + "/components" if self.auth_token is not None else api_url
-            )
-            httpx.get(
-                endpoint, headers={"Authorization": f"Bearer {self.auth_token}"}
-            ).raise_for_status()
-
-        except httpx.HTTPStatusError as e:
-            # unauthorized - the token is invalid
-            if e.response.status_code == 401:
-                raise RagnaAuthTokenExpiredException("Unauthorized")
-            else:
-                raise e
-
-    async def auth(self, username, password):
-        self.auth_token = (
-            (
-                await self.client.post(
-                    "/token",
-                    data={"username": username, "password": password},
-                )
-            )
-            .raise_for_status()
-            .json()
+        self.client = httpx.AsyncClient(
+            base_url=api_url,
+            timeout=60,
+            headers={"Authorization": f"Bearer {self.auth_token}"},
         )
-
-        return True
-
-    @param.depends("auth_token", watch=True, on_init=True)
-    def update_auth_header(self):
-        self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
     async def get_chats(self):
         json_data = (await self.client.get("/chats")).raise_for_status().json()
@@ -77,7 +41,7 @@ class ApiWrapper(param.Parameterized):
     # Upload and related functions
     def upload_endpoints(self):
         return {
-            "informations_endpoint": f"{self.client.base_url}/document",
+            "informations_endpoint": f"{str(self.client.base_url).rstrip('/')}/document",
         }
 
     async def start_and_prepare(

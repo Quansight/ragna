@@ -1,12 +1,4 @@
-try:
-    from ._version import __version__
-except ModuleNotFoundError:
-    import warnings
-
-    warnings.warn("ragna was not properly installed!")
-    del warnings
-
-    __version__ = "UNKNOWN"
+__version__ = "0.2.0+pycon"
 
 from ._utils import local_root
 

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import time
@@ -125,7 +126,12 @@ def ui(
 ) -> None:
     def check_api_available() -> bool:
         try:
-            return httpx.get(config.api.url).is_success
+            return httpx.get(
+                config.api.url,
+                headers={
+                    "Authorization": f"Bearer {os.environ.get('JUPYTERHUB_API_TOKEN', 'JUPYTERHUB_API_TOKEN')}"
+                },
+            ).is_success
         except httpx.ConnectError:
             return False
 

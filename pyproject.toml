@@ -42,7 +42,7 @@ dependencies = [
     "typer",
     "uvicorn",
 ]
-dynamic = ["version"]
+version = "0.2.0+pycon"
 
 [project.urls]
 Homepage = "https://ragna.chat"

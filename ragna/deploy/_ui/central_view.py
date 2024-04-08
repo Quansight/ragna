@@ -138,15 +138,17 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ui.stylesheets(
                 (
                     f":host(.{css_class})",
-                    {"background-color": "rgb(243, 243, 243) !important"}
-                    if role == "user"
-                    else {
-                        "background-color": "none",
-                        "border": "rgb(234, 234, 234)",
-                        "border-style": "solid",
-                        "border-width": "1.2px",
-                        "border-radius": "5px",
-                    },
+                    (
+                        {"background-color": "rgb(243, 243, 243) !important"}
+                        if role == "user"
+                        else {
+                            "background-color": "none",
+                            "border": "rgb(234, 234, 234)",
+                            "border-style": "solid",
+                            "border-width": "1.2px",
+                            "border-radius": "5px",
+                        }
+                    ),
                 )
             ),
         )

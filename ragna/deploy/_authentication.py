@@ -2,12 +2,15 @@ import abc
 import os
 import secrets
 import time
-from typing import cast
+from typing import NoReturn, Optional, cast
 
+import httpx
 import jwt
 import rich
 from fastapi import HTTPException, Request, status
 from fastapi.security.utils import get_authorization_scheme_param
+
+from ragna.core import RagnaException
 
 
 class Authentication(abc.ABC):
@@ -110,7 +113,6 @@ class RagnaDemoAuthentication(Authentication):
         Returns:
             Authorized user.
         """
-
         unauthorized = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
@@ -130,3 +132,29 @@ class RagnaDemoAuthentication(Authentication):
             raise unauthorized
 
         return cast(str, payload["user"])
+
+
+class InJupyterHubAuthentication(Authentication):
+    def __init__(self) -> None:
+        self._user: Optional[str] = None
+
+    async def create_token(self, request: Request) -> NoReturn:
+        raise RagnaException(
+            (
+                "This should never be called, "
+                "since we already have a token inside Jupyter Hub"
+            ),
+            http_detail=RagnaException.EVENT,
+        )
+
+    async def get_user(self, request: Request) -> str:
+        if self._user is None:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    str(request.url.replace(path="/hub/api/user")),
+                    headers=request.headers,
+                )
+                user_model = response.raise_for_status().json()
+                self._user = cast(str, user_model["name"])
+
+        return self._user
