@@ -1,6 +1,5 @@
 import json
 from typing import AsyncIterator, cast
-from xml.etree import ElementTree
 
 from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
@@ -29,16 +28,13 @@ class AnthropicApiAssistant(ApiAssistant):
             "Don't try to make up an answer.\n\n"
         )
         # See https://docs.anthropic.com/claude/docs/long-context-window-tips#structuring-long-documents
-        documents = ElementTree.Element("documents")
-        for idx, source in enumerate(sources, start=1):
-            doc_elmnt = ElementTree.SubElement(
-                documents,
-                "document",
-                attrib={"index": str(idx)},
-            )
-            ElementTree.SubElement(doc_elmnt, "id").text = source.id
-            ElementTree.SubElement(doc_elmnt, "document_content").text = source.content
-        return instruction + ElementTree.tostring(documents, encoding="unicode")
+
+        return (
+            instruction
+            + "<documents>"
+            + "\n".join(f"<document>{source.content}</document>" for source in sources)
+            + "</documents>"
+        )
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
