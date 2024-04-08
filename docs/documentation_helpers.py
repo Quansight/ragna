@@ -50,7 +50,7 @@ class RestApi:
             # TODO: this currently only handles assistants. When needed, we can extend
             #  to source storages.
             file.write("from ragna import assistants\n\n")
-            file.write("from ragna.core import Assistant")
+            file.write("from ragna.core import Assistant\n\n")
 
             for assistant in config.assistants:
                 if assistant.__module__ == "__main__":
