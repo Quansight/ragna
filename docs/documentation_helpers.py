@@ -49,6 +49,7 @@ class RestApi:
         with open(deploy_directory / f"{custom_module}.py", "w") as file:
             # TODO: this currently only handles assistants. When needed, we can extend
             #  to source storages.
+            file.write("from typing import Iterator\n\n")
             file.write("from ragna import assistants\n\n")
             file.write("from ragna.core import Assistant, Source\n\n")
 
