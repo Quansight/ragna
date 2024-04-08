@@ -22,11 +22,10 @@ class AnthropicApiAssistant(ApiAssistant):
     def _instructize_system_prompt(self, sources: list[Source]) -> str:
         # See https://docs.anthropic.com/claude/docs/system-prompts
         # See https://docs.anthropic.com/claude/docs/long-context-window-tips#tips-for-document-qa
-        plural = len(sources) > 1
         instruction = (
-            f"I'm going to give you {len(sources)} document{'s' if plural else ''}. "
-            f"Read the document{'s' if plural else ''} carefully because I'm going to ask you a question about {'them' if plural else 'it'}. "
-            f"If you can't answer the question with just the given document{'s' if plural else ''}, just say so. "
+            f"I'm going to give you {len(sources)} document(s). "
+            f"Read the document(s) carefully because I'm going to ask you a question about them. "
+            f"If you can't answer the question with just the given document(s), just say so. "
             "Don't try to make up an answer.\n\n"
         )
         # See https://docs.anthropic.com/claude/docs/long-context-window-tips#structuring-long-documents
