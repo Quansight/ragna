@@ -235,9 +235,7 @@ client = rest_api.start(config, authenticate=True)
 
 
 # %%
-# Uploading the documents takes place in two steps. See
-# [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md#step-3-uploading-documents)
-# for more details.
+# Next, we upload the documents.
 
 import json
 
