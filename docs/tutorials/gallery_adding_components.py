@@ -42,6 +42,7 @@ class TutorialSourceStorage(SourceStorage):
         self._storage: dict[int, list[Source]] = {}
 
     def store(self, documents: list[Document], chat_id: uuid.UUID) -> None:
+        print(f"Hello from {type(self).__name__}().store()")
         self._storage[chat_id] = [
             Source(
                 id=str(uuid.uuid4()),
@@ -58,6 +59,7 @@ class TutorialSourceStorage(SourceStorage):
     def retrieve(
         self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
     ) -> list[Source]:
+        print(f"Retrieving {len(self._storage)} sources from {type(self).__name__}")
         return self._storage[chat_id]
 
 
@@ -90,6 +92,7 @@ from ragna.core import Assistant, Source
 
 class TutorialAssistant(Assistant):
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+        print(f"Giving an answer from {type(self).__name__}")
         yield (
             f"This is a default answer. There were {len(sources)} sources."
             f"The prompt was: "
