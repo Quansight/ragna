@@ -224,10 +224,7 @@ import documentation_helpers
 from ragna.deploy import Config
 
 
-config = Config()
-
-config.source_storages = [TutorialSourceStorage]
-config.assistants = [TutorialAssistant]
+config = Config(source_storages=[TutorialSourceStorage], assistants=[TutorialAssistant])
 
 rest_api = documentation_helpers.RestApi()
 
