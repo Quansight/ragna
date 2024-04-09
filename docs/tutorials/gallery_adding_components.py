@@ -223,7 +223,6 @@ import documentation_helpers
 
 from ragna.deploy import Config
 
-import httpx
 
 config = Config()
 
@@ -231,25 +230,9 @@ config.source_storages = [TutorialSourceStorage]
 config.assistants = [TutorialAssistant]
 
 rest_api = documentation_helpers.RestApi()
-_ = rest_api.start(config)
 
-# %%
-# Next, let's authenticate ourselves.
+client = rest_api.start(config, authenticate=True)
 
-username = password = "Ragna"
-
-client = httpx.Client(base_url=config.api.url)
-response = client.post(
-    "/token",
-    data={"username": username, "password": password},
-).raise_for_status()
-token = response.json()
-
-# %%
-# We set the API token on our HTTP client so we don't have to manually supply it
-# for each request below.
-
-client.headers["Authorization"] = f"Bearer {token}"
 
 # %%
 # Uploading the documents takes place in two steps. See
