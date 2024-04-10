@@ -98,6 +98,8 @@ class OllamaApiAssistant(Assistant):
                 if chunk:
                     json_data = json.loads(chunk)
 
+                    if "error" in json_data:
+                        raise RagnaException(json_data["error"])
                     if not json_data["done"]:
                         yield cast(str, json_data["message"]["content"])
 
