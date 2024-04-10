@@ -1,8 +1,10 @@
 import inspect
+import itertools
 import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
 from typing import Optional
 
@@ -47,16 +49,17 @@ class RestApi:
         )[2].filename
         custom_module = deploy_directory.name
         with open(deploy_directory / f"{custom_module}.py", "w") as file:
-            # TODO: this currently only handles assistants. When needed, we can extend
-            #  to source storages.
-            file.write("from typing import Iterator\n\n")
-            file.write("from ragna import assistants\n\n")
-            file.write("from ragna.core import Assistant, Source\n\n")
+            # FIXME Find a way to automatically detect necessary imports
+            file.write("import uuid; from uuid import *\n")
+            file.write("import textwrap; from textwrap import*\n")
+            file.write("from typing import *\n")
+            file.write("from ragna import *\n")
+            file.write("from ragna.core import *\n")
 
-            for assistant in config.assistants:
-                if assistant.__module__ == "__main__":
-                    file.write(f"{inspect.getsource(assistant)}\n\n")
-                    assistant.__module__ = custom_module
+            for component in itertools.chain(config.source_storages, config.assistants):
+                if component.__module__ == "__main__":
+                    file.write(f"{textwrap.dedent(inspect.getsource(component))}\n\n")
+                    component.__module__ = custom_module
 
         config.to_file(config_path)
         return python_path, config_path
