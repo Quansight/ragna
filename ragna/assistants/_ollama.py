@@ -101,4 +101,6 @@ class OllamaApiAssistant(Assistant):
 
 
 class OllamaGemma2B(OllamaApiAssistant):
+    """[Gemma:2B](https://ollama.com/library/gemma)"""
+
     _MODEL = "gemma:2b"
