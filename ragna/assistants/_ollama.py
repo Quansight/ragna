@@ -104,3 +104,9 @@ class OllamaGemma2B(OllamaApiAssistant):
     """[Gemma:2B](https://ollama.com/library/gemma)"""
 
     _MODEL = "gemma:2b"
+
+
+class OllamaPhi2(OllamaApiAssistant):
+    """[Phi-2](https://ollama.com/library/phi)"""
+
+    _MODEL = "phi"
