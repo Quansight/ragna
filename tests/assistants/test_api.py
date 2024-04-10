@@ -8,17 +8,12 @@ from ragna.assistants._api import ApiAssistant
 from ragna.core import RagnaException
 from tests.utils import skip_on_windows
 
-EXCLUDE_ASSISTANTS = [
-    assistants._ollama.OllamaApiAssistant,
-]
-
 API_ASSISTANTS = [
     assistant
     for assistant in assistants.__dict__.values()
     if isinstance(assistant, type)
     and issubclass(assistant, ApiAssistant)
     and assistant is not ApiAssistant
-    and not any(issubclass(assistant, to_skip) for to_skip in EXCLUDE_ASSISTANTS)
 ]
 
 
