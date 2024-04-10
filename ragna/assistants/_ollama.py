@@ -17,7 +17,7 @@ class OllamaApiAssistant(Assistant):
     def display_name(cls) -> str:
         return f"Ollama/{cls._MODEL}"
 
-    def __init__(self, url="http://localhost:11434/api/chat") -> None:
+    def __init__(self, url: str = "http://localhost:11434/api/chat") -> None:
         self._client = httpx.AsyncClient(
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
@@ -25,7 +25,7 @@ class OllamaApiAssistant(Assistant):
         self._url = os.environ.get("RAGNA_ASSISTANTS_OLLAMA_URL", url)
 
     @classmethod
-    def is_available(cls):
+    def is_available(cls) -> bool:
         requirements_available = super().is_available()
         if not requirements_available:
             return False
