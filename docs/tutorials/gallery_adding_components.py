@@ -178,6 +178,11 @@ print(await chat.answer("What is Ragna?"))
 # ```
 
 # %%
+# If you're using the Web UI and you have added the components to the configuration file
+# properly, you should see something like this when you create a chat:
+# ![](../../assets/images/ragna-tutorial-components.png)
+
+# %%
 # The rest of this section will follow the steps of
 # [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md). More detail
 # can be found there. This section focuses specifically on using custom objects.
