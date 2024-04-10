@@ -100,8 +100,6 @@ class OllamaApiAssistant(Assistant):
 
                     if not json_data["done"]:
                         yield cast(str, json_data["message"]["content"])
-                else:
-                    raise RagnaException("The response was empty.")
 
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
