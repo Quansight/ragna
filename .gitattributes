@@ -6,3 +6,4 @@
 *.png filter=lfs diff=lfs merge=lfs -text
 # but keep the brand images as regular images
 docs/assets/brand/logo-**/* !filter !diff !merge binary
+docs/assets/images/ragna-tutorial-components.png filter=lfs diff=lfs merge=lfs -text
