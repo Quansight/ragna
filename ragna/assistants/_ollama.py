@@ -62,12 +62,8 @@ class OllamaApiAssistant(Assistant):
             response_content=content,
         )
 
-    async def _call_api(
-        self,
-        prompt: str,
-        sources: list[Source],
-        *,
-        max_new_tokens: int,
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         async with self._client.stream(
             "POST",
@@ -102,14 +98,6 @@ class OllamaApiAssistant(Assistant):
                         raise RagnaException(json_data["error"])
                     if not json_data["done"]:
                         yield cast(str, json_data["message"]["content"])
-
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ) -> AsyncIterator[str]:
-        async for chunk in self._call_api(  # type: ignore[attr-defined, misc]
-            prompt, sources, max_new_tokens=max_new_tokens
-        ):
-            yield chunk
 
 
 class OllamaGemma2B(OllamaApiAssistant):
