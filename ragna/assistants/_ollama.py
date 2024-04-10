@@ -31,12 +31,9 @@ class OllamaApiAssistant(Assistant):
             return False
 
         try:
-            response = httpx.get("http://localhost:11434/")
-            response.raise_for_status()
+            return httpx.get("http://localhost:11434/").raise_for_status().is_success
         except httpx.HTTPError:
             return False
-
-        return response.is_success
 
     def _make_system_content(self, sources: list[Source]) -> str:
         instruction = (
