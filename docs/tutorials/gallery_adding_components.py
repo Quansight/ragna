@@ -157,59 +157,31 @@ _ = await chat.prepare()
 
 print(await chat.answer("What is Ragna?"))
 
-# %%
-# ## Using the Web UI with Custom Objects
 
 # %%
-# To include our custom objects in the Web UI, make sure they are in your
-# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-# and list them in your [configuration file](../../references/config.md).
+# ## Using the REST API with Custom Objects
 
 # %%
-# Here is an example configuration file in the case that you would like to use one:
+# To use our custom objects with the REST API or Web UI, make sure they are in your
+# [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH).
 
 # %%
+# If you want to use a [configuration file](../../references/config.md#example), you can add lines like the following.
+#
 # ```toml
-# local_root = "/home/ragnauser/.cache/ragna"
-# authentication = "ragna.deploy.RagnaDemoAuthentication"
-# document = "ragna.core.LocalDocument"
 # source_storages = [
 #     "tutorial.TutorialSourceStorage"
 # ]
 # assistants = [
 #     "tutorial.TutorialAssistant"
 # ]
-#
-# [api]
-# hostname = "127.0.0.1"
-# port = 31476
-# root_path = ""
-# url = "http://127.0.0.1:31476"
-# database_url = "sqlite:////home/ragnauser/.cache/ragna/ragna.db"
-# origins = [
-#     "http://127.0.0.1:31477",
-# ]
-#
-# [ui]
-# hostname = "127.0.0.1"
-# port = 31477
-# origins = [
-#     "http://127.0.0.1:31477",
-# ]
 # ```
 
 # %%
-# Note how the `tutorial.TutorialSourceStorage` and `tutorial.TutorialAssistant` classes are listed
-# in the `source_storages` and `assistants` fields, respectively.
-
-
-# %%
-# ## Using the REST API with Custom Objects
-
-# %%
-# This section will follow the steps of
+# The rest of this section will follow the steps of
 # [the REST API tutorial](../../generated/tutorials/gallery_rest_api.md). More detail
 # can be found there. This section focuses specifically on using custom objects.
+
 
 # %%
 # We first set up the [configuration](../../references/config.md) and start the API
