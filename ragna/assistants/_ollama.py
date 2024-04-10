@@ -26,8 +26,7 @@ class OllamaApiAssistant(Assistant):
 
     @classmethod
     def is_available(cls) -> bool:
-        requirements_available = super().is_available()
-        if not requirements_available:
+        if not super().is_available():
             return False
 
         try:
