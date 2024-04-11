@@ -106,3 +106,33 @@ class OllamaPhi2(OllamaApiAssistant):
     """[Phi-2](https://ollama.com/library/phi)"""
 
     _MODEL = "phi"
+
+
+class OllamaLlama2(OllamaApiAssistant):
+    """[Llama 2](https://ollama.com/library/llama2)"""
+
+    _MODEL = "llama2"
+
+
+class OllamaLlava(OllamaApiAssistant):
+    """[Llava](https://ollama.com/library/llava)"""
+
+    _MODEL = "llava"
+
+
+class OllamaMistral(OllamaApiAssistant):
+    """[Mistral](https://ollama.com/library/mistral)"""
+
+    _MODEL = "mistral"
+
+
+class OllamaMixtral(OllamaApiAssistant):
+    """[Mixtral](https://ollama.com/library/mixtral)"""
+
+    _MODEL = "mixtral"
+
+
+class OllamaOrcaMini(OllamaApiAssistant):
+    """[Orca Mini](https://ollama.com/library/orca-mini)"""
+
+    _MODEL = "orca-mini"
