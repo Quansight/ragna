@@ -102,12 +102,6 @@ class OllamaGemma2B(OllamaApiAssistant):
     _MODEL = "gemma:2b"
 
 
-class OllamaPhi2(OllamaApiAssistant):
-    """[Phi-2](https://ollama.com/library/phi)"""
-
-    _MODEL = "phi"
-
-
 class OllamaLlama2(OllamaApiAssistant):
     """[Llama 2](https://ollama.com/library/llama2)"""
 
@@ -136,3 +130,9 @@ class OllamaOrcaMini(OllamaApiAssistant):
     """[Orca Mini](https://ollama.com/library/orca-mini)"""
 
     _MODEL = "orca-mini"
+
+
+class OllamaPhi2(OllamaApiAssistant):
+    """[Phi-2](https://ollama.com/library/phi)"""
+
+    _MODEL = "phi"
