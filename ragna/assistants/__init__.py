@@ -5,7 +5,7 @@ __all__ = [
     "CommandLight",
     "GeminiPro",
     "GeminiUltra",
-    "OllamaGemma2b",
+    "OllamaGemma2B",
     "OllamaPhi2",
     "OllamaLlama2",
     "OllamaLlava",

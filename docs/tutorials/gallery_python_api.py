@@ -91,6 +91,14 @@ from ragna.assistants import RagnaDemoAssistant
 #     - [MosaicML](https://www.mosaicml.com/)
 #       - [ragna.assistants.Mpt7bInstruct][]
 #       - [ragna.assistants.Mpt30bInstruct][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 #
 #     !!! note
 #

@@ -38,6 +38,14 @@ import documentation_helpers
 #     - [OpenAI](https://openai.com/)
 #       - [ragna.assistants.Gpt35Turbo16k][]
 #       - [ragna.assistants.Gpt4][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 
 from ragna import assistants
 
