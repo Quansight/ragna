@@ -24,8 +24,8 @@ class Json(types.TypeDecorator):
 
     def process_result_value(
         self,
-        value: str,
-        dialect: Dialect,  # type: ignore[override]
+        value: str,  # type: ignore[override]
+        dialect: Dialect,
     ) -> Any:
         return json.loads(value)
 
