@@ -42,7 +42,7 @@ def parse_config(value: str) -> Config:
         raise typer.Exit(1)
     # This stores the original value so we can pass it on to subprocesses that we might
     # start.
-    config.__ragna_cli_config_path__ = value
+    config.__ragna_cli_config_path__ = value  # type: ignore[attr-defined]
     return config
 
 
@@ -252,13 +252,13 @@ def _wizard_common() -> Config:
     )
 
     for sub_config, title in [(config.api, "REST API"), (config.ui, "web UI")]:
-        sub_config.hostname = questionary.text(
+        sub_config.hostname = questionary.text(  # type: ignore[attr-defined]
             f"What hostname do you want to bind the the Ragna {title} to?",
             default=sub_config.hostname,  # type: ignore[attr-defined]
             qmark=QMARK,
         ).unsafe_ask()
 
-        sub_config.port = int(
+        sub_config.port = int(  # type: ignore[attr-defined]
             questionary.text(
                 f"What port do you want to bind the the Ragna {title} to?",
                 default=str(sub_config.port),  # type: ignore[attr-defined]
