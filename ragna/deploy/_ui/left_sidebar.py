@@ -99,7 +99,7 @@ class LeftSidebar(pn.viewable.Viewer):
                                       }
 
                                       :host div button:before {
-                                        content: url("/imgs/chat_bubble.svg");
+                                        content: url("imgs/chat_bubble.svg");
                                         margin-right: 10px;
                                         display: inline-block;
                                       }
