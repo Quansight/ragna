@@ -33,9 +33,10 @@ from . import database, schemas
 
 class XForwardedProtoMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
-        # There is a bug somewhere either in Jupyter Hub itself or jupyter-server-proxy
-        # that sets the X-Forwarded-Proto header to 'https,http'. This messes with
-        # further processing. Thus, we reset it here to a single value.
+        # The ProxyHeadersMiddleware automatically added by uvicorn cannot handle
+        # multiple values for the scheme, e.g. 'https,http'. Using this raw value as
+        # scheme messes with further processing of the URL. Thus, we reset it here to
+        # a single value and recreate the URL.
         scheme = request.scope["scheme"]
         if "https" in scheme:
             scheme = "https"
