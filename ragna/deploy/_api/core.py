@@ -10,12 +10,15 @@ from fastapi import (
     Form,
     HTTPException,
     Request,
+    Response,
     UploadFile,
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
+from starlette.datastructures import URL
+from starlette.middleware.base import BaseHTTPMiddleware
 
 import ragna
 import ragna.core
@@ -26,6 +29,22 @@ from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
 from . import database, schemas
+
+
+class XForwardedProtoMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next) -> Response:
+        # There is a bug somewhere either in Jupyter Hub itself or jupyter-server-proxy
+        # that sets the X-Forwarded-Proto header to 'https,http'. This messes with
+        # further processing. Thus, we reset it here to a single value.
+        scheme = request.scope["scheme"]
+        if "https" in scheme:
+            scheme = "https"
+        elif "http" in scheme:
+            scheme = "http"
+        request.scope["scheme"] = scheme
+        request._url = URL(scope=request.scope)
+
+        return await call_next(request)
 
 
 def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
@@ -78,6 +97,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(XForwardedProtoMiddleware)
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(
