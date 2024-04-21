@@ -99,26 +99,7 @@ config = Config(assistants=[DemoStreamingAssistant])
 
 rest_api = documentation_helpers.RestApi()
 
-client = rest_api.start(config, authenticate=True)
-
-# %%
-# Upload the document.
-
-document_upload = (
-    client.post("/document", json={"name": document_path.name})
-    .raise_for_status()
-    .json()
-)
-
-document = document_upload["document"]
-
-parameters = document_upload["parameters"]
-client.request(
-    parameters["method"],
-    parameters["url"],
-    data=parameters["data"],
-    files={"file": open(document_path, "rb")},
-).raise_for_status()
+client, document = rest_api.start(config, authenticate=True, upload_document=True)
 
 # %%
 # Start and prepare the chat

@@ -11,6 +11,7 @@ from typing import Optional
 import httpx
 
 from ragna._utils import timeout_after
+from ragna.core import RagnaException
 from ragna.deploy import Config
 
 __all__ = ["assets", "RestApi"]
@@ -22,7 +23,18 @@ class RestApi:
     def __init__(self):
         self._process: Optional[subprocess.Popen] = None
 
-    def start(self, config: Config, *, authenticate: bool = False) -> httpx.Client:
+    def start(
+        self,
+        config: Config,
+        *,
+        authenticate: bool = False,
+        upload_document: bool = False,
+    ) -> tuple[httpx.Client, Optional[dict]]:
+        if upload_document and not authenticate:
+            raise RagnaException(
+                "Cannot upload a document without authenticating first. "
+                "Set authenticate=True when using upload_document=True."
+            )
         python_path, config_path = self._prepare_config(config)
 
         client = httpx.Client(base_url=config.api.url)
@@ -32,7 +44,12 @@ class RestApi:
         if authenticate:
             self._authenticate(client)
 
-        return client
+        if upload_document:
+            document = self._upload_document(client)
+        else:
+            document = None
+
+        return client, document
 
     def _prepare_config(self, config: Config) -> tuple[str, str]:
         deploy_directory = Path(tempfile.mkdtemp())
@@ -48,6 +65,7 @@ class RestApi:
             inspect.currentframe()
         )[2].filename
         custom_module = deploy_directory.name
+        custom_components = set()
         with open(deploy_directory / f"{custom_module}.py", "w") as file:
             # FIXME Find a way to automatically detect necessary imports
             file.write("import uuid; from uuid import *\n")
@@ -58,10 +76,15 @@ class RestApi:
 
             for component in itertools.chain(config.source_storages, config.assistants):
                 if component.__module__ == "__main__":
+                    custom_components.add(component)
                     file.write(f"{textwrap.dedent(inspect.getsource(component))}\n\n")
                     component.__module__ = custom_module
 
         config.to_file(config_path)
+
+        for component in custom_components:
+            component.__module__ = "__main__"
+
         return python_path, config_path
 
     def _start_api(
@@ -118,6 +141,26 @@ class RestApi:
         token = response.json()
 
         client.headers["Authorization"] = f"Bearer {token}"
+
+    def _upload_document(self, client: httpx.Client) -> dict:
+        path = assets / "ragna.txt"
+        with open(path, "rb") as file:
+            content = file.read()
+
+        response = client.post("/document", json={"name": path.name}).raise_for_status()
+        document_upload = response.json()
+
+        document = document_upload["document"]
+
+        parameters = document_upload["parameters"]
+        client.request(
+            parameters["method"],
+            parameters["url"],
+            data=parameters["data"],
+            files={"file": content},
+        ).raise_for_status()
+
+        return document
 
     def stop(self, *, quiet: bool = False) -> None:
         self._process.kill()

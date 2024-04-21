@@ -186,32 +186,7 @@ config = Config(
 
 rest_api = documentation_helpers.RestApi()
 
-client = rest_api.start(config, authenticate=True)
-
-# %%
-# Next, we upload a document.
-
-import json
-
-document_name = "ragna.txt"
-
-with open(document_path, "rb") as file:
-    content = file.read()
-
-response = client.post(
-    "/document", json={"name": document_path.name}
-).raise_for_status()
-document_upload = response.json()
-
-document = document_upload["document"]
-
-parameters = document_upload["parameters"]
-client.request(
-    parameters["method"],
-    parameters["url"],
-    data=parameters["data"],
-    files={"file": content},
-).raise_for_status()
+client, document = rest_api.start(config, authenticate=True, upload_document=True)
 
 # %%
 # To select our custom components, we pass their display names to the chat creation.
@@ -220,6 +195,8 @@ client.request(
 #
 #     By default [ragna.core.Component.display_name][] returns the name of the class,
 #     but can be overridden, e.g. to format the name better.
+
+import json
 
 response = client.post(
     "/chats",
@@ -262,4 +239,115 @@ rest_api.stop()
 # %%
 # ## Custom parameters
 #
-# Ragna supports passing parameters
+# Ragna supports passing parameters to the components on a per-chat level. The extra
+# parameters are defined by simply adding them to the signature of the method. For
+# example, let's define a more elaborate assistant. The `my_required_parameter` has to
+# be passed and has to be an `int`, while the `my_optional_parameter` can be passed, but
+# still has to be a string.
+
+
+class ElaborateTutorialAssistant(Assistant):
+    def answer(
+        self,
+        prompt: str,
+        sources: list[Source],
+        *,
+        my_required_parameter: int,
+        my_optional_parameter: str = "foo",
+    ) -> Iterator[str]:
+        yield (
+            f"{type(self).__name__}().answer() called with "
+            f"{my_required_parameter=} and {my_optional_parameter=}"
+        )
+
+
+# %%
+# ### Python API
+#
+# To pass custom parameters to the components, simply pass them as keyword arguments
+# when creating a chat.
+
+chat = Rag().chat(
+    documents=[document_path],
+    source_storage=TutorialSourceStorage,
+    assistant=ElaborateTutorialAssistant,
+    my_required_parameter=3,
+    my_optional_parameter="bar",
+)
+
+_ = await chat.prepare()
+print(await chat.answer("Hello!"))
+
+# %%
+# The chat creation will fail if a required parameter is not passed or a wrong type is
+# passed for any parameter.
+
+try:
+    Rag().chat(
+        documents=[document_path],
+        source_storage=TutorialSourceStorage,
+        assistant=ElaborateTutorialAssistant,
+    )
+except Exception as exc:
+    print(exc)
+
+# %%
+
+try:
+    Rag().chat(
+        documents=[document_path],
+        source_storage=TutorialSourceStorage,
+        assistant=ElaborateTutorialAssistant,
+        my_required_parameter="bar",
+        my_optional_parameter=3,
+    )
+except Exception as exc:
+    print(exc)
+
+# %%
+# ### REST API
+
+config = Config(
+    source_storages=[TutorialSourceStorage],
+    assistants=[ElaborateTutorialAssistant],
+)
+
+rest_api = documentation_helpers.RestApi()
+
+client, document = rest_api.start(config, authenticate=True, upload_document=True)
+
+# %%
+# To pass custom parameters, define them in the `params` mapping when creating a new
+# chat.
+
+response = client.post(
+    "/chats",
+    json={
+        "name": "Tutorial REST API",
+        "documents": [document],
+        "source_storage": TutorialSourceStorage.display_name(),
+        "assistant": ElaborateTutorialAssistant.display_name(),
+        "params": {
+            "my_required_parameter": 3,
+            "my_optional_parameter": "bar",
+        },
+    },
+).raise_for_status()
+chat = response.json()
+
+# %%
+
+client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+
+response = client.post(
+    f"/chats/{chat['id']}/answer",
+    json={"prompt": "What is Ragna?"},
+).raise_for_status()
+answer = response.json()
+print(json.dumps(answer, indent=2))
+
+# %%
+# Let's stop the REST API and have a look at what would have printed in the terminal if
+# we had started it the regular way.
+
+rest_api.stop()
