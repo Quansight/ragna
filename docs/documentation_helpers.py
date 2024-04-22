@@ -60,6 +60,7 @@ class RestApi:
         config_path = str(deploy_directory / "ragna.toml")
 
         config.local_root = deploy_directory
+        config.api.database_url = f"sqlite:///{deploy_directory / 'ragna.db'}"
 
         sys.modules["__main__"].__file__ = inspect.getouterframes(
             inspect.currentframe()

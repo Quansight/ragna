@@ -93,8 +93,8 @@ class TutorialAssistant(Assistant):
 # %%
 # ## Usage
 #
-# Now that we have defined a custom [ragna.core.SourceStorage] and
-# [ragna.core.Assistant], let's have a look on how to use them with Ragna. Let's start
+# Now that we have defined a custom [ragna.core.SourceStorage][] and
+# [ragna.core.Assistant][], let's have a look on how to use them with Ragna. Let's start
 # with the Python API.
 #
 # ### Python API
@@ -111,7 +111,7 @@ import documentation_helpers
 document_path = documentation_helpers.assets / "ragna.txt"
 
 # %%
-# Next, we create a new [ragna.core.Chat] with our custom components.
+# Next, we create a new [ragna.core.Chat][] with our custom components.
 
 from ragna import Rag
 
@@ -255,9 +255,10 @@ class ElaborateTutorialAssistant(Assistant):
         my_required_parameter: int,
         my_optional_parameter: str = "foo",
     ) -> Iterator[str]:
+        print(f"Running {type(self).__name__}().answer()")
         yield (
-            f"{type(self).__name__}().answer() called with "
-            f"{my_required_parameter=} and {my_optional_parameter=}"
+            f"I was given {my_required_parameter=} "
+            f"and {my_optional_parameter=}."
         )
 
 
@@ -351,3 +352,36 @@ print(json.dumps(answer, indent=2))
 # we had started it the regular way.
 
 rest_api.stop()
+
+# %%
+# ## Sync or `async`?
+#
+# So far we have `def`ined all of the abstract methods of the components as regular,
+# i.e. synchronous methods. However, this is *not* a requirement. If you want to run
+# `async` code inside the methods, just define them with `async def` and Ragna will
+# handle the rest for you. Internally, Ragna runs synchronous methods on a thread to
+# avoid blocking the main thread. Asynchronous methods are scheduled on the main event
+# loop.
+#
+# Let's
+
+import asyncio
+import time
+from typing import AsyncIterator
+
+class AsyncAssistant(Assistant):
+    async def answer(self, prompt: str, sources: list[Source]) -> AsyncIterator[str]:
+        print(f"Running {type(self).__name__}().answer()")
+        start = time.perf_counter()
+        await asyncio.sleep(0.3)
+        stop = time.perf_counter()
+        yield f"I've waited for {stop - start} seconds!"
+
+chat = Rag().chat(
+    documents=[document_path],
+    source_storage=TutorialSourceStorage,
+    assistant=AsyncAssistant,
+)
+
+_ = await chat.prepare()
+print(await chat.answer("Hello!"))
