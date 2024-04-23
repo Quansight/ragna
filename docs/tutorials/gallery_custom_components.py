@@ -229,12 +229,14 @@ rest_api.stop()
 # ### Web UI
 #
 # The setup for the web UI is exactly the same as for the [REST API](#rest-api). If you
-# have you configuration set up, you can start the web UI and use the custom components.
-# See the [web UI tutorial](../../generated/tutorials/gallery_rest_api.md) for details.
+# have your configuration set up, you can start the web UI and use the custom
+# components. See the [web UI tutorial](../../generated/tutorials/gallery_rest_api.md)
+# for details.
 #
 # !!! warning
 #
-#    Unfortunately, Ragnas web UI currently hard-codes
+#     See the section about [custom parameters for the web UI](#web-ui_1) for some
+#     limitations using custom components in the web UI.
 
 # %%
 # ## Custom parameters
@@ -352,6 +354,24 @@ print(json.dumps(answer, indent=2))
 # we had started it the regular way.
 
 rest_api.stop()
+
+# %%
+# ### Web UI
+#
+# !!! warning
+#     Unfortunately, Ragnas web UI currently does **not** support arbitrary custom
+#     parameters. This is actively worked on and progress is tracked in
+#     [#217](https://github.com/Quansight/ragna/issues/217). Until this is resolved,
+#     the source storage and the assistant together need to take the following four
+#     parameters:
+#
+#     1. `chunk_size: int`
+#     2. `chunk_overlap: int`
+#     3. `num_tokens: int`
+#     4. `max_new_tokens: int`
+#
+#     When using Ragnas builtin components, all source storages cover parameters 1. to
+#     3. and all assistant cover parameter 4.
 
 # %%
 # ## Sync or `async`?
