@@ -383,7 +383,7 @@ rest_api.stop()
 # avoid blocking the main thread. Asynchronous methods are scheduled on the main event
 # loop.
 #
-# Let's
+# Let's have a look at a minimal example.
 
 import asyncio
 import time
