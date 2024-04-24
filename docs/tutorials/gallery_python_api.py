@@ -88,9 +88,6 @@ from ragna.assistants import RagnaDemoAssistant
 #       - [ragna.assistants.Gpt4][]
 #     - [AI21 Labs](https://www.ai21.com/)
 #       - [ragna.assistants.Jurassic2Ultra][]
-#     - [MosaicML](https://www.mosaicml.com/)
-#       - [ragna.assistants.Mpt7bInstruct][]
-#       - [ragna.assistants.Mpt30bInstruct][]
 #
 #     !!! note
 #
