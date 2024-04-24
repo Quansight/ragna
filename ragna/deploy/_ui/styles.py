@@ -1,6 +1,7 @@
 """
 UI Helpers
 """
+
 from typing import Any, Dict, Iterable, Union
 
 import panel as pn
@@ -85,10 +86,10 @@ def divider():
     return pn.layout.Divider(css_classes=["default_divider"])
 
 
-def css(selectors: Union[str, Iterable[str]], declarations: dict[str, str]) -> str:
+def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> str:
     return "\n".join(
         [
-            f"{selectors if isinstance(selectors, str) else ', '.join(selectors)} {{",
+            f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
             *[f"    {property}: {value};" for property, value in declarations.items()],
             "}",
         ]

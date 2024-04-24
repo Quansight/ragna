@@ -141,7 +141,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
             </script>
             <div id="fileUploadContainer" class="fileUploadContainer">
                 <div id="fileUploadDropArea" class="fileUploadDropArea">
-                    <img src="/imgs/cloud-upload.svg" width="24px" height="24px" />
+                    <img src="imgs/cloud-upload.svg" width="24px" height="24px" />
                     <span><b>Click to upload</b> or drag and drop.<br /></span>
                     <div id='allowedDocuments'>
                         Allowed files: ${allowed_documents_str}

@@ -115,7 +115,9 @@ print(content.decode())
 #    system.
 # 2. Perform the actual upload with the information from step 1.
 
-response = client.post("/document", json={"name": document_name}).raise_for_status()
+response = client.post(
+    "/document", json={"name": document_name}
+).raise_for_status()
 document_upload = response.json()
 print(json.dumps(response.json(), indent=2))
 
