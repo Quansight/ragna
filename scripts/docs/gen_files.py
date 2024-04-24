@@ -29,9 +29,10 @@ def main():
 def cli_reference():
     def get_help(command):
         with unittest.mock.patch.object(typer.rich_utils, "MAX_WIDTH", 80):
-            with contextlib.suppress(SystemExit), contextlib.redirect_stdout(
-                io.StringIO()
-            ) as stdout:
+            with (
+                contextlib.suppress(SystemExit),
+                contextlib.redirect_stdout(io.StringIO()) as stdout,
+            ):
                 cli_app(([command] if command else []) + ["--help"], prog_name="ragna")
 
             return "\n".join(

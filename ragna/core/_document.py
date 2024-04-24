@@ -70,12 +70,10 @@ class Document(RequirementsMixin, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def is_readable(self) -> bool:
-        ...
+    def is_readable(self) -> bool: ...
 
     @abc.abstractmethod
-    def read(self) -> bytes:
-        ...
+    def read(self) -> bytes: ...
 
     def extract_pages(self) -> Iterator[Page]:
         yield from self.handler.extract_pages(self)

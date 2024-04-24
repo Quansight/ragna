@@ -18,26 +18,35 @@ class AnthropicApiAssistant(ApiAssistant):
     def display_name(cls) -> str:
         return f"Anthropic/{cls._MODEL}"
 
-    def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
-        # See https://docs.anthropic.com/claude/docs/introduction-to-prompt-design#human--assistant-formatting
+    def _instructize_system_prompt(self, sources: list[Source]) -> str:
+        # See https://docs.anthropic.com/claude/docs/system-prompts
+        # See https://docs.anthropic.com/claude/docs/long-context-window-tips#tips-for-document-qa
         instruction = (
-            "\n\nHuman: "
-            "Use the following pieces of context to answer the question at the end. "
-            "If you don't know the answer, just say so. Don't try to make up an answer.\n"
+            f"I'm going to give you {len(sources)} document(s). "
+            f"Read the document(s) carefully because I'm going to ask you a question about them. "
+            f"If you can't answer the question with just the given document(s), just say so. "
+            "Don't try to make up an answer.\n\n"
         )
-        instruction += "\n\n".join(source.content for source in sources)
-        return f"{instruction}\n\nQuestion: {prompt}\n\nAssistant:"
+        # See https://docs.anthropic.com/claude/docs/long-context-window-tips#structuring-long-documents
+
+        return (
+            instruction
+            + "<documents>"
+            + "\n".join(f"<document>{source.content}</document>" for source in sources)
+            + "</documents>"
+        )
 
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[str]:
         import httpx_sse
 
+        # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
         async with httpx_sse.aconnect_sse(
             self._client,
             "POST",
-            "https://api.anthropic.com/v1/complete",
+            "https://api.anthropic.com/v1/messages",
             headers={
                 "accept": "application/json",
                 "anthropic-version": "2023-06-01",
@@ -46,8 +55,9 @@ class AnthropicApiAssistant(ApiAssistant):
             },
             json={
                 "model": self._MODEL,
-                "prompt": self._instructize_prompt(prompt, sources),
-                "max_tokens_to_sample": max_new_tokens,
+                "system": self._instructize_system_prompt(sources),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,
             },
@@ -56,33 +66,19 @@ class AnthropicApiAssistant(ApiAssistant):
 
             async for sse in event_source.aiter_sse():
                 data = json.loads(sse.data)
-                if data["type"] != "completion":
-                    continue
-                elif "error" in data:
+                # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
+                if "error" in data:
                     raise RagnaException(data["error"].pop("message"), **data["error"])
-                elif data["stop_reason"] is not None:
+                elif data["type"] == "message_stop":
                     break
+                elif data["type"] != "content_block_delta":
+                    continue
 
-                yield cast(str, data["completion"])
-
-
-class ClaudeInstant(AnthropicApiAssistant):
-    """[Claude Instant](https://docs.anthropic.com/claude/reference/selecting-a-model)
-
-    !!! info "Required environment variables"
-
-        - `ANTHROPIC_API_KEY`
-
-    !!! info "Required packages"
-
-        - `httpx_sse`
-    """
-
-    _MODEL = "claude-instant-1"
+                yield cast(str, data["delta"].pop("text"))
 
 
-class Claude(AnthropicApiAssistant):
-    """[Claude](https://docs.anthropic.com/claude/reference/selecting-a-model)
+class ClaudeOpus(AnthropicApiAssistant):
+    """[Claude 3 Opus](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
 
@@ -93,4 +89,34 @@ class Claude(AnthropicApiAssistant):
         - `httpx_sse`
     """
 
-    _MODEL = "claude-2"
+    _MODEL = "claude-3-opus-20240229"
+
+
+class ClaudeSonnet(AnthropicApiAssistant):
+    """[Claude 3 Sonnet](https://docs.anthropic.com/claude/docs/models-overview)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
+    """
+
+    _MODEL = "claude-3-sonnet-20240229"
+
+
+class ClaudeHaiku(AnthropicApiAssistant):
+    """[Claude 3 Haiku](https://docs.anthropic.com/claude/docs/models-overview)
+
+    !!! info "Required environment variables"
+
+        - `ANTHROPIC_API_KEY`
+
+    !!! info "Required packages"
+
+        - `httpx_sse`
+    """
+
+    _MODEL = "claude-3-haiku-20240307"
