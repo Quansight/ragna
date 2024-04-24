@@ -259,8 +259,7 @@ class ElaborateTutorialAssistant(Assistant):
     ) -> Iterator[str]:
         print(f"Running {type(self).__name__}().answer()")
         yield (
-            f"I was given {my_required_parameter=} "
-            f"and {my_optional_parameter=}."
+            f"I was given {my_required_parameter=} and {my_optional_parameter=}."
         )
 
 
@@ -389,13 +388,17 @@ import asyncio
 import time
 from typing import AsyncIterator
 
+
 class AsyncAssistant(Assistant):
-    async def answer(self, prompt: str, sources: list[Source]) -> AsyncIterator[str]:
+    async def answer(
+        self, prompt: str, sources: list[Source]
+    ) -> AsyncIterator[str]:
         print(f"Running {type(self).__name__}().answer()")
         start = time.perf_counter()
         await asyncio.sleep(0.3)
         stop = time.perf_counter()
         yield f"I've waited for {stop - start} seconds!"
+
 
 chat = Rag().chat(
     documents=[document_path],
