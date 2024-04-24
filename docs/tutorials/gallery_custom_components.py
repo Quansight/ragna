@@ -233,6 +233,9 @@ rest_api.stop()
 # components. See the [web UI tutorial](../../generated/tutorials/gallery_rest_api.md)
 # for details.
 #
+#
+# ![Create-chat-modal of Ragnas web UI with the TutorialSourceStorage and TutorialAssistant as selected options](../../assets/images/ragna-tutorial-components.png)
+#
 # !!! warning
 #
 #     See the section about [custom parameters for the web UI](#web-ui_1) for some
