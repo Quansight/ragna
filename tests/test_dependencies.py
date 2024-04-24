@@ -4,7 +4,6 @@ fixed upstream. If you see a test failing here, i.e. an unexpected success, feel
 remove the offending test after you have cleaned up our code.
 """
 
-
 import pytest
 
 from ragna._compat import importlib_metadata_package_distributions
