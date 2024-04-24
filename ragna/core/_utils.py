@@ -54,12 +54,10 @@ class RagnaException(Exception):
 
 class Requirement(abc.ABC):
     @abc.abstractmethod
-    def is_available(self) -> bool:
-        ...
+    def is_available(self) -> bool: ...
 
     @abc.abstractmethod
-    def __repr__(self) -> str:
-        ...
+    def __repr__(self) -> str: ...
 
     def __hash__(self) -> int:
         return hash(repr(self))

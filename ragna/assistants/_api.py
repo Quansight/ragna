@@ -40,8 +40,7 @@ class ApiAssistant(Assistant):
     @abc.abstractmethod
     async def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncIterator[str]:
-        ...
+    ) -> AsyncIterator[str]: ...
 
     async def _assert_api_call_is_success(self, response: Response) -> None:
         if response.is_success:

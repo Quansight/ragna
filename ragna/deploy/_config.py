@@ -139,9 +139,9 @@ class Config(ConfigBase):
         default_factory=ragna.local_root
     )
 
-    authentication: ImportString[
-        type[Authentication]
-    ] = "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+    authentication: ImportString[type[Authentication]] = (
+        "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+    )
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [
