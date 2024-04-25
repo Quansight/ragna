@@ -129,7 +129,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             documents=documents,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
-            params=chat.params,  # type: ignore[arg-type]
+            params=chat.params,
         ),
         messages=messages,
         prepared=chat.prepared,
