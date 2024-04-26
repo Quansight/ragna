@@ -10,7 +10,7 @@ This tutorial walks you through basic steps of using Ragnas Python API.
 
 # %%
 # Before we start this tutorial, we import some helpers.
-import ragna._docs.documentation_helpers as documentation_helpers
+import ragna._docs as ragna_docs
 
 # %%
 # ## Step 1: Select relevant documents
@@ -19,7 +19,7 @@ import ragna._docs.documentation_helpers as documentation_helpers
 # will be answered comes from documents that you provide. For this tutorial, let's use a
 # sample document that includes some information about Ragna.
 
-document_path = documentation_helpers.assets / "ragna.txt"
+document_path = ragna_docs.assets / "ragna.txt"
 
 with open(document_path) as file:
     print(file.read())
@@ -107,7 +107,7 @@ chat = Rag().chat(
 # Before we can ask a question, we need to [`prepare`][ragna.core.Chat.prepare] the chat, which under the hood
 # stores the documents we have selected in the source storage.
 
-# _ = await chat.prepare()
+_ = await chat.prepare()
 
 # %%
 # !!! note
@@ -122,4 +122,4 @@ chat = Rag().chat(
 # %%
 # Finally, we can get an [`answer`][ragna.core.Chat.answer] to a question.
 
-print(chat.answer("What is Ragna?"))
+print(await chat.answer("What is Ragna?"))

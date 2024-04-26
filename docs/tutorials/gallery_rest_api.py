@@ -10,7 +10,7 @@ This tutorial walks you through basic steps of using Ragnas REST API.
 
 # %%
 # Before we start this tutorial, we import some helpers.
-import ragna._docs.documentation_helpers as documentation_helpers
+import ragna._docs as ragna_docs
 
 # %%
 # ## Step 1: Start the REST API
@@ -41,7 +41,7 @@ from ragna.deploy import Config
 
 config = Config()
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 _ = rest_api.start(config)
 
 # %%
@@ -94,7 +94,7 @@ print(json.dumps(response.json(), indent=2))
 
 document_name = "ragna.txt"
 
-with open(documentation_helpers.assets / document_name, "rb") as file:
+with open(ragna_docs.assets / document_name, "rb") as file:
     content = file.read()
 
 print(content.decode())

@@ -7,7 +7,7 @@ is performed using the Python and REST API.
 
 # %%
 # Before we start this example, we import some helpers.
-import ragna._docs.documentation_helpers as documentation_helpers
+import ragna._docs as ragna_docs
 
 # %%
 # ## Setup streaming assistant
@@ -51,7 +51,7 @@ class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
 
 from ragna import Rag, source_storages
 
-document_path = documentation_helpers.assets / "ragna.txt"
+document_path = ragna_docs.assets / "ragna.txt"
 
 chat = Rag().chat(
     documents=[document_path],
@@ -92,7 +92,7 @@ from ragna.deploy import Config
 
 config = Config(assistants=[DemoStreamingAssistant])
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 
 client = rest_api.start(config, authenticate=True)
 
