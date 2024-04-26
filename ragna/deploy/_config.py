@@ -19,7 +19,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from ragna._utils import local_root, make_directory
+import ragna
+from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
@@ -135,7 +136,7 @@ class Config(ConfigBase):
     model_config = SettingsConfigDict(env_prefix="ragna_")
 
     local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
-        default_factory=local_root
+        default_factory=ragna.local_root
     )
 
     authentication: ImportString[type[Authentication]] = (
