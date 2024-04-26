@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path.cwd().parent))
 
-import documentation_helpers
+import ragna._docs.documentation_helpers as documentation_helpers
 
 # %%
 # ## Step 1: Select relevant documents
@@ -113,7 +113,7 @@ chat = Rag().chat(
 # Before we can ask a question, we need to [`prepare`][ragna.core.Chat.prepare] the chat, which under the hood
 # stores the documents we have selected in the source storage.
 
-_ = await chat.prepare()
+# _ = await chat.prepare()
 
 # %%
 # !!! note
@@ -128,4 +128,4 @@ _ = await chat.prepare()
 # %%
 # Finally, we can get an [`answer`][ragna.core.Chat.answer] to a question.
 
-print(await chat.answer("What is Ragna?"))
+print(chat.answer("What is Ragna?"))

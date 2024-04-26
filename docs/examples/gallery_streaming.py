@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path.cwd().parent))
 
-import documentation_helpers
+import ragna._docs.documentation_helpers as documentation_helpers
 
 # %%
 # ## Setup streaming assistant
