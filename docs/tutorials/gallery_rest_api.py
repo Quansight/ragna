@@ -10,12 +10,6 @@ This tutorial walks you through basic steps of using Ragnas REST API.
 
 # %%
 # Before we start this tutorial, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
 import ragna._docs.documentation_helpers as documentation_helpers
 
 # %%

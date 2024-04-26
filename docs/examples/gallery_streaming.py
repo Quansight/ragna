@@ -7,12 +7,6 @@ is performed using the Python and REST API.
 
 # %%
 # Before we start this example, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
 import ragna._docs.documentation_helpers as documentation_helpers
 
 # %%
