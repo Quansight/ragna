@@ -28,7 +28,7 @@ And, upgrade to latest versions with:
 pip install --upgrade ragna
 ```
 
-Alternatively, you can install ``ragna`` with conda from conda-forge:
+Alternatively, you can install `ragna` with conda from conda-forge:
 
 ```bash
 conda install ragna -c conda-forge
