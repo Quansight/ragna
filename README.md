@@ -18,7 +18,7 @@ A RAG orchestration framework.
          alt="PyPI" />
         </a>
 		<a href="https://anaconda.org/conda-forge/ragna">
-			<img src="https://img.shields.io/conda/vn/conda-forge/ragna?logoColor=white&logo=conda-forge" alt="conda-forge">
+			<img src="https://img.shields.io/conda/vn/conda-forge/ragna?colorA=1F2636&colorB=DF5538" alt="conda-forge">
 		</a>
     </td>
     <td>
