@@ -32,16 +32,15 @@ class ApiAssistant(Assistant):
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for chunk in self._call_api(  # type: ignore[attr-defined, misc]
+        async for chunk in self._call_api(
             prompt, sources, max_new_tokens=max_new_tokens
         ):
             yield chunk
 
     @abc.abstractmethod
-    async def _call_api(
+    def _call_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncIterator[str]:
-        ...
+    ) -> AsyncIterator[str]: ...
 
     async def _assert_api_call_is_success(self, response: Response) -> None:
         if response.is_success:

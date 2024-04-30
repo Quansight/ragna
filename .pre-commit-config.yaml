@@ -16,8 +16,12 @@ repos:
           - javascript
           - css
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.2
+    rev: v0.4.1
     hooks:
       - id: ruff-format
+        exclude: "^docs/(tutorials|examples)/gallery_.*?\\.py$"
+      - id: ruff-format
+        files: "^docs/(tutorials|examples)/gallery_.*?\\.py$"
+        args: [--line-length=83]
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
