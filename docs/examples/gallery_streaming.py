@@ -7,6 +7,7 @@ is performed using the Python and REST API.
 
 # %%
 # Before we start this example, we import some helpers.
+from pathlib import Path
 import ragna._docs as ragna_docs
 
 # %%
@@ -51,7 +52,14 @@ class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
 
 from ragna import Rag, source_storages
 
-document_path = ragna_docs.assets / "ragna.txt"
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
+
+print(ragna_docs.SAMPLE_CONTENT)
+
+document_path = "ragna.txt"
 
 chat = Rag().chat(
     documents=[document_path],

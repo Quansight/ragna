@@ -10,6 +10,7 @@ This tutorial walks you through basic steps of using Ragnas Python API.
 
 # %%
 # Before we start this tutorial, we import some helpers.
+from pathlib import Path
 import ragna._docs as ragna_docs
 
 # %%
@@ -19,10 +20,12 @@ import ragna._docs as ragna_docs
 # will be answered comes from documents that you provide. For this tutorial, let's use a
 # sample document that includes some information about Ragna.
 
-document_path = ragna_docs.assets / "ragna.txt"
+document_path = Path.cwd() / "ragna.txt"
 
-with open(document_path) as file:
-    print(file.read())
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
+
+print(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # !!! tip

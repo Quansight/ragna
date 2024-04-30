@@ -10,6 +10,7 @@ This tutorial walks you through basic steps of using Ragnas REST API.
 
 # %%
 # Before we start this tutorial, we import some helpers.
+from pathlib import Path
 import ragna._docs as ragna_docs
 
 # %%
@@ -91,13 +92,17 @@ print(json.dumps(response.json(), indent=2))
 
 # %%
 # For simplicity, let's use a demo document with some information about Ragna
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
+
+print(ragna_docs.SAMPLE_CONTENT)
 
 document_name = "ragna.txt"
 
-with open(ragna_docs.assets / document_name, "rb") as file:
+with open(document_name, "rb") as file:
     content = file.read()
-
-print(content.decode())
 
 # %%
 # The upload process in Ragna consists of two parts:
