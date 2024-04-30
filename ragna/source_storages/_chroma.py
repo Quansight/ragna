@@ -45,7 +45,6 @@ class Chroma(SourceStorage):
         metadatas = []
         embeddings = []
         for embedding in documents:
-
             ids.append(str(uuid.uuid4()))
             texts.append(embedding.chunk.text)
             metadatas.append(

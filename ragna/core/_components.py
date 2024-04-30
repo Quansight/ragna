@@ -100,8 +100,7 @@ class Embedding:
 
 class EmbeddingModel(Component, ABC):
     @abstractmethod
-    def embed_chunks(self, documents: list[Chunk]) -> list[Embedding]:
-        ...
+    def embed_chunks(self, documents: list[Chunk]) -> list[Embedding]: ...
 
 
 class Source(pydantic.BaseModel):

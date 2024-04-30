@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import inspect
 import uuid
+from collections import deque
 from typing import (
     Any,
     AsyncIterator,
@@ -18,8 +19,7 @@ from typing import (
     Union,
     cast,
 )
-
-from collections import deque
+from uuid import UUID
 
 import pydantic
 import tiktoken
@@ -37,8 +37,6 @@ from ._components import (
 )
 from ._document import Document, LocalDocument, Page
 from ._utils import RagnaException, default_user, merge_models
-
-from uuid import UUID
 
 T = TypeVar("T")
 C = TypeVar("C", bound=Component)
@@ -191,7 +189,7 @@ class Chat:
 
         self.documents = self._parse_documents(documents)
 
-        self._tokenizer = tiktoken.get_encoding('cl100k_base')
+        self._tokenizer = tiktoken.get_encoding("cl100k_base")
 
         if embedding_model is None and issubclass(
             source_storage.__ragna_input_type__, Embedding
@@ -218,8 +216,14 @@ class Chat:
         self._messages: list[Message] = []
 
     def _embed_text(self, text: str) -> list[float]:
-        dummy_chunk = Chunk(text=text, document_id=uuid.uuid4(), page_numbers=[], num_tokens=0)
-        return cast(EmbeddingModel, self.embedding_model).embed_chunks([dummy_chunk])[0].embedding
+        dummy_chunk = Chunk(
+            text=text, document_id=uuid.uuid4(), page_numbers=[], num_tokens=0
+        )
+        return (
+            cast(EmbeddingModel, self.embedding_model)
+            .embed_chunks([dummy_chunk])[0]
+            .embedding
+        )
 
     def _chunk_pages(
         self,
@@ -270,12 +274,16 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        chunks = [chunk for document in self.documents for chunk in self._chunk_pages(
+        chunks = [
+            chunk
+            for document in self.documents
+            for chunk in self._chunk_pages(
                 document.extract_pages(),
                 document_id=document.id,
                 chunk_size=500,
                 chunk_overlap=250,
-        )]
+            )
+        ]
 
         input: Union[list[Document], list[Embedding]] = self.documents
         if not issubclass(self.source_storage.__ragna_input_type__, Document):
