@@ -59,8 +59,6 @@ with open(document_path, "w") as file:
 
 print(ragna_docs.SAMPLE_CONTENT)
 
-document_path = "ragna.txt"
-
 chat = Rag().chat(
     documents=[document_path],
     source_storage=source_storages.RagnaDemoSourceStorage,
