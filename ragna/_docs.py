@@ -11,9 +11,7 @@ import httpx
 from ragna._utils import timeout_after
 from ragna.deploy import Config
 
-__all__ = ["assets", "RestApi"]
-
-assets = Path(__file__).parent / "assets"
+__all__ = ["RestApi"]
 
 SAMPLE_CONTENT = """\
 Ragna is an open source project built by Quansight. It is designed to allow
