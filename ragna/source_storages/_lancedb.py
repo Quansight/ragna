@@ -80,7 +80,7 @@ class LanceDB(SourceStorage):
                             embedding.chunk.page_numbers
                         ),
                         "text": embedding.chunk.text,
-                        self._VECTOR_COLUMN_NAME: embedding.embedding,
+                        self._VECTOR_COLUMN_NAME: embedding.values,
                         "num_tokens": embedding.chunk.num_tokens,
                     }
                 ]

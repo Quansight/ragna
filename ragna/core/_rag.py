@@ -3,13 +3,11 @@ from __future__ import annotations
 import datetime
 import inspect
 import uuid
-from collections import deque
 from typing import (
     Any,
     AsyncIterator,
     Awaitable,
     Callable,
-    Deque,
     Generic,
     Iterable,
     Iterator,
@@ -19,12 +17,11 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 import pydantic
-import tiktoken
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
+from ._compat import chunk_pages
 from ._components import (
     Assistant,
     Chunk,
@@ -35,7 +32,7 @@ from ._components import (
     MessageRole,
     SourceStorage,
 )
-from ._document import Document, LocalDocument, Page
+from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
@@ -121,25 +118,9 @@ class SpecialChatParams(pydantic.BaseModel):
     chat_name: str = pydantic.Field(
         default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
     )
-
-
-# The function is adapted from more_itertools.windowed to allow a ragged last window
-# https://more-itertools.readthedocs.io/en/stable/api.html#more_itertools.windowed
-def windowed_ragged(
-    iterable: Iterable[T], *, n: int, step: int
-) -> Iterator[tuple[T, ...]]:
-    window: Deque[T] = deque(maxlen=n)
-    i = n
-    for _ in map(window.append, iterable):
-        i -= 1
-        if not i:
-            i = step
-            yield tuple(window)
-
-    if len(window) < n:
-        yield tuple(window)
-    elif 0 < i < min(step, n):
-        yield tuple(window)[i:]
+    # TODO: These are temporary and need to be moved into the chunking model
+    chunk_size: int = 500
+    chunk_overlap: int = 250
 
 
 class Chat:
@@ -189,8 +170,6 @@ class Chat:
 
         self.documents = self._parse_documents(documents)
 
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
-
         if embedding_model is None and issubclass(
             source_storage.__ragna_input_type__, Embedding
         ):
@@ -222,36 +201,8 @@ class Chat:
         return (
             cast(EmbeddingModel, self.embedding_model)
             .embed_chunks([dummy_chunk])[0]
-            .embedding
+            .values
         )
-
-    def _chunk_pages(
-        self,
-        pages: Iterable[Page],
-        document_id: UUID,
-        *,
-        chunk_size: int,
-        chunk_overlap: int,
-    ) -> Iterator[Chunk]:
-        self._tokenizer = tiktoken.get_encoding("cl100k_base")
-
-        for window in windowed_ragged(
-            (
-                (tokens, page.number)
-                for page in pages
-                for tokens in self._tokenizer.encode(page.text)
-            ),
-            n=chunk_size,
-            step=chunk_size - chunk_overlap,
-        ):
-            tokens, page_numbers = zip(*window)
-            yield Chunk(
-                text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
-                document_id=document_id,
-                page_numbers=list(filter(lambda n: n is not None, page_numbers))
-                or None,
-                num_tokens=len(tokens),
-            )
 
     async def prepare(self) -> Message:
         """Prepare the chat.
@@ -277,11 +228,11 @@ class Chat:
         chunks = [
             chunk
             for document in self.documents
-            for chunk in self._chunk_pages(
+            for chunk in chunk_pages(
                 document.extract_pages(),
                 document_id=document.id,
-                chunk_size=500,
-                chunk_overlap=250,
+                chunk_size=self.params["chunk_size"],
+                chunk_overlap=self.params["chunk_overlap"],
             )
         ]
 
@@ -321,10 +272,7 @@ class Chat:
 
         input: Union[str, list[float]] = prompt
         if not issubclass(self.source_storage.__ragna_input_type__, Document):
-            input = cast(
-                list[float],
-                self._embed_text(prompt),
-            )
+            input = self._embed_text(prompt)
         sources = await self._run(self.source_storage.retrieve, self.documents, input)
 
         answer = Message(

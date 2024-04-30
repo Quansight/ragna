@@ -1,4 +1,4 @@
-from typing import Union
+from typing import cast
 
 from ragna.core import (
     Chunk,
@@ -20,7 +20,6 @@ class AllMiniLML6v2(EmbeddingModel):
             # Rather than using sentence transformers package by itself, chromadb
             # packaged this embedding model and is a much lighter dependency.
             PackageRequirement("chromadb>=0.4.13"),
-            PackageRequirement("tiktoken"),
         ]
 
     def __init__(self) -> None:
@@ -31,14 +30,8 @@ class AllMiniLML6v2(EmbeddingModel):
 
     def embed_chunks(self, chunks: list[Chunk]) -> list[Embedding]:
         return [
-            Embedding(values=self._embed_text(chunk.text), chunk=chunk)
+            Embedding(
+                values=cast(list[float], self._model([chunk.text])[0]), chunk=chunk
+            )
             for chunk in chunks
         ]
-
-    def _embed_text(
-        self, text: Union[list[str], str]
-    ) -> Union[list[list[float]], list[float]]:
-        if isinstance(text, str):
-            return self._model([text])[0]
-        else:
-            return self._model(text)

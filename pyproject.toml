@@ -41,6 +41,8 @@ dependencies = [
     "tomlkit",
     "typer",
     "uvicorn",
+    # tiktoken is a temporary dependency until we have the chunking figured out
+    "tiktoken",
 ]
 dynamic = ["version"]
 
@@ -61,7 +63,6 @@ all = [
     "pymupdf>=1.23.6",
     "python-docx",
     "python-pptx",
-    "tiktoken",
 ]
 
 [tool.setuptools_scm]
