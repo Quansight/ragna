@@ -1,12 +1,19 @@
 import uuid
 
 import ragna
-from ragna.core import Document, PackageRequirement, Requirement, Source
+from ragna.core import (
+    Document,
+    Embedding,
+    PackageRequirement,
+    Requirement,
+    Source,
+    SourceStorage,
+)
 
-from ._vector_database import VectorDatabaseSourceStorage
+from ._utils import page_numbers_to_str, take_sources_up_to_max_tokens
 
 
-class LanceDB(VectorDatabaseSourceStorage):
+class LanceDB(SourceStorage):
     """[LanceDB vector database](https://lancedb.com/)
 
     !!! info "Required packages"
@@ -19,7 +26,6 @@ class LanceDB(VectorDatabaseSourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            *super().requirements(),
             PackageRequirement("lancedb>=0.2"),
             PackageRequirement(
                 "pyarrow",
@@ -32,10 +38,22 @@ class LanceDB(VectorDatabaseSourceStorage):
         super().__init__()
 
         import lancedb
-        import pyarrow as pa
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
-        self._schema = pa.schema(
+
+    _VECTOR_COLUMN_NAME = "embedded_text"
+
+    def store(
+        self,
+        documents: list[Embedding],
+        *,
+        chat_id: uuid.UUID,
+    ) -> None:
+        import pyarrow as pa
+
+        embedding_dimensions = len(documents[0].values)
+
+        _schema = pa.schema(
             [
                 pa.field("id", pa.string()),
                 pa.field("document_id", pa.string()),
@@ -43,54 +61,36 @@ class LanceDB(VectorDatabaseSourceStorage):
                 pa.field("text", pa.string()),
                 pa.field(
                     self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._embedding_dimensions),
+                    pa.list_(pa.float32(), embedding_dimensions),
                 ),
                 pa.field("num_tokens", pa.int32()),
             ]
         )
 
-    _VECTOR_COLUMN_NAME = "embedded_text"
+        table = self._db.create_table(name=str(chat_id), schema=_schema)
 
-    def store(
-        self,
-        documents: list[Document],
-        *,
-        chat_id: uuid.UUID,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
-    ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
-
-        for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
-                table.add(
-                    [
-                        {
-                            "id": str(uuid.uuid4()),
-                            "document_id": str(document.id),
-                            "page_numbers": self._page_numbers_to_str(
-                                chunk.page_numbers
-                            ),
-                            "text": chunk.text,
-                            self._VECTOR_COLUMN_NAME: self._embedding_function(
-                                [chunk.text]
-                            )[0],
-                            "num_tokens": chunk.num_tokens,
-                        }
-                    ]
-                )
+        for embedding in documents:
+            table.add(
+                [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": str(embedding.chunk.document_id),
+                        "page_numbers": page_numbers_to_str(
+                            embedding.chunk.page_numbers
+                        ),
+                        "text": embedding.chunk.text,
+                        self._VECTOR_COLUMN_NAME: embedding.values,
+                        "num_tokens": embedding.chunk.num_tokens,
+                    }
+                ]
+            )
 
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
-        chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
         table = self._db.open_table(str(chat_id))
@@ -98,10 +98,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
         # retrieving to few sources and needed to query again.
-        limit = int(num_tokens * 2 / chunk_size)
+        limit = 100
         results = (
             table.search(
-                self._embedding_function([prompt])[0],
+                prompt,
                 vector_column_name=self._VECTOR_COLUMN_NAME,
             )
             .limit(limit)
@@ -109,7 +109,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         )
 
         document_map = {str(document.id): document for document in documents}
-        return self._take_sources_up_to_max_tokens(
+        return take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["id"],

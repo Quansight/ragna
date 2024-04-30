@@ -3,13 +3,17 @@ import uuid
 import ragna
 from ragna.core import (
     Document,
+    Embedding,
+    PackageRequirement,
+    Requirement,
     Source,
+    SourceStorage,
 )
 
-from ._vector_database import VectorDatabaseSourceStorage
+from ._utils import page_numbers_to_str, take_sources_up_to_max_tokens
 
 
-class Chroma(VectorDatabaseSourceStorage):
+class Chroma(SourceStorage):
     """[Chroma vector database](https://www.trychroma.com/)
 
     !!! info "Required packages"
@@ -17,12 +21,11 @@ class Chroma(VectorDatabaseSourceStorage):
         - `chromadb>=0.4.13`
     """
 
-    # Note that this class has no extra requirements, since the chromadb package is
-    # already required for the base class.
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("chromadb>=0.4.13")]
 
     def __init__(self) -> None:
-        super().__init__()
-
         import chromadb
 
         self._client = chromadb.Client(
@@ -35,71 +38,51 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        documents: list[Document],
+        documents: list[Embedding],
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._client.create_collection(
-            str(chat_id), embedding_function=self._embedding_function
-        )
+        collection = self._client.create_collection(str(chat_id))
 
         ids = []
         texts = []
         metadatas = []
-        for document in documents:
-            for chunk in self._chunk_pages(
-                document.extract_pages(),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            ):
-                ids.append(str(uuid.uuid4()))
-                texts.append(chunk.text)
-                metadatas.append(
-                    {
-                        "document_id": str(document.id),
-                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
-                        "num_tokens": chunk.num_tokens,
-                    }
-                )
+        embeddings = []
+        for embedding in documents:
+            ids.append(str(uuid.uuid4()))
+            texts.append(embedding.chunk.text)
+            metadatas.append(
+                {
+                    "document_id": str(embedding.chunk.document_id),
+                    "page_numbers": page_numbers_to_str(embedding.chunk.page_numbers),
+                    "num_tokens": embedding.chunk.num_tokens,
+                }
+            )
+            embeddings.append(embedding.values)
 
         collection.add(
             ids=ids,
             documents=texts,
+            embeddings=embeddings,  # type: ignore[arg-type]
             metadatas=metadatas,  # type: ignore[arg-type]
         )
 
     def retrieve(
         self,
         documents: list[Document],
-        prompt: str,
+        prompt: list[float],
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._client.get_collection(
-            str(chat_id), embedding_function=self._embedding_function
-        )
+        collection = self._client.get_collection(str(chat_id))
 
         result = collection.query(
-            query_texts=prompt,
-            n_results=min(
-                # We cannot retrieve source by a maximum number of tokens. Thus, we
-                # estimate how many sources we have to query. We overestimate by a
-                # factor of two to avoid retrieving to few sources and needed to query
-                # again.
-                # ---
-                # FIXME: querying only a low number of documents can lead to not finding
-                #  the most relevant one.
-                #  See https://github.com/chroma-core/chroma/issues/1205 for details.
-                #  Instead of just querying more documents here, we should use the
-                #  appropriate index parameters when creating the collection. However,
-                #  they are undocumented for now.
-                max(int(num_tokens * 2 / chunk_size), 100),
-                collection.count(),
-            ),
+            query_embeddings=prompt,
+            n_results=min(collection.count(), 100),
             include=["distances", "metadatas", "documents"],
         )
 
@@ -124,7 +107,7 @@ class Chroma(VectorDatabaseSourceStorage):
         #  Thus, we likely need to have a callable parameter for this class
 
         document_map = {str(document.id): document for document in documents}
-        return self._take_sources_up_to_max_tokens(
+        return take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["id"],

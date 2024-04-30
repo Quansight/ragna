@@ -4,12 +4,26 @@ import abc
 import enum
 import functools
 import inspect
-from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
+import warnings
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import (
+    AsyncIterable,
+    AsyncIterator,
+    Iterator,
+    Optional,
+    Type,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 import pydantic
 import pydantic.utils
 
-from ._document import Document
+from ._document import Chunk, Document
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -61,9 +75,11 @@ class Component(RequirementsMixin):
                 **{
                     (param := concrete_params[param_name]).name: (
                         param.annotation,
-                        param.default
-                        if param.default is not inspect.Parameter.empty
-                        else ...,
+                        (
+                            param.default
+                            if param.default is not inspect.Parameter.empty
+                            else ...
+                        ),
                     )
                     for param_name in extra_param_names
                 },
@@ -74,6 +90,17 @@ class Component(RequirementsMixin):
     @functools.cache
     def _protocol_model(cls) -> Type[pydantic.BaseModel]:
         return merge_models(cls.display_name(), *cls._protocol_models().values())
+
+
+@dataclass
+class Embedding:
+    values: list[float]
+    chunk: Chunk
+
+
+class EmbeddingModel(Component, ABC):
+    @abstractmethod
+    def embed_chunks(self, documents: list[Chunk]) -> list[Embedding]: ...
 
 
 class Source(pydantic.BaseModel):
@@ -98,6 +125,45 @@ class Source(pydantic.BaseModel):
 
 class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
+    __ragna_input_type__: Union[Type[Document], Type[Embedding]]
+
+    def __init_subclass__(cls) -> None:
+        if inspect.isabstract(cls):
+            return
+
+        valid_input_types = (Document, Embedding)
+
+        input_parameter_name = list(inspect.signature(cls.store).parameters.keys())[1]
+        input_parameter_annotation = get_type_hints(cls.store).get(input_parameter_name)
+
+        if input_parameter_annotation is None:
+            input_type = None
+        else:
+
+            def extract_input_type() -> (
+                Optional[Union[Type[Document], Type[Embedding]]]
+            ):
+                origin = get_origin(input_parameter_annotation)
+                if origin is None:
+                    return None
+
+                args = get_args(input_parameter_annotation)
+                if len(args) != 1:
+                    return None
+
+                input_type = args[0]
+                if not issubclass(input_type, valid_input_types):
+                    return None
+
+                return cast(Union[Type[Document], Type[Embedding]], input_type)
+
+            input_type = extract_input_type()
+
+        if input_type is None:
+            warnings.warn("ADDME")
+            input_type = Document
+
+        cls.__ragna_input_type__ = input_type
 
     @abc.abstractmethod
     def store(self, documents: list[Document]) -> None:

@@ -21,7 +21,17 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._components import Assistant, Component, Message, MessageRole, SourceStorage
+from ._compat import chunk_pages
+from ._components import (
+    Assistant,
+    Chunk,
+    Component,
+    Embedding,
+    EmbeddingModel,
+    Message,
+    MessageRole,
+    SourceStorage,
+)
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
@@ -80,6 +90,7 @@ class Rag(Generic[C]):
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]] = None,
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -96,6 +107,7 @@ class Rag(Generic[C]):
             documents=documents,
             source_storage=source_storage,
             assistant=assistant,
+            embedding_model=embedding_model,
             **params,
         )
 
@@ -106,6 +118,9 @@ class SpecialChatParams(pydantic.BaseModel):
     chat_name: str = pydantic.Field(
         default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
     )
+    # TODO: These are temporary and need to be moved into the chunking model
+    chunk_size: int = 500
+    chunk_overlap: int = 250
 
 
 class Chat:
@@ -148,11 +163,23 @@ class Chat:
         documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]],
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
+
+        if embedding_model is None and issubclass(
+            source_storage.__ragna_input_type__, Embedding
+        ):
+            raise RagnaException
+        elif embedding_model is not None:
+            embedding_model = cast(
+                EmbeddingModel, self._rag._load_component(embedding_model)
+            )
+        self.embedding_model = embedding_model
+
         self.source_storage = cast(
             SourceStorage, self._rag._load_component(source_storage)
         )
@@ -166,6 +193,16 @@ class Chat:
 
         self._prepared = False
         self._messages: list[Message] = []
+
+    def _embed_text(self, text: str) -> list[float]:
+        dummy_chunk = Chunk(
+            text=text, document_id=uuid.uuid4(), page_numbers=[], num_tokens=0
+        )
+        return (
+            cast(EmbeddingModel, self.embedding_model)
+            .embed_chunks([dummy_chunk])[0]
+            .values
+        )
 
     async def prepare(self) -> Message:
         """Prepare the chat.
@@ -188,7 +225,22 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        await self._run(self.source_storage.store, self.documents)
+        chunks = [
+            chunk
+            for document in self.documents
+            for chunk in chunk_pages(
+                document.extract_pages(),
+                document_id=document.id,
+                chunk_size=self.params["chunk_size"],
+                chunk_overlap=self.params["chunk_overlap"],
+            )
+        ]
+
+        input: Union[list[Document], list[Embedding]] = self.documents
+        if not issubclass(self.source_storage.__ragna_input_type__, Document):
+            input = cast(EmbeddingModel, self.embedding_model).embed_chunks(chunks)
+        await self._run(self.source_storage.store, input)
+
         self._prepared = True
 
         welcome = Message(
@@ -218,7 +270,10 @@ class Chat:
 
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        input: Union[str, list[float]] = prompt
+        if not issubclass(self.source_storage.__ragna_input_type__, Document):
+            input = self._embed_text(prompt)
+        sources = await self._run(self.source_storage.retrieve, self.documents, input)
 
         answer = Message(
             content=self._run_gen(self.assistant.answer, prompt, sources),

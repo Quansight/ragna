@@ -7,7 +7,7 @@ import tomlkit.items
 from packaging.requirements import Requirement
 
 import ragna
-from ragna.core import Assistant, SourceStorage
+from ragna.core import Assistant, EmbeddingModel, SourceStorage
 
 HERE = Path(__file__).parent
 PYPROJECT_TOML = HERE / ".." / "pyproject.toml"
@@ -47,6 +47,7 @@ def extract_builtin_document_handler_requirements():
 def extract_builtin_component_requirements():
     requirements = defaultdict(list)
     for module, cls in [
+        (ragna.embedding_models, EmbeddingModel),
         (ragna.source_storages, SourceStorage),
         (ragna.assistants, Assistant),
     ]:

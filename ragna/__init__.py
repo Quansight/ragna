@@ -12,7 +12,7 @@ from ._utils import local_root
 
 # isort: split
 
-from . import assistants, core, deploy, source_storages
+from . import assistants, core, deploy, embedding_models, source_storages
 from .core import Rag
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "assistants",
     "core",
     "deploy",
+    "embedding_models",
     "local_root",
     "source_storages",
 ]

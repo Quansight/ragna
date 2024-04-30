@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import dataclasses
 import io
 import os
 import secrets
@@ -22,6 +23,14 @@ class DocumentUploadParameters(BaseModel):
     method: str
     url: str
     data: dict
+
+
+@dataclasses.dataclass
+class Chunk:
+    text: str
+    page_numbers: Optional[list[int]]
+    document_id: uuid.UUID
+    num_tokens: int
 
 
 class Document(RequirementsMixin, abc.ABC):
