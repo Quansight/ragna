@@ -1,7 +1,14 @@
 import uuid
 
 import ragna
-from ragna.core import Document, Embedding, Source, SourceStorage
+from ragna.core import (
+    Document,
+    Embedding,
+    PackageRequirement,
+    Requirement,
+    Source,
+    SourceStorage,
+)
 
 from ._utils import page_numbers_to_str, take_sources_up_to_max_tokens
 
@@ -14,12 +21,11 @@ class Chroma(SourceStorage):
         - `chromadb>=0.4.13`
     """
 
-    # Note that this class has no extra requirements, since the chromadb package is
-    # already required for the base class.
+    @classmethod
+    def requirements(cls) -> list[Requirement]:
+        return [PackageRequirement("chromadb>=0.4.13")]
 
     def __init__(self) -> None:
-        super().__init__()
-
         import chromadb
 
         self._client = chromadb.Client(

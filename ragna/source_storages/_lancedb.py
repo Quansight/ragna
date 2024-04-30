@@ -26,7 +26,6 @@ class LanceDB(SourceStorage):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [
-            *super().requirements(),
             PackageRequirement("lancedb>=0.2"),
             PackageRequirement(
                 "pyarrow",
