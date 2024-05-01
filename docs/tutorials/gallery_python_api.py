@@ -9,23 +9,22 @@ This tutorial walks you through basic steps of using Ragnas Python API.
 """
 
 # %%
-# Before we start this tutorial, we import some helpers.
-from pathlib import Path
-import ragna._docs as ragna_docs
-
-# %%
 # ## Step 1: Select relevant documents
 #
 # Ragna uses the RAG technique to answer questions. The context in which the questions
 # will be answered comes from documents that you provide. For this tutorial, let's use a
 # sample document that includes some information about Ragna.
 
+from pathlib import Path
+
+import ragna._docs as ragna_docs
+
+print(ragna_docs.SAMPLE_CONTENT)
+
 document_path = Path.cwd() / "ragna.txt"
 
 with open(document_path, "w") as file:
     file.write(ragna_docs.SAMPLE_CONTENT)
-
-print(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # !!! tip

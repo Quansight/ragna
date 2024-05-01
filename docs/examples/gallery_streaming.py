@@ -6,11 +6,6 @@ is performed using the Python and REST API.
 """
 
 # %%
-# Before we start this example, we import some helpers.
-from pathlib import Path
-import ragna._docs as ragna_docs
-
-# %%
 # ## Setup streaming assistant
 #
 # To be able to stream a message from an assistant, it needs to support streaming. For
@@ -50,14 +45,18 @@ class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
 #
 # Let's create and prepare a chat using the assistant we have defined above.
 
+from pathlib import Path
+
+import ragna._docs as ragna_docs
+
 from ragna import Rag, source_storages
+
+print(ragna_docs.SAMPLE_CONTENT)
 
 document_path = Path.cwd() / "ragna.txt"
 
 with open(document_path, "w") as file:
     file.write(ragna_docs.SAMPLE_CONTENT)
-
-print(ragna_docs.SAMPLE_CONTENT)
 
 chat = Rag().chat(
     documents=[document_path],

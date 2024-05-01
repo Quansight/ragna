@@ -1,5 +1,6 @@
 ragna.toml
 ragna/_version.py
+docs/**/ragna.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -38,9 +39,6 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
-# Documentation Helper
-ragna.txt
 
 # Unit test / coverage reports
 htmlcov/
