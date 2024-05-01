@@ -9,16 +9,6 @@ This tutorial walks you through basic steps of using Ragnas REST API.
 """
 
 # %%
-# Before we start this tutorial, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
-import documentation_helpers
-
-# %%
 # ## Step 1: Start the REST API
 #
 # Ragnas REST API is normally started from a terminal with
@@ -43,11 +33,13 @@ import documentation_helpers
 #     be using for this tutorial is equivalent of picking the first option the wizard
 #     offers you, i.e. using only demo components.
 
+import ragna._docs as ragna_docs
+
 from ragna.deploy import Config
 
 config = Config()
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 _ = rest_api.start(config)
 
 # %%
@@ -98,12 +90,14 @@ print(json.dumps(response.json(), indent=2))
 # %%
 # For simplicity, let's use a demo document with some information about Ragna
 
-document_name = "ragna.txt"
+from pathlib import Path
 
-with open(documentation_helpers.assets / document_name, "rb") as file:
-    content = file.read()
+print(ragna_docs.SAMPLE_CONTENT)
 
-print(content.decode())
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # The upload process in Ragna consists of two parts:
@@ -116,7 +110,7 @@ print(content.decode())
 # 2. Perform the actual upload with the information from step 1.
 
 response = client.post(
-    "/document", json={"name": document_name}
+    "/document", json={"name": document_path.name}
 ).raise_for_status()
 document_upload = response.json()
 print(json.dumps(response.json(), indent=2))
@@ -138,7 +132,7 @@ client.request(
     parameters["method"],
     parameters["url"],
     data=parameters["data"],
-    files={"file": content},
+    files={"file": open(document_path, "rb")},
 ).raise_for_status()
 
 # %%
