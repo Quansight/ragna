@@ -99,16 +99,18 @@ class TutorialAssistant(Assistant):
 #
 # ### Python API
 #
-# We first import some helpers.
+# We first create a sample document.
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path.cwd().parent))
+import ragna._docs as ragna_docs
 
-import documentation_helpers
+print(ragna_docs.SAMPLE_CONTENT)
 
-document_path = documentation_helpers.assets / "ragna.txt"
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # Next, we create a new [ragna.core.Chat][] with our custom components.
@@ -184,7 +186,7 @@ config = Config(
     assistants=[TutorialAssistant],
 )
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 
 client, document = rest_api.start(config, authenticate=True, upload_document=True)
 
@@ -317,7 +319,7 @@ config = Config(
     assistants=[ElaborateTutorialAssistant],
 )
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 
 client, document = rest_api.start(config, authenticate=True, upload_document=True)
 

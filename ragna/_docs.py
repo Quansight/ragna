@@ -6,7 +6,7 @@ import sys
 import tempfile
 import textwrap
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, cast
 
 import httpx
 
@@ -152,15 +152,13 @@ class RestApi:
 
         client.headers["Authorization"] = f"Bearer {token}"
 
-    def _upload_document(self, client: httpx.Client) -> dict:
-        path = assets / "ragna.txt"
-        with open(path, "rb") as file:
-            content = file.read()
+    def _upload_document(self, client: httpx.Client) -> dict[str, Any]:
+        name, content = "ragna.txt", SAMPLE_CONTENT
 
-        response = client.post("/document", json={"name": path.name}).raise_for_status()
+        response = client.post("/document", json={"name": name}).raise_for_status()
         document_upload = response.json()
 
-        document = document_upload["document"]
+        document = cast(dict[str, Any], document_upload["document"])
 
         parameters = document_upload["parameters"]
         client.request(
