@@ -2,6 +2,7 @@ __all__ = [
     "Assistant",
     "Chat",
     "Chunk",
+    "ChunkingModel",
     "Component",
     "Document",
     "DocumentHandler",
@@ -52,6 +53,7 @@ from ._document import (
 from ._components import (
     Assistant,
     Component,
+    ChunkingModel,
     Embedding,
     EmbeddingModel,
     Message,

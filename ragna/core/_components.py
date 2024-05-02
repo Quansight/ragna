@@ -11,6 +11,7 @@ from typing import (
     AsyncIterable,
     AsyncIterator,
     Iterator,
+    Iterable,
     Optional,
     Type,
     Union,
@@ -23,8 +24,10 @@ from typing import (
 import pydantic
 import pydantic.utils
 
-from ._document import Chunk, Document
+from ._document import Chunk, Document, Page
 from ._utils import RequirementsMixin, merge_models
+
+from uuid import UUID
 
 
 class Component(RequirementsMixin):
@@ -90,6 +93,20 @@ class Component(RequirementsMixin):
     @functools.cache
     def _protocol_model(cls) -> Type[pydantic.BaseModel]:
         return merge_models(cls.display_name(), *cls._protocol_models().values())
+
+
+class ChunkingModel(Component, ABC):
+    def __init__(self):
+        import tiktoken
+        self.tokenizer = tiktoken.get_encoding("cl100k_base")
+
+    @abstractmethod
+    def chunk_documents(self, documents: list[Document]) -> list[Chunk]:
+        raise NotImplementedError
+
+    def generate_chunks_from_text(self, chunks: list[str], document_id: UUID) -> list[Chunk]:
+        return [Chunk(page_numbers=[1], text=chunks[i], document_id=document_id,
+                      num_tokens=len(self.tokenizer.encode(chunks[i]))) for i in range(len(chunks))]
 
 
 @dataclass
