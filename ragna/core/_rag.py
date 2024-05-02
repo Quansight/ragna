@@ -157,6 +157,8 @@ class Chat:
             [ragna.core.LocalDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
+        embedding_model: Embedding model to use.  Required for source storages that take embeddings
+        chunking_model: Chunking model to use.  Required for source storages that take embeddings or chunks
         **params: Additional parameters passed to the source storage and assistant.
     """
 
