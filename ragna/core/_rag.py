@@ -21,10 +21,10 @@ from typing import (
 import pydantic
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
-from ._compat import chunk_pages
 from ._components import (
     Assistant,
     Chunk,
+    ChunkingModel,
     Component,
     Embedding,
     EmbeddingModel,
@@ -91,6 +91,7 @@ class Rag(Generic[C]):
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]] = None,
+        chunking_model: Optional[Union[Type[ChunkingModel], ChunkingModel]] = None,
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -100,6 +101,8 @@ class Rag(Generic[C]):
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
+            embedding_model: Embedding model to use
+            chunking_model: Chunking model to use (Token Based, NLTK, Spacy)
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -108,6 +111,7 @@ class Rag(Generic[C]):
             source_storage=source_storage,
             assistant=assistant,
             embedding_model=embedding_model,
+            chunking_model=chunking_model,
             **params,
         )
 
@@ -153,6 +157,8 @@ class Chat:
             [ragna.core.LocalDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
+        embedding_model: Embedding model to use.  Required for source storages that take embeddings
+        chunking_model: Chunking model to use.  Required for source storages that take embeddings or chunks
         **params: Additional parameters passed to the source storage and assistant.
     """
 
@@ -164,21 +170,31 @@ class Chat:
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         embedding_model: Optional[Union[Type[EmbeddingModel], EmbeddingModel]],
+        chunking_model: Optional[Union[Type[ChunkingModel], ChunkingModel]],
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
 
-        if embedding_model is None and issubclass(
+        if (embedding_model is None or chunking_model is None) and issubclass(
             source_storage.__ragna_input_type__, Embedding
         ):
             raise RagnaException
-        elif embedding_model is not None:
-            embedding_model = cast(
-                EmbeddingModel, self._rag._load_component(embedding_model)
-            )
+        else:
+            if embedding_model is not None:
+                embedding_model = cast(
+                    EmbeddingModel, self._rag._load_component(embedding_model)
+                )
+
+            if chunking_model is not None:
+                chunking_model = cast(
+                    ChunkingModel, self._rag._load_component(chunking_model)
+                )
+
         self.embedding_model = embedding_model
+
+        self.chunking_model = chunking_model
 
         self.source_storage = cast(
             SourceStorage, self._rag._load_component(source_storage)
@@ -225,20 +241,14 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        chunks = [
-            chunk
-            for document in self.documents
-            for chunk in chunk_pages(
-                document.extract_pages(),
-                document_id=document.id,
-                chunk_size=self.params["chunk_size"],
-                chunk_overlap=self.params["chunk_overlap"],
-            )
-        ]
-
-        input: Union[list[Document], list[Embedding]] = self.documents
+        # I vaguely recall you mentioning 3 distinct cases, in which the source_storage may take any one of
+        # Document, Embedding or Chunk.  I have accounted for that here
+        input: Union[list[Document], list[Embedding], list[Chunk]] = self.documents
         if not issubclass(self.source_storage.__ragna_input_type__, Document):
-            input = cast(EmbeddingModel, self.embedding_model).embed_chunks(chunks)
+            input = cast(ChunkingModel, self.chunking_model).chunk_documents(input)
+            if not issubclass(self.source_storage.__ragna_input_type__, Chunk):
+                input = cast(EmbeddingModel, self.embedding_model).embed_chunks(input)
+
         await self._run(self.source_storage.store, input)
 
         self._prepared = True
@@ -271,7 +281,9 @@ class Chat:
         self._messages.append(Message(content=prompt, role=MessageRole.USER))
 
         input: Union[str, list[float]] = prompt
-        if not issubclass(self.source_storage.__ragna_input_type__, Document):
+        # Both Chunk and Document would take a string prompt as input
+        if (not issubclass(self.source_storage.__ragna_input_type__, Document)
+                and not issubclass(self.source_storage.__ragna_input_type__, Chunk)):
             input = self._embed_text(prompt)
         sources = await self._run(self.source_storage.retrieve, self.documents, input)
 
