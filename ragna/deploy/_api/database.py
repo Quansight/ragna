@@ -140,7 +140,7 @@ def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
     return [
         _orm_to_schema_chat(chat)
         for chat in session.execute(
-            select(orm.Chat)
+            select(orm.Chat)  # type: ignore[attr-defined]
             .options(
                 joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
                 joinedload(orm.Chat.documents),
