@@ -160,6 +160,33 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             )
             return schemas.DocumentUpload(parameters=parameters, document=document)
 
+    # TODO: Add UI support and documentation for this endpoint
+    @app.post("/documents")
+    async def create_documents_upload_info(
+        user: UserDependency,
+        names: Annotated[list[str], Body(..., embed=True)],
+    ) -> list[schemas.DocumentUpload]:
+        with get_session() as session:
+            document_metadata_collection = []
+            document_upload_collection = []
+            for name in names:
+                document = schemas.Document(name=name)
+                metadata, parameters = await config.document.get_upload_info(
+                    config=config, user=user, id=document.id, name=document.name
+                )
+                document_metadata_collection.append((document, metadata))
+                document_upload_collection.append(
+                    schemas.DocumentUpload(parameters=parameters, document=document)
+                )
+
+            database.add_documents(
+                session,
+                user=user,
+                document_metadata_collection=document_metadata_collection,
+            )
+            return document_upload_collection
+
+    # TODO: Add new endpoint for batch uploading documents
     @app.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
