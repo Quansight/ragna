@@ -72,29 +72,6 @@ class Document(Base):
     )
 
 
-source_message_association_table = Table(
-    "source_message_association_table",
-    Base.metadata,
-    Column("source_id", ForeignKey("sources.id"), primary_key=True),
-    Column("message_id", ForeignKey("messages.id"), primary_key=True),
-)
-
-
-class Message(Base):
-    __tablename__ = "messages"
-
-    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
-    chat_id = Column(ForeignKey("chats.id"))
-    content = Column(types.String)
-    role = Column(types.Enum(MessageRole))
-    sources = relationship(
-        "Source",
-        secondary=source_message_association_table,
-        back_populates="messages",
-    )
-    timestamp = Column(types.DateTime)
-
-
 class Chat(Base):
     __tablename__ = "chats"
 
@@ -110,9 +87,17 @@ class Chat(Base):
     assistant = Column(types.String)
     params = Column(Json)
     messages = relationship(
-        "Message", cascade="all, delete", order_by=[Message.timestamp, Message.role]
+        "Message", cascade="all, delete", order_by="Message.timestamp"
     )
     prepared = Column(types.Boolean)
+
+
+source_message_association_table = Table(
+    "source_message_association_table",
+    Base.metadata,
+    Column("source_id", ForeignKey("sources.id"), primary_key=True),
+    Column("message_id", ForeignKey("messages.id"), primary_key=True),
+)
 
 
 class Source(Base):
@@ -135,3 +120,18 @@ class Source(Base):
         secondary=source_message_association_table,
         back_populates="sources",
     )
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
+    chat_id = Column(ForeignKey("chats.id"))
+    content = Column(types.String)
+    role = Column(types.Enum(MessageRole))
+    sources = relationship(
+        "Source",
+        secondary=source_message_association_table,
+        back_populates="messages",
+    )
+    timestamp = Column(types.DateTime)
