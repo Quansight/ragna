@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm import sessionmaker as _sessionmaker
 
 from ragna.core import RagnaException
@@ -140,9 +140,15 @@ def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
     return [
         _orm_to_schema_chat(chat)
         for chat in session.execute(
-            select(orm.Chat).where(orm.Chat.user_id == _get_user_id(session, user))
+            select(orm.Chat)
+            .options(
+                joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+                joinedload(orm.Chat.documents),
+            )
+            .where(orm.Chat.user_id == _get_user_id(session, user))
         )
         .scalars()
+        .unique()
         .all()
     ]
 
