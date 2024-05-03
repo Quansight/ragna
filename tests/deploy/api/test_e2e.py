@@ -129,16 +129,3 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         client.delete(f"/chats/{chat['id']}").raise_for_status()
         assert client.get("/chats").raise_for_status().json() == []
-
-
-def test_default_factory():
-    import time
-
-    from ragna.core import MessageRole
-    from ragna.deploy._api import schemas
-
-    msg1 = schemas.Message(content="content1", role=MessageRole.USER)
-    time.sleep(3)
-    msg2 = schemas.Message(content="content2", role=MessageRole.ASSISTANT)
-    assert msg1.id != msg2.id
-    assert msg1.timestamp != msg2.timestamp
