@@ -9,26 +9,22 @@ This tutorial walks you through basic steps of using Ragnas Python API.
 """
 
 # %%
-# Before we start this tutorial, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
-import documentation_helpers
-
-# %%
 # ## Step 1: Select relevant documents
 #
 # Ragna uses the RAG technique to answer questions. The context in which the questions
 # will be answered comes from documents that you provide. For this tutorial, let's use a
 # sample document that includes some information about Ragna.
 
-document_path = documentation_helpers.assets / "ragna.txt"
+from pathlib import Path
 
-with open(document_path) as file:
-    print(file.read())
+import ragna._docs as ragna_docs
+
+print(ragna_docs.SAMPLE_CONTENT)
+
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # !!! tip
@@ -89,9 +85,6 @@ from ragna.assistants import RagnaDemoAssistant
 #       - [ragna.assistants.Gpt4][]
 #     - [AI21 Labs](https://www.ai21.com/)
 #       - [ragna.assistants.Jurassic2Ultra][]
-#     - [MosaicML](https://www.mosaicml.com/)
-#       - [ragna.assistants.Mpt7bInstruct][]
-#       - [ragna.assistants.Mpt30bInstruct][]
 #
 #     !!! note
 #
