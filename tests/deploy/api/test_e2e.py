@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -12,6 +13,7 @@ from .utils import authenticate
 
 class TestAssistant(RagnaDemoAssistant):
     def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
+        time.sleep(1e-3)
         content = next(super().answer(prompt, sources))
 
         if multiple_answer_chunks:
