@@ -1,3 +1,4 @@
+import datetime
 import json
 import time
 
@@ -134,16 +135,14 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         assert client.get("/chats").raise_for_status().json() == []
 
 
-def test_message_timestamp():
-    import itertools
-    import time
+@pytest.mark.parametrize("microseconds", range(0, 20))
+def test_message_timestamp(microseconds):
+    seconds = microseconds * 1e-6
 
-    from ragna.core import MessageRole
-    from ragna.deploy._api.schemas import Message
+    start = time.perf_counter_ns()
+    a = datetime.datetime.utcnow()
+    time.sleep(seconds)
+    b = datetime.datetime.utcnow()
+    stop = time.perf_counter_ns()
 
-    for _, role in itertools.product(range(3), MessageRole):
-        print(role)
-        Message(content="", role=role)
-        time.sleep(1e-3)
-
-    assert False
+    assert a != b, f"{(stop - start) * 1e-3:.1f}µs"
