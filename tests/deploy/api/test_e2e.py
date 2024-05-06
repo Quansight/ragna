@@ -112,6 +112,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
                 .raise_for_status()
                 .json()
             )
+        assert False
 
         assert message["role"] == "assistant"
         assert {source["document"]["name"] for source in message["sources"]} == {
