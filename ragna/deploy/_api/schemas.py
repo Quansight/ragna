@@ -51,14 +51,23 @@ class Source(BaseModel):
         )
 
 
+COUNT = 0
+
+
+def make_timestamp():
+    global COUNT
+    timestamp = datetime.datetime.utcnow()
+    print(f"{COUNT=}, {timestamp=}")
+    COUNT += 1
+    return timestamp
+
+
 class Message(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     content: str
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
-    timestamp: datetime.datetime = Field(
-        default_factory=lambda: datetime.datetime.utcnow()
-    )
+    timestamp: datetime.datetime = Field(default_factory=make_timestamp)
 
     @classmethod
     def from_core(cls, message: ragna.core.Message) -> Message:
