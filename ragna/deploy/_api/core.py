@@ -298,7 +298,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 with get_session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
-
                     database.update_chat(session, user=user, chat=chat)
 
             async def to_jsonl(models: AsyncIterator[Any]) -> AsyncIterator[str]:
