@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm import sessionmaker as _sessionmaker
 
 from ragna.core import RagnaException
@@ -136,30 +136,49 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
     )
 
 
+def _select_chat(*, eager: bool = False) -> Any:
+    selector = select(orm.Chat)
+    if eager:
+        selector = selector.options(  # type: ignore[attr-defined]
+            joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+            joinedload(orm.Chat.documents),
+        )
+    return selector
+
+
 def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
     return [
         _orm_to_schema_chat(chat)
         for chat in session.execute(
-            select(orm.Chat).where(orm.Chat.user_id == _get_user_id(session, user))
+            _select_chat(eager=True).where(
+                orm.Chat.user_id == _get_user_id(session, user)
+            )
         )
         .scalars()
+        .unique()
         .all()
     ]
 
 
-def _get_orm_chat(session: Session, *, user: str, id: uuid.UUID) -> orm.Chat:
-    chat: Optional[orm.Chat] = session.execute(
-        select(orm.Chat).where(
-            (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
+def _get_orm_chat(
+    session: Session, *, user: str, id: uuid.UUID, eager: bool = False
+) -> orm.Chat:
+    chat: Optional[orm.Chat] = (
+        session.execute(
+            _select_chat(eager=eager).where(
+                (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
+            )
         )
-    ).scalar_one_or_none()
+        .unique()
+        .scalar_one_or_none()
+    )
     if chat is None:
         raise RagnaException()
     return chat
 
 
 def get_chat(session: Session, *, user: str, id: uuid.UUID) -> schemas.Chat:
-    return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id))
+    return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id, eager=True))
 
 
 def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Source:
