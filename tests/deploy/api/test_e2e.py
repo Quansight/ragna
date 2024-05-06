@@ -121,14 +121,12 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         }
 
         chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
-        for message in chat["messages"]:
-            print(f"{message['role']=}, {message['timestamp']=}")
         assert len(chat["messages"]) == 3
         assert (
             chat["messages"][-2]["role"] == "user"
             and chat["messages"][-2]["sources"] == []
             and chat["messages"][-2]["content"] == prompt
-        ), [m["timestamp"] for m in chat["messages"]]
+        )
         assert chat["messages"][-1] == message
 
         client.delete(f"/chats/{chat['id']}").raise_for_status()
