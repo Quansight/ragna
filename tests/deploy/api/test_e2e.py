@@ -133,12 +133,14 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
 
 def test_message_timestamp():
+    import itertools
     import time
 
     from ragna.core import MessageRole
     from ragna.deploy._api.schemas import Message
 
-    for _, role in zip(range(3), MessageRole):
+    for _, role in itertools.product(range(3), MessageRole):
+        print(role)
         Message(content="", role=role)
         time.sleep(1e-3)
 
