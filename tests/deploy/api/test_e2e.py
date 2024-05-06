@@ -130,3 +130,16 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         client.delete(f"/chats/{chat['id']}").raise_for_status()
         assert client.get("/chats").raise_for_status().json() == []
+
+
+def test_message_timestamp():
+    import time
+
+    from ragna.core import MessageRole
+    from ragna.deploy._api.schemas import Message
+
+    for _, role in zip(range(3), MessageRole):
+        Message(content="", role=role)
+        time.sleep(1e-3)
+
+    assert False
