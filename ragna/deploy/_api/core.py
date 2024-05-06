@@ -267,7 +267,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             chat.messages.append(
                 schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
             )
-            print(f"answer() {chat.messages[-1].role=}, {chat.messages[-1].timestamp=}")
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         core_answer = await core_chat.answer(prompt, stream=stream)
@@ -299,9 +298,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 with get_session() as session:
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
-                    print(
-                        f"answer() / {stream=} {chat.messages[-1].role=}, {chat.messages[-1].timestamp=}"
-                    )
 
                     database.update_chat(session, user=user, chat=chat)
 
@@ -318,10 +314,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             with get_session() as session:
                 chat.messages.append(answer)
                 database.update_chat(session, user=user, chat=chat)
-
-            print(
-                f"answer() / {stream=} {chat.messages[-1].role=}, {chat.messages[-1].timestamp=}"
-            )
 
             return answer
 

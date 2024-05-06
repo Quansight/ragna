@@ -57,7 +57,8 @@ COUNT = 0
 def make_timestamp():
     global COUNT
     timestamp = datetime.datetime.utcnow()
-    print(f"{COUNT=}, {timestamp=}")
+    timestamp2 = datetime.datetime.now(tz=datetime.timezone.utc)
+    print(f"{COUNT=}, {timestamp=}, {timestamp2=}")
     COUNT += 1
     return timestamp
 
