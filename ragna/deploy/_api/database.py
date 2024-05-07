@@ -55,6 +55,32 @@ def add_document(
     session.commit()
 
 
+def add_documents(
+    session: Session,
+    *,
+    user: str,
+    document_metadata_collection: list[tuple[schemas.Document, dict[str, Any]]],
+) -> None:
+    """
+    Add multiple documents to the database.
+
+    This function allows adding multiple documents at once by calling `add_all`. This is
+    important when there is non-negligible latency attached to each database operation.
+    """
+    user_id = _get_user_id(session, user)
+    documents = [
+        orm.Document(
+            id=document.id,
+            user_id=user_id,
+            name=document.name,
+            metadata_=metadata,
+        )
+        for document, metadata in document_metadata_collection
+    ]
+    session.add_all(documents)
+    session.commit()
+
+
 def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
     return schemas.Document(id=document.id, name=document.name)
 
