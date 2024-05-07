@@ -160,7 +160,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             )
             return schemas.DocumentUpload(parameters=parameters, document=document)
 
-    # TODO: Add UI support and documentation for this endpoint
+    # TODO: Add UI support and documentation for this endpoint (#406)
     @app.post("/documents")
     async def create_documents_upload_info(
         user: UserDependency,
@@ -186,7 +186,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             )
             return document_upload_collection
 
-    # TODO: Add new endpoint for batch uploading documents
+    # TODO: Add new endpoint for batch uploading documents (#407)
     @app.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
