@@ -20,29 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 requires-python = ">=3.9"
-dependencies = [
-    "aiofiles",
-    "emoji",
-    "fastapi",
-    "httpx",
-    "importlib_metadata>=4.6; python_version<'3.10'",
-    "packaging",
-    "panel==1.3.8",
-    "pydantic>=2",
-    "pydantic-core",
-    "pydantic-settings>=2",
-    "PyJWT",
-    "python-multipart",
-    "redis",
-    "questionary",
-    "rich",
-    "sqlalchemy>=2",
-    "starlette",
-    "tomlkit",
-    "typer",
-    "uvicorn",
-]
-dynamic = ["version"]
+dynamic = ["dependencies", "optional-dependencies", "version"]
 
 [project.urls]
 Homepage = "https://ragna.chat"
@@ -50,19 +28,9 @@ Documentation = "https://ragna.chat"
 Changelog = "https://ragna.chat/en/stable/references/release-notes/"
 Repository = "https://github.com/Quansight/ragna"
 
-[project.optional-dependencies]
-# to update the array below, run scripts/update_optional_dependencies.py
-all = [
-    "chromadb>=0.4.13",
-    "httpx_sse",
-    "ijson",
-    "lancedb>=0.2",
-    "pyarrow",
-    "pymupdf>=1.23.6",
-    "python-docx",
-    "python-pptx",
-    "tiktoken",
-]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {base = { file = ["requirements-base.txt"] }}
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
