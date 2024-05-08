@@ -16,6 +16,8 @@ dependencies:
       - sqlalchemy-stubs
       - setuptools-scm
       - pip-tools
+      - pytest-playwright
+      - playwright
       # documentation
       - mkdocs
       - mkdocs-material
