@@ -86,7 +86,9 @@ class Chat(Base):
     source_storage = Column(types.String, nullable=False)
     assistant = Column(types.String, nullable=False)
     params = Column(Json, nullable=False)
-    messages = relationship("Message", cascade="all, delete")
+    messages = relationship(
+        "Message", cascade="all, delete", order_by="Message.timestamp"
+    )
     prepared = Column(types.Boolean, nullable=False)
 
 
