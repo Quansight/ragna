@@ -82,6 +82,10 @@ xfail_strict = true
 
 files = "ragna"
 
+plugins = [
+    "sqlmypy",
+]
+
 show_error_codes = true
 pretty = true
 

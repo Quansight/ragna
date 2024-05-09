@@ -6,7 +6,7 @@ from typing import Any, Callable, Optional, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm import sessionmaker as _sessionmaker
 
 from ragna.core import RagnaException
@@ -52,6 +52,32 @@ def add_document(
             metadata_=metadata,
         )
     )
+    session.commit()
+
+
+def add_documents(
+    session: Session,
+    *,
+    user: str,
+    document_metadata_collection: list[tuple[schemas.Document, dict[str, Any]]],
+) -> None:
+    """
+    Add multiple documents to the database.
+
+    This function allows adding multiple documents at once by calling `add_all`. This is
+    important when there is non-negligible latency attached to each database operation.
+    """
+    user_id = _get_user_id(session, user)
+    documents = [
+        orm.Document(
+            id=document.id,
+            user_id=user_id,
+            name=document.name,
+            metadata_=metadata,
+        )
+        for document, metadata in document_metadata_collection
+    ]
+    session.add_all(documents)
     session.commit()
 
 
@@ -136,30 +162,49 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
     )
 
 
+def _select_chat(*, eager: bool = False) -> Any:
+    selector = select(orm.Chat)
+    if eager:
+        selector = selector.options(  # type: ignore[attr-defined]
+            joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+            joinedload(orm.Chat.documents),
+        )
+    return selector
+
+
 def get_chats(session: Session, *, user: str) -> list[schemas.Chat]:
     return [
         _orm_to_schema_chat(chat)
         for chat in session.execute(
-            select(orm.Chat).where(orm.Chat.user_id == _get_user_id(session, user))
+            _select_chat(eager=True).where(
+                orm.Chat.user_id == _get_user_id(session, user)
+            )
         )
         .scalars()
+        .unique()
         .all()
     ]
 
 
-def _get_orm_chat(session: Session, *, user: str, id: uuid.UUID) -> orm.Chat:
-    chat: Optional[orm.Chat] = session.execute(
-        select(orm.Chat).where(
-            (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
+def _get_orm_chat(
+    session: Session, *, user: str, id: uuid.UUID, eager: bool = False
+) -> orm.Chat:
+    chat: Optional[orm.Chat] = (
+        session.execute(
+            _select_chat(eager=eager).where(
+                (orm.Chat.id == id) & (orm.Chat.user_id == _get_user_id(session, user))
+            )
         )
-    ).scalar_one_or_none()
+        .unique()
+        .scalar_one_or_none()
+    )
     if chat is None:
         raise RagnaException()
     return chat
 
 
 def get_chat(session: Session, *, user: str, id: uuid.UUID) -> schemas.Chat:
-    return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id))
+    return _orm_to_schema_chat(_get_orm_chat(session, user=user, id=id, eager=True))
 
 
 def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Source:
@@ -211,7 +256,7 @@ def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
     orm_chat = _get_orm_chat(session, user=user, id=chat.id)
 
     orm_chat.prepared = chat.prepared
-    orm_chat.messages = [
+    orm_chat.messages = [  # type: ignore[assignment]
         _schema_to_orm_message(session, chat_id=chat.id, message=message)
         for message in chat.messages
     ]
