@@ -211,7 +211,7 @@ def update_chat(session: Session, user: str, chat: schemas.Chat) -> None:
     orm_chat = _get_orm_chat(session, user=user, id=chat.id)
 
     orm_chat.prepared = chat.prepared
-    orm_chat.messages = [
+    orm_chat.messages = [  # type: ignore[assignment]
         _schema_to_orm_message(session, chat_id=chat.id, message=message)
         for message in chat.messages
     ]
