@@ -110,6 +110,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         on_click_source_info_callback: Optional[Callable] = None,
         timestamp=None,
         show_timestamp=True,
+        toolbar_visible=True,
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
@@ -123,12 +124,35 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ),
         )
 
+        self.clipboard_button = CopyToClipboardButton(
+            value=self.content_pane.object,
+            title="Copy",
+            stylesheets=[
+                ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+            ],
+        )
+
+        self.toolbar = pn.Row(
+            self.clipboard_button,
+            pn.widgets.Button(
+                name="Source Info",
+                icon="info-circle",
+                stylesheets=[
+                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
+                ],
+                on_click=lambda event: self.on_click_source_info_callback(
+                    event, self.sources
+                ),
+            ),
+            visible=toolbar_visible,
+        )
+
         if role == "assistant":
             assert sources is not None
             css_class = "message-content-assistant-with-buttons"
             object = pn.Column(
                 self.content_pane,
-                self._copy_and_source_view_buttons(),
+                self.toolbar,
                 css_classes=[css_class],
             )
         else:
@@ -138,15 +162,17 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ui.stylesheets(
                 (
                     f":host(.{css_class})",
-                    {"background-color": "rgb(243, 243, 243) !important"}
-                    if role == "user"
-                    else {
-                        "background-color": "none",
-                        "border": "rgb(234, 234, 234)",
-                        "border-style": "solid",
-                        "border-width": "1.2px",
-                        "border-radius": "5px",
-                    },
+                    (
+                        {"background-color": "rgb(243, 243, 243) !important"}
+                        if role == "user"
+                        else {
+                            "background-color": "none",
+                            "border": "rgb(234, 234, 234)",
+                            "border-style": "solid",
+                            "border-width": "1.2px",
+                            "border-radius": "5px",
+                        }
+                    ),
                 )
             ),
         )
@@ -164,27 +190,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
             avatar_lookup=functools.partial(self._ragna_avatar_lookup, role=role),
-        )
-
-    def _copy_and_source_view_buttons(self) -> pn.Row:
-        return pn.Row(
-            CopyToClipboardButton(
-                value=self.content_pane.object,
-                title="Copy",
-                stylesheets=[
-                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                ],
-            ),
-            pn.widgets.Button(
-                name="Source Info",
-                icon="info-circle",
-                stylesheets=[
-                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                ],
-                on_click=lambda event: self.on_click_source_info_callback(
-                    event, self.sources
-                ),
-            ),
         )
 
     # This cannot be a bound method, because it creates a reference cycle when trying
@@ -389,11 +394,16 @@ class CentralView(pn.viewable.Viewer):
                 user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
+                toolbar_visible=False,
             )
             yield message
 
+            content = answer["content"]
             async for chunk in answer_stream:
                 message.content_pane.object += chunk["content"]
+                content += chunk["content"]
+            message.clipboard_button.value = content
+            message.toolbar.visible = True
 
         except Exception:
             yield RagnaChatMessage(
