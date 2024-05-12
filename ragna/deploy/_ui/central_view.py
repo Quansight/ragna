@@ -110,7 +110,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         on_click_source_info_callback: Optional[Callable] = None,
         timestamp=None,
         show_timestamp=True,
-        toolbar_visible=True,
+        toolbar_visible=True,  # hide the toolbar during streaming
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
@@ -124,6 +124,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ),
         )
 
+        # we make this available on the instance so that we can update the value later
         self.clipboard_button = CopyToClipboardButton(
             value=self.content_pane.object,
             title="Copy",
@@ -132,6 +133,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             ],
         )
 
+        # we make this available on the instance so that we can toggle the visibility
         self.toolbar = pn.Row(
             self.clipboard_button,
             pn.widgets.Button(
