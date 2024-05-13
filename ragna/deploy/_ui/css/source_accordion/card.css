@@ -8,6 +8,8 @@
   margin-left: 0px;
   margin-top: 0px;
   outline: none;
+
+  box-shadow: none;
 }
 
 /* Styles the button itself */
@@ -20,7 +22,7 @@ button.accordion-header {
   margin-left: 15px;
   margin-right: 15px;
   width: calc(100% - 30px);
-  border-bottom: 2px solid #d9d9d9;
+  border-bottom: 1px solid #d9d9d9;
 }
 
 button.accordion-header div.card-button {

@@ -10,6 +10,7 @@
 
 :host(.chat-name-header) p {
   max-width: 50%;
+  min-width: 100px;
   height: 100%;
 
   text-overflow: ellipsis;
