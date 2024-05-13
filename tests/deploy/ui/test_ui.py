@@ -45,24 +45,13 @@ class TestAssistant(RagnaDemoAssistant):
 
 
 @pytest.fixture(scope="session")
-def headless_mode(pytestconfig):
+def headed_mode(pytestconfig):
     return pytestconfig.getoption("headed") or False
 
 
 @pytest.fixture(scope="function")
 def config(tmp_local_root):
     return Config(local_root=tmp_local_root, assistants=[TestAssistant])
-
-
-@pytest.fixture(scope="function")
-def api_client(config):
-    with TestClient(
-        api_app(config=config, ignore_unavailable_components=True),
-        base_url=config.api.url,
-    ) as client:
-        authenticate(client)
-
-        yield client
 
 
 TEST_UI_HOSTNAME = "http://localhost"
@@ -101,16 +90,16 @@ def api_server(config):
 
 
 @pytest.fixture(scope="function")
-def ui_server(config, api_server, open_browser=False):
-    server = ui_app(config=config, open_browser=open_browser)
+def ui_server(config, api_server):
+    server = ui_app(config=config, open_browser=False)
     return server
 
 
-def test_ui(config, ui_server, headless_mode) -> None:
+def test_ui(config, ui_server, headed_mode) -> None:
     with sync_playwright() as playwright:
         ui_server.serve()
 
-        browser = playwright.chromium.launch(headless=headless_mode)
+        browser = playwright.chromium.launch(headless=not headed_mode)
         context = browser.new_context()
         page = context.new_page()
 
