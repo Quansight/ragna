@@ -65,8 +65,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 
         # we make this available on the instance so that we can update the value later
         self.clipboard_button = CopyToClipboardButton(
-            value=self.content_pane.object,
-            title="Copy",
+            value=self.content_pane.object, title="Copy"
         )
 
         # we make this available on the instance so that we can toggle the visibility
