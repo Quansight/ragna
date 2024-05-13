@@ -1,0 +1,24 @@
+:host(.auth_error) {
+  width: 100%;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+:host(.auth_error) div.auth_error {
+  width: 100%;
+  color: red;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+:host(.auth_title) {
+  width: 100%;
+  margin-left: 0px;
+  margin-right: 0px;
+  text-align: center;
+}
+:host(.auth_title) h1 {
+  font-weight: 600;
+  font-size: 24px;
+}
