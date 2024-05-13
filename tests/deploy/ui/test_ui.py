@@ -80,7 +80,7 @@ def api_server(config):
     proc.start()
 
     timeout = 5
-    while timeout < 0 and not server_up():
+    while timeout > 0 and not server_up():
         print(f"Waiting for API server to come up on {config.api.url}")
         time.sleep(1)
         timeout -= 1
