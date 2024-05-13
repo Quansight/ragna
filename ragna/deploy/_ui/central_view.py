@@ -55,6 +55,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         on_click_source_info_callback: Optional[Callable] = None,
         timestamp=None,
         show_timestamp=True,
+        assistant_toolbar_visible=True,  # hide the toolbar during streaming
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
@@ -62,11 +63,30 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             css_classes=["message-content", css_class],
         )
 
+        # we make this available on the instance so that we can update the value later
+        self.clipboard_button = CopyToClipboardButton(
+            value=self.content_pane.object, title="Copy"
+        )
+
+        # we make this available on the instance so that we can toggle the visibility
+        self.assistant_toolbar = pn.Row(
+            self.clipboard_button,
+            pn.widgets.Button(
+                name="Source Info",
+                icon="info-circle",
+                css_classes=["source-info-button"],
+                on_click=lambda event: self.on_click_source_info_callback(
+                    event, self.sources
+                ),
+            ),
+            visible=assistant_toolbar_visible,
+        )
+
         if role == "assistant":
             assert sources is not None
             object = pn.Column(
                 self.content_pane,
-                self._copy_and_source_view_buttons(),
+                self.assistant_toolbar,
                 css_classes=["message-content-assistant-with-buttons"],
             )
         else:
@@ -91,22 +111,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             avatar_lookup=functools.partial(self._ragna_avatar_lookup, role=role),
         )
         self._stylesheets.append("css/chat_interface/chatmessage.css")
-
-    def _copy_and_source_view_buttons(self) -> pn.Row:
-        return pn.Row(
-            CopyToClipboardButton(
-                value=self.content_pane.object,
-                title="Copy",
-            ),
-            pn.widgets.Button(
-                name="Source Info",
-                icon="info-circle",
-                css_classes=["source-info-button"],
-                on_click=lambda event: self.on_click_source_info_callback(
-                    event, self.sources
-                ),
-            ),
-        )
 
     # This cannot be a bound method, because it creates a reference cycle when trying
     # to access the repr of the message. See
@@ -288,11 +292,14 @@ class CentralView(pn.viewable.Viewer):
                 user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
+                assistant_toolbar_visible=False,
             )
             yield message
 
             async for chunk in answer_stream:
                 message.content_pane.object += chunk["content"]
+            message.clipboard_button.value = message.content_pane.object
+            message.assistant_toolbar.visible = True
 
         except Exception:
             yield RagnaChatMessage(
