@@ -67,9 +67,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         self.clipboard_button = CopyToClipboardButton(
             value=self.content_pane.object,
             title="Copy",
-            stylesheets=[
-                ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-            ],
         )
 
         # we make this available on the instance so that we can toggle the visibility
@@ -78,9 +75,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             pn.widgets.Button(
                 name="Source Info",
                 icon="info-circle",
-                stylesheets=[
-                    ui.CHAT_INTERFACE_CUSTOM_BUTTON,
-                ],
+                css_classes=["source-info-button"],
                 on_click=lambda event: self.on_click_source_info_callback(
                     event, self.sources
                 ),
