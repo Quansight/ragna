@@ -26,7 +26,7 @@ bcrypt==4.1.2
     # via chromadb
 bleach==6.1.0
     # via panel
-bokeh==3.3.3
+bokeh==3.4.1
     # via panel
 build==1.0.3
     # via chromadb
@@ -213,7 +213,7 @@ pandas==2.1.4
     # via
     #   bokeh
     #   panel
-panel==1.3.8
+panel==1.4.2
     # via Ragna (pyproject.toml)
 param==2.0.1
     # via
