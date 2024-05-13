@@ -55,7 +55,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         on_click_source_info_callback: Optional[Callable] = None,
         timestamp=None,
         show_timestamp=True,
-        toolbar_visible=True,  # hide the toolbar during streaming
+        assistant_toolbar_visible=None,  # hide the toolbar during streaming
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
@@ -69,7 +69,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         )
 
         # we make this available on the instance so that we can toggle the visibility
-        self.toolbar = pn.Row(
+        self.assistant_toolbar = pn.Row(
             self.clipboard_button,
             pn.widgets.Button(
                 name="Source Info",
@@ -79,14 +79,14 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                     event, self.sources
                 ),
             ),
-            visible=toolbar_visible,
+            visible=assistant_toolbar_visible,
         )
 
         if role == "assistant":
             assert sources is not None
             object = pn.Column(
                 self.content_pane,
-                self.toolbar,
+                self.assistant_toolbar,
                 css_classes=["message-content-assistant-with-buttons"],
             )
         else:
@@ -292,16 +292,14 @@ class CentralView(pn.viewable.Viewer):
                 user=self.get_user_from_role("assistant"),
                 sources=answer["sources"],
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
-                toolbar_visible=False,
+                assistant_toolbar_visible=False,
             )
             yield message
 
-            content = answer["content"]
             async for chunk in answer_stream:
                 message.content_pane.object += chunk["content"]
-                content += chunk["content"]
-            message.clipboard_button.value = content
-            message.toolbar.visible = True
+            message.clipboard_button.value = message.content_pane.object
+            message.assistant_toolbar.visible = True
 
         except Exception:
             yield RagnaChatMessage(
