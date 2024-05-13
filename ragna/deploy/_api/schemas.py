@@ -56,9 +56,7 @@ class Message(BaseModel):
     content: str
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
-    timestamp: datetime.datetime = Field(
-        default_factory=lambda: datetime.datetime.utcnow()
-    )
+    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
 
     @classmethod
     def from_core(cls, message: ragna.core.Message) -> Message:
