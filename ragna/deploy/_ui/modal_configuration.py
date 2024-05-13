@@ -211,6 +211,11 @@ class ModalConfiguration(pn.viewable.Viewer):
             *(["disabled"] if disabled_source_storage else []),
         ]
 
+        assistant_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_assistant else []),
+        ]
+
         card = pn.Card(
             pn.Row(
                 pn.Column(
@@ -256,8 +261,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_new_tokens,
                         bar_color=ui.MAIN_COLOR,
-                        css_classes=["modal_configuration_int_slider"]
-                        + (["disabled"] if disabled_assistant else []),
+                        css_classes=assistant_css_classes,
                         width_policy="max",
                         disabled=disabled_assistant,
                     ),
