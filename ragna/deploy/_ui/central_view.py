@@ -55,7 +55,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         on_click_source_info_callback: Optional[Callable] = None,
         timestamp=None,
         show_timestamp=True,
-        assistant_toolbar_visible=None,  # hide the toolbar during streaming
+        assistant_toolbar_visible=True,  # hide the toolbar during streaming
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
