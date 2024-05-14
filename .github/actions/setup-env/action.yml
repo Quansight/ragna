@@ -59,7 +59,6 @@ runs:
       run: mamba install --yes --channel conda-forge redis-server
 
     - name: Install playwright
-      if: steps.cache.outputs.cache-hit != 'true'
       shell: bash -el {0}
       run: playwright install
 
