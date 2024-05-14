@@ -11,13 +11,22 @@ import httpx
 from ragna._utils import timeout_after
 from ragna.deploy import Config
 
-__all__ = ["assets", "RestApi"]
+__all__ = ["SAMPLE_CONTENT", "RestApi"]
 
-assets = Path(__file__).parent / "assets"
+SAMPLE_CONTENT = """\
+Ragna is an open source project built by Quansight. It is designed to allow
+organizations to explore the power of Retrieval-augmented generation (RAG) based
+AI tools. Ragna provides an intuitive API for quick experimentation and built-in
+tools for creating production-ready applications allowing you to quickly leverage
+Large Language Models (LLMs) for your work.
+
+The Ragna website is https://ragna.chat/. The source code is available at
+https://github.com/Quansight/ragna under the BSD 3-Clause license.
+"""
 
 
 class RestApi:
-    def __init__(self):
+    def __init__(self) -> None:
         self._process: Optional[subprocess.Popen] = None
 
     def start(self, config: Config, *, authenticate: bool = False) -> httpx.Client:
@@ -115,12 +124,14 @@ class RestApi:
         client.headers["Authorization"] = f"Bearer {token}"
 
     def stop(self, *, quiet: bool = False) -> None:
+        if self._process is None:
+            return
+
         self._process.kill()
         stdout, _ = self._process.communicate()
 
         if not quiet:
             print(stdout.decode())
 
-    def __del__(self):
-        if self._process is not None:
-            self.stop(quiet=True)
+    def __del__(self) -> None:
+        self.stop(quiet=True)

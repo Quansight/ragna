@@ -1,0 +1,6 @@
+:host(.modal_configuration_toggle_button) button.bk-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding-left: 0px;
+  color: var(--accent-color);
+}

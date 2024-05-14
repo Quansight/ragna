@@ -1,0 +1,86 @@
+:host(.right_sidebar_main_column) {
+  height: 100%;
+  min-width: unset;
+  width: 0px;
+  overflow: auto;
+
+  margin-left: min(15px, 2%);
+  border-left: 1px solid #eeeeee;
+}
+
+.bk-panel-models-layout-Column {
+  width: 100%;
+}
+
+:host(.right_sidebar_main_column) .close_button {
+  transform: translateX(20px);
+}
+
+/* CSS rules to animate and show the right sidebar */
+
+:host(.visible_sidebar) {
+  animation: 0.25s ease-in forwards show_right_sidebar;
+  background-color: white;
+}
+
+@keyframes show_right_sidebar {
+  from {
+    min-width: unset;
+    width: 0px;
+  }
+
+  to {
+    min-width: 200px;
+    width: 25%;
+  }
+}
+
+:host(.visible_sidebar) .close_button {
+  animation: 0.25s ease-in forwards show_close_button;
+}
+
+@keyframes show_close_button {
+  from {
+    transform: translateX(20px);
+  }
+  to {
+    transform: translateX(0px);
+  }
+}
+
+/* CSS rules to animate and hide the right sidebar */
+
+:host(.hidden_sidebar) {
+  animation: 0.33s ease-in forwards hide_right_sidebar;
+}
+
+@keyframes hide_right_sidebar {
+  from {
+    min-width: 200px;
+    width: 25%;
+  }
+
+  to {
+    min-width: unset;
+    width: 0px;
+  }
+}
+
+:host(.hidden_sidebar) .close_button {
+  animation: 0.33s ease-in forwards hide_close_button;
+}
+
+@keyframes hide_close_button {
+  from {
+    transform: translateX(0px);
+  }
+  to {
+    transform: translateX(20px);
+  }
+}
+
+/* CSS rules applied to the content of the sidebar */
+
+:host(.right_sidebar_content) {
+  width: 100%;
+}

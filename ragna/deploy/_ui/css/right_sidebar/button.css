@@ -1,0 +1,5 @@
+:host(.right_sidebar_close_button) {
+  position: absolute;
+  right: 10px;
+  z-index: 99;
+}

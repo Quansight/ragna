@@ -2,154 +2,101 @@
 UI Helpers
 """
 
-from typing import Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Union
 
 import panel as pn
 
+"""
+the structure of css_modifiers is as follows:
+{
+    "directory name under css/":[list of panel classes that will be modified],
+    ...
+}
 
-def divider():
-    return pn.layout.Divider(styles={"padding": "0em 1em"})
+Each CSS modifier file that needs to be loaded, is infered from the panel class name and the directory name.
+For example, with value :
+{ "foobar":[pn.widgets.TextInput] }
+the css file that will be loaded is css/foobar/textinput.css
+
+"""
+
+css_modifiers = {
+    "global": [
+        pn.widgets.TextInput,
+        pn.widgets.Select,
+        pn.widgets.Button,
+        pn.layout.Divider,
+    ],
+    "source_accordion": [
+        pn.layout.Accordion,
+        pn.layout.Card,
+        pn.pane.HTML,
+        pn.pane.Markdown,
+    ],
+    "chat_info": [pn.pane.Markdown, pn.widgets.Button],
+    "auth": [pn.widgets.TextInput, pn.pane.HTML, pn.widgets.Button, pn.Column],
+    "central_view": [pn.Column, pn.Row, pn.pane.HTML],
+    "chat_interface": [
+        pn.widgets.TextInput,
+        pn.layout.Card,
+        pn.pane.Markdown,
+        pn.widgets.button.Button,
+        pn.Column,
+    ],
+    "right_sidebar": [pn.widgets.Button, pn.Column, pn.pane.Markdown],
+    "left_sidebar": [pn.widgets.Button, pn.pane.HTML, pn.Column],
+    "main_page": [pn.Row],
+    "modal_welcome": [pn.widgets.Button],
+    "modal_configuration": [
+        pn.widgets.IntSlider,
+        pn.layout.Card,
+        pn.Row,
+        pn.widgets.Button,
+    ],
+}
 
 
 def apply_design_modifiers():
-    apply_design_modifiers_source_accordion()
-    # add here calls to other design modifiers,
-    #   group them per UI component
+    css_filepaths = []
+    for dir, classes in css_modifiers.items():
+        for cls in classes:
+            css_filepath = f"css/{dir}/{cls.__name__.lower()}.css"
+            add_modifier(cls, css_filepath)
+            css_filepaths.append(css_filepath)
+
+    return css_filepaths
 
 
-def apply_design_modifiers_source_accordion():
-    pn.theme.fast.Fast.modifiers[pn.layout.Accordion] = {
-        "stylesheets": [
-            """ :host { 
-                                    height: 100%
-                                    }
-                           """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.layout.Card] = {
-        "stylesheets": [
-            """ 
-
-                        /* Define some variables */
-                        :host {
-                            --ragna-accordion-header-height: 50px;
-                        } 
-
-                        /* Resets some existing styles */
-                        :host(.accordion) { 
-                            margin-left: 0px;
-                            margin-top: 0px;
-                            outline: none;
-                        }
-                        
-                        /* Styles the button itself */
-                        button.accordion-header { 
-                            background-color: white !important;
-                            height: var(--ragna-accordion-header-height);
-                            padding-top: 0px;
-                            padding-bottom: 0px;
-                            outline:0px;
-                            margin-left: 15px;
-                            margin-right: 15px;
-                            width: calc(100% - 30px);
-                            border-bottom: 2px solid #D9D9D9;
-                        
-                        }
-                        
-                        button.accordion-header div.card-button {
-                            font-size: 11px;
-                            padding-top: 5px;
-                            margin-left: 0px;
-                            margin-right: 10px;
-                        }
-                        
-                        div.card-header-row {
-                            height: var(--ragna-accordion-header-height);
-                            background-color: unset !important;
-                        }
-
-                        /* styles the content of the sources content (the expanding areas of the Accordion) */
-                        div.bk-panel-models-markup-HTML.markdown {
-                            margin-left: 15px;
-                            margin-right: 15px;
-                            margin-top:0px;
-                        }
-
-                    """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.pane.HTML] = {
-        "stylesheets": [
-            """ :host(.card-title) {
-                                height: var(--ragna-accordion-header-height);
-                                margin: 0px;
-                            }
-                        
-                            :host(.card-title) div {
-                                height: var(--ragna-accordion-header-height);
-                                
-                                display:flex;
-                                flex-direction:row;
-                                align-items:center;
-                            }
-                        
-
-                            :host(.card-title) h3 {
-                                font-weight: normal;
-                            }
-                        """
-        ]
-    }
-
-    pn.theme.fast.Fast.modifiers[pn.pane.Markdown] = {
-        "stylesheets": [
-            """  /* Styles the content of the sources content (the expanding areas of the Accordion).
-                            This fixes a small margin-top that is added by default and that leads to overflowing content 
-                            in some cases.
-                            */
-                            :host(.source-content) p:nth-of-type(1)  {
-                                margin-top: 0px;
-                            }
-                        """
-        ]
-    }
+def add_modifier(
+    modifier_class: pn.viewable.Viewable,
+    modifications: Dict[str, Any],
+    property: str = "stylesheets",
+):
+    properties = pn.theme.fast.Fast.modifiers.setdefault(modifier_class, {})
+    property_modifications = properties.setdefault(property, [])
+    property_modifications.append(modifications)
 
 
 """
-CSS constants
+CSS helpers, constants and UI Helpers
 """
 
 
-def stylesheets(
-    *class_selectors: tuple[Union[str, Iterable[str]], dict[str, str]],
-) -> Optional[list[str]]:
-    if not class_selectors:
-        return None
+def divider():
+    return pn.layout.Divider(css_classes=["default_divider"])
 
-    return [
-        "\n".join(
-            [
-                f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
-                *[
-                    f"    {property}: {value};"
-                    for property, value in declarations.items()
-                ],
-                "}",
-            ]
-        )
-        for selector, declarations in class_selectors
-    ]
+
+def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> str:
+    return "\n".join(
+        [
+            f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",
+            *[f"    {property}: {value};" for property, value in declarations.items()],
+            "}",
+        ]
+    )
 
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
-
-
-# MAIN_COLOR_LIGHT = "#10BBE580"
-# MAIN_COLOR_LIGHTER = "#E1E8E3"
-# TABS_SIDEBAR_BKGROUND_COLOR = "#EAEAEA"
-# TABS_SIDEBAR_WIDTH = "20em"
 
 # set modal height
 CONFIG_MODAL_MIN_HEIGHT = 610
@@ -160,133 +107,13 @@ WELCOME_MODAL_HEIGHT = 275
 WELCOME_MODAL_WIDTH = 530
 
 
-APP_RAW = """
-
-:root {
-    --body-font: 'Inter', sans-serif !important;
-    --accent-color: {{MAIN_COLOR}} !important;
-}
-
-* {
-    font-family: 'Inter', sans-serif;
-}
-
-.main {
-    padding: 0px !important;
-
-}
-
-.pn-wrapper {
-    padding: 0px;
-}
-
-div.card-margin {
-    margin: 0px !important;
-    height: 100% !important;
-}
-
-
-/* Hide the whole header */
-
-#header {
-    display: none;
-}
-
-
-div#content {
-    height: calc(100vh);
-}
-
-/* Fix the size of the modal */
-#pn-Modal {
-    --dialog-width: 800px !important;
-    --dialog-height:500px !important; 
-}
-
-/* Hide the default close button of the modal */
-.pn-modal-close {
-    display: none !important;
-}
-
-
-/* Hide the fullscreen button of the template */ 
-span.fullscreen-button {
-    display:none;
-}
-
-""".replace("{{MAIN_COLOR}}", MAIN_COLOR)
-
-
-CHAT_INTERFACE_CUSTOM_BUTTON = """
-:host(.solid) .bk-btn.bk-btn-default {
-    background-color: transparent;
-    color: gray;
-}
-
-
-.bk-btn {
-    border-radius: 0;
-    padding: 0;
-    font-size: 14px;
-}
-    """
-
-BK_INPUT_GRAY_BORDER = (
-    """ .bk-input {border-color: var(--neutral-color) !important;} """
+CSS_VARS = css(
+    ":root",
+    {
+        "--body-font": "'Inter', sans-serif !important",
+        "--accent-color": f"{MAIN_COLOR} !important",
+    },
 )
-
-
-SS_LABEL_STYLE = """
-:host {
-    margin-top:20px;
-}
-
-label, .bk-slider-title {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.bk-slider-value {
-    font-weight: normal;
-}
-
-.noUi-target {
-    border-color: var(--accent-fill-active);
-}
-
-.noUi-handle {
-    border-radius: 50%;
-}
-
-.noUi-handle, .noUi-connects {
-    background-color: var(--clear-button-active);
-}
-
-.noUi-target[disabled='true'] {
-    border-color: darkgray;
-}
-
-
-.noUi-target[disabled='true'] .noUi-connect {
-    background-color: darkgray !important;
-}
-
-
-:host(.disabled) div.bk-slider-title {
-    color: darkgray !important;
-}
-
-
-"""
-
-
-SS_ADVANCED_UI_CARD = """
-:host {
-    border : none !important;
-    outline: none !important;
-    background-color: unset !important;
-}
-"""
 
 
 message_loading_indicator = f""" 
