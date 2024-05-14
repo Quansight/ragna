@@ -6,7 +6,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Ragna"
+name = "ragna-base"
 description = "RAG orchestration framework"
 license = {file = "LICENSE"}
 authors = [
@@ -29,8 +29,7 @@ Changelog = "https://ragna.chat/en/stable/references/release-notes/"
 Repository = "https://github.com/Quansight/ragna"
 
 [tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
-optional-dependencies = {base = { file = ["requirements-base.txt"] }}
+dependencies = {file = ["requirements-base.txt"]}
 
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
