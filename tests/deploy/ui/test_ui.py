@@ -44,35 +44,48 @@ def config(tmp_local_root):
     )
 
 
-@pytest.fixture
-def api_server(config):
-    def start_server():
+class ApiServer:
+    def __init__(self, config):
+        self.config = config
+
+    def start_server(self):
         uvicorn.run(
             api_app(
-                config=config,
+                config=self.config,
                 ignore_unavailable_components=True,
             ),
-            host=config.api.hostname,
-            port=config.api.port,
+            host=self.config.api.hostname,
+            port=self.config.api.port,
         )
 
-    def server_up():
+    def server_up(self):
         try:
-            return httpx.get(config.api.url).is_success
+            return httpx.get(self.config.api.url).is_success
         except httpx.ConnectError:
             return False
 
-    proc = Process(target=start_server, args=(), daemon=True)
-    proc.start()
+    def start(self):
+        self.proc = Process(target=self.start_server, args=(), daemon=True)
+        self.proc.start()
 
-    timeout = 5
-    while timeout > 0 and not server_up():
-        print(f"Waiting for API server to come up on {config.api.url}")
-        time.sleep(1)
-        timeout -= 1
+        timeout = 5
+        while timeout > 0 and not self.server_up():
+            print(f"Waiting for API server to come up on {self.config.api.url}")
+            time.sleep(1)
+            timeout -= 1
 
-    yield proc
-    proc.kill()
+    def stop(self):
+        self.proc.kill()
+
+
+@pytest.fixture
+def api_server(config):
+    server = ApiServer(config)
+    try:
+        server.start()
+        yield server
+    finally:
+        server.stop()
 
 
 def auth_header(base_url):
