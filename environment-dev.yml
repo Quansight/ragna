@@ -10,7 +10,6 @@ dependencies:
       - pytest >=6
       - pytest-mock
       - pytest-asyncio
-      - pytest-httpx
       - pytest-playwright
       - playwright
       - mypy ==1.10.0
