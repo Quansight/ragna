@@ -5,7 +5,7 @@ __all__ = [
 ]
 
 from ._authentication import Authentication, RagnaDemoAuthentication
-from ._config import Config
+from ._config import ApiConfig, Config, UiConfig
 
 # isort: split
 
