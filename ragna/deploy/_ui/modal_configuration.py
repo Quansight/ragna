@@ -86,7 +86,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
-            stylesheets=[ui.BK_INPUT_GRAY_BORDER],
         )
         self.document_uploader = FileUploader(
             [],  # the allowed documents are set in the model_section function
@@ -111,7 +110,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.upload_row = pn.Row(
             self.document_uploader,
             sizing_mode="stretch_width",
-            stylesheets=[""" :host { margin-bottom: 20px; } """],
+            css_classes=["modal_configuration_upload_row"],
         )
 
         self.got_timezone = False
@@ -188,7 +187,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                 pn.widgets.Select.from_param(
                     self.config.param.assistant_name,
                     name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
             ),
             pn.Column(
@@ -196,7 +194,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                 pn.widgets.Select.from_param(
                     self.config.param.source_storage_name,
                     name="",
-                    stylesheets=[ui.BK_INPUT_GRAY_BORDER],
                 ),
             ),
         )
@@ -208,6 +205,16 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         disabled_assistant = self.config.is_assistant_disabled()
         disabled_source_storage = self.config.is_source_storage_disabled()
+
+        source_storage_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_source_storage else []),
+        ]
+
+        assistant_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_assistant else []),
+        ]
 
         card = pn.Card(
             pn.Row(
@@ -222,19 +229,17 @@ class ModalConfiguration(pn.viewable.Viewer):
                         self.config.param.chunk_size,
                         name="Chunk Size",
                         bar_color=ui.MAIN_COLOR,
-                        stylesheets=[ui.SS_LABEL_STYLE],
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
-                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.chunk_overlap,
                         name="Chunk Overlap",
                         bar_color=ui.MAIN_COLOR,
-                        stylesheets=[ui.SS_LABEL_STYLE],
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
-                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     margin=(0, 20, 0, 0),
                     width_policy="max",
@@ -249,18 +254,16 @@ class ModalConfiguration(pn.viewable.Viewer):
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_context_tokens,
                         bar_color=ui.MAIN_COLOR,
-                        stylesheets=[ui.SS_LABEL_STYLE],
+                        css_classes=source_storage_css_classes,
                         width_policy="max",
                         disabled=disabled_source_storage,
-                        css_classes=["disabled"] if disabled_source_storage else [],
                     ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_new_tokens,
                         bar_color=ui.MAIN_COLOR,
-                        stylesheets=[ui.SS_LABEL_STYLE],
+                        css_classes=assistant_css_classes,
                         width_policy="max",
                         disabled=disabled_assistant,
-                        css_classes=["disabled"] if disabled_assistant else [],
                     ),
                     width_policy="max",
                     height_policy="max",
@@ -274,7 +277,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             collapsed=self.advanced_config_collapsed,
             collapsible=True,
             hide_header=True,
-            stylesheets=[ui.SS_ADVANCED_UI_CARD],
+            css_classes=["modal_configuration_advanced_card"],
         )
 
         def toggle_card(event):
@@ -296,14 +299,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         toggle_button = pn.widgets.Button(
             name="Advanced Configurations   ▶",
             button_type="light",
-            stylesheets=[
-                """button.bk-btn { 
-                        font-size:13px; 
-                        font-weight:600; 
-                        padding-left: 0px;
-                        color: MAIN_COLOR; 
-                }""".replace("MAIN_COLOR", ui.MAIN_COLOR)
-            ],
+            css_classes=["modal_configuration_toggle_button"],
         )
 
         toggle_button.on_click(toggle_card)

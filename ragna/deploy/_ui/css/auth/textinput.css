@@ -1,0 +1,18 @@
+:host(.auth_login_input),
+:host(.auth_password_input) {
+  width: 100%;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
+:host(.auth_login_input) label,
+:host(.auth_password_input) label {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+:host(.auth_login_input) input,
+:host(.auth_password_input) input {
+  background-color: white !important;
+  height: 38px;
+}

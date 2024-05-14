@@ -38,10 +38,10 @@ class LeftSidebar(pn.viewable.Viewer):
         # update the UI, unselect all buttons ...
         for button in self.chat_buttons:
             if "selected" in button.css_classes:
-                button.css_classes = []
+                button.css_classes = ["chat_button"]
 
         # ... and select the one that was clicked
-        event.obj.css_classes = ["selected"]
+        event.obj.css_classes = ["chat_button", "selected"]
 
         # call the actual callback
         if self.on_click_chat is not None:
@@ -51,24 +51,7 @@ class LeftSidebar(pn.viewable.Viewer):
         return pn.pane.HTML(
             """<div class='user_block'> Username </div>
                             """,
-            styles={},
-            stylesheets=[
-                """ 
-                                            
-                                :host {
-                                        height: 64px;
-                                        width: 100%;
-                                        margin: 0;
-                                    
-                                }
-
-                                :host .user_block {
-                                            height:64px;
-                                            background-color: rgb(248, 248, 248);
-                                            border-top: solid 1px rgb(248, 248, 248);
-                                }
-                            """
-            ],
+            css_classes=["left_sidebar_footer"],
         )
 
     def refresh(self):
@@ -79,98 +62,29 @@ class LeftSidebar(pn.viewable.Viewer):
         self.chat_buttons = []
         for chat in self.chats:
             button = pn.widgets.Button(
-                name=chat["metadata"]["name"], button_style="outline"
+                name=chat["metadata"]["name"],
+                css_classes=["chat_button"],
             )
             button.on_click(lambda event, c=chat: self.on_click_chat_wrapper(event, c))
 
-            button.stylesheets.append(
-                """
-                                      :host {  
-                                                width:90%;
-                                                min-width: 200px;
-                                        }
-                                      
-                                      :host div button {
-                                        overflow: hidden;
-                                        text-overflow: ellipsis;
-                                        text-align:left;
-                                        border: 0px !important;
-                                      
-                                      }
-
-                                      :host div button:before {
-                                        content: url("imgs/chat_bubble.svg");
-                                        margin-right: 10px;
-                                        display: inline-block;
-                                      }
-
-                                      :host(.selected) div button, :host div button:hover {
-                                        background-color: #F3F3F3 !important;
-                                        border-radius: 0px 5px 5px 0px !important;
-                                        border-left: solid 4px var(--accent-color) !important;
-                                      }
-
-                                      
-                                      """
-            )
             self.chat_buttons.append(button)
 
             try:
                 if chat["id"] == self.current_chat_id:
-                    button.css_classes = ["selected"]
+                    button.css_classes.append("selected")
             except Exception:
                 pass
 
         header = pn.pane.HTML(
             """<img src="imgs/ragna_logo.svg" height="32px" /><span>Ragna</span>""",
-            stylesheets=[
-                """ 
-                                               :host { 
-                                                    background-color: #F9F9F9;
-                                                    border-bottom: 1px solid #EEEEEE;
-
-                                                    width: 100%;
-                                                    height: 54px;
-                                                    margin: 0;
-                                               }
-
-                                                :host div {
-                                                    display: flex;
-                                                    align-items: center;
-                                                    height: 100%;
-                                                }
-
-                                                :host img {
-                                                    margin: 5px;
-                                                    margin-left: 12px;
-                                                }
-
-                                               :host span { 
-                                                    margin-left: 20px;
-                                                    font-size: 24px;
-                                                    font-weight: 600;
-                                               }
-                                    """
-            ],
+            css_classes=["left_sidebar_header"],
         )
 
         new_chat_button = pn.widgets.Button(
             name="New Chat",
             button_type="primary",
             icon="plus",
-            stylesheets=[
-                """ 
-                        :host { 
-                            width: 90%;
-                            margin-left: 10px;
-                            margin-top: 10px;
-                        }
-                        :host div button { 
-                            background-color: var(--accent-color) !important;
-                            text-align: left;
-                        }
-                """
-            ],
+            css_classes=["new_chat_button"],
         )
 
         new_chat_button.on_click(self.trigger_on_click_new_chat)
@@ -187,16 +101,7 @@ class LeftSidebar(pn.viewable.Viewer):
 
         result = pn.Column(
             *objects,
-            stylesheets=[
-                """   
-                        :host { 
-                            overflow-x: hidden;
-                            height: 100%;
-                            width:100%;
-                            border-right: 1px solid #EEEEEE;
-                        }
-                """
-            ],
+            css_classes=["left_sidebar_main_column"],
         )
 
         return result
