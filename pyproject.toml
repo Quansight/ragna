@@ -1,0 +1,144 @@
+[build-system]
+requires = [
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Ragna"
+description = "RAG orchestration framework"
+license = {file = "LICENSE"}
+authors = [
+    { name = "Ragna Development Team", email = "connect@quansight.com" },
+]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+requires-python = ">=3.9"
+dynamic = ["dependencies", "optional-dependencies", "version"]
+
+[project.urls]
+Homepage = "https://ragna.chat"
+Documentation = "https://ragna.chat"
+Changelog = "https://ragna.chat/en/stable/references/release-notes/"
+Repository = "https://github.com/Quansight/ragna"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools_scm]
+write_to = "ragna/_version.py"
+version_scheme = "release-branch-semver"
+local_scheme = "node-and-timestamp"
+
+[project.scripts]
+ragna = "ragna.__main__:app"
+
+[tool.setuptools.packages.find]
+include = [
+    "ragna*",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    # import sorting
+    "I001"
+]
+# Ignore line too long, because due to black, the error can only occur for strings
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# ignore unused imports and imports not at the top of the file in __init__.py files
+"__init__.py" = ["F401", "E402"]
+# The examples often have imports below the top of the file to follow the narrative
+"docs/examples/**/*.py" = ["E402", "F704", "I001"]
+"docs/tutorials/**/*.py" = ["E402", "F704", "I001"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra --tb=short --asyncio-mode=auto"
+testpaths = [
+    "tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::ResourceWarning",
+    # httpx 0.27.0 deprecated some functionality that the test client of starlette /
+    # FastApi use. This should be resolved by the next release of these libraries.
+    # See https://github.com/encode/starlette/issues/2524
+    "ignore:The 'app' shortcut is now deprecated:DeprecationWarning",
+]
+xfail_strict = true
+
+[tool.mypy]
+
+files = "ragna"
+
+plugins = [
+    "sqlmypy",
+]
+
+show_error_codes = true
+pretty = true
+
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+allow_redefinition = true
+no_implicit_optional = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+warn_return_any = true
+warn_unused_configs = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ragna.deploy._ui.*",
+]
+disallow_untyped_calls = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[[tool.mypy.overrides]]
+module = [
+    "docx",
+    "fitz",
+    "ijson",
+    "lancedb",
+    "param",
+    "pptx",
+    "pyarrow",
+    "sentence_transformers",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "ragna.deploy._api.orm",
+]
+# Our ORM schema doesn't really work with mypy. There are some other ways to define it
+# to play ball. We should do that in the future.
+disable_error_code = [
+    "var-annotated",
+]
+
+[[tool.mypy.overrides]]
+# It is a fundamental feature of the components to request more parameters than the base
+# class. Thus, we just silence mypy here.
+module = [
+    "ragna.source_storages.*",
+    "ragna.assistants.*"
+]
+disable_error_code = [
+    "override",
+]
