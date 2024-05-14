@@ -14,8 +14,8 @@ from ragna.deploy import ApiConfig, Config, UiConfig
 from ragna.deploy._api import app as api_app
 from ragna.deploy._ui import app as ui_app
 
-TEST_API_PORT = "8769"
-TEST_UI_PORT = "8770"
+TEST_API_PORT = "38769"
+TEST_UI_PORT = "38770"
 
 
 class TestAssistant(RagnaDemoAssistant):
@@ -142,8 +142,29 @@ def test_index_with_auth_token(config, page) -> None:
     page.goto(index_url)
     expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
 
-    # page.locator("div").filter(
-    #     has_text=re.compile(r"^Source storageChromaLanceDBRagna/DemoSourceStorage$")
-    # ).get_by_role("combobox").select_option("LanceDB")
-    # page.get_by_role("button", name="Advanced Configurations ▶").click()
-    # page.locator("#fileUpload-p2365").click()
+
+@pytest.mark.skip(reason="TODO: figure out best locators")
+def test_new_chat(config, page) -> None:
+    index_url = config.ui.origins[0]
+    page.goto(index_url)
+    expect(page.get_by_role("button", name="Sign In")).to_be_visible()
+    page.get_by_role("button", name="Sign In").click()
+
+    expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
+    page.get_by_role("button", name=" New Chat").click()
+
+    expect(page.locator("#fileUpload-p4447")).to_be_visible()
+    page.locator("#fileUpload-p4447").click()
+
+    page.locator("#fileUpload-p4447").set_input_files()
+    page.get_by_role("button", name="Start Conversation").click()
+    page.get_by_text("How can I help you with the").click()
+    page.get_by_placeholder("Ask a question about the").click()
+    page.get_by_placeholder("Ask a question about the").fill(
+        "Tell me about the documents"
+    )
+    page.get_by_role("button", name="").click()
+    page.get_by_role("button", name=" Source Info").click()
+    page.locator("#main div").filter(has_text="Source Info ¶ This response").nth(
+        3
+    ).click()
