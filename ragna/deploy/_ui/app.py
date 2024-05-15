@@ -96,7 +96,10 @@ class App(param.Parameterized):
         from bokeh.application.handlers.function import FunctionHandler
         from bokeh_fastapi import BokehFastAPI
         from bokeh_fastapi.handler import WSHandler
+        from fastapi.responses import FileResponse
         from panel.io.document import extra_socket_handlers
+        from panel.io.resources import COMPONENT_PATH
+        from panel.io.server import ComponentResourceHandler
         from panel.io.state import set_curdoc
 
         def dispatch_fastapi(conn, events=None, msg=None):
@@ -117,6 +120,15 @@ class App(param.Parameterized):
         application = Application(handler)
 
         BokehFastAPI(application, server=server)
+
+        @server.get(f"/{COMPONENT_PATH.rstrip('/')}" + "/{path:path}")
+        def get_component_resource(path: str):
+            # ComponentResourceHandler.parse_url_path only ever accesses
+            # self._resource_attrs, which fortunately is a class attribute. Thus, we can
+            # get away with using the method without actually instantiating the class
+            self_ = ComponentResourceHandler
+            resolved_path = ComponentResourceHandler.parse_url_path(self_, path)
+            return FileResponse(resolved_path)
 
     def make_app(self):
         app = FastAPI()
