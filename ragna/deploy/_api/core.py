@@ -23,6 +23,7 @@ from ragna._compat import aiter, anext
 from ragna._utils import handle_localhost_origins
 from ragna.core import Assistant, Component, Rag, RagnaException, SourceStorage
 from ragna.core._rag import SpecialChatParams
+from ragna.core._utils import default_user
 from ragna.deploy import Config
 
 from . import database, schemas
@@ -98,13 +99,10 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     async def version() -> str:
         return ragna.__version__
 
-    authentication = config.authentication()
+    def get_user():
+        return default_user()
 
-    @app.post("/token")
-    async def create_token(request: Request) -> str:
-        return await authentication.create_token(request)
-
-    UserDependency = Annotated[str, Depends(authentication.get_user)]
+    UserDependency = Annotated[str, Depends(get_user)]
 
     def _get_component_json_schema(
         component: Type[Component],

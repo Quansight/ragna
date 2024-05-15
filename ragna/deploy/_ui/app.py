@@ -9,10 +9,7 @@ from ragna.deploy import Config
 
 from . import js
 from . import styles as ui
-from .api_wrapper import ApiWrapper, RagnaAuthTokenExpiredException
-from .auth_page import AuthPage
-from .js_utils import redirect_script
-from .logout_page import LogoutPage
+from .api_wrapper import ApiWrapper
 from .main_page import MainPage
 
 pn.extension(
@@ -79,42 +76,11 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        if "auth_token" not in pn.state.cookies:
-            return redirect_script(remove="", append="auth")
-
-        try:
-            api_wrapper = ApiWrapper(
-                api_url=self.api_url, auth_token=pn.state.cookies["auth_token"]
-            )
-        except RagnaAuthTokenExpiredException:
-            # If the token has expired / is invalid, we redirect to the logout page.
-            # The logout page will delete the cookie and redirect to the auth page.
-            return redirect_script(remove="", append="logout")
+        api_wrapper = ApiWrapper(api_url=self.api_url)
 
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
         template.main.append(main_page)
-        return template
-
-    def auth_page(self):
-        # If the user is already authenticated, we receive the auth token in the cookie.
-        # in that case, redirect to the index page.
-        if "auth_token" in pn.state.cookies:
-            # Usually, we do a redirect this way :
-            # >>> pn.state.location.param.update(reload=True, pathname="/")
-            # But it only works once the page is fully loaded.
-            # So we render a javascript redirect instead.
-            return redirect_script(remove="auth")
-
-        template = self.get_template()
-        auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(auth_page)
-        return template
-
-    def logout_page(self):
-        template = self.get_template()
-        logout_page = LogoutPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(logout_page)
         return template
 
     def health_page(self):
@@ -123,8 +89,6 @@ class App(param.Parameterized):
     def serve(self):
         all_pages = {
             "/": self.index_page,
-            "/auth": self.auth_page,
-            "/logout": self.logout_page,
             "/health": self.health_page,
         }
         titles = {"/": "Home"}
