@@ -1,8 +1,9 @@
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import panel as pn
 import param
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from ragna._utils import handle_localhost_origins
 from ragna.deploy import Config
@@ -86,31 +87,54 @@ class App(param.Parameterized):
     def health_page(self):
         return pn.pane.HTML("<h1>Ok</h1>")
 
-    def serve(self):
-        all_pages = {
-            "/": self.index_page,
-            "/health": self.health_page,
-        }
-        titles = {"/": "Home"}
+    def add_panel_app(self, server, panel_app_fn):
+        # FIXME: this code will ultimately be distributed as part of panel
+        from functools import partial
 
-        pn.serve(
-            all_pages,
-            titles=titles,
-            address=self.hostname,
-            port=self.port,
-            admin=True,
-            start=True,
-            location=True,
-            show=self.open_browser,
-            keep_alive=30 * 1000,  # 30s
-            autoreload=True,
-            profiler="pyinstrument",
-            allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
-            static_dirs={
-                dir: str(Path(__file__).parent / dir)
-                for dir in ["css", "imgs", "resources"]
-            },
-        )
+        import panel as pn
+        from bokeh.application import Application
+        from bokeh.application.handlers.function import FunctionHandler
+        from bokeh_fastapi import BokehFastAPI
+        from bokeh_fastapi.handler import WSHandler
+        from panel.io.document import extra_socket_handlers
+        from panel.io.state import set_curdoc
+
+        def dispatch_fastapi(conn, events=None, msg=None):
+            if msg is None:
+                msg = conn.protocol.create("PATCH-DOC", events)
+            return [conn._socket.send_message(msg)]
+
+        extra_socket_handlers[WSHandler] = dispatch_fastapi
+
+        def panel_app(doc):
+            doc.on_event("document_ready", partial(pn.state._schedule_on_load, doc))
+
+            with set_curdoc(doc):
+                panel_app = panel_app_fn()
+                panel_app.server_doc(doc)
+
+        handler = FunctionHandler(panel_app)
+        application = Application(handler)
+
+        BokehFastAPI(application, server=server)
+
+    def make_app(self):
+        app = FastAPI()
+        self.add_panel_app(app, self.index_page)
+
+        for dir in ["css", "imgs", "resources"]:
+            app.mount(
+                f"/{dir}",
+                StaticFiles(directory=str(Path(__file__).parent / dir)),
+                name=dir,
+            )
+
+        return app
+
+    def serve(self):
+        import uvicorn
+
+        uvicorn.run(self.make_app, factory=True, host=self.hostname, port=self.port)
 
 
 def app(*, config: Config, open_browser: bool) -> App:

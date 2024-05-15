@@ -153,7 +153,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             show_timestamp=False,
         )
 
-    def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
+    def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
         message = super()._build_message(*args, **kwargs)
         if message is None:
             return None

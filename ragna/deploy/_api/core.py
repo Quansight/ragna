@@ -99,7 +99,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     async def version() -> str:
         return ragna.__version__
 
-    def get_user():
+    def get_user() -> str:
         return default_user()
 
     UserDependency = Annotated[str, Depends(get_user)]

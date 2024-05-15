@@ -23,13 +23,15 @@ requires-python = ">=3.9"
 dependencies = [
     "aiofiles",
     "emoji",
+    "eval_type_backport; python_version<'3.10'",
     "fastapi",
     "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     # FIXME: pin them to released versions
-    # pip install git+https://github.com/bokeh/bokeh-fastapi.git@refactor git+https://github.com/holoviz/panel.git@main
+    # pip install git+https://github.com/bokeh/bokeh-fastapi.git@refactor
     "bokeh-fastapi",
+    # pip install git+https://github.com/holoviz/panel.git@main
     "panel",
     "pydantic>=2",
     "pydantic-core",
@@ -153,6 +155,7 @@ module = [
     "pptx",
     "pyarrow",
     "sentence_transformers",
+    "traitlets",
 ]
 ignore_missing_imports = true
 
