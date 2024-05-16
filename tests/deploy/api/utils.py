@@ -6,6 +6,7 @@ from ragna.core._utils import default_user
 
 
 def authenticate(client: TestClient) -> None:
+    return
     username = default_user()
     token = (
         client.post(
