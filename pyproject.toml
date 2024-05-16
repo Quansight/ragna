@@ -29,9 +29,7 @@ dependencies = [
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
     # FIXME: pin them to released versions
-    # pip install git+https://github.com/bokeh/bokeh-fastapi.git@refactor
     "bokeh-fastapi",
-    # pip install git+https://github.com/holoviz/panel.git@main
     "panel",
     "pydantic>=2",
     "pydantic-core",
