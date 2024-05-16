@@ -7,7 +7,7 @@ from ragna.core import RagnaException
 from ragna.deploy import Config
 from ragna.deploy._api import app
 
-from .utils import authenticate
+from ..utils import authenticate
 
 
 @pytest.mark.parametrize("ignore_unavailable_components", [True, False])

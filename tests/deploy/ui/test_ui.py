@@ -1,4 +1,3 @@
-import os
 import socket
 import time
 from multiprocessing import Process
@@ -10,22 +9,11 @@ import uvicorn
 from playwright.sync_api import expect, sync_playwright
 
 from ragna._utils import timeout_after
-from ragna.assistants import RagnaDemoAssistant
-from ragna.core._utils import default_user
 from ragna.deploy import Config
 from ragna.deploy._api import app as api_app
 from ragna.deploy._ui import app as ui_app
 
-
-class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
-        content = next(super().answer(prompt, sources))
-
-        if multiple_answer_chunks:
-            for chunk in content.split(" "):
-                yield f"{chunk} "
-        else:
-            yield content
+from ..utils import TestAssistant
 
 
 def get_available_port():
@@ -80,7 +68,7 @@ class ApiServer:
             time.sleep(1)
 
     def stop(self):
-        self.proc.kill()
+        self.proc.terminate()
 
 
 @pytest.fixture
@@ -96,31 +84,6 @@ def api_server(config):
 @pytest.fixture
 def base_ui_url(config):
     return f"http://{config.ui.hostname}:{config.ui.port}"
-
-
-@pytest.fixture
-def base_api_url(config):
-    return f"http://{config.api.hostname}:{config.api.port}"
-
-
-@pytest.fixture
-def auth_header(base_api_url):
-    username = default_user()
-    token = (
-        httpx.post(
-            base_api_url + "/token",
-            data={
-                "username": username,
-                "password": os.environ.get(
-                    "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-                ),
-            },
-        )
-        .raise_for_status()
-        .json()
-    )
-
-    return f"Bearer {token}"
 
 
 @pytest.fixture
@@ -155,20 +118,6 @@ def test_index_with_blank_credentials(base_ui_url, page) -> None:
     # Authorize with no credentials
     page.get_by_role("button", name="Sign In").click()
 
-    expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
-
-
-@pytest.mark.skip(reason="Need to figure out how to set the auth token")
-def test_index_with_auth_token(config, page) -> None:
-    auth = auth_header(config.api.url)
-    assert len(auth) > len("Bearer ")
-
-    page.set_extra_http_headers({"Authorization": auth})  # this doesn't work
-    pn.state.cookies["auth_token"] = ""  # or this
-    pn.state.headers["Authorization"] = auth  # or this
-
-    index_url = config.ui.origins[0]
-    page.goto(index_url)
     expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
 
 

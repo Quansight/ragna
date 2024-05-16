@@ -1,29 +1,12 @@
 import json
-import time
 
 import pytest
 from fastapi.testclient import TestClient
 
-from ragna.assistants import RagnaDemoAssistant
 from ragna.deploy import Config
 from ragna.deploy._api import app
 
-from .utils import authenticate
-
-
-class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
-        # Simulate a "real" assistant through a small delay. See
-        # https://github.com/Quansight/ragna/pull/401#issuecomment-2095851440
-        # for why this is needed.
-        time.sleep(1e-3)
-        content = next(super().answer(prompt, sources))
-
-        if multiple_answer_chunks:
-            for chunk in content.split(" "):
-                yield f"{chunk} "
-        else:
-            yield content
+from ..utils import TestAssistant, authenticate
 
 
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
