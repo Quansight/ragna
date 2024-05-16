@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import panel as pn
 import param
@@ -126,7 +127,7 @@ class App(param.Parameterized):
             # ComponentResourceHandler.parse_url_path only ever accesses
             # self._resource_attrs, which fortunately is a class attribute. Thus, we can
             # get away with using the method without actually instantiating the class
-            self_ = ComponentResourceHandler
+            self_ = cast(ComponentResourceHandler, ComponentResourceHandler)
             resolved_path = ComponentResourceHandler.parse_url_path(self_, path)
             return FileResponse(resolved_path)
 

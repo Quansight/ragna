@@ -147,6 +147,9 @@ disallow_incomplete_defs = false
 
 [[tool.mypy.overrides]]
 module = [
+    # FIXME: the package should be typed
+    "bokeh_fastapi",
+    "bokeh_fastapi.handler",
     "docx",
     "fitz",
     "ijson",
