@@ -16,10 +16,10 @@ to incorporate custom components. This tutorial covers how to do that.
 # given user prompt can be [ragna.core.SourceStorage.retrieve][]d in the form of
 # [ragna.core.Source][]s. Usually, source storages are vector databases.
 #
-# For this tutorial we are going to define a minimal `TutorialSourceStorage` that is
+# In this tutorial, we define a minimal `TutorialSourceStorage` that is
 # similar to [ragna.source_storages.RagnaDemoSourceStorage][]. In `.store()` we create
 # the `Source`s with the first 100 characters of each document and store them in memory
-# based on the unique `chat_id`. In `retrieve()` we just return all the stored sources
+# based on the unique `chat_id`. In `retrieve()` we return all the stored sources
 # for the chat and regardless of the user `prompt`.
 #
 # !!! note
@@ -62,10 +62,10 @@ class TutorialSourceStorage(SourceStorage):
 # ### Assistant
 #
 # [ragna.core.Assistant][]s are objects that take a user prompt and relevant
-# [ragna.core.Source][]s and generate a response form that. Usually, source storages are
+# [ragna.core.Source][]s and generate a response form that. Usually, assistants are
 # LLMs.
 #
-# For this tutorial we are going to define a minimal `TutorialAssistant` that is similar
+# In this tutorial, we define a minimal `TutorialAssistant` that is similar
 # to [ragna.assistants.RagnaDemoAssistant][]. In `.answer()` we mirror back the user
 # prompt and also the number of sources we were given.
 #
@@ -124,10 +124,9 @@ chat = Rag().chat(
 )
 
 # %%
-# And that's it. From here on you can use your custom components exactly like the
-# builtin ones. We are keeping it short here, but have a look at the
-# [Python API tutorial](../../generated/tutorials/gallery_python_api.md) for more
-# details.
+# From here on, you can use your custom components exactly like the
+# builtin ones. For more details, have a look at the
+# [Python API tutorial](../../generated/tutorials/gallery_python_api.md).
 
 _ = await chat.prepare()
 
@@ -146,7 +145,7 @@ for idx, source in enumerate(answer.sources, 1):
 # %%
 # ### REST API
 #
-# To be able to use custom components in Ragnas REST API or web UI, two things need to
+# To use custom components in Ragnas REST API or web UI, two things need to
 # happen:
 #
 # 1. We need move the code into a Python module or package, e.g. `tutorial.py` that is
@@ -175,9 +174,8 @@ for idx, source in enumerate(answer.sources, 1):
 #    See the [config reference](../../references/config.md#referencing-python-objects)
 #    for details.
 #
-# And that's it again. We are keeping it short here, but have a look at the
-# [REST API tutorial](../../generated/tutorials/gallery_rest_api.md) for more
-# details.
+# For more details, have a look at the
+# [REST API tutorial](../../generated/tutorials/gallery_rest_api.md).
 
 from ragna.deploy import Config
 
@@ -236,7 +234,7 @@ rest_api.stop()
 # for details.
 #
 #
-# ![Create-chat-modal of Ragnas web UI with the TutorialSourceStorage and TutorialAssistant as selected options](../../assets/images/ragna-tutorial-components.png)
+# ![Create-chat-modal of Ragna's web UI with the TutorialSourceStorage and TutorialAssistant as selected options](../../assets/images/ragna-tutorial-components.png)
 #
 # !!! warning
 #
@@ -247,10 +245,11 @@ rest_api.stop()
 # ## Custom parameters
 #
 # Ragna supports passing parameters to the components on a per-chat level. The extra
-# parameters are defined by simply adding them to the signature of the method. For
-# example, let's define a more elaborate assistant. The `my_required_parameter` has to
-# be passed and has to be an `int`, while the `my_optional_parameter` can be passed, but
-# still has to be a string.
+# parameters are defined by adding them to the signature of the method. For
+# example, let's define a more elaborate assistant that accepts the following arguments:
+#
+# * `my_required_parameter` must be passed and has to be an `int`
+# * `my_optional_parameter` may be passed and has to be a `str` if passed
 
 
 class ElaborateTutorialAssistant(Assistant):
@@ -271,7 +270,7 @@ class ElaborateTutorialAssistant(Assistant):
 # %%
 # ### Python API
 #
-# To pass custom parameters to the components, simply pass them as keyword arguments
+# To pass custom parameters to the components, pass them as keyword arguments
 # when creating a chat.
 
 chat = Rag().chat(
@@ -363,10 +362,10 @@ rest_api.stop()
 # ### Web UI
 #
 # !!! warning
-#     Unfortunately, Ragnas web UI currently does **not** support arbitrary custom
+#     Unfortunately, Ragna's web UI currently does **not** support arbitrary custom
 #     parameters. This is actively worked on and progress is tracked in
 #     [#217](https://github.com/Quansight/ragna/issues/217). Until this is resolved,
-#     the source storage and the assistant together need to take the following four
+#     the source storage and the assistant together take the following four
 #     parameters:
 #
 #     1. `chunk_size: int`
@@ -374,7 +373,7 @@ rest_api.stop()
 #     3. `num_tokens: int`
 #     4. `max_new_tokens: int`
 #
-#     When using Ragnas builtin components, all source storages cover parameters 1. to
+#     When using Ragna's builtin components, all source storages cover parameters 1. to
 #     3. and all assistant cover parameter 4.
 
 # %%
@@ -382,7 +381,7 @@ rest_api.stop()
 #
 # So far we have `def`ined all of the abstract methods of the components as regular,
 # i.e. synchronous methods. However, this is *not* a requirement. If you want to run
-# `async` code inside the methods, just define them with `async def` and Ragna will
+# `async` code inside the methods, define them with `async def` and Ragna will
 # handle the rest for you. Internally, Ragna runs synchronous methods on a thread to
 # avoid blocking the main thread. Asynchronous methods are scheduled on the main event
 # loop.
