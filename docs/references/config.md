@@ -33,16 +33,21 @@ There are two main ways to generate a configuration file:
 ## Referencing Python objects
 
 Some configuration options reference Python objects, e.g.
-`document = ragna.core.LocalDocument`. You can inject your own objects here and do not
-need to rely on the defaults by Ragna. To do so, make sure that the module the object is
-defined in is on the
-[`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH). The
-`document` configuration mentioned before internally is roughly treated as
+`document = ragna.core.LocalDocument`. Internally, this is roughly treated as
 `from ragna.core import LocalDocument`.
+
+You can inject your own objects here and do not need to rely on the defaults by Ragna.
+To do so, make sure that the module the object is defined in is on
+[Python's search path](https://docs.python.org/3/library/sys.html#sys.path). There are
+multiple ways to achieve this, e.g.:
+
+- Install your module as part of a package in your current environment.
+- Set the [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH)
+  environment variable to include the directory your module is located in.
 
 ## Environment variables
 
-All configuration options can be set or overritten by environment variables by using the
+All configuration options can be set or overridden by environment variables by using the
 `RAGNA_` prefix. For example, `document = ragna.core.LocalDocument` in the configuration
 file is equivalent to setting `RAGNA_DOCUMENT=ragna.core.LocalDocument`.
 

@@ -145,35 +145,35 @@ for idx, source in enumerate(answer.sources, 1):
 # %%
 # ### REST API
 #
-# To use custom components in Ragna's REST API or web UI, two things need to happen:
+# To use custom components in Ragna's REST API, we need to include the components in
+# the corresponding arrays in the configuration file. If you don't have a `ragna.toml`
+# configuration file yet, see the [config reference](../../references/config.md) on how
+# to create one.
 #
-# 1. We need move the code into a Python module or package, e.g. `tutorial.py` that is
-#    on the
-#    [`PYTHONPATH`](https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH),
-#    such that the classes can be imported.
-# 2. We need to include the components in the corresponding arrays in the configuration
-#    file. If you don't have a `ragna.toml` configuration file, see the
-#    [config reference](../../references/config.md) on how to create one.
+# For example, if we put the `TutorialSourceStorage` and `TutorialAssistant` classes in
+# a `tutorial.py` module, we can expand the `source_storages` and `assistants` arrays
+# like this
 #
-#    For example, if we put the `TutorialSourceStorage` and `TutorialAssistant`
-#    classes in a `tutorial.py` module, we can expand the `source_storages` and
-#    `assistants` arrays like this
+# ```toml
+# source_storages = [
+#     ...
+#     "tutorial.TutorialSourceStorage"
+# ]
+# assistants = [
+#     ...
+#     "tutorial.TutorialAssistant"
+# ]
+# ```
 #
-#    ```toml
-#    source_storages = [
-#        ...
-#        "tutorial.TutorialSourceStorage"
-#    ]
-#    assistants = [
-#        ...
-#        "tutorial.TutorialAssistant"
-#    ]
-#    ```
+# !!! note
 #
-#    See the [config reference](../../references/config.md#referencing-python-objects)
-#    for details.
+#     Make sure the `tutorial.py` module is on Python's search path. See the
+#     [config reference](../../references/config.md#referencing-python-objects) for
+#     details.
 #
-# For more details, have a look at the
+# With the configuration set up, we now start the REST API. For the purpose of this
+# tutorial we replicate the same programmatically. For general information on how to use
+# the REST API, have a look at the
 # [REST API tutorial](../../generated/tutorials/gallery_rest_api.md).
 
 from ragna.deploy import Config
