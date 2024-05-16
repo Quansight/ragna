@@ -289,7 +289,16 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             chat = database.get_chat(session, user=user, id=id)
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
-        core_answer = await core_chat.answer(prompt, stream=stream)
+        # smoke test to catch errors unrelated to streaming
+        # longer-term solution tracked by #409
+        try:
+            core_answer = await core_chat.answer(prompt, stream=stream)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=str(e),
+            ) from e
+
         sources = [schemas.Source.from_core(source) for source in core_answer.sources]
         chat.messages.append(
             schemas.Message(
@@ -298,16 +307,23 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         )
 
         if stream:
-
-            async def message_chunks() -> AsyncIterator[BaseModel]:
+            # smoke test to catch errors unrelated to streaming
+            # longer-term solution tracked by #409
+            try:
                 core_answer_stream = aiter(core_answer)
                 content_chunk = await anext(core_answer_stream)
-
                 answer = schemas.Message(
                     content=content_chunk,
                     role=core_answer.role,
                     sources=sources,
                 )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=str(e),
+                ) from e
+
+            async def message_chunks() -> AsyncIterator[BaseModel]:
                 yield answer
 
                 # Avoid sending the sources multiple times
