@@ -8,25 +8,14 @@ def main():
     client = httpx.Client(base_url="http://127.0.0.1:31476")
     client.get("/health").raise_for_status()
 
-    # ## authentication
-    #
-    # username = default_user()
-    # token = (
-    #     client.post(
-    #         "/token",
-    #         data={
-    #             "username": username,
-    #             "password": os.environ.get(
-    #                 "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-    #             ),
-    #         },
-    #     )
-    #     .raise_for_status()
-    #     .json()
-    # )
-    # client.headers["Authorization"] = f"Bearer {token}"
+    ## authentication
 
-    print()
+    # This only works if Ragna was deployed with ragna.core.NoAuth
+    # If that is not the case, login in whatever way is required, grab the API token and
+    # use the following instead
+    # client.headers["Authorization"] = f"Bearer {api_token}"
+
+    client.get("/login", follow_redirects=True).raise_for_status()
 
     ## documents
 

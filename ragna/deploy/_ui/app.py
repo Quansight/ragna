@@ -6,6 +6,7 @@ import param
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from ragna.deploy._auth import SessionMiddleware
 from ragna.deploy._engine import Engine
 
 from . import js
@@ -137,6 +138,8 @@ class App(param.Parameterized):
                 StaticFiles(directory=str(Path(__file__).parent / dir)),
                 name=dir,
             )
+
+        pn.config.cookie_secret = SessionMiddleware.PANEL_COOKIE_SECRET
 
 
 def app(engine: Engine) -> App:

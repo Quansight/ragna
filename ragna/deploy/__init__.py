@@ -1,11 +1,17 @@
 __all__ = [
-    "Authentication",
+    "Auth",
     "Config",
-    "RagnaDemoAuthentication",
+    "DummyBasicAuth",
+    "GithubOAuth",
+    "InMemoryKeyValueStore",
+    "KeyValueStore",
+    "NoAuth",
+    "RedisKeyValueStore",
 ]
 
-from ._authentication import Authentication, RagnaDemoAuthentication
+from ._auth import Auth, DummyBasicAuth, GithubOAuth, NoAuth
 from ._config import Config
+from ._key_value_store import InMemoryKeyValueStore, KeyValueStore, RedisKeyValueStore
 
 # isort: split
 

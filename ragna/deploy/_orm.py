@@ -41,7 +41,8 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
-    name = Column(types.String, nullable=False)
+    name = Column(types.String, nullable=False, unique=True)
+    api_key = Column(types.String, nullable=False, unique=True)
 
 
 document_chat_association_table = Table(

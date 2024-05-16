@@ -2,7 +2,16 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Callable,
+    Generic,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import tomlkit
 import tomlkit.container
@@ -18,7 +27,9 @@ import ragna
 from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
-from ._authentication import Authentication
+if TYPE_CHECKING:
+    from ._auth import Auth
+    from ._key_value_store import KeyValueStore
 
 T = TypeVar("T")
 
@@ -79,8 +90,9 @@ class Config(BaseSettings):
         default_factory=ragna.local_root
     )
 
-    authentication: ImportString[type[Authentication]] = (
-        "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
+    auth: ImportString[type[Auth]] = "ragna.deploy.NoAuth"  # type: ignore[assignment]
+    key_value_store: ImportString[type[KeyValueStore]] = (
+        "ragna.deploy.InMemoryKeyValueStore"  # type: ignore[assignment]
     )
 
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
