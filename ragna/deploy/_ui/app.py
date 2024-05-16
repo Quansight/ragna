@@ -6,7 +6,6 @@ import param
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from ragna._utils import handle_localhost_origins
 from ragna.deploy import Config
 
 from . import js
@@ -23,17 +22,13 @@ pn.config.browser_info = True
 
 
 class App(param.Parameterized):
-    def __init__(self, *, hostname, port, api_url, origins, open_browser):
+    def __init__(self, *, api_url):
         super().__init__()
 
         # Apply the design modifiers to the panel components
         # It returns all the CSS files of the modifiers
         self.css_filepaths = ui.apply_design_modifiers()
-        self.hostname = hostname
-        self.port = port
         self.api_url = api_url
-        self.origins = origins
-        self.open_browser = open_browser
 
     def get_template(self):
         # A bit hacky, but works.
@@ -88,7 +83,7 @@ class App(param.Parameterized):
     def health_page(self):
         return pn.pane.HTML("<h1>Ok</h1>")
 
-    def add_panel_app(self, server, panel_app_fn):
+    def add_panel_app(self, server, panel_app_fn, endpoint):
         # FIXME: this code will ultimately be distributed as part of panel
         from functools import partial
 
@@ -120,9 +115,11 @@ class App(param.Parameterized):
         handler = FunctionHandler(panel_app)
         application = Application(handler)
 
-        BokehFastAPI(application, server=server)
+        BokehFastAPI({endpoint: application}, server=server)
 
-        @server.get(f"/{COMPONENT_PATH.rstrip('/')}" + "/{path:path}")
+        @server.get(
+            f"/{COMPONENT_PATH.rstrip('/')}" + "/{path:path}", include_in_schema=False
+        )
         def get_component_resource(path: str):
             # ComponentResourceHandler.parse_url_path only ever accesses
             # self._resource_attrs, which fortunately is a class attribute. Thus, we can
@@ -131,9 +128,8 @@ class App(param.Parameterized):
             resolved_path = ComponentResourceHandler.parse_url_path(self_, path)
             return FileResponse(resolved_path)
 
-    def make_app(self):
-        app = FastAPI()
-        self.add_panel_app(app, self.index_page)
+    def serve_with_fastapi(self, app: FastAPI, endpoint: str):
+        self.add_panel_app(app, self.index_page, endpoint)
 
         for dir in ["css", "imgs", "resources"]:
             app.mount(
@@ -142,19 +138,6 @@ class App(param.Parameterized):
                 name=dir,
             )
 
-        return app
 
-    def serve(self):
-        import uvicorn
-
-        uvicorn.run(self.make_app, factory=True, host=self.hostname, port=self.port)
-
-
-def app(*, config: Config, open_browser: bool) -> App:
-    return App(
-        hostname=config.ui.hostname,
-        port=config.ui.port,
-        api_url=config.api.url,
-        origins=handle_localhost_origins(config.ui.origins),
-        open_browser=open_browser,
-    )
+def app(*, config: Config) -> App:
+    return App(api_url=f"{config._url}/api")

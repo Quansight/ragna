@@ -5,7 +5,6 @@ import sys
 import threading
 from pathlib import Path
 from typing import Any, Callable, Optional, Union
-from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 _LOCAL_ROOT = (
     Path(os.environ.get("RAGNA_LOCAL_ROOT", "~/.cache/ragna")).expanduser().resolve()
@@ -28,7 +27,7 @@ def local_root(path: Optional[Union[str, Path]] = None) -> Path:
         path: If passed, this is set as new local root directory.
 
     Returns:
-        Ragnas local root directory.
+        Ragna's local root directory.
     """
     global _LOCAL_ROOT
     if path is not None:
@@ -57,37 +56,6 @@ def fix_module(globals: dict[str, Any]) -> None:
             continue
 
         obj.__module__ = globals["__package__"]
-
-
-def _replace_hostname(split_result: SplitResult, hostname: str) -> SplitResult:
-    # This is a separate function, since hostname is not an element of the SplitResult
-    # namedtuple, but only a property. Thus, we need to replace the netloc item, from
-    # which the hostname is generated.
-    if split_result.port is None:
-        netloc = hostname
-    else:
-        netloc = f"{hostname}:{split_result.port}"
-    return split_result._replace(netloc=netloc)
-
-
-def handle_localhost_origins(origins: list[str]) -> list[str]:
-    # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
-    # don't need to worry about it.
-    localhost_origins = {
-        components.hostname: components
-        for url in origins
-        if (components := urlsplit(url)).hostname in {"127.0.0.1", "localhost"}
-    }
-    if "127.0.0.1" in localhost_origins:
-        origins.append(
-            urlunsplit(_replace_hostname(localhost_origins["127.0.0.1"], "localhost"))
-        )
-    elif "localhost" in localhost_origins:
-        origins.append(
-            urlunsplit(_replace_hostname(localhost_origins["localhost"], "127.0.0.1"))
-        )
-
-    return origins
 
 
 def timeout_after(

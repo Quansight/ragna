@@ -197,7 +197,7 @@ def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
         return
 
     rich.print(
-        "You have selected components, which have additional requirements that are"
+        "You have selected components, which have additional requirements that are "
         "currently not met."
     )
     unmet_requirements_by_type = _split_requirements(unmet_requirements)
@@ -251,50 +251,36 @@ def _wizard_common() -> Config:
         ).unsafe_ask()
     )
 
-    for sub_config, title in [(config.api, "REST API"), (config.ui, "web UI")]:
-        sub_config.hostname = questionary.text(  # type: ignore[attr-defined]
-            f"What hostname do you want to bind the the Ragna {title} to?",
-            default=sub_config.hostname,  # type: ignore[attr-defined]
+    config.hostname = questionary.text(
+        "What hostname do you want to bind the the Ragna server to?",
+        default=config.hostname,
+        qmark=QMARK,
+    ).unsafe_ask()
+
+    config.port = int(
+        questionary.text(
+            "What port do you want to bind the the Ragna server to?",
+            default=str(config.port),
             qmark=QMARK,
         ).unsafe_ask()
+    )
 
-        sub_config.port = int(  # type: ignore[attr-defined]
-            questionary.text(
-                f"What port do you want to bind the the Ragna {title} to?",
-                default=str(sub_config.port),  # type: ignore[attr-defined]
-                qmark=QMARK,
-            ).unsafe_ask()
-        )
-
-    config.api.database_url = questionary.text(
-        "What is the URL of the SQL database?",
-        default=Config(local_root=config.local_root).api.database_url,
-        qmark=QMARK,
-    ).unsafe_ask()
-
-    config.api.url = questionary.text(
-        "At which URL will the Ragna REST API be served?",
-        default=Config(
-            api=dict(  # type: ignore[arg-type]
-                hostname=config.api.hostname,
-                port=config.api.port,
-            )
-        ).api.url,
-        qmark=QMARK,
-    ).unsafe_ask()
-
-    config.api.origins = config.ui.origins = [
+    config.origins = [
         questionary.text(
-            "At which URL will the Ragna web UI be served?",
+            "At which URL will Ragna be served?",
             default=Config(
-                ui=dict(  # type: ignore[arg-type]
-                    hostname=config.ui.hostname,
-                    port=config.ui.port,
-                )
-            ).api.origins[0],
+                hostname=config.hostname,
+                port=config.port,
+            ).origins[0],
             qmark=QMARK,
         ).unsafe_ask()
     ]
+
+    config.database_url = questionary.text(
+        "What is the URL of the SQL database?",
+        default=Config(local_root=config.local_root).database_url,
+        qmark=QMARK,
+    ).unsafe_ask()
 
     return config
 
