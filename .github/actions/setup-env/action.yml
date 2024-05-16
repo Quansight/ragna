@@ -67,7 +67,7 @@ runs:
         else
           PROJECT_PATH='.'
         fi
-        pip install --editable "${PROJECT_PATH}"
+        pip install --verbose --editable "${PROJECT_PATH}"
 
     - name: Display development environment
       shell: bash -el {0}
