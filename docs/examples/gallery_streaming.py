@@ -98,26 +98,7 @@ config = Config(assistants=[DemoStreamingAssistant])
 
 rest_api = ragna_docs.RestApi()
 
-client = rest_api.start(config, authenticate=True)
-
-# %%
-# Upload the document.
-
-document_upload = (
-    client.post("/document", json={"name": document_path.name})
-    .raise_for_status()
-    .json()
-)
-
-document = document_upload["document"]
-
-parameters = document_upload["parameters"]
-client.request(
-    parameters["method"],
-    parameters["url"],
-    data=parameters["data"],
-    files={"file": open(document_path, "rb")},
-).raise_for_status()
+client, document = rest_api.start(config, authenticate=True, upload_document=True)
 
 # %%
 # Start and prepare the chat
@@ -172,6 +153,6 @@ print("".join(chunk["content"] for chunk in chunks))
 
 # %%
 # Before we close the example, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it the regular way.
+# have printed in the terminal if we had started it with the `ragna api` command.
 
 rest_api.stop()
