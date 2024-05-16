@@ -154,6 +154,6 @@ print("".join(chunk["content"] for chunk in chunks))
 
 # %%
 # Before we close the example, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it the regular way.
+# have printed in the terminal if we had started it with the `ragna api` command.
 
 rest_api.stop()
