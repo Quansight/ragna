@@ -1,0 +1,15 @@
+:host(.chat-interface) {
+  border: none !important;
+}
+
+:host(.chat-interface) .chat-feed-log {
+  padding-right: 18%;
+  margin-left: 18%;
+  padding-top: 25px !important;
+}
+
+:host(.chat-interface) .chat-interface-input-container {
+  margin-left: 19%;
+  margin-right: 20%;
+  margin-bottom: 20px;
+}
