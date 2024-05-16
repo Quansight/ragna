@@ -1,4 +1,4 @@
-name: ragna-dev
+name: ragna-deploy-dev
 channels:
   - conda-forge
 dependencies:

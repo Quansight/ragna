@@ -18,7 +18,7 @@ runs:
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
-        activate-environment: ragna-dev
+        activate-environment: ragna-deploy-dev
 
     - name: Display conda info
       shell: bash -el {0}
@@ -58,6 +58,13 @@ runs:
       shell: bash -el {0}
       run: mamba install --yes --channel conda-forge redis-server
 
+    - name: Install dev dependencies
+      shell: bash -el {0}
+      run: |
+        pip install \
+          git+https://github.com/bokeh/bokeh-fastapi.git@main \
+          git+https://github.com/holoviz/panel.git@main
+
     - name: Install ragna
       shell: bash -el {0}
       run: |
@@ -67,7 +74,7 @@ runs:
         else
           PROJECT_PATH='.'
         fi
-        pip install --editable "${PROJECT_PATH}"
+        pip install --verbose --editable "${PROJECT_PATH}"
 
     - name: Display development environment
       shell: bash -el {0}

@@ -34,7 +34,6 @@ css_modifiers = {
         pn.pane.Markdown,
     ],
     "chat_info": [pn.pane.Markdown, pn.widgets.Button],
-    "auth": [pn.widgets.TextInput, pn.pane.HTML, pn.widgets.Button, pn.Column],
     "central_view": [pn.Column, pn.Row, pn.pane.HTML],
     "chat_interface": [
         pn.widgets.TextInput,

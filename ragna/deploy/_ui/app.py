@@ -1,18 +1,17 @@
 from pathlib import Path
-from urllib.parse import urlsplit
+from typing import cast
 
 import panel as pn
 import param
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from ragna._utils import handle_localhost_origins
 from ragna.deploy import Config
 
 from . import js
 from . import styles as ui
-from .api_wrapper import ApiWrapper, RagnaAuthTokenExpiredException
-from .auth_page import AuthPage
-from .js_utils import redirect_script
-from .logout_page import LogoutPage
+from .api_wrapper import ApiWrapper
 from .main_page import MainPage
 
 pn.extension(
@@ -79,74 +78,76 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        if "auth_token" not in pn.state.cookies:
-            return redirect_script(remove="", append="auth")
-
-        try:
-            api_wrapper = ApiWrapper(
-                api_url=self.api_url, auth_token=pn.state.cookies["auth_token"]
-            )
-        except RagnaAuthTokenExpiredException:
-            # If the token has expired / is invalid, we redirect to the logout page.
-            # The logout page will delete the cookie and redirect to the auth page.
-            return redirect_script(remove="", append="logout")
+        api_wrapper = ApiWrapper(api_url=self.api_url)
 
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
         template.main.append(main_page)
         return template
 
-    def auth_page(self):
-        # If the user is already authenticated, we receive the auth token in the cookie.
-        # in that case, redirect to the index page.
-        if "auth_token" in pn.state.cookies:
-            # Usually, we do a redirect this way :
-            # >>> pn.state.location.param.update(reload=True, pathname="/")
-            # But it only works once the page is fully loaded.
-            # So we render a javascript redirect instead.
-            return redirect_script(remove="auth")
-
-        template = self.get_template()
-        auth_page = AuthPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(auth_page)
-        return template
-
-    def logout_page(self):
-        template = self.get_template()
-        logout_page = LogoutPage(api_wrapper=ApiWrapper(api_url=self.api_url))
-        template.main.append(logout_page)
-        return template
-
     def health_page(self):
         return pn.pane.HTML("<h1>Ok</h1>")
 
-    def serve(self):
-        all_pages = {
-            "/": self.index_page,
-            "/auth": self.auth_page,
-            "/logout": self.logout_page,
-            "/health": self.health_page,
-        }
-        titles = {"/": "Home"}
+    def add_panel_app(self, server, panel_app_fn):
+        # FIXME: this code will ultimately be distributed as part of panel
+        from functools import partial
 
-        pn.serve(
-            all_pages,
-            titles=titles,
-            address=self.hostname,
-            port=self.port,
-            admin=True,
-            start=True,
-            location=True,
-            show=self.open_browser,
-            keep_alive=30 * 1000,  # 30s
-            autoreload=True,
-            profiler="pyinstrument",
-            allow_websocket_origin=[urlsplit(origin).netloc for origin in self.origins],
-            static_dirs={
-                dir: str(Path(__file__).parent / dir)
-                for dir in ["css", "imgs", "resources"]
-            },
-        )
+        import panel as pn
+        from bokeh.application import Application
+        from bokeh.application.handlers.function import FunctionHandler
+        from bokeh_fastapi import BokehFastAPI
+        from bokeh_fastapi.handler import WSHandler
+        from fastapi.responses import FileResponse
+        from panel.io.document import extra_socket_handlers
+        from panel.io.resources import COMPONENT_PATH
+        from panel.io.server import ComponentResourceHandler
+        from panel.io.state import set_curdoc
+
+        def dispatch_fastapi(conn, events=None, msg=None):
+            if msg is None:
+                msg = conn.protocol.create("PATCH-DOC", events)
+            return [conn._socket.send_message(msg)]
+
+        extra_socket_handlers[WSHandler] = dispatch_fastapi
+
+        def panel_app(doc):
+            doc.on_event("document_ready", partial(pn.state._schedule_on_load, doc))
+
+            with set_curdoc(doc):
+                panel_app = panel_app_fn()
+                panel_app.server_doc(doc)
+
+        handler = FunctionHandler(panel_app)
+        application = Application(handler)
+
+        BokehFastAPI(application, server=server)
+
+        @server.get(f"/{COMPONENT_PATH.rstrip('/')}" + "/{path:path}")
+        def get_component_resource(path: str):
+            # ComponentResourceHandler.parse_url_path only ever accesses
+            # self._resource_attrs, which fortunately is a class attribute. Thus, we can
+            # get away with using the method without actually instantiating the class
+            self_ = cast(ComponentResourceHandler, ComponentResourceHandler)
+            resolved_path = ComponentResourceHandler.parse_url_path(self_, path)
+            return FileResponse(resolved_path)
+
+    def make_app(self):
+        app = FastAPI()
+        self.add_panel_app(app, self.index_page)
+
+        for dir in ["css", "imgs", "resources"]:
+            app.mount(
+                f"/{dir}",
+                StaticFiles(directory=str(Path(__file__).parent / dir)),
+                name=dir,
+            )
+
+        return app
+
+    def serve(self):
+        import uvicorn
+
+        uvicorn.run(self.make_app, factory=True, host=self.hostname, port=self.port)
 
 
 def app(*, config: Config, open_browser: bool) -> App:
