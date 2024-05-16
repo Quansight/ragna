@@ -11,7 +11,6 @@ dependencies:
       - pytest-mock
       - pytest-asyncio
       - pytest-playwright
-      - playwright
       - mypy ==1.10.0
       - pre-commit
       - types-aiofiles

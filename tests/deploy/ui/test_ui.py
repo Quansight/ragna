@@ -1,4 +1,5 @@
 import os
+import socket
 import time
 from multiprocessing import Process
 
@@ -8,14 +9,12 @@ import pytest
 import uvicorn
 from playwright.sync_api import expect, sync_playwright
 
+from ragna._utils import timeout_after
 from ragna.assistants import RagnaDemoAssistant
 from ragna.core._utils import default_user
-from ragna.deploy import ApiConfig, Config, UiConfig
+from ragna.deploy import Config
 from ragna.deploy._api import app as api_app
 from ragna.deploy._ui import app as ui_app
-
-TEST_API_PORT = "38769"
-TEST_UI_PORT = "38770"
 
 
 class TestAssistant(RagnaDemoAssistant):
@@ -29,6 +28,12 @@ class TestAssistant(RagnaDemoAssistant):
             yield content
 
 
+def get_available_port():
+    with socket.socket() as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
+
+
 @pytest.fixture(scope="session")
 def headed_mode(pytestconfig):
     return pytestconfig.getoption("headed") or False
@@ -36,11 +41,13 @@ def headed_mode(pytestconfig):
 
 @pytest.fixture
 def config(tmp_local_root):
+    ui_port = get_available_port()
+    api_port = get_available_port()
     return Config(
         local_root=tmp_local_root,
         assistants=[TestAssistant],
-        ui=UiConfig(port=TEST_UI_PORT),
-        api=ApiConfig(port=TEST_API_PORT),
+        ui=dict(port=ui_port),
+        api=dict(port=api_port),
     )
 
 
@@ -64,15 +71,13 @@ class ApiServer:
         except httpx.ConnectError:
             return False
 
+    @timeout_after(5)
     def start(self):
         self.proc = Process(target=self.start_server, args=(), daemon=True)
         self.proc.start()
 
-        timeout = 5
-        while timeout > 0 and not self.server_up():
-            print(f"Waiting for API server to come up on {self.config.api.url}")
+        while not self.server_up():
             time.sleep(1)
-            timeout -= 1
 
     def stop(self):
         self.proc.kill()
@@ -88,11 +93,22 @@ def api_server(config):
         server.stop()
 
 
-def auth_header(base_url):
+@pytest.fixture
+def base_ui_url(config):
+    return f"http://{config.ui.hostname}:{config.ui.port}"
+
+
+@pytest.fixture
+def base_api_url(config):
+    return f"http://{config.api.hostname}:{config.api.port}"
+
+
+@pytest.fixture
+def auth_header(base_api_url):
     username = default_user()
     token = (
         httpx.post(
-            base_url + "/token",
+            base_api_url + "/token",
             data={
                 "username": username,
                 "password": os.environ.get(
@@ -107,7 +123,7 @@ def auth_header(base_url):
     return f"Bearer {token}"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def page(config, api_server, headed_mode):
     server = ui_app(config=config, open_browser=False)
 
@@ -124,15 +140,15 @@ def page(config, api_server, headed_mode):
         pn.state.kill_all_servers()
 
 
-def test_health(config, page) -> None:
-    health_url = config.ui.origins[0] + "/health"
+def test_health(base_ui_url, page) -> None:
+    health_url = base_ui_url + "/health"
     page.goto(health_url)
     expect(page.get_by_role("heading", name="Ok")).to_be_visible()
 
 
-def test_index_with_blank_credentials(config, page) -> None:
+def test_index_with_blank_credentials(base_ui_url, page) -> None:
     # Index page, no auth
-    index_url = config.ui.origins[0]
+    index_url = base_ui_url
     page.goto(index_url)
     expect(page.get_by_role("button", name="Sign In")).to_be_visible()
 
