@@ -43,6 +43,7 @@ jobs:
           else
             echo "Building package with nox -s build"
             nox -s build
+          fi
 
       - name: Verify package
         run: |
