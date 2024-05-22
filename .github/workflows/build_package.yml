@@ -1,9 +1,10 @@
 name: Publish
 
 on:
-  release:
-    types:
-      - created
+  pull_request:
+  push:
+    branches:
+      - release/*
 
 jobs:
   publish:
