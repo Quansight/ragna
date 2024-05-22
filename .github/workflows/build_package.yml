@@ -1,4 +1,4 @@
-name: Publish
+name: Build Package
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install build dependencies
-        run: pip install build
+        run: pip install nox
 
       - name: Set BUILD_RAGNA_BASE environment variable
         run: |
@@ -37,8 +37,12 @@ jobs:
 
       - name: Build distribution
         run: |
-          echo "Building package: ${{ matrix.package }}"
-          python -m build
+          if [ "${{ matrix.package }}" == "ragna-base" ]; then
+            echo "Building package with nox -s build-base"
+            nox -s build-base
+          else
+            echo "Building package with nox -s build"
+            nox -s build
 
       - name: Verify package
         run: |
