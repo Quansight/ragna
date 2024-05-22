@@ -87,38 +87,84 @@ def base_ui_url(config):
 
 
 @pytest.fixture
-def page(config, api_server, headed_mode):
+def context(config, api_server, headed_mode):
     server = ui_app(config=config, open_browser=False)
 
     with sync_playwright() as playwright:
         server.serve()
         browser = playwright.chromium.launch(headless=not headed_mode)
         context = browser.new_context()
-        page = context.new_page()
 
-        yield page
+        yield context
 
         context.close()
         browser.close()
         pn.state.kill_all_servers()
 
 
-def test_health(base_ui_url, page) -> None:
+def test_health(base_ui_url, context) -> None:
+    page = context.new_page()
     health_url = base_ui_url + "/health"
-    page.goto(health_url)
-    expect(page.get_by_role("heading", name="Ok")).to_be_visible()
+    response = page.goto(health_url)
+    assert response.ok
 
 
-def test_index_with_blank_credentials(base_ui_url, page) -> None:
+def test_index(base_ui_url, context, config) -> None:
     # Index page, no auth
+    page = context.new_page()
     index_url = base_ui_url
     page.goto(index_url)
     expect(page.get_by_role("button", name="Sign In")).to_be_visible()
 
     # Authorize with no credentials
+    # page.locator('input[type="text"]').fill("hello")
+    # page.locator('input[type="password"]').fill("hello")
     page.get_by_role("button", name="Sign In").click()
-
     expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
+
+    # expect auth token to be set
+    cookies = context.cookies()
+    assert len(cookies) == 1
+    cookie = cookies[0]
+    assert cookie.get("name") == "auth_token"
+    auth_token = cookie.get("value")
+    assert auth_token is not None
+
+    # New page button
+    new_chat_button = page.get_by_role("button", name=" New Chat")
+    expect(new_chat_button).to_be_visible()
+    new_chat_button.click()
+
+    document_root = config.local_root / "documents"
+    document_root.mkdir()
+    document_name = "test.txt"
+    document_path = document_root / document_name
+    with open(document_path, "w") as file:
+        file.write("!\n")
+
+    # File upload selector
+    with page.expect_file_chooser() as fc_info:
+        page.locator(".fileUpload").click()
+    file_chooser = fc_info.value
+    # file_chooser.set_files(document_path)
+    file_chooser.set_files(
+        files=[
+            {"name": "test.txt", "mimeType": "text/plain", "buffer": b"this is a test"}
+        ]
+    )
+
+    # Upload file and expect to see it listed
+    file_list = page.locator(".fileListContainer")
+    expect(file_list.first).to_have_text(str(document_name))
+
+    start_chat_button = page.get_by_role("button", name="Start Conversation")
+    expect(start_chat_button).to_be_visible()
+    start_chat_button.click()
+
+    breakpoint()
+
+    # chat_box = page.get_by_placeholder("Ask a question about the")
+    # expect(chat_box).to_be_visible()
 
 
 @pytest.mark.skip(reason="TODO: figure out best locators")
