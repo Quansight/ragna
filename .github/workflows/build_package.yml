@@ -44,3 +44,8 @@ jobs:
           echo "Verifying package: ${{ matrix.package }}"
           pip install dist/*.whl
           pip check
+
+      - name: Visualize dependency tree of built package
+        run: |
+          pip install pipdeptree
+          pipdeptree -d 1
