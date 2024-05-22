@@ -1,0 +1,46 @@
+name: Publish
+
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - ragna
+          - ragna-base
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install build dependencies
+        run: pip install build
+
+      - name: Set BUILD_RAGNA_BASE environment variable
+        run: |
+          if [ "${{ matrix.package }}" == "ragna-base" ]; then
+            echo "BUILD_RAGNA_BASE=1" >> $GITHUB_ENV
+          else
+            echo "BUILD_RAGNA_BASE=" >> $GITHUB_ENV
+          fi
+
+      - name: Build distribution
+        run: |
+          echo "Building package: ${{ matrix.package }}"
+          python -m build
+
+      - name: Verify package
+        run: |
+          echo "Verifying package: ${{ matrix.package }}"
+          pip install dist/*.whl
+          pip check
