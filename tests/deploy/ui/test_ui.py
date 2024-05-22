@@ -169,8 +169,6 @@ def test_index(base_ui_url, context, config) -> None:
     expect(start_chat_button).to_be_visible()
     start_chat_button.click()
 
-    breakpoint()
-
     # chat_box = page.get_by_placeholder("Ask a question about the")
     # expect(chat_box).to_be_visible()
 
