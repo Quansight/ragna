@@ -189,6 +189,6 @@ print(answer["content"])
 
 # %%
 # Before we close the tutorial, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it the regular way.
+# have printed in the terminal if we had started it with the `ragna api` command.
 
 rest_api.stop()
