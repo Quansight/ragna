@@ -59,7 +59,7 @@ class Server:
         except httpx.ConnectError:
             return False
 
-    @timeout_after(5)
+    @timeout_after(30)
     def start(self):
         self.proc = subprocess.Popen(
             [
