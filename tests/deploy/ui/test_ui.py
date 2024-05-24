@@ -6,7 +6,7 @@ import time
 import httpx
 import panel as pn
 import pytest
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import Page, expect
 
 from ragna._utils import timeout_after
 from ragna.deploy import Config
@@ -85,28 +85,14 @@ def server(config):
         server.stop()
 
 
-@pytest.fixture
-def context(headed_mode):
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=not headed_mode)
-        context = browser.new_context()
-
-        yield context
-
-        context.close()
-        browser.close()
-
-
-def test_health(server, context) -> None:
-    page = context.new_page()
+def test_health(server, page: Page) -> None:
     health_url = server.base_url + "/health"
     response = page.goto(health_url)
     assert response.ok
 
 
-def test_index(server, context, config) -> None:
+def test_index(server, config, page: Page) -> None:
     # Index page, no auth
-    page = context.new_page()
     index_url = server.base_url
     page.goto(index_url)
     expect(page.get_by_role("button", name="Sign In")).to_be_visible()
@@ -116,7 +102,7 @@ def test_index(server, context, config) -> None:
     expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
 
     # expect auth token to be set
-    cookies = context.cookies()
+    cookies = page.context.cookies()
     assert len(cookies) == 1
     cookie = cookies[0]
     assert cookie.get("name") == "auth_token"
