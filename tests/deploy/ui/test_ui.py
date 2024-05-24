@@ -91,6 +91,19 @@ def test_health(server, page: Page) -> None:
     assert response.ok
 
 
+@timeout_after(10)
+def get_chats(config, auth_token):
+    chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
+    chats = []
+    while len(chats) == 0:
+        chats = httpx.get(
+            chats_url, headers={"Authorization": f"Bearer {auth_token}"}
+        ).json()
+        time.sleep(1)
+
+    return chats
+
+
 def test_index(server, config, page: Page) -> None:
     # Index page, no auth
     index_url = server.base_url
@@ -135,7 +148,13 @@ def test_index(server, config, page: Page) -> None:
     expect(start_chat_button).to_be_visible()
     start_chat_button.click(delay=5)
 
-    # TODO: Document should be in the database
+    # Document should be in the database
+    chats = get_chats(config, auth_token)
+    assert len(chats) == 1
+    chat = chats[0]
+    chat_documents = chat["metadata"]["documents"]
+    assert len(chat_documents) == 1
+    assert chat_documents[0]["name"] == document_name
 
     chat_box_row = page.locator(".chat-interface-input-row")
     expect(chat_box_row).to_be_visible()
