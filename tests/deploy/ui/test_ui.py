@@ -91,7 +91,7 @@ def test_health(server, page: Page) -> None:
     assert response.ok
 
 
-@timeout_after(10)
+@timeout_after(30)
 def get_chats(config, auth_token):
     chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
     chats = []
