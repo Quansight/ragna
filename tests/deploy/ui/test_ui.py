@@ -25,23 +25,13 @@ def headed_mode(pytestconfig):
     return pytestconfig.getoption("headed") or False
 
 
-@pytest.fixture(scope="session")
-def ui_port():
-    return get_available_port()
-
-
-@pytest.fixture(scope="session")
-def api_port():
-    return get_available_port()
-
-
 @pytest.fixture
-def config(tmp_local_root, ui_port, api_port):
+def config(tmp_local_root):
     config = Config(
         local_root=tmp_local_root,
         assistants=[TestAssistant],
-        ui=dict(port=ui_port),
-        api=dict(port=api_port),
+        ui=dict(port=get_available_port()),
+        api=dict(port=get_available_port()),
     )
     path = tmp_local_root / "ragna.toml"
     config.to_file(path)
@@ -49,9 +39,9 @@ def config(tmp_local_root, ui_port, api_port):
 
 
 class Server:
-    def __init__(self, config, base_url):
+    def __init__(self, config):
         self.config = config
-        self.base_url = base_url
+        self.base_url = f"http://{config.ui.hostname}:{config.ui.port}"
 
     def server_up(self):
         try:
@@ -86,13 +76,8 @@ class Server:
 
 
 @pytest.fixture
-def base_ui_url(ui_port):
-    return f"http://127.0.0.1:{ui_port}"
-
-
-@pytest.fixture
-def server(config, base_ui_url):
-    server = Server(config, base_ui_url)
+def server(config):
+    server = Server(config)
     try:
         server.start()
         yield server
@@ -101,7 +86,7 @@ def server(config, base_ui_url):
 
 
 @pytest.fixture
-def context(server, headed_mode):
+def context(headed_mode):
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=not headed_mode)
         context = browser.new_context()
@@ -112,17 +97,17 @@ def context(server, headed_mode):
         browser.close()
 
 
-def test_health(base_ui_url, context) -> None:
+def test_health(server, context) -> None:
     page = context.new_page()
-    health_url = base_ui_url + "/health"
+    health_url = server.base_url + "/health"
     response = page.goto(health_url)
     assert response.ok
 
 
-def test_index(base_ui_url, context, config) -> None:
+def test_index(server, context, config) -> None:
     # Index page, no auth
     page = context.new_page()
-    index_url = base_ui_url
+    index_url = server.base_url
     page.goto(index_url)
     expect(page.get_by_role("button", name="Sign In")).to_be_visible()
 
@@ -154,29 +139,26 @@ def test_index(base_ui_url, context, config) -> None:
     with page.expect_file_chooser() as fc_info:
         page.locator(".fileUpload").click()
     file_chooser = fc_info.value
-    # file_chooser.set_files(document_path)
-    file_chooser.set_files(
-        files=[
-            {"name": "test.txt", "mimeType": "text/plain", "buffer": b"this is a test"}
-        ]
-    )
+    file_chooser.set_files(document_path)
 
-    # Upload file and expect to see it listed
+    # Upload document and expect to see it listed
     file_list = page.locator(".fileListContainer")
     expect(file_list.first).to_have_text(str(document_name))
 
     start_chat_button = page.get_by_role("button", name="Start Conversation")
     expect(start_chat_button).to_be_visible()
-    start_chat_button.click()
+    start_chat_button.click(delay=5)
 
-    # chat_box = page.get_by_placeholder("Ask a question about the")
-    # expect(chat_box).to_be_visible()
+    # TODO: Document should be in the database
 
-    # page.get_by_placeholder("Ask a question about the").fill(
-    #     "Tell me about the documents"
-    # )
-    # page.get_by_role("button", name="").click()
-    # page.get_by_role("button", name=" Source Info").click()
-    # page.locator("#main div").filter(has_text="Source Info ¶ This response").nth(
-    #     3
-    # ).click()
+    chat_box_row = page.locator(".chat-interface-input-row")
+    expect(chat_box_row).to_be_visible()
+
+    chat_box = chat_box_row.get_by_role("textbox")
+    expect(chat_box).to_be_visible()
+
+    chat_box.fill("Tell me about the documents")
+
+    chat_button = chat_box_row.get_by_role("button")
+    expect(chat_button).to_be_visible()
+    chat_button.click()
