@@ -8,7 +8,7 @@ from ._http_api import HttpApiAssistant
 
 class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
     _STREAMING_METHOD: Literal["sse", "jsonl"]
-    _MODEL: Optional[str] = None
+    _MODEL: Optional[str]
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
