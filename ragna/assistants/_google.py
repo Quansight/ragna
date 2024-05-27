@@ -25,7 +25,7 @@ class AsyncIteratorReader:
         return await anext(self._ait, b"")  # type: ignore[call-arg]
 
 
-class GoogleHttpApiAssistant(HttpApiAssistant):
+class GoogleAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "GOOGLE_API_KEY"
     _MODEL: str
 
@@ -88,7 +88,7 @@ class GoogleHttpApiAssistant(HttpApiAssistant):
                 yield chunk
 
 
-class GeminiPro(GoogleHttpApiAssistant):
+class GeminiPro(GoogleAssistant):
     """[Google Gemini Pro](https://ai.google.dev/models/gemini)
 
     !!! info "Required environment variables"
@@ -103,7 +103,7 @@ class GeminiPro(GoogleHttpApiAssistant):
     _MODEL = "gemini-pro"
 
 
-class GeminiUltra(GoogleHttpApiAssistant):
+class GeminiUltra(GoogleAssistant):
     """[Google Gemini Ultra](https://ai.google.dev/models/gemini)
 
     !!! info "Required environment variables"
