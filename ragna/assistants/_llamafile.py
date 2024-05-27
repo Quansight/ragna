@@ -4,6 +4,7 @@ from ._openai import OpenaiCompliantHttpApiAssistant
 
 
 class LlamafileAssistant(OpenaiCompliantHttpApiAssistant):
+    _API_KEY_ENV_VAR = None
     _STREAMING_METHOD = "sse"
     _MODEL = None
 

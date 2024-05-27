@@ -11,7 +11,7 @@ from ragna.core import Assistant, EnvVarRequirement, RagnaException, Requirement
 
 
 class HttpApiAssistant(Assistant):
-    _API_KEY_ENV_VAR: Optional[str] = None
+    _API_KEY_ENV_VAR: Optional[str]
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
