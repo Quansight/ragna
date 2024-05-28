@@ -2,11 +2,12 @@ from typing import AsyncIterator, cast
 
 from ragna.core import Source
 
-from ._http_api import HttpApiAssistant
+from ._http_api import HttpApiAssistant, assert_api_call_is_success
 
 
 class Ai21LabsAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
+    _STREAMING_METHOD = None
     _MODEL_TYPE: str
 
     @classmethod
@@ -47,7 +48,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "system": self._make_system_content(sources),
             },
         )
-        await self._assert_api_call_is_success(response)
+        await assert_api_call_is_success(response)
 
         yield cast(str, response.json()["outputs"][0]["text"])
 

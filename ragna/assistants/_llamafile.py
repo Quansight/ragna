@@ -1,9 +1,10 @@
 import os
 
-from ._openai import OpenaiCompliantHttpApiAssistant
+from ._http_api import HttpStreamingMethod
+from ._openai import OpenaiLikeHttpApiAssistant
 
 
-class LlamafileAssistant(OpenaiCompliantHttpApiAssistant):
+class LlamafileAssistant(OpenaiLikeHttpApiAssistant):
     """[llamafile](https://github.com/Mozilla-Ocho/llamafile)
 
     To use this assistant, start the llamafile server manually. By default, the server
@@ -16,7 +17,7 @@ class LlamafileAssistant(OpenaiCompliantHttpApiAssistant):
     """
 
     _API_KEY_ENV_VAR = None
-    _STREAMING_METHOD = "sse"
+    _STREAMING_METHOD = HttpStreamingMethod.SSE
     _MODEL = None
 
     @property
