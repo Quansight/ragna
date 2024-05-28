@@ -17,82 +17,87 @@ from ragna.core import (
 )
 
 
-async def assert_api_call_is_success(response: httpx.Response) -> None:
-    if response.is_success:
-        return
-
-    content = await response.aread()
-    with contextlib.suppress(Exception):
-        content = json.loads(content)
-
-    raise RagnaException(
-        "API call failed",
-        request_method=response.request.method,
-        request_url=str(response.request.url),
-        response_status_code=response.status_code,
-        response_content=content,
-    )
-
-
-class HttpStreamingMethod(enum.Enum):
+class HttpStreamingProtocol(enum.Enum):
     SSE = enum.auto()
     JSONL = enum.auto()
     JSON = enum.auto()
 
 
-class HttpStreamer:
+class HttpApiCaller:
     @classmethod
-    def requirements(cls, method: HttpStreamingMethod) -> list[Requirement]:
-        return {
-            HttpStreamingMethod.SSE: [PackageRequirement("httpx_sse")],
-            HttpStreamingMethod.JSON: [PackageRequirement("ijson")],
-        }.get(method, [])
+    def requirements(cls, protocol: HttpStreamingProtocol) -> list[Requirement]:
+        streaming_requirements: dict[HttpStreamingProtocol, list[Requirement]] = {
+            HttpStreamingProtocol.SSE: [PackageRequirement("httpx_sse")],
+            HttpStreamingProtocol.JSON: [PackageRequirement("ijson")],
+        }
+        return streaming_requirements.get(protocol, [])
 
-    def __init__(self, client: httpx.AsyncClient, method: HttpStreamingMethod) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient,
+        protocol: Optional[HttpStreamingProtocol] = None,
+    ) -> None:
         self._client = client
-        self._method = method
+        self._protocol = protocol
 
     def __call__(
         self,
         method: str,
         url: str,
         *,
-        streaming_kwargs: Optional[dict[str, Any]] = None,
+        parse_kwargs: Optional[dict[str, Any]] = None,
         **kwargs: Any,
-    ) -> AsyncIterator[dict[str, Any]]:
-        return {
-            HttpStreamingMethod.SSE: self._sse,
-            HttpStreamingMethod.JSONL: self._jsonl,
-        }[self._method](method, url, streaming_kwargs=streaming_kwargs or {}, **kwargs)
+    ) -> AsyncIterator[Any]:
+        if self._protocol is None:
+            call_method = self._no_stream
+        else:
+            call_method = {
+                HttpStreamingProtocol.SSE: self._stream_sse,
+                HttpStreamingProtocol.JSONL: self._stream_jsonl,
+                HttpStreamingProtocol.JSON: self._stream_json,
+            }[self._protocol]
+        return call_method(method, url, parse_kwargs=parse_kwargs or {}, **kwargs)
 
-    async def _sse(
+    async def _no_stream(
         self,
         method: str,
         url: str,
         *,
-        streaming_kwargs: dict[str, Any],
+        parse_kwargs: dict[str, Any],
         **kwargs: Any,
-    ) -> AsyncIterator[dict[str, Any]]:
+    ) -> AsyncIterator[Any]:
+        response = await self._client.request(method, url, **kwargs)
+        await self._assert_api_call_is_success(response)
+        yield response.json()
+
+    async def _stream_sse(
+        self,
+        method: str,
+        url: str,
+        *,
+        parse_kwargs: dict[str, Any],
+        **kwargs: Any,
+    ) -> AsyncIterator[Any]:
         import httpx_sse
 
         async with httpx_sse.aconnect_sse(
             self._client, method, url, **kwargs
         ) as event_source:
-            await assert_api_call_is_success(event_source.response)
+            await self._assert_api_call_is_success(event_source.response)
 
             async for sse in event_source.aiter_sse():
                 yield json.loads(sse.data)
 
-    async def _jsonl(
+    async def _stream_jsonl(
         self,
         method: str,
         url: str,
         *,
-        streaming_kwargs: dict[str, Any],
+        parse_kwargs: dict[str, Any],
         **kwargs: Any,
-    ) -> AsyncIterator[dict[str, Any]]:
+    ) -> AsyncIterator[Any]:
         async with self._client.stream(method, url, **kwargs) as response:
-            await assert_api_call_is_success(response)
+            await self._assert_api_call_is_success(response)
 
             async for chunk in response.aiter_lines():
                 yield json.loads(chunk)
@@ -115,31 +120,47 @@ class HttpStreamer:
                 return b""
             return await anext(self._ait, b"")  # type: ignore[call-arg]
 
-    async def _json(
+    async def _stream_json(
         self,
         method: str,
         url: str,
         *,
-        streaming_kwargs: dict[str, Any],
+        parse_kwargs: dict[str, Any],
         **kwargs: Any,
-    ) -> AsyncIterator[dict[str, Any]]:
+    ) -> AsyncIterator[Any]:
         import ijson
 
-        item = streaming_kwargs["item"]
-        chunk_size = streaming_kwargs.get("chunk_size", 16)
+        item = parse_kwargs["item"]
+        chunk_size = parse_kwargs.get("chunk_size", 16)
 
         async with self._client.stream(method, url, **kwargs) as response:
-            await assert_api_call_is_success(response)
+            await self._assert_api_call_is_success(response)
 
             async for chunk in ijson.items(
                 self._AsyncIteratorReader(response.aiter_bytes(chunk_size)), item
             ):
                 yield chunk
 
+    async def _assert_api_call_is_success(self, response: httpx.Response) -> None:
+        if response.is_success:
+            return
+
+        content = await response.aread()
+        with contextlib.suppress(Exception):
+            content = json.loads(content)
+
+        raise RagnaException(
+            "API call failed",
+            request_method=response.request.method,
+            request_url=str(response.request.url),
+            response_status_code=response.status_code,
+            response_content=content,
+        )
+
 
 class HttpApiAssistant(Assistant):
     _API_KEY_ENV_VAR: Optional[str]
-    _STREAMING_METHOD: Optional[HttpStreamingMethod]
+    _STREAMING_PROTOCOL: Optional[HttpStreamingProtocol]
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
@@ -148,8 +169,8 @@ class HttpApiAssistant(Assistant):
             if cls._API_KEY_ENV_VAR is not None
             else []
         )
-        if cls._STREAMING_METHOD is not None:
-            requirements.extend(HttpStreamer.requirements(cls._STREAMING_METHOD))
+        if cls._STREAMING_PROTOCOL is not None:
+            requirements.extend(HttpApiCaller.requirements(cls._STREAMING_PROTOCOL))
         requirements.extend(cls._extra_requirements())
         return requirements
 
@@ -167,8 +188,4 @@ class HttpApiAssistant(Assistant):
             if self._API_KEY_ENV_VAR is not None
             else None
         )
-        self._stream = (
-            HttpStreamer(self._client, self._STREAMING_METHOD)
-            if self._STREAMING_METHOD is not None
-            else None
-        )
+        self._call_api = HttpApiCaller(self._client, self._STREAMING_PROTOCOL)

@@ -3,7 +3,7 @@ from typing import Any, AsyncIterator, Optional, cast
 
 from ragna.core import Source
 
-from ._http_api import HttpApiAssistant, HttpStreamingMethod
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
 class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
@@ -51,7 +51,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        return self._stream("POST", self._url, headers=headers, json=json_)
+        return self._call_api("POST", self._url, headers=headers, json=json_)
 
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
@@ -68,7 +68,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
 
 class OpenaiAssistant(OpenaiLikeHttpApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
-    _STREAMING_METHOD = HttpStreamingMethod.SSE
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
 
     @classmethod
     def display_name(cls) -> str:

@@ -2,13 +2,13 @@ from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
-from ._http_api import HttpStreamingMethod
+from ._http_api import HttpStreamingProtocol
 from ._openai import OpenaiLikeHttpApiAssistant
 
 
 class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     _API_KEY_ENV_VAR = None
-    _STREAMING_METHOD = HttpStreamingMethod.JSONL
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.JSONL
     _MODEL: str
 
     @classmethod

@@ -1,6 +1,6 @@
 import os
 
-from ._http_api import HttpStreamingMethod
+from ._http_api import HttpStreamingProtocol
 from ._openai import OpenaiLikeHttpApiAssistant
 
 
@@ -17,8 +17,12 @@ class LlamafileAssistant(OpenaiLikeHttpApiAssistant):
     """
 
     _API_KEY_ENV_VAR = None
-    _STREAMING_METHOD = HttpStreamingMethod.SSE
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
     _MODEL = None
+
+    @classmethod
+    def display_name(cls) -> str:
+        return "llamafile"
 
     @property
     def _url(self) -> str:
