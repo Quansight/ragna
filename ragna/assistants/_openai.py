@@ -20,8 +20,7 @@ class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
 
     @property
     @abc.abstractmethod
-    def _url(self) -> str:
-        pass
+    def _url(self) -> str: ...
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
