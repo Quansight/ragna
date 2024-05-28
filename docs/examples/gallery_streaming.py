@@ -29,6 +29,8 @@ is performed using the Python and REST API.
 #     - [OpenAI](https://openai.com/)
 #       - [ragna.assistants.Gpt35Turbo16k][]
 #       - [ragna.assistants.Gpt4][]
+#     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
+#       - [ragna.assistants.LlamafileAssistant][]
 
 from ragna import assistants
 
