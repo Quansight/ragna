@@ -1,4 +1,5 @@
 import abc
+from functools import cached_property
 from typing import Any, AsyncIterator, Optional, cast
 
 from ragna.core import Source
@@ -74,7 +75,7 @@ class OpenaiAssistant(OpenaiLikeHttpApiAssistant):
     def display_name(cls) -> str:
         return f"OpenAI/{cls._MODEL}"
 
-    @property
+    @cached_property
     def _url(self) -> str:
         return "https://api.openai.com/v1/chat/completions"
 

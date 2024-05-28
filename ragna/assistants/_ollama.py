@@ -1,3 +1,5 @@
+import os
+from functools import cached_property
 from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
@@ -7,6 +9,13 @@ from ._openai import OpenaiLikeHttpApiAssistant
 
 
 class OllamaAssistant(OpenaiLikeHttpApiAssistant):
+    """[Ollama](https://ollama.com/)
+
+    To use this assistant, start the Ollama server manually. By default, the server
+    is expected at `http://localhost:11434`. This can be changed with the
+    `RAGNA_OLLAMA_BASE_URL` environment variable.
+    """
+
     _API_KEY_ENV_VAR = None
     _STREAMING_PROTOCOL = HttpStreamingProtocol.JSONL
     _MODEL: str
@@ -15,13 +24,19 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     def display_name(cls) -> str:
         return f"Ollama/{cls._MODEL}"
 
+    @cached_property
+    def _url(self) -> str:
+        base_url = os.environ.get("RAGNA_OLLAMA_BASE_URL", "http://localhost:11434")
+        return f"{base_url}/api/chat"
+
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         async for data in self._stream_openai_like(
             prompt, sources, max_new_tokens=max_new_tokens
         ):
-            # Modeled after https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
+            # Modeled after
+            # https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
             if "error" in data:
                 raise RagnaException(data["error"])
             if not data["done"]:
