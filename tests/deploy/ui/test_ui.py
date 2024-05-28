@@ -21,17 +21,27 @@ def get_available_port():
 
 
 @pytest.fixture(scope="session")
+def api_port():
+    return get_available_port()
+
+
+@pytest.fixture(scope="session")
+def ui_port():
+    return get_available_port()
+
+
+@pytest.fixture(scope="session")
 def headed_mode(pytestconfig):
     return pytestconfig.getoption("headed") or False
 
 
 @pytest.fixture
-def config(tmp_local_root):
+def config(tmp_local_root, api_port, ui_port):
     config = Config(
         local_root=tmp_local_root,
         assistants=[TestAssistant],
-        ui=dict(port=get_available_port()),
-        api=dict(port=get_available_port()),
+        ui=dict(port=ui_port),
+        api=dict(port=api_port),
     )
     path = tmp_local_root / "ragna.toml"
     config.to_file(path)
