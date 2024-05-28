@@ -60,18 +60,6 @@ for comparison.
    export ANTHROPIC_API_KEY="XXXXX"
    ```
 
-### [MosaicML](https://mosaicml.com)
-
-1. MosaicML currently has a waitlist for new users:
-   > We are currently experiencing very high demand and have a waitlist. Please stay
-   > tuned for when we open for broader access.
-   >
-   > ~ [MosaicML console](https://console.mosaicml.com/)
-2. Set the `MOSAICML_API_KEY` environment variable with your MosaicML API key:
-   ```bash
-   export MOSAICML_API_KEY="XXXXX"
-   ```
-
 ### [Google](https://ai.google.dev/)
 
 1. > To use the API, you need an API key. You can create a key with one click in Google

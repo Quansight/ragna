@@ -1,0 +1,20 @@
+:host(.markdown.message-content) table {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+:host(.message-content-system) table {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+:host(.message-content-no-border) {
+  background-color: rgb(243, 243, 243) !important;
+}
+
+:host(.message-content-border) {
+  border: rgb(234, 234, 234);
+  border-style: solid;
+  border-width: 1.2px;
+  border-radius: 5px;
+}

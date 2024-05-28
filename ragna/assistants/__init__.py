@@ -1,6 +1,7 @@
 __all__ = [
-    "Claude",
-    "ClaudeInstant",
+    "ClaudeHaiku",
+    "ClaudeOpus",
+    "ClaudeSonnet",
     "Command",
     "CommandLight",
     "GeminiPro",
@@ -15,17 +16,16 @@ __all__ = [
     "Gpt35Turbo16k",
     "Gpt4",
     "Jurassic2Ultra",
-    "Mpt7bInstruct",
-    "Mpt30bInstruct",
+    "LlamafileAssistant",
     "RagnaDemoAssistant",
 ]
 
 from ._ai21labs import Jurassic2Ultra
-from ._anthropic import Claude, ClaudeInstant
+from ._anthropic import ClaudeHaiku, ClaudeOpus, ClaudeSonnet
 from ._cohere import Command, CommandLight
 from ._demo import RagnaDemoAssistant
 from ._google import GeminiPro, GeminiUltra
-from ._mosaicml import Mpt7bInstruct, Mpt30bInstruct
+from ._llamafile import LlamafileAssistant
 from ._ollama import (
     OllamaGemma2B,
     OllamaLlama2,

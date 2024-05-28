@@ -6,16 +6,6 @@ is performed using the Python and REST API.
 """
 
 # %%
-# Before we start this example, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
-import documentation_helpers
-
-# %%
 # ## Setup streaming assistant
 #
 # To be able to stream a message from an assistant, it needs to support streaming. For
@@ -27,8 +17,9 @@ import documentation_helpers
 #     Of the assistants that Ragna has built in, the following ones support streaming:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#       - [ragna.assistants.Claude][]
-#       - [ragna.assistants.ClaudeInstant][]
+#       - [ragna.assistants.ClaudeOpus][]
+#       - [ragna.assistants.ClaudeSonnet][]
+#       - [ragna.assistants.ClaudeHaiku][]
 #     - [Cohere](https://cohere.com/)
 #       - [ragna.assistants.Command][]
 #       - [ragna.assistants.CommandLight][]
@@ -38,6 +29,8 @@ import documentation_helpers
 #     - [OpenAI](https://openai.com/)
 #       - [ragna.assistants.Gpt35Turbo16k][]
 #       - [ragna.assistants.Gpt4][]
+#     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
+#       - [ragna.assistants.LlamafileAssistant][]
 #     - [Ollama](https://ollama.com/)
 #       - [ragna.assistants.OllamaGemma2B][]
 #       - [ragna.assistants.OllamaLlama2][]
@@ -62,9 +55,18 @@ class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
 #
 # Let's create and prepare a chat using the assistant we have defined above.
 
+from pathlib import Path
+
+import ragna._docs as ragna_docs
+
 from ragna import Rag, source_storages
 
-document_path = documentation_helpers.assets / "ragna.txt"
+print(ragna_docs.SAMPLE_CONTENT)
+
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
 
 chat = Rag().chat(
     documents=[document_path],
@@ -105,28 +107,9 @@ from ragna.deploy import Config
 
 config = Config(assistants=[DemoStreamingAssistant])
 
-rest_api = documentation_helpers.RestApi()
+rest_api = ragna_docs.RestApi()
 
-client = rest_api.start(config, authenticate=True)
-
-# %%
-# Upload the document.
-
-document_upload = (
-    client.post("/document", json={"name": document_path.name})
-    .raise_for_status()
-    .json()
-)
-
-document = document_upload["document"]
-
-parameters = document_upload["parameters"]
-client.request(
-    parameters["method"],
-    parameters["url"],
-    data=parameters["data"],
-    files={"file": open(document_path, "rb")},
-).raise_for_status()
+client, document = rest_api.start(config, authenticate=True, upload_document=True)
 
 # %%
 # Start and prepare the chat
@@ -181,6 +164,6 @@ print("".join(chunk["content"] for chunk in chunks))
 
 # %%
 # Before we close the example, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it the regular way.
+# have printed in the terminal if we had started it with the `ragna api` command.
 
 rest_api.stop()

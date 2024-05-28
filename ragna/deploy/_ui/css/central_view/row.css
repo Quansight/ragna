@@ -1,0 +1,12 @@
+:host(.central-view-header) {
+  background-color: #f9f9f9;
+  border-bottom: 1px solid #eeeeee;
+  width: 100% !important;
+  margin: 0px;
+  height: 54px;
+  overflow: hidden;
+}
+
+:host(.central-view-header) div {
+  vertical-align: middle;
+}

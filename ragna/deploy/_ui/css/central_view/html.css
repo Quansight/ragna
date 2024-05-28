@@ -1,0 +1,27 @@
+:host(.chat-document-pill) {
+  background-color: rgb(241, 241, 241);
+  margin-top: 15px;
+  margin-left: 5px;
+  margin-right: 5px;
+  padding: 5px 15px;
+  border-radius: 10px;
+  color: var(--accent-color);
+}
+
+:host(.chat-name-header) p {
+  max-width: 50%;
+  min-width: 100px;
+  height: 100%;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  margin: 0px 0px 0px 10px;
+
+  font-size: 20px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+
+  /* I don't understand why this is necessary to vertically align the text ... */
+  line-height: 250%;
+}

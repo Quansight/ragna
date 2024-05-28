@@ -2,10 +2,10 @@ from typing import AsyncIterator, cast
 
 from ragna.core import Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant
 
 
-class Ai21LabsAssistant(ApiAssistant):
+class Ai21LabsAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
     _MODEL_TYPE: str
 
@@ -21,8 +21,8 @@ class Ai21LabsAssistant(ApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def _call_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
