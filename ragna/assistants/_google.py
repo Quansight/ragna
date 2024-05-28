@@ -3,7 +3,7 @@ from typing import AsyncIterator
 from ragna._compat import anext
 from ragna.core import PackageRequirement, Requirement, Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant
 
 
 # ijson does not support reading from an (async) iterator, but only from file-like
@@ -25,7 +25,7 @@ class AsyncIteratorReader:
         return await anext(self._ait, b"")  # type: ignore[call-arg]
 
 
-class GoogleApiAssistant(ApiAssistant):
+class GoogleAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "GOOGLE_API_KEY"
     _MODEL: str
 
@@ -48,8 +48,8 @@ class GoogleApiAssistant(ApiAssistant):
             ]
         )
 
-    async def _call_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         import ijson
 
@@ -88,7 +88,7 @@ class GoogleApiAssistant(ApiAssistant):
                 yield chunk
 
 
-class GeminiPro(GoogleApiAssistant):
+class GeminiPro(GoogleAssistant):
     """[Google Gemini Pro](https://ai.google.dev/models/gemini)
 
     !!! info "Required environment variables"
@@ -103,7 +103,7 @@ class GeminiPro(GoogleApiAssistant):
     _MODEL = "gemini-pro"
 
 
-class GeminiUltra(GoogleApiAssistant):
+class GeminiUltra(GoogleAssistant):
     """[Google Gemini Ultra](https://ai.google.dev/models/gemini)
 
     !!! info "Required environment variables"
