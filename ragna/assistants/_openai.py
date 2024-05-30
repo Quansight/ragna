@@ -23,7 +23,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _stream_openai_like(
+    def _stream(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
@@ -57,9 +57,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for data in self._stream_openai_like(
-            prompt, sources, max_new_tokens=max_new_tokens
-        ):
+        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:
                 break
