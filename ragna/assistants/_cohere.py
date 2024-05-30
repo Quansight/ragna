@@ -1,12 +1,11 @@
-import json
 from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant
 
 
-class CohereApiAssistant(ApiAssistant):
+class CohereAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
     _MODEL: str
 
@@ -24,13 +23,13 @@ class CohereApiAssistant(ApiAssistant):
     def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
-    async def _call_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        async with self._client.stream(
+        async for event in self._stream_jsonl(
             "POST",
             "https://api.cohere.ai/v1/chat",
             headers={
@@ -47,21 +46,17 @@ class CohereApiAssistant(ApiAssistant):
                 "max_tokens": max_new_tokens,
                 "documents": self._make_source_documents(sources),
             },
-        ) as response:
-            await self._assert_api_call_is_success(response)
+        ):
+            if event["event_type"] == "stream-end":
+                if event["event_type"] == "COMPLETE":
+                    break
 
-            async for chunk in response.aiter_lines():
-                event = json.loads(chunk)
-                if event["event_type"] == "stream-end":
-                    if event["event_type"] == "COMPLETE":
-                        break
-
-                    raise RagnaException(event["error_message"])
-                if "text" in event:
-                    yield cast(str, event["text"])
+                raise RagnaException(event["error_message"])
+            if "text" in event:
+                yield cast(str, event["text"])
 
 
-class Command(CohereApiAssistant):
+class Command(CohereAssistant):
     """
     [Cohere Command](https://docs.cohere.com/docs/models#command)
 
@@ -73,7 +68,7 @@ class Command(CohereApiAssistant):
     _MODEL = "command"
 
 
-class CommandLight(CohereApiAssistant):
+class CommandLight(CohereAssistant):
     """
     [Cohere Command-Light](https://docs.cohere.com/docs/models#command)
 
