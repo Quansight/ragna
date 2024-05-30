@@ -103,19 +103,6 @@ def test_health(server, page: Page) -> None:
     assert response.ok
 
 
-@timeout_after(60)
-def get_chats(config, auth_token):
-    chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
-    chats = []
-    while len(chats) == 0:
-        chats = httpx.get(
-            chats_url, headers={"Authorization": f"Bearer {auth_token}"}
-        ).json()
-        time.sleep(1)
-
-    return chats
-
-
 def test_index(server, config, page: Page) -> None:
     # Index page, no auth
     index_url = server.base_url
@@ -156,24 +143,28 @@ def test_index(server, config, page: Page) -> None:
     file_list = page.locator(".fileListContainer")
     expect(file_list.first).to_have_text(str(document_name))
 
+    chat_dialog = page.get_by_role("dialog")
+    expect(chat_dialog).to_be_visible()
     start_chat_button = page.get_by_role("button", name="Start Conversation")
     expect(start_chat_button).to_be_visible()
     start_chat_button.click(delay=5)
-    # expect(<modal to be closed>).to_be_visible()
-
-    # Document should be in the database
-    chats = get_chats(config, auth_token)
-    assert len(chats) == 1
-    chat = chats[0]
-    chat_documents = chat["metadata"]["documents"]
-    assert len(chat_documents) == 1
-    assert chat_documents[0]["name"] == document_name
 
     chat_box_row = page.locator(".chat-interface-input-row")
     expect(chat_box_row).to_be_visible()
 
     chat_box = chat_box_row.get_by_role("textbox")
     expect(chat_box).to_be_visible()
+
+    # Document should be in the database
+    chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
+    chats = httpx.get(
+        chats_url, headers={"Authorization": f"Bearer {auth_token}"}
+    ).json()
+    assert len(chats) == 1
+    chat = chats[0]
+    chat_documents = chat["metadata"]["documents"]
+    assert len(chat_documents) == 1
+    assert chat_documents[0]["name"] == document_name
 
     chat_box.fill("Tell me about the documents")
 
