@@ -147,6 +147,7 @@ def test_index(server, config, page: Page) -> None:
     expect(chat_dialog).to_be_visible()
     start_chat_button = page.get_by_role("button", name="Start Conversation")
     expect(start_chat_button).to_be_visible()
+    time.sleep(0.5)  # hack
     start_chat_button.click(delay=5)
 
     chat_box_row = page.locator(".chat-interface-input-row")
