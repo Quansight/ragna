@@ -68,7 +68,7 @@ jobs:
 
       - name: Run unit tests
         id: tests
-        run: pytest --junit-xml=test-results.xml --durations=25
+        run: pytest --junit-xml=test-results.xml --durations=25 --slowmo 100
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'

@@ -36,12 +36,14 @@ def headed_mode(pytestconfig):
 
 
 @pytest.fixture
-def config(tmp_local_root, api_port, ui_port):
+def config(
+    tmp_local_root,
+):
     config = Config(
         local_root=tmp_local_root,
         assistants=[TestAssistant],
-        ui=dict(port=ui_port),
-        api=dict(port=api_port),
+        ui=dict(port=get_available_port()),
+        api=dict(port=get_available_port()),
     )
     path = tmp_local_root / "ragna.toml"
     config.to_file(path)
@@ -157,6 +159,7 @@ def test_index(server, config, page: Page) -> None:
     start_chat_button = page.get_by_role("button", name="Start Conversation")
     expect(start_chat_button).to_be_visible()
     start_chat_button.click(delay=5)
+    # expect(<modal to be closed>).to_be_visible()
 
     # Document should be in the database
     chats = get_chats(config, auth_token)
