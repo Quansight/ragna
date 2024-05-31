@@ -1,10 +1,8 @@
 import uuid
+from typing import Any, cast
 
 import ragna
-from ragna.core import (
-    Document,
-    Source,
-)
+from ragna.core import Document, MetadataFilter, MetadataOperator, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -69,6 +67,41 @@ class Chroma(VectorDatabaseSourceStorage):
             documents=texts,
             metadatas=metadatas,  # type: ignore[arg-type]
         )
+
+    # https://docs.trychroma.com/usage-guide#using-where-filters
+    _METADATA_OPERATOR_MAP = {
+        MetadataOperator.AND: "$and",
+        MetadataOperator.OR: "$or",
+        MetadataOperator.EQ: "$eq",
+        MetadataOperator.NE: "$ne",
+        MetadataOperator.LT: "$lt",
+        MetadataOperator.LE: "$lte",
+        MetadataOperator.GT: "$gt",
+        MetadataOperator.GE: "$gte",
+        MetadataOperator.IN: "$in",
+        MetadataOperator.NOT_IN: "$nin",
+    }
+
+    def _translate_metadata_filter(
+        self, metadata_filter: MetadataFilter
+    ) -> dict[str, Any]:
+        if metadata_filter.operator is MetadataOperator.RAW:
+            return cast(dict[str, Any], metadata_filter.value)
+        elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+            return {
+                self._METADATA_OPERATOR_MAP[metadata_filter.operator]: [
+                    self._translate_metadata_filter(child)
+                    for child in metadata_filter.value
+                ]
+            }
+        else:
+            return {
+                metadata_filter.key: {
+                    self._METADATA_OPERATOR_MAP[
+                        metadata_filter.operator
+                    ]: metadata_filter.value
+                }
+            }
 
     def retrieve(
         self,
