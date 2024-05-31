@@ -11,6 +11,8 @@ __all__ = [
     "LocalDocument",
     "Message",
     "MessageRole",
+    "MetadataFilter",
+    "MetadataOperator",
     "PackageRequirement",
     "Page",
     "PdfDocumentHandler",
@@ -42,6 +44,7 @@ from ._document import (
     PlainTextDocumentHandler,
     PptxDocumentHandler,
 )
+from ._metadata_filter import MetadataFilter, MetadataOperator
 
 # isort: split
 
