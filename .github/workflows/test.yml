@@ -75,7 +75,7 @@ jobs:
           --video=retain-on-failure  # playwright ui tests
 
       - name: Upload playwright video
-      - uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name:
             playwright-${{ matrix.os }}-${{ matrix.python-version}}-${{ github.run_id }}
