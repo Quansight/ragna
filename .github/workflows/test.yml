@@ -75,12 +75,12 @@ jobs:
           --video=retain-on-failure  # playwright ui tests
 
       - name: Upload playwright video
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name:
             playwright-${{ matrix.os }}-${{ matrix.python-version}}-${{ github.run_id }}
           path: test-results
-          if-no-files-found: ignore
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'
