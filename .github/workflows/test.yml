@@ -68,7 +68,19 @@ jobs:
 
       - name: Run unit tests
         id: tests
-        run: pytest --junit-xml=test-results.xml --durations=25
+        run: |
+          pytest \
+          --junit-xml=test-results.xml \
+          --durations=25 \
+          --video=retain-on-failure  # playwright ui tests
+
+      - name: Upload playwright video
+      - uses: actions/upload-artifact@v4
+        with:
+          name:
+            playwright-${{ matrix.os }}-${{ matrix.python-version}}-${{ github.run_id }}
+          path: test-results
+          if-no-files-found: ignore
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'
