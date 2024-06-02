@@ -20,7 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 requires-python = ">=3.9"
-dynamic = ["version"]
+dynamic = ["dependencies", "version"]
 
 [project.urls]
 Homepage = "https://ragna.chat"
