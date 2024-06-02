@@ -2,15 +2,13 @@ from collections import defaultdict
 from functools import reduce
 from pathlib import Path
 
-import tomlkit
-import tomlkit.items
 from packaging.requirements import Requirement
 
 import ragna
 from ragna.core import Assistant, SourceStorage
 
 HERE = Path(__file__).parent
-PYPROJECT_TOML = HERE / ".." / "pyproject.toml"
+REQUIREMENTS_TXT = HERE / ".." / "requirements.txt"
 
 
 def main():
@@ -18,7 +16,7 @@ def main():
         extract_builtin_document_handler_requirements(),
         extract_builtin_component_requirements(),
     )
-    update_pyproject_toml(optional_dependencies)
+    update_requirements_txt(optional_dependencies)
 
 
 def make_optional_dependencies(*optional_requirements):
@@ -57,18 +55,27 @@ def extract_builtin_component_requirements():
     return dict(requirements)
 
 
-def update_pyproject_toml(optional_dependencies):
-    with open(PYPROJECT_TOML) as file:
-        document = tomlkit.load(file)
+def update_requirements_txt(optional_dependencies):
+    existing_dependencies = set()
 
-    document["project"]["optional-dependencies"]["all"] = tomlkit.items.Array(
-        list(map(tomlkit.items.String.from_raw, optional_dependencies)),
-        trivia=tomlkit.items.Trivia(),
-        multiline=True,
-    )
+    # Read existing dependencies from requirements.txt
+    if REQUIREMENTS_TXT.exists():
+        with open(REQUIREMENTS_TXT, "r") as file:
+            existing_dependencies = set(line.strip() for line in file)
 
-    with open(PYPROJECT_TOML, "w") as file:
-        tomlkit.dump(document, file)
+    new_dependencies = []
+
+    # Check if each optional dependency already exists
+    for dependency in optional_dependencies:
+        if dependency not in existing_dependencies:
+            new_dependencies.append(dependency)
+            existing_dependencies.add(dependency)
+
+    # Append new dependencies to requirements.txt
+    if new_dependencies:
+        with open(REQUIREMENTS_TXT, "a") as file:
+            file.write("\n".join(new_dependencies))
+            file.write("\n")
 
 
 def append_version_specifiers(version_specifiers, obj):
