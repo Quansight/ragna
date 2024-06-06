@@ -10,6 +10,7 @@ from ragna.core import Assistant, SourceStorage
 HERE = Path(__file__).parent
 PROJECT_ROOT = HERE.parent
 REQUIREMENTS_TXT = PROJECT_ROOT / "requirements.txt"
+REQUIREMENTS_BASE_TXT = PROJECT_ROOT / "requirements-base.txt"
 
 
 def main():
@@ -17,7 +18,7 @@ def main():
         extract_builtin_document_handler_requirements(),
         extract_builtin_component_requirements(),
     )
-    update_requirements_txt(optional_dependencies)
+    create_requirements_txt(optional_dependencies)
 
 
 def make_optional_dependencies(*optional_requirements):
@@ -56,27 +57,23 @@ def extract_builtin_component_requirements():
     return dict(requirements)
 
 
-def update_requirements_txt(optional_dependencies):
+def create_requirements_txt(optional_dependencies):
+    # Read existing dependencies from requirements-base.txt
     existing_dependencies = set()
-
-    # Read existing dependencies from requirements.txt
-    if REQUIREMENTS_TXT.exists():
-        with open(REQUIREMENTS_TXT, "r") as file:
+    if REQUIREMENTS_BASE_TXT.exists():
+        with open(REQUIREMENTS_BASE_TXT, "r") as file:
             existing_dependencies = set(line.strip() for line in file)
 
-    new_dependencies = []
+    # Add optional dependencies
+    all_dependencies = existing_dependencies.union(optional_dependencies)
 
-    # Check if each optional dependency already exists
-    for dependency in optional_dependencies:
-        if dependency not in existing_dependencies:
-            new_dependencies.append(dependency)
-            existing_dependencies.add(dependency)
+    # Sort the dependencies to maintain a consistent order
+    sorted_dependencies = sorted(all_dependencies)
 
-    # Append new dependencies to requirements.txt
-    if new_dependencies:
-        with open(REQUIREMENTS_TXT, "a") as file:
-            file.write("\n".join(new_dependencies))
-            file.write("\n")
+    # Overwrite the requirements.txt file with the sorted dependencies
+    with open(REQUIREMENTS_TXT, "w") as file:
+        file.write("\n".join(sorted_dependencies))
+        file.write("\n")
 
 
 def append_version_specifiers(version_specifiers, obj):
