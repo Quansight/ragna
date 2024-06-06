@@ -7,13 +7,8 @@ def modify_pyproject(package_name):
 
     pyproject_data["project"]["name"] = package_name
 
-    if package_name == "ragna-base":
-        pyproject_data["tool"]["setuptools"]["dynamic"]["dependencies"] = {
-            "file": ["requirements-base.txt"]
-        }
-    else:
-        pyproject_data["tool"]["setuptools"]["dynamic"]["dependencies"] = {
-            "file": ["requirements.txt"]
+    pyproject_data["tool"]["setuptools"]["dynamic"]["dependencies"] = {
+            "file": ["requirements-base.txt" if package_name == "ragna-base" else "requirements.txt"]
         }
 
     with open("pyproject.toml", "w") as f:

@@ -8,7 +8,8 @@ import ragna
 from ragna.core import Assistant, SourceStorage
 
 HERE = Path(__file__).parent
-REQUIREMENTS_TXT = HERE / ".." / "requirements.txt"
+PROJECT_ROOT = HERE.parent
+REQUIREMENTS_TXT = PROJECT_ROOT / "requirements.txt"
 
 
 def main():
