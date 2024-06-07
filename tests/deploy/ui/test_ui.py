@@ -85,89 +85,88 @@ class Server:
         self.proc.kill()
         pn.state.kill_all_servers()
 
+    def __enter__(self):
+        self.start()
+        return self
 
-@pytest.fixture
-def server(config):
-    server = Server(config)
-    try:
-        server.start()
-        yield server
-    finally:
-        server.stop()
+    def __exit__(self, *args):
+        self.stop()
 
 
-def test_health(server, page: Page) -> None:
-    health_url = f"{server.base_url}/health"
-    response = page.goto(health_url)
-    assert response.ok
+def test_health(config, page: Page) -> None:
+    with Server(config) as server:
+        health_url = f"{server.base_url}/health"
+        response = page.goto(health_url)
+        assert response.ok
 
 
-def test_start_chat(server, config, page: Page) -> None:
-    # Index page, no auth
-    index_url = server.base_url
-    page.goto(index_url)
-    expect(page.get_by_role("button", name="Sign In")).to_be_visible()
+def test_start_chat(config, page: Page) -> None:
+    with Server(config) as server:
+        # Index page, no auth
+        index_url = server.base_url
+        page.goto(index_url)
+        expect(page.get_by_role("button", name="Sign In")).to_be_visible()
 
-    # Authorize with no credentials
-    page.get_by_role("button", name="Sign In").click()
-    expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
+        # Authorize with no credentials
+        page.get_by_role("button", name="Sign In").click()
+        expect(page.get_by_role("button", name=" New Chat")).to_be_visible()
 
-    # expect auth token to be set
-    cookies = page.context.cookies()
-    assert len(cookies) == 1
-    cookie = cookies[0]
-    assert cookie.get("name") == "auth_token"
-    auth_token = cookie.get("value")
-    assert auth_token is not None
+        # expect auth token to be set
+        cookies = page.context.cookies()
+        assert len(cookies) == 1
+        cookie = cookies[0]
+        assert cookie.get("name") == "auth_token"
+        auth_token = cookie.get("value")
+        assert auth_token is not None
 
-    # New page button
-    new_chat_button = page.get_by_role("button", name=" New Chat")
-    expect(new_chat_button).to_be_visible()
-    new_chat_button.click()
+        # New page button
+        new_chat_button = page.get_by_role("button", name=" New Chat")
+        expect(new_chat_button).to_be_visible()
+        new_chat_button.click()
 
-    document_root = config.local_root / "documents"
-    document_root.mkdir()
-    document_name = "test.txt"
-    document_path = document_root / document_name
-    with open(document_path, "w") as file:
-        file.write("!\n")
+        document_root = config.local_root / "documents"
+        document_root.mkdir()
+        document_name = "test.txt"
+        document_path = document_root / document_name
+        with open(document_path, "w") as file:
+            file.write("!\n")
 
-    # File upload selector
-    with page.expect_file_chooser() as fc_info:
-        page.locator(".fileUpload").click()
-    file_chooser = fc_info.value
-    file_chooser.set_files(document_path)
+        # File upload selector
+        with page.expect_file_chooser() as fc_info:
+            page.locator(".fileUpload").click()
+        file_chooser = fc_info.value
+        file_chooser.set_files(document_path)
 
-    # Upload document and expect to see it listed
-    file_list = page.locator(".fileListContainer")
-    expect(file_list.first).to_have_text(str(document_name))
+        # Upload document and expect to see it listed
+        file_list = page.locator(".fileListContainer")
+        expect(file_list.first).to_have_text(str(document_name))
 
-    chat_dialog = page.get_by_role("dialog")
-    expect(chat_dialog).to_be_visible()
-    start_chat_button = page.get_by_role("button", name="Start Conversation")
-    expect(start_chat_button).to_be_visible()
-    time.sleep(0.5)  # hack while waiting for button to be fully clickable
-    start_chat_button.click(delay=5)
+        chat_dialog = page.get_by_role("dialog")
+        expect(chat_dialog).to_be_visible()
+        start_chat_button = page.get_by_role("button", name="Start Conversation")
+        expect(start_chat_button).to_be_visible()
+        time.sleep(0.5)  # hack while waiting for button to be fully clickable
+        start_chat_button.click(delay=5)
 
-    chat_box_row = page.locator(".chat-interface-input-row")
-    expect(chat_box_row).to_be_visible()
+        chat_box_row = page.locator(".chat-interface-input-row")
+        expect(chat_box_row).to_be_visible()
 
-    chat_box = chat_box_row.get_by_role("textbox")
-    expect(chat_box).to_be_visible()
+        chat_box = chat_box_row.get_by_role("textbox")
+        expect(chat_box).to_be_visible()
 
-    # Document should be in the database
-    chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
-    chats = httpx.get(
-        chats_url, headers={"Authorization": f"Bearer {auth_token}"}
-    ).json()
-    assert len(chats) == 1
-    chat = chats[0]
-    chat_documents = chat["metadata"]["documents"]
-    assert len(chat_documents) == 1
-    assert chat_documents[0]["name"] == document_name
+        # Document should be in the database
+        chats_url = f"http://{config.api.hostname}:{config.api.port}/chats"
+        chats = httpx.get(
+            chats_url, headers={"Authorization": f"Bearer {auth_token}"}
+        ).json()
+        assert len(chats) == 1
+        chat = chats[0]
+        chat_documents = chat["metadata"]["documents"]
+        assert len(chat_documents) == 1
+        assert chat_documents[0]["name"] == document_name
 
-    chat_box.fill("Tell me about the documents")
+        chat_box.fill("Tell me about the documents")
 
-    chat_button = chat_box_row.get_by_role("button")
-    expect(chat_button).to_be_visible()
-    chat_button.click()
+        chat_button = chat_box_row.get_by_role("button")
+        expect(chat_button).to_be_visible()
+        chat_button.click()
