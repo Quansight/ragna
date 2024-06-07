@@ -1,12 +1,11 @@
-import json
 from typing import AsyncIterator, cast
 
 from ragna.core import PackageRequirement, RagnaException, Requirement, Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant
 
 
-class AnthropicApiAssistant(ApiAssistant):
+class AnthropicAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _MODEL: str
 
@@ -36,15 +35,12 @@ class AnthropicApiAssistant(ApiAssistant):
             + "</documents>"
         )
 
-    async def _call_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        import httpx_sse
-
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
-        async with httpx_sse.aconnect_sse(
-            self._client,
+        async for data in self._stream_sse(
             "POST",
             "https://api.anthropic.com/v1/messages",
             headers={
@@ -61,23 +57,19 @@ class AnthropicApiAssistant(ApiAssistant):
                 "temperature": 0.0,
                 "stream": True,
             },
-        ) as event_source:
-            await self._assert_api_call_is_success(event_source.response)
+        ):
+            # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
+            if "error" in data:
+                raise RagnaException(data["error"].pop("message"), **data["error"])
+            elif data["type"] == "message_stop":
+                break
+            elif data["type"] != "content_block_delta":
+                continue
 
-            async for sse in event_source.aiter_sse():
-                data = json.loads(sse.data)
-                # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
-                if "error" in data:
-                    raise RagnaException(data["error"].pop("message"), **data["error"])
-                elif data["type"] == "message_stop":
-                    break
-                elif data["type"] != "content_block_delta":
-                    continue
-
-                yield cast(str, data["delta"].pop("text"))
+            yield cast(str, data["delta"].pop("text"))
 
 
-class ClaudeOpus(AnthropicApiAssistant):
+class ClaudeOpus(AnthropicAssistant):
     """[Claude 3 Opus](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
@@ -92,7 +84,7 @@ class ClaudeOpus(AnthropicApiAssistant):
     _MODEL = "claude-3-opus-20240229"
 
 
-class ClaudeSonnet(AnthropicApiAssistant):
+class ClaudeSonnet(AnthropicAssistant):
     """[Claude 3 Sonnet](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
@@ -107,7 +99,7 @@ class ClaudeSonnet(AnthropicApiAssistant):
     _MODEL = "claude-3-sonnet-20240229"
 
 
-class ClaudeHaiku(AnthropicApiAssistant):
+class ClaudeHaiku(AnthropicAssistant):
     """[Claude 3 Haiku](https://docs.anthropic.com/claude/docs/models-overview)
 
     !!! info "Required environment variables"
