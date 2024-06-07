@@ -97,12 +97,12 @@ def server(config):
 
 
 def test_health(server, page: Page) -> None:
-    health_url = server.base_url + "/health"
+    health_url = f"{server.base_url}/health"
     response = page.goto(health_url)
     assert response.ok
 
 
-def test_index(server, config, page: Page) -> None:
+def test_start_chat(server, config, page: Page) -> None:
     # Index page, no auth
     index_url = server.base_url
     page.goto(index_url)
