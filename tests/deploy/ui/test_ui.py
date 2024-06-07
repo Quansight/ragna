@@ -19,12 +19,12 @@ def get_available_port():
         return s.getsockname()[1]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def api_port():
     return get_available_port()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def ui_port():
     return get_available_port()
 
