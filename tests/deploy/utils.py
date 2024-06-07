@@ -26,7 +26,7 @@ class TestAssistant(RagnaDemoAssistant):
             yield content
 
 
-def authenticate(client: TestClient) -> None:
+def authenticate_with_api(client: TestClient) -> None:
     username = default_user()
     token = (
         client.post(

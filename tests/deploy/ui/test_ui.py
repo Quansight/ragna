@@ -10,8 +10,7 @@ from playwright.sync_api import Page, expect
 
 from ragna._utils import timeout_after
 from ragna.deploy import Config
-
-from ..utils import TestAssistant
+from tests.deploy.utils import TestAssistant
 
 
 def get_available_port():
