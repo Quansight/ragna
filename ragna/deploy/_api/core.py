@@ -233,11 +233,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             chat_name=chat.metadata.name,
             **chat.metadata.params,
         )
-        # FIXME: We need to reconstruct the previous messages here. Right now this is
-        #  not needed, because the chat itself never accesses past messages. However,
-        #  if we implement a chat history feature, i.e. passing past messages to
-        #  the assistant, this becomes crucial.
-        core_chat._messages = []
+        core_chat._messages = [
+            schemas.Message.to_core(message) for message in chat.messages
+        ]
         core_chat._prepared = chat.prepared
 
         return core_chat

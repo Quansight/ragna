@@ -26,6 +26,13 @@ class Document(BaseModel):
             name=document.name,
         )
 
+    @classmethod
+    def to_core(cls, document: Document) -> ragna.core.Document:
+        return ragna.core.Document(
+            id=document.id,
+            name=document.name,
+        )
+
 
 class DocumentUpload(BaseModel):
     parameters: ragna.core.DocumentUploadParameters
@@ -50,6 +57,16 @@ class Source(BaseModel):
             num_tokens=source.num_tokens,
         )
 
+    @classmethod
+    def to_core(cls, source: Source) -> ragna.core.Source:
+        return ragna.core.Source(
+            id=source.id,
+            document=Document.to_core(source.document),
+            location=source.location,
+            content=source.content,
+            num_tokens=source.num_tokens,
+        )
+
 
 class Message(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -64,6 +81,14 @@ class Message(BaseModel):
             content=message.content,
             role=message.role,
             sources=[Source.from_core(source) for source in message.sources],
+        )
+
+    @classmethod
+    def to_core(cls, message: Message) -> ragna.core.Message:
+        return ragna.core.Message(
+            content=message.content,
+            role=message.role,
+            sources=[Source.to_core(source) for source in message.sources],
         )
 
 
