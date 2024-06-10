@@ -1,22 +1,14 @@
 import abc
-from typing import Any, AsyncIterator, Literal, Optional, cast
+from functools import cached_property
+from typing import Any, AsyncIterator, Optional, cast
 
-from ragna.core import PackageRequirement, RagnaException, Requirement, Source
+from ragna.core import Source
 
-from ._http_api import HttpApiAssistant
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
-class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
-    _STREAMING_METHOD: Literal["sse", "jsonl"]
+class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     _MODEL: Optional[str]
-
-    @classmethod
-    def requirements(cls) -> list[Requirement]:
-        requirements = super().requirements()
-        requirements.extend(
-            {"sse": [PackageRequirement("httpx_sse")]}.get(cls._STREAMING_METHOD, [])
-        )
-        return requirements
 
     @property
     @abc.abstractmethod
@@ -32,23 +24,8 @@ class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
         return instruction + "\n\n".join(source.content for source in sources)
 
     def _stream(
-        self,
-        method: str,
-        url: str,
-        **kwargs: Any,
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
-        stream = {
-            "sse": self._stream_sse,
-            "jsonl": self._stream_jsonl,
-        }.get(self._STREAMING_METHOD)
-        if stream is None:
-            raise RagnaException
-
-        return stream(method, url, **kwargs)
-
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ) -> AsyncIterator[str]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         headers = {
@@ -75,7 +52,12 @@ class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        async for data in self._stream("POST", self._url, headers=headers, json=json_):
+        return self._call_api("POST", self._url, headers=headers, json=json_)
+
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:
                 break
@@ -83,15 +65,15 @@ class OpenaiCompliantHttpApiAssistant(HttpApiAssistant):
             yield cast(str, choice["delta"]["content"])
 
 
-class OpenaiAssistant(OpenaiCompliantHttpApiAssistant):
+class OpenaiAssistant(OpenaiLikeHttpApiAssistant):
     _API_KEY_ENV_VAR = "OPENAI_API_KEY"
-    _STREAMING_METHOD = "sse"
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
 
     @classmethod
     def display_name(cls) -> str:
         return f"OpenAI/{cls._MODEL}"
 
-    @property
+    @cached_property
     def _url(self) -> str:
         return "https://api.openai.com/v1/chat/completions"
 

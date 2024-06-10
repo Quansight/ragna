@@ -31,6 +31,14 @@ is performed using the Python and REST API.
 #       - [ragna.assistants.Gpt4][]
 #     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
 #       - [ragna.assistants.LlamafileAssistant][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 
 from ragna import assistants
 
