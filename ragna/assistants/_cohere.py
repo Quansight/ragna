@@ -2,11 +2,12 @@ from typing import AsyncIterator, cast
 
 from ragna.core import RagnaException, Source
 
-from ._http_api import HttpApiAssistant
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
 class CohereAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "COHERE_API_KEY"
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.JSONL
     _MODEL: str
 
     @classmethod
@@ -29,7 +30,7 @@ class CohereAssistant(HttpApiAssistant):
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        async for event in self._stream_jsonl(
+        async for event in self._call_api(
             "POST",
             "https://api.cohere.ai/v1/chat",
             headers={
