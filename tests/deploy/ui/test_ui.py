@@ -19,11 +19,6 @@ def get_available_port():
         return s.getsockname()[1]
 
 
-@pytest.fixture(scope="session")
-def headed_mode(pytestconfig):
-    return pytestconfig.getoption("headed") or False
-
-
 @pytest.fixture
 def config(
     tmp_local_root,
