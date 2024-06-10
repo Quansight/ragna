@@ -3,12 +3,9 @@ import asyncio
 import panel as pn
 import param
 
-from . import js
-from . import styles as ui
 from .central_view import CentralView
 from .left_sidebar import LeftSidebar
 from .modal_configuration import ModalConfiguration
-from .modal_welcome import ModalWelcome
 from .right_sidebar import RightSidebar
 
 
@@ -71,14 +68,6 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.template.modal.objects[0].objects = [self.modal]
         self.template.open_modal()
 
-    def open_welcome_modal(self, event):
-        self.modal = ModalWelcome(
-            close_button_callback=lambda: self.template.close_modal(),
-        )
-
-        self.template.modal.objects[0].objects = [self.modal]
-        self.template.open_modal()
-
     async def open_new_chat(self, new_chat_id):
         # called after creating a new chat.
         self.current_chat_id = new_chat_id
@@ -111,59 +100,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     def __panel__(self):
         asyncio.ensure_future(self.refresh_data())
 
-        objects = [self.left_sidebar, self.central_view, self.right_sidebar]
-
-        if self.chats is not None and len(self.chats) == 0:
-            """I haven't found a better way to open the modal when the pages load,
-            than simulating a click on the "New chat" button.
-            - calling self.template.open_modal() doesn't work
-            - calling self.on_click_new_chat doesn't work either
-            - trying to schedule a call to on_click_new_chat with pn.state.schedule_task
-                could have worked but my tests were yielding an unstable result.
-            """
-
-            new_chat_button_name = "open welcome modal"
-            open_welcome_modal = pn.widgets.Button(
-                name=new_chat_button_name,
-                button_type="primary",
-            )
-            open_welcome_modal.on_click(self.open_welcome_modal)
-
-            hack_open_modal = pn.pane.HTML(
-                """
-                            <script>   let buttons = $$$('button.bk-btn-primary');
-                            console.log(buttons);
-                                        buttons.forEach(function(btn){
-                                            if ( btn.innerText.trim() == '{new_chat_btn_name}' ){
-                                                btn.click();
-                                            }
-                                        });
-                            </script>
-                            """.replace(
-                    "{new_chat_btn_name}", new_chat_button_name
-                ).strip(),
-                # This is not really styling per say, it's just a way to hide from the page the HTML item of this hack.
-                # It's not worth moving this to a separate file.
-                stylesheets=[
-                    ui.css(
-                        ":host",
-                        {"position": "absolute", "z-index": "-999"},
-                    )
-                ],
-            )
-
-            objects.append(
-                pn.Row(
-                    open_welcome_modal,
-                    pn.pane.HTML(js.SHADOWROOT_INDEXING),
-                    hack_open_modal,
-                    visible=False,
-                )
-            )
-
-        main_page = pn.Row(
-            *objects,
+        return pn.Row(
+            *[self.left_sidebar, self.central_view, self.right_sidebar],
             css_classes=["main_page_main_row"],
         )
-
-        return main_page
