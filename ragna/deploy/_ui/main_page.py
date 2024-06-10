@@ -101,6 +101,8 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         asyncio.ensure_future(self.refresh_data())
 
         return pn.Row(
-            *[self.left_sidebar, self.central_view, self.right_sidebar],
+            self.left_sidebar,
+            self.central_view,
+            self.right_sidebar,
             css_classes=["main_page_main_row"],
         )
