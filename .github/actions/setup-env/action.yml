@@ -58,6 +58,10 @@ runs:
       shell: bash -el {0}
       run: mamba install --yes --channel conda-forge redis-server
 
+    - name: Install playwright
+      shell: bash -el {0}
+      run: playwright install
+
     - name: Install ragna
       shell: bash -el {0}
       run: |
