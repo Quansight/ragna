@@ -19,16 +19,6 @@ def get_available_port():
         return s.getsockname()[1]
 
 
-@pytest.fixture
-def api_port():
-    return get_available_port()
-
-
-@pytest.fixture
-def ui_port():
-    return get_available_port()
-
-
 @pytest.fixture(scope="session")
 def headed_mode(pytestconfig):
     return pytestconfig.getoption("headed") or False

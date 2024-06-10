@@ -72,7 +72,7 @@ jobs:
           pytest \
           --ignore tests/deploy/ui \
           --junit-xml=test-results.xml \
-          --durations=25 \
+          --durations=25
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'
