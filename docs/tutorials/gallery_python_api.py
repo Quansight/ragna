@@ -85,10 +85,20 @@ from ragna.assistants import RagnaDemoAssistant
 #       - [ragna.assistants.Gpt4][]
 #     - [AI21 Labs](https://www.ai21.com/)
 #       - [ragna.assistants.Jurassic2Ultra][]
+#     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
+#       - [ragna.assistants.LlamafileAssistant][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 #
 #     !!! note
 #
-#         To use any of builtin assistants, you need to
+#         To use some of the builtin assistants, you need to
 #         [procure API keys](../../references/faq.md#where-do-i-get-api-keys-for-the-builtin-assistants)
 #         first and set the corresponding environment variables.
 

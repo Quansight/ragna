@@ -1,14 +1,17 @@
 import inspect
+import itertools
 import os
 import subprocess
 import sys
 import tempfile
+import textwrap
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, cast
 
 import httpx
 
 from ragna._utils import timeout_after
+from ragna.core import RagnaException
 from ragna.deploy import Config
 
 __all__ = ["SAMPLE_CONTENT", "RestApi"]
@@ -29,7 +32,18 @@ class RestApi:
     def __init__(self) -> None:
         self._process: Optional[subprocess.Popen] = None
 
-    def start(self, config: Config, *, authenticate: bool = False) -> httpx.Client:
+    def start(
+        self,
+        config: Config,
+        *,
+        authenticate: bool = False,
+        upload_document: bool = False,
+    ) -> tuple[httpx.Client, Optional[dict]]:
+        if upload_document and not authenticate:
+            raise RagnaException(
+                "Cannot upload a document without authenticating first. "
+                "Set authenticate=True when using upload_document=True."
+            )
         python_path, config_path = self._prepare_config(config)
 
         client = httpx.Client(base_url=config.api.url)
@@ -39,7 +53,12 @@ class RestApi:
         if authenticate:
             self._authenticate(client)
 
-        return client
+        if upload_document:
+            document = self._upload_document(client)
+        else:
+            document = None
+
+        return client, document
 
     def _prepare_config(self, config: Config) -> tuple[str, str]:
         deploy_directory = Path(tempfile.mkdtemp())
@@ -50,22 +69,32 @@ class RestApi:
         config_path = str(deploy_directory / "ragna.toml")
 
         config.local_root = deploy_directory
+        config.api.database_url = f"sqlite:///{deploy_directory / 'ragna.db'}"
 
         sys.modules["__main__"].__file__ = inspect.getouterframes(
             inspect.currentframe()
         )[2].filename
         custom_module = deploy_directory.name
+        custom_components = set()
         with open(deploy_directory / f"{custom_module}.py", "w") as file:
-            # TODO: this currently only handles assistants. When needed, we can extend
-            #  to source storages.
-            file.write("from ragna import assistants\n\n")
+            # FIXME Find a way to automatically detect necessary imports
+            file.write("import uuid; from uuid import *\n")
+            file.write("import textwrap; from textwrap import*\n")
+            file.write("from typing import *\n")
+            file.write("from ragna import *\n")
+            file.write("from ragna.core import *\n")
 
-            for assistant in config.assistants:
-                if assistant.__module__ == "__main__":
-                    file.write(f"{inspect.getsource(assistant)}\n\n")
-                    assistant.__module__ = custom_module
+            for component in itertools.chain(config.source_storages, config.assistants):
+                if component.__module__ == "__main__":
+                    custom_components.add(component)
+                    file.write(f"{textwrap.dedent(inspect.getsource(component))}\n\n")
+                    component.__module__ = custom_module
 
         config.to_file(config_path)
+
+        for component in custom_components:
+            component.__module__ = "__main__"
+
         return python_path, config_path
 
     def _start_api(
@@ -122,6 +151,24 @@ class RestApi:
         token = response.json()
 
         client.headers["Authorization"] = f"Bearer {token}"
+
+    def _upload_document(self, client: httpx.Client) -> dict[str, Any]:
+        name, content = "ragna.txt", SAMPLE_CONTENT
+
+        response = client.post("/document", json={"name": name}).raise_for_status()
+        document_upload = response.json()
+
+        document = cast(dict[str, Any], document_upload["document"])
+
+        parameters = document_upload["parameters"]
+        client.request(
+            parameters["method"],
+            parameters["url"],
+            data=parameters["data"],
+            files={"file": content},
+        ).raise_for_status()
+
+        return document
 
     def stop(self, *, quiet: bool = False) -> None:
         if self._process is None:

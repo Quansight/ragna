@@ -2,11 +2,12 @@ from typing import AsyncIterator, cast
 
 from ragna.core import Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant
 
 
-class Ai21LabsAssistant(ApiAssistant):
+class Ai21LabsAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "AI21_API_KEY"
+    _STREAMING_PROTOCOL = None
     _MODEL_TYPE: str
 
     @classmethod
@@ -21,13 +22,14 @@ class Ai21LabsAssistant(ApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def _call_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
-        response = await self._client.post(
+        async for data in self._call_api(
+            "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
             headers={
                 "accept": "application/json",
@@ -46,10 +48,8 @@ class Ai21LabsAssistant(ApiAssistant):
                 ],
                 "system": self._make_system_content(sources),
             },
-        )
-        await self._assert_api_call_is_success(response)
-
-        yield cast(str, response.json()["outputs"][0]["text"])
+        ):
+            yield cast(str, data["outputs"][0]["text"])
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote
