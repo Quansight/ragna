@@ -83,12 +83,11 @@ class Message(BaseModel):
             sources=[Source.from_core(source) for source in message.sources],
         )
 
-    @classmethod
-    def to_core(cls, message: Message) -> ragna.core.Message:
+    def to_core(self) -> ragna.core.Message:
         return ragna.core.Message(
-            content=message.content,
-            role=message.role,
-            sources=[Source.to_core(source) for source in message.sources],
+            content=self.content,
+            role=self.role,
+            sources=[source.to_core() for source in self.sources],
         )
 
 
