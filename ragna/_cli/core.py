@@ -112,12 +112,13 @@ def deploy(
         raise Exception
 
     uvicorn.run(
-        make_app(
+        lambda: make_app(
             config,
             ui=ui,
             api=api,
             ignore_unavailable_components=ignore_unavailable_components,
         ),
+        factory=True,
         host=config.hostname,
         port=config.port,
     )

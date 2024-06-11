@@ -9,6 +9,7 @@ import param
 # The goal is this class is to provide ready-to-use functions to interact with the API
 class ApiWrapper(param.Parameterized):
     def __init__(self, api_url, **params):
+        self.api_url = api_url
         self.client = httpx.AsyncClient(base_url=api_url, timeout=60)
 
         super().__init__(**params)
@@ -34,7 +35,7 @@ class ApiWrapper(param.Parameterized):
     # Upload and related functions
     def upload_endpoints(self):
         return {
-            "informations_endpoint": f"{self.client.base_url}/document",
+            "informations_endpoint": f"{self.api_url}/document",
         }
 
     async def start_and_prepare(
