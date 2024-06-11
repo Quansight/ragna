@@ -5,9 +5,8 @@ from fastapi.testclient import TestClient
 from ragna import assistants
 from ragna.core import RagnaException
 from ragna.deploy import Config
-from ragna.deploy._api import app
 
-from .utils import authenticate
+from .utils import authenticate, make_api_app
 
 
 @pytest.mark.parametrize("ignore_unavailable_components", [True, False])
@@ -22,20 +21,20 @@ def test_ignore_unavailable_components(ignore_unavailable_components):
 
     if ignore_unavailable_components:
         with TestClient(
-            app(
+            make_api_app(
                 config=config,
                 ignore_unavailable_components=ignore_unavailable_components,
             )
         ) as client:
             authenticate(client)
 
-            components = client.get("/components").raise_for_status().json()
+            components = client.get("/api/components").raise_for_status().json()
             assert [assistant["title"] for assistant in components["assistants"]] == [
                 available_assistant.display_name()
             ]
     else:
         with pytest.raises(RagnaException, match="not available"):
-            app(
+            make_api_app(
                 config=config,
                 ignore_unavailable_components=ignore_unavailable_components,
             )
@@ -48,7 +47,7 @@ def test_ignore_unavailable_components_at_least_one():
     config = Config(assistants=[unavailable_assistant])
 
     with pytest.raises(RagnaException, match="No component available"):
-        app(
+        make_api_app(
             config=config,
             ignore_unavailable_components=True,
         )
@@ -64,12 +63,12 @@ def test_unknown_component(tmp_local_root):
         file.write("!\n")
 
     with TestClient(
-        app(config=Config(), ignore_unavailable_components=False)
+        make_api_app(config=Config(), ignore_unavailable_components=False)
     ) as client:
         authenticate(client)
 
         document_upload = (
-            client.post("/document", json={"name": document_path.name})
+            client.post("/api/document", json={"name": document_path.name})
             .raise_for_status()
             .json()
         )
@@ -86,7 +85,7 @@ def test_unknown_component(tmp_local_root):
             )
 
         response = client.post(
-            "/chats",
+            "/api/chats",
             json={
                 "name": "test-chat",
                 "source_storage": "unknown_source_storage",

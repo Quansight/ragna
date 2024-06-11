@@ -4,14 +4,13 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-
 import ragna
 from ragna.core import RagnaException
 
 from ._api import make_router as make_api_router
-from ._ui import app as make_ui_app
 from ._config import Config
-from ._utils import redirect, set_redirect_root_path, handle_localhost_origins
+from ._ui import app as make_ui_app
+from ._utils import handle_localhost_origins, redirect, set_redirect_root_path
 
 
 def make_app(

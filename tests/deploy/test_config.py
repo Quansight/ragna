@@ -17,24 +17,6 @@ def test_env_var_prefix(mocker, tmp_path):
     assert config.local_root == env_var
 
 
-def test_env_var_api_prefix(mocker):
-    env_var = "hostname"
-    mocker.patch.dict(os.environ, values={"RAGNA_API_HOSTNAME": env_var})
-
-    config = Config()
-
-    assert config.api.hostname == env_var
-
-
-def test_env_var_ui_prefix(mocker):
-    env_var = "hostname"
-    mocker.patch.dict(os.environ, values={"RAGNA_UI_HOSTNAME": env_var})
-
-    config = Config()
-
-    assert config.ui.hostname == env_var
-
-
 @pytest.mark.xfail()
 def test_explicit_gt_env_var(mocker, tmp_path):
     explicit = tmp_path / "explicit"
@@ -65,15 +47,14 @@ def test_env_var_gt_config_file(mocker, tmp_path):
 
 def test_api_database_url_default_path(tmp_path):
     config = Config(local_root=tmp_path)
-    assert Path(urlsplit(config.api.database_url).path[1:]).parent == tmp_path
+    assert Path(urlsplit(config.database_url).path[1:]).parent == tmp_path
 
 
-@pytest.mark.parametrize("config_subsection", ["api", "ui"])
-def test_origins_default(config_subsection):
+def test_origins_default():
     hostname, port = "0.0.0.0", "80"
-    config = Config(ui=dict(hostname=hostname, port=port))
+    config = Config(hostname=hostname, port=port)
 
-    assert getattr(config, config_subsection).origins == [f"http://{hostname}:{port}"]
+    assert config.origins == [f"http://{hostname}:{port}"]
 
 
 def test_from_file_path_not_exists(tmp_path):

@@ -2,9 +2,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 
 from ragna.deploy import Config
-from ragna.deploy._api import app
 
-from .utils import authenticate
+from .utils import authenticate, make_api_app
 
 
 def test_batch_sequential_upload_equivalence(tmp_local_root):
@@ -21,24 +20,25 @@ def test_batch_sequential_upload_equivalence(tmp_local_root):
         file.write("?\n")
 
     with TestClient(
-        app(config=Config(), ignore_unavailable_components=False)
+        make_api_app(config=Config(), ignore_unavailable_components=False)
     ) as client:
         authenticate(client)
 
         document1_upload = (
-            client.post("/document", json={"name": document_path1.name})
+            client.post("/api/document", json={"name": document_path1.name})
             .raise_for_status()
             .json()
         )
         document2_upload = (
-            client.post("/document", json={"name": document_path2.name})
+            client.post("/api/document", json={"name": document_path2.name})
             .raise_for_status()
             .json()
         )
 
         documents_upload = (
             client.post(
-                "/documents", json={"names": [document_path1.name, document_path2.name]}
+                "/api/documents",
+                json={"names": [document_path1.name, document_path2.name]},
             )
             .raise_for_status()
             .json()
