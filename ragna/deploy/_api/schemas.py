@@ -26,13 +26,6 @@ class Document(BaseModel):
             name=document.name,
         )
 
-    @classmethod
-    def to_core(cls, document: Document) -> ragna.core.Document:
-        return ragna.core.Document(
-            id=document.id,
-            name=document.name,
-        )
-
 
 class DocumentUpload(BaseModel):
     parameters: ragna.core.DocumentUploadParameters
@@ -52,16 +45,6 @@ class Source(BaseModel):
         return cls(
             id=source.id,
             document=Document.from_core(source.document),
-            location=source.location,
-            content=source.content,
-            num_tokens=source.num_tokens,
-        )
-
-    @classmethod
-    def to_core(cls, source: Source) -> ragna.core.Source:
-        return ragna.core.Source(
-            id=source.id,
-            document=Document.to_core(source.document),
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -87,7 +70,7 @@ class Message(BaseModel):
         return ragna.core.Message(
             content=self.content,
             role=self.role,
-            sources=[source.to_core() for source in self.sources],
+            sources=[],
         )
 
 
