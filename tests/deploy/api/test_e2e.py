@@ -6,9 +6,8 @@ from fastapi.testclient import TestClient
 
 from ragna.assistants import RagnaDemoAssistant
 from ragna.deploy import Config
-from ragna.deploy._api import app
 
-from .utils import authenticate
+from .utils import authenticate, make_api_app
 
 
 class TestAssistant(RagnaDemoAssistant):
@@ -37,13 +36,15 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
+    with TestClient(
+        make_api_app(config=config, ignore_unavailable_components=False)
+    ) as client:
         authenticate(client)
 
-        assert client.get("/chats").raise_for_status().json() == []
+        assert client.get("/api/chats").raise_for_status().json() == []
 
         document_upload = (
-            client.post("/document", json={"name": document_path.name})
+            client.post("/api/document", json={"name": document_path.name})
             .raise_for_status()
             .json()
         )
@@ -59,7 +60,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
                 files={"file": file},
             )
 
-        components = client.get("/components").raise_for_status().json()
+        components = client.get("/api/components").raise_for_status().json()
         documents = components["documents"]
         assert set(documents) == config.document.supported_suffixes()
         source_storages = [
@@ -83,19 +84,21 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
             "documents": [document],
         }
-        chat = client.post("/chats", json=chat_metadata).raise_for_status().json()
+        chat = client.post("/api/chats", json=chat_metadata).raise_for_status().json()
         assert chat["metadata"] == chat_metadata
         assert not chat["prepared"]
         assert chat["messages"] == []
 
-        assert client.get("/chats").raise_for_status().json() == [chat]
-        assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
+        assert client.get("/api/chats").raise_for_status().json() == [chat]
+        assert client.get(f"/api/chats/{chat['id']}").raise_for_status().json() == chat
 
-        message = client.post(f"/chats/{chat['id']}/prepare").raise_for_status().json()
+        message = (
+            client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status().json()
+        )
         assert message["role"] == "system"
         assert message["sources"] == []
 
-        chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
+        chat = client.get(f"/api/chats/{chat['id']}").raise_for_status().json()
         assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
@@ -104,7 +107,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         if stream_answer:
             with client.stream(
                 "POST",
-                f"/chats/{chat['id']}/answer",
+                f"/api/chats/{chat['id']}/answer",
                 json={"prompt": prompt, "stream": True},
             ) as response:
                 chunks = [json.loads(chunk) for chunk in response.iter_lines()]
@@ -113,7 +116,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             message["content"] = "".join(chunk["content"] for chunk in chunks)
         else:
             message = (
-                client.post(f"/chats/{chat['id']}/answer", json={"prompt": prompt})
+                client.post(f"/api/chats/{chat['id']}/answer", json={"prompt": prompt})
                 .raise_for_status()
                 .json()
             )
@@ -123,7 +126,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             document_path.name
         }
 
-        chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
+        chat = client.get(f"/api/chats/{chat['id']}").raise_for_status().json()
         assert len(chat["messages"]) == 3
         assert (
             chat["messages"][-2]["role"] == "user"
@@ -132,5 +135,5 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         )
         assert chat["messages"][-1] == message
 
-        client.delete(f"/chats/{chat['id']}").raise_for_status()
-        assert client.get("/chats").raise_for_status().json() == []
+        client.delete(f"/api/chats/{chat['id']}").raise_for_status()
+        assert client.get("/api/chats").raise_for_status().json() == []

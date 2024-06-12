@@ -4,23 +4,20 @@ from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
 
 import aiofiles
 from fastapi import (
+    APIRouter,
     Body,
     Depends,
-    FastAPI,
     Form,
     HTTPException,
-    Request,
     UploadFile,
     status,
 )
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 import ragna
 import ragna.core
 from ragna._compat import aiter, anext
-from ragna._utils import handle_localhost_origins
 from ragna.core import Assistant, Component, Rag, RagnaException, SourceStorage
 from ragna.core._rag import SpecialChatParams
 from ragna.core._utils import default_user
@@ -29,8 +26,8 @@ from ragna.deploy import Config
 from . import database, schemas
 
 
-def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
-    ragna.local_root(config.local_root)
+def make_router(config: Config, ignore_unavailable_components: bool) -> APIRouter:
+    router = APIRouter(tags=["API"])
 
     rag = Rag()  # type: ignore[var-annotated]
     components_map: dict[str, Component] = {}
@@ -67,35 +64,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
         return component
 
-    app = FastAPI(
-        title="ragna",
-        version=ragna.__version__,
-        root_path=config.api.root_path,
-    )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=handle_localhost_origins(config.api.origins),
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    @app.exception_handler(RagnaException)
-    async def ragna_exception_handler(
-        request: Request, exc: RagnaException
-    ) -> JSONResponse:
-        if exc.http_detail is RagnaException.EVENT:
-            detail = exc.event
-        elif exc.http_detail is RagnaException.MESSAGE:
-            detail = str(exc)
-        else:
-            detail = cast(str, exc.http_detail)
-        return JSONResponse(
-            status_code=exc.http_status_code,
-            content={"error": {"message": detail}},
-        )
-
-    @app.get("/")
+    @router.get("/")
     async def version() -> str:
         return ragna.__version__
 
@@ -120,7 +89,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 json_schema["required"].remove(special_param)
         return json_schema
 
-    @app.get("/components")
+    @router.get("/components")
     async def get_components(_: UserDependency) -> schemas.Components:
         return schemas.Components(
             documents=sorted(config.document.supported_suffixes()),
@@ -136,14 +105,14 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             ],
         )
 
-    make_session = database.get_sessionmaker(config.api.database_url)
+    make_session = database.get_sessionmaker(config.database_url)
 
     @contextlib.contextmanager
     def get_session() -> Iterator[database.Session]:
         with make_session() as session:  # type: ignore[attr-defined]
             yield session
 
-    @app.post("/document")
+    @router.post("/document")
     async def create_document_upload_info(
         user: UserDependency,
         name: Annotated[str, Body(..., embed=True)],
@@ -159,7 +128,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             return schemas.DocumentUpload(parameters=parameters, document=document)
 
     # TODO: Add UI support and documentation for this endpoint (#406)
-    @app.post("/documents")
+    @router.post("/documents")
     async def create_documents_upload_info(
         user: UserDependency,
         names: Annotated[list[str], Body(..., embed=True)],
@@ -185,7 +154,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             return document_upload_collection
 
     # TODO: Add new endpoint for batch uploading documents (#407)
-    @app.put("/document")
+    @router.put("/document")
     async def upload_document(
         token: Annotated[str, Form()], file: UploadFile
     ) -> schemas.Document:
@@ -240,7 +209,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
         return core_chat
 
-    @app.post("/chats")
+    @router.post("/chats")
     async def create_chat(
         user: UserDependency,
         chat_metadata: schemas.ChatMetadata,
@@ -255,17 +224,17 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             database.add_chat(session, user=user, chat=chat)
             return chat
 
-    @app.get("/chats")
+    @router.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
         with get_session() as session:
             return database.get_chats(session, user=user)
 
-    @app.get("/chats/{id}")
+    @router.get("/chats/{id}")
     async def get_chat(user: UserDependency, id: uuid.UUID) -> schemas.Chat:
         with get_session() as session:
             return database.get_chat(session, user=user, id=id)
 
-    @app.post("/chats/{id}/prepare")
+    @router.post("/chats/{id}/prepare")
     async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
@@ -280,7 +249,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
             return welcome
 
-    @app.post("/chats/{id}/answer")
+    @router.post("/chats/{id}/answer")
     async def answer(
         user: UserDependency,
         id: uuid.UUID,
@@ -341,9 +310,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
             return answer
 
-    @app.delete("/chats/{id}")
+    @router.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:
         with get_session() as session:
             database.delete_chat(session, user=user, id=id)
 
-    return app
+    return router

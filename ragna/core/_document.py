@@ -142,7 +142,7 @@ class LocalDocument(Document):
     async def get_upload_info(
         cls, *, config: Config, user: str, id: uuid.UUID, name: str
     ) -> tuple[dict[str, Any], DocumentUploadParameters]:
-        url = f"{config.api.url}/document"
+        url = f"{config._url}/api/document"
         data = {
             "token": jwt.encode(
                 payload={

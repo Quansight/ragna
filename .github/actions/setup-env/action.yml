@@ -63,7 +63,7 @@ runs:
       run: |
         pip install \
           git+https://github.com/bokeh/bokeh-fastapi.git@main \
-          git+https://github.com/holoviz/panel.git@main
+          git+https://github.com/holoviz/panel@7377c9e99bef0d32cbc65e94e908e365211f4421
 
     - name: Install ragna
       shell: bash -el {0}
