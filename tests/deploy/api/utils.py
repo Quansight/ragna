@@ -12,6 +12,7 @@ def make_api_app(*, config, ignore_unavailable_components):
         api=True,
         ui=False,
         ignore_unavailable_components=ignore_unavailable_components,
+        open_browser=False,
     )
 
 
