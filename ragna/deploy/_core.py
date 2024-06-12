@@ -34,8 +34,6 @@ def make_app(
 
         @contextlib.asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-            # We are starting the browser on a thread, because the server is only
-            # accessible _after_ the yield below.
             def target() -> None:
                 client = httpx.Client(base_url=config._url)
 
@@ -50,10 +48,11 @@ def make_app(
 
                 webbrowser.open(config._url)
 
-            # By setting daemon=True, the thread will automatically terminated when the
-            # main thread is terminated. This is only relevant when the server never
-            # becomes available. In this case our thread would be stuck in an endless
-            # loop.
+            # We are starting the browser on a thread, because the server can only
+            # become available _after_ the yield below. By setting daemon=True, the
+            # thread will automatically terminated together with the main thread. This
+            # is only relevant when the server never becomes available, e.g. if an error
+            # occurs. In this case our thread would be stuck in an endless loop.
             thread = threading.Thread(target=target, daemon=True)
             thread.start()
             yield
