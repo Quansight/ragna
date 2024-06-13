@@ -233,7 +233,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             chat_name=chat.metadata.name,
             **chat.metadata.params,
         )
-        core_chat._messages = [message.to_core() for message in chat.messages]
+        core_chat._messages = [
+            message.to_core() for message in chat.messages
+        ]
         core_chat._prepared = chat.prepared
 
         return core_chat
