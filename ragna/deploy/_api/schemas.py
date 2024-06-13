@@ -26,11 +26,14 @@ class Document(BaseModel):
             name=document.name,
         )
 
-    @classmethod
-    def to_core(cls, document: Document) -> ragna.core.Document:
-        return ragna.core.Document(
-            id=document.id,
-            name=document.name,
+    def to_core(self) -> ragna.core.Document:
+        return ragna.core.LocalDocument(
+            id=self.id,
+            name=self.name,
+            # TEMP: setting an empty metadata dict for now.
+            # Will be resolved as part of the "managed ragna" work:
+            # https://github.com/Quansight/ragna/issues/256
+            metadata={},
         )
 
 
@@ -57,14 +60,13 @@ class Source(BaseModel):
             num_tokens=source.num_tokens,
         )
 
-    @classmethod
-    def to_core(cls, source: Source) -> ragna.core.Source:
+    def to_core(self) -> ragna.core.Source:
         return ragna.core.Source(
-            id=source.id,
-            document=Document.to_core(source.document),
-            location=source.location,
-            content=source.content,
-            num_tokens=source.num_tokens,
+            id=self.id,
+            document=self.document.to_core(),
+            location=self.location,
+            content=self.content,
+            num_tokens=self.num_tokens,
         )
 
 
