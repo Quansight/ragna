@@ -210,10 +210,24 @@ class Message:
 class Assistant(Component, abc.ABC):
     """Abstract base class for assistants used in [ragna.core.Chat][]"""
 
-    __ragna_protocol_methods__ = ["answer"]
+    __ragna_protocol_methods__ = ["answer","generate"]
 
     @abc.abstractmethod
     def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+        """Answer a prompt given some sources.
+
+        Args:
+            prompt: Prompt to be answered.
+            sources: Sources to use when answering answer the prompt.
+
+        Returns:
+            Answer.
+        """
+        ...
+
+    @abc.abstractmethod
+    def generate(self, prompt: str) -> str:
+        #TODO
         """Answer a prompt given some sources.
 
         Args:

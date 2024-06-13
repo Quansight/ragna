@@ -18,8 +18,10 @@ __all__ = [
     "Jurassic2Ultra",
     "LlamafileAssistant",
     "RagnaDemoAssistant",
+    "Exl2Assistant",
 ]
 
+from ._exl2 import Exl2Assistant
 from ._ai21labs import Jurassic2Ultra
 from ._anthropic import ClaudeHaiku, ClaudeOpus, ClaudeSonnet
 from ._cohere import Command, CommandLight

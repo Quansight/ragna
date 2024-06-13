@@ -1,0 +1,43 @@
+name: ragna-dev-exl
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python =3.11
+  - pip
+  - git-lfs
+  - jupyterlab>=3
+  - pandas
+  - numpy
+  - panel
+  - tokenizers
+  - pytorch=2.3.1
+  - pytorch-cuda=12.1
+  - cuda-nvcc
+  - rich
+  - pip:
+      - python-dotenv
+      - pytest >=6
+      - pytest-mock
+      - pytest-asyncio
+      - pytest-playwright
+      - mypy ==1.10.0
+      - pre-commit
+      - types-aiofiles
+      - sqlalchemy-stubs
+      - setuptools-scm
+      - pip-tools
+      # documentation
+      - mkdocs
+      - mkdocs-material
+      - mkdocstrings[python]
+      - mkdocs-gen-files
+      - material-plausible-plugin
+      - mkdocs-gallery >=0.10
+      - mdx_truly_sane_lists
+      # exl2
+      - ninja
+      - packaging
+      - exllamav2@https://github.com/turboderp/exllamav2/releases/download/v0.1.5/exllamav2-0.1.5+cu121.torch2.3.1-cp311-cp311-linux_x86_64.whl
