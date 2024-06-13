@@ -26,6 +26,16 @@ class Document(BaseModel):
             name=document.name,
         )
 
+    def to_core(self) -> ragna.core.Document:
+        return ragna.core.LocalDocument(
+            id=self.id,
+            name=self.name,
+            # TEMP: setting an empty metadata dict for now.
+            # Will be resolved as part of the "managed ragna" work:
+            # https://github.com/Quansight/ragna/issues/256
+            metadata={},
+        )
+
 
 class DocumentUpload(BaseModel):
     parameters: ragna.core.DocumentUploadParameters
@@ -50,6 +60,15 @@ class Source(BaseModel):
             num_tokens=source.num_tokens,
         )
 
+    def to_core(self) -> ragna.core.Source:
+        return ragna.core.Source(
+            id=self.id,
+            document=self.document.to_core(),
+            location=self.location,
+            content=self.content,
+            num_tokens=self.num_tokens,
+        )
+
 
 class Message(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -64,6 +83,13 @@ class Message(BaseModel):
             content=message.content,
             role=message.role,
             sources=[Source.from_core(source) for source in message.sources],
+        )
+
+    def to_core(self) -> ragna.core.Message:
+        return ragna.core.Message(
+            content=self.content,
+            role=self.role,
+            sources=[source.to_core() for source in self.sources],
         )
 
 
