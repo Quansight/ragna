@@ -46,7 +46,6 @@ css_modifiers = {
     "right_sidebar": [pn.widgets.Button, pn.Column, pn.pane.Markdown],
     "left_sidebar": [pn.widgets.Button, pn.pane.HTML, pn.Column],
     "main_page": [pn.Row],
-    "modal_welcome": [pn.widgets.Button],
     "modal_configuration": [
         pn.widgets.IntSlider,
         pn.layout.Card,
@@ -102,9 +101,6 @@ MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 CONFIG_MODAL_MIN_HEIGHT = 610
 CONFIG_MODAL_MAX_HEIGHT = 850
 CONFIG_MODAL_WIDTH = 800
-
-WELCOME_MODAL_HEIGHT = 275
-WELCOME_MODAL_WIDTH = 530
 
 
 CSS_VARS = css(
