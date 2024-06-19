@@ -1,5 +1,10 @@
-from typing import cast
+import contextlib
+import threading
+import time
+import webbrowser
+from typing import AsyncContextManager, AsyncIterator, Callable, Optional, cast
 
+import httpx
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
@@ -19,11 +24,43 @@ def make_app(
     api: bool,
     ui: bool,
     ignore_unavailable_components: bool,
+    open_browser: bool,
 ) -> FastAPI:
     ragna.local_root(config.local_root)
     set_redirect_root_path(config.root_path)
 
-    app = FastAPI(title="Ragna", version=ragna.__version__)
+    lifespan: Optional[Callable[[FastAPI], AsyncContextManager]]
+    if open_browser:
+
+        @contextlib.asynccontextmanager
+        async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+            def target() -> None:
+                client = httpx.Client(base_url=config._url)
+
+                def server_available():
+                    try:
+                        return client.get("/health").is_success
+                    except httpx.ConnectError:
+                        return False
+
+                while not server_available():
+                    time.sleep(0.1)
+
+                webbrowser.open(config._url)
+
+            # We are starting the browser on a thread, because the server can only
+            # become available _after_ the yield below. By setting daemon=True, the
+            # thread will automatically terminated together with the main thread. This
+            # is only relevant when the server never becomes available, e.g. if an error
+            # occurs. In this case our thread would be stuck in an endless loop.
+            thread = threading.Thread(target=target, daemon=True)
+            thread.start()
+            yield
+
+    else:
+        lifespan = None
+
+    app = FastAPI(title="Ragna", version=ragna.__version__, lifespan=lifespan)
 
     app.add_middleware(
         CORSMiddleware,

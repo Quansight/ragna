@@ -96,6 +96,10 @@ def deploy(
             )
         ),
     ] = False,
+    open_browser: Annotated[
+        Optional[bool],
+        typer.Option(help="Open a browser when Ragna is deployed."),
+    ] = None,
 ) -> None:
     def api_available() -> bool:
         try:
@@ -111,12 +115,16 @@ def deploy(
     elif ui and not api and not api_available():
         raise Exception
 
+    if open_browser is None:
+        open_browser = ui
+
     uvicorn.run(
         lambda: make_app(
             config,
             ui=ui,
             api=api,
             ignore_unavailable_components=ignore_unavailable_components,
+            open_browser=open_browser,
         ),
         factory=True,
         host=config.hostname,
