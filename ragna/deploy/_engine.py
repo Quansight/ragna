@@ -11,16 +11,16 @@ from ._database import Database
 
 
 class Engine:
-    def __init__(
-        self, *, config: Config, database: Database, ignore_unavailable_components: bool
-    ) -> None:
+    def __init__(self, *, config: Config, ignore_unavailable_components: bool) -> None:
         self._config = config
-        self._database = database
+
+        self._database = Database(url=config.database_url)
 
         self._rag: Rag = Rag(
             config=config,
             ignore_unavailable_components=ignore_unavailable_components,
         )
+
         self._to_core = SchemaToCoreConveter(config=config, rag=self._rag)
         self._to_schema = CoreToSchemaConveter()
 
