@@ -21,8 +21,8 @@ class Engine:
             ignore_unavailable_components=ignore_unavailable_components,
         )
 
-        self._to_core = SchemaToCoreConveter(config=config, rag=self._rag)
-        self._to_schema = CoreToSchemaConveter()
+        self._to_core = SchemaToCoreConverter(config=config, rag=self._rag)
+        self._to_schema = CoreToSchemaConverter()
 
     def _get_component_json_schema(
         self,
@@ -116,7 +116,7 @@ class Engine:
             self._database.delete_chat(session, user=user, id=id)
 
 
-class SchemaToCoreConveter:
+class SchemaToCoreConverter:
     def __init__(self, *, config: Config, rag: Rag) -> None:
         self._config = config
         self._rag = rag
@@ -160,7 +160,7 @@ class SchemaToCoreConveter:
         return core_chat
 
 
-class CoreToSchemaConveter:
+class CoreToSchemaConverter:
     def document(self, document: core.Document) -> schemas.Document:
         return schemas.Document(
             id=document.id,
