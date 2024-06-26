@@ -1,62 +1,53 @@
-import json
+import uuid
 from datetime import datetime
 
 import emoji
-import httpx
 import param
 
+from ragna.core._utils import default_user
+from ragna.deploy import _schemas as schemas
+from ragna.deploy._engine import Engine
 
-# The goal is this class is to provide ready-to-use functions to interact with the API
+
 class ApiWrapper(param.Parameterized):
-    def __init__(self, api_url, **params):
-        self.api_url = api_url
-        self.client = httpx.AsyncClient(base_url=api_url, timeout=60)
-
-        super().__init__(**params)
+    def __init__(self, engine: Engine):
+        super().__init__()
+        self._user = default_user()
+        self._engine = engine
 
     async def get_chats(self):
-        json_data = (await self.client.get("/chats")).raise_for_status().json()
+        json_data = [
+            chat.model_dump(mode="json")
+            for chat in self._engine.get_chats(user=self._user)
+        ]
         for chat in json_data:
             chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
         return json_data
 
     async def answer(self, chat_id, prompt):
-        async with self.client.stream(
-            "POST",
-            f"/chats/{chat_id}/answer",
-            json={"prompt": prompt, "stream": True},
-        ) as response:
-            async for data in response.aiter_lines():
-                yield self.improve_message(json.loads(data))
+        async for message in self._engine.answer_stream(
+            user=self._user, chat_id=uuid.UUID(chat_id), prompt=prompt
+        ):
+            yield self.improve_message(message.model_dump(mode="json"))
 
     async def get_components(self):
-        return (await self.client.get("/components")).raise_for_status().json()
-
-    # Upload and related functions
-    def upload_endpoints(self):
-        return {
-            "informations_endpoint": f"{self.api_url}/document",
-        }
+        return self._engine.get_components().model_dump(mode="json")
 
     async def start_and_prepare(
         self, name, documents, source_storage, assistant, params
     ):
-        response = await self.client.post(
-            "/chats",
-            json={
-                "name": name,
-                "documents": documents,
-                "source_storage": source_storage,
-                "assistant": assistant,
-                "params": params,
-            },
+        chat = self._engine.create_chat(
+            user=self._user,
+            chat_creation=schemas.ChatCreation(
+                name=name,
+                document_ids=[document.id for document in documents],
+                source_storage=source_storage,
+                assistant=assistant,
+                params=params,
+            ),
         )
-        chat = response.raise_for_status().json()
-
-        response = await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
-        response.raise_for_status()
-
-        return chat["id"]
+        await self._engine.prepare_chat(user=self._user, id=chat.id)
+        return str(chat.id)
 
     def improve_message(self, msg):
         msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f")

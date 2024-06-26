@@ -12,6 +12,8 @@ from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
 import jwt
 from pydantic import BaseModel
 
+import ragna
+
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
 
 if TYPE_CHECKING:
@@ -24,6 +26,7 @@ class DocumentUploadParameters(BaseModel):
     data: dict
 
 
+# FIXME: this needs to become what local root is now
 class Document(RequirementsMixin, abc.ABC):
     """Abstract base class for all documents."""
 
@@ -124,7 +127,9 @@ class LocalDocument(Document):
 
     @property
     def path(self) -> Path:
-        return Path(self.metadata["path"])
+        # FIXME
+        return ragna.local_root() / "documents" / str(self.id)
+        # return Path(self.metadata["path"])
 
     def is_readable(self) -> bool:
         return self.path.exists()

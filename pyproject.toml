@@ -162,7 +162,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "ragna.deploy._api.orm",
+    "ragna.deploy._orm",
 ]
 # Our ORM schema doesn't really work with mypy. There are some other ways to define it
 # to play ball. We should do that in the future.
