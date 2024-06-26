@@ -4,6 +4,7 @@ import datetime
 import inspect
 import uuid
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterator,
     Awaitable,
@@ -12,21 +13,24 @@ from typing import (
     Iterable,
     Iterator,
     Optional,
-    Type,
     TypeVar,
     Union,
     cast,
 )
 
 import pydantic
+from fastapi import status
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
 from ._utils import RagnaException, default_user, merge_models
 
+if TYPE_CHECKING:
+    from ragna.deploy import Config
+
 T = TypeVar("T")
-C = TypeVar("C", bound=Component)
+C = TypeVar("C", bound=Component, covariant=True)
 
 
 class Rag(Generic[C]):
@@ -41,13 +45,49 @@ class Rag(Generic[C]):
         ```
     """
 
-    def __init__(self) -> None:
-        self._components: dict[Type[C], C] = {}
+    def __init__(
+        self,
+        *,
+        config: Optional[Config] = None,
+        ignore_unavailable_components: bool = False,
+    ) -> None:
+        self._components: dict[type[C], C] = {}
+        self._display_name_map: dict[str, type[C]] = {}
+
+        if config is not None:
+            self._preload_components(
+                config=config,
+                ignore_unavailable_components=ignore_unavailable_components,
+            )
+
+    def _preload_components(
+        self, *, config: Config, ignore_unavailable_components: bool
+    ) -> None:
+        for components in [config.source_storages, config.assistants]:
+            components = cast(list[type[Component]], components)
+            at_least_one = False
+            for component in components:
+                loaded_component = self._load_component(
+                    component,  #  type: ignore[arg-type]
+                    ignore_unavailable=ignore_unavailable_components,
+                )
+                if loaded_component is None:
+                    print(
+                        f"Ignoring {component.display_name()}, because it is not available."
+                    )
+                else:
+                    at_least_one = True
+
+            if not at_least_one:
+                raise RagnaException(
+                    "No component available",
+                    components=[component.display_name() for component in components],
+                )
 
     def _load_component(
-        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False
+        self, component: Union[C, type[C], str], *, ignore_unavailable: bool = False
     ) -> Optional[C]:
-        cls: Type[C]
+        cls: type[C]
         instance: Optional[C]
 
         if isinstance(component, Component):
@@ -55,6 +95,19 @@ class Rag(Generic[C]):
             cls = type(instance)
         elif isinstance(component, type) and issubclass(component, Component):
             cls = component
+            instance = None
+        elif isinstance(component, str):
+            try:
+                cls = self._display_name_map[component]
+            except KeyError:
+                raise RagnaException(
+                    "Unknown component",
+                    display_name=component,
+                    help="Did you forget to create the Rag() instance with a config?",
+                    http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    http_detail=f"Unknown component '{component}'",
+                ) from None
+
             instance = None
         else:
             raise RagnaException
@@ -71,6 +124,7 @@ class Rag(Generic[C]):
                 instance = cls()
 
             self._components[cls] = instance
+            self._display_name_map[cls.display_name()] = cls
 
         return self._components[cls]
 
@@ -78,8 +132,8 @@ class Rag(Generic[C]):
         self,
         *,
         documents: Iterable[Any],
-        source_storage: Union[Type[SourceStorage], SourceStorage],
-        assistant: Union[Type[Assistant], Assistant],
+        source_storage: Union[SourceStorage, type[SourceStorage], str],
+        assistant: Union[Assistant, type[Assistant], str],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -87,6 +141,7 @@ class Rag(Generic[C]):
         Args:
             documents: Documents to use. If any item is not a [ragna.core.Document][],
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
+            FIXME
             source_storage: Source storage to use.
             assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.
@@ -94,8 +149,8 @@ class Rag(Generic[C]):
         return Chat(
             self,
             documents=documents,
-            source_storage=source_storage,
-            assistant=assistant,
+            source_storage=cast(SourceStorage, self._load_component(source_storage)),  #  type: ignore[arg-type]
+            assistant=cast(Assistant, self._load_component(assistant)),  #  type: ignore[arg-type]
             **params,
         )
 
@@ -146,17 +201,15 @@ class Chat:
         rag: Rag,
         *,
         documents: Iterable[Any],
-        source_storage: Union[Type[SourceStorage], SourceStorage],
-        assistant: Union[Type[Assistant], Assistant],
+        source_storage: SourceStorage,
+        assistant: Assistant,
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents = self._parse_documents(documents)
-        self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage)
-        )
-        self.assistant = cast(Assistant, self._rag._load_component(assistant))
+        self.source_storage = source_storage
+        self.assistant = assistant
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -306,6 +359,6 @@ class Chat:
         return self
 
     async def __aexit__(
-        self, exc_type: Type[Exception], exc: Exception, traceback: str
+        self, exc_type: type[Exception], exc: Exception, traceback: str
     ) -> None:
         pass

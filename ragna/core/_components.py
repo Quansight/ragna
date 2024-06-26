@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import abc
+import datetime
 import enum
 import functools
 import inspect
+import uuid
 from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
 
 import pydantic
@@ -157,6 +159,8 @@ class Message:
         *,
         role: MessageRole = MessageRole.SYSTEM,
         sources: Optional[list[Source]] = None,
+        id: Optional[uuid.UUID] = None,
+        timestamp: Optional[datetime.datetime] = None,
     ) -> None:
         if isinstance(content, str):
             self._content: str = content
@@ -165,6 +169,14 @@ class Message:
 
         self.role = role
         self.sources = sources or []
+
+        if id is None:
+            id = uuid.uuid4()
+        self.id = id
+
+        if timestamp is None:
+            timestamp = datetime.datetime.utcnow()
+        self.timestamp = timestamp
 
     async def __aiter__(self) -> AsyncIterator[str]:
         if hasattr(self, "_content"):

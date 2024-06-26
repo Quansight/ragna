@@ -14,6 +14,7 @@ from ragna.core import RagnaException
 
 from ._api import make_router as make_api_router
 from ._config import Config
+from ._engine import Engine
 from ._ui import app as make_ui_app
 from ._utils import handle_localhost_origins, redirect, set_redirect_root_path
 
@@ -70,14 +71,13 @@ def make_app(
         allow_headers=["*"],
     )
 
+    engine = Engine(
+        config=config,
+        ignore_unavailable_components=ignore_unavailable_components,
+    )
+
     if api:
-        app.include_router(
-            make_api_router(
-                config,
-                ignore_unavailable_components=ignore_unavailable_components,
-            ),
-            prefix="/api",
-        )
+        app.include_router(make_api_router(config, engine), prefix="/api")
 
     if ui:
         panel_app = make_ui_app(config=config)

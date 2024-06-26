@@ -18,13 +18,7 @@ class Components(BaseModel):
 class Document(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
-
-    @classmethod
-    def from_core(cls, document: ragna.core.Document) -> Document:
-        return cls(
-            id=document.id,
-            name=document.name,
-        )
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentUpload(BaseModel):
@@ -40,16 +34,6 @@ class Source(BaseModel):
     content: str
     num_tokens: int
 
-    @classmethod
-    def from_core(cls, source: ragna.core.Source) -> Source:
-        return cls(
-            id=source.id,
-            document=Document.from_core(source.document),
-            location=source.location,
-            content=source.content,
-            num_tokens=source.num_tokens,
-        )
-
 
 class Message(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -57,14 +41,6 @@ class Message(BaseModel):
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
     timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
-
-    @classmethod
-    def from_core(cls, message: ragna.core.Message) -> Message:
-        return cls(
-            content=message.content,
-            role=message.role,
-            sources=[Source.from_core(source) for source in message.sources],
-        )
 
 
 class ChatMetadata(BaseModel):
