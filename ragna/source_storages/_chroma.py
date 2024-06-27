@@ -101,11 +101,11 @@ class Chroma(VectorDatabaseSourceStorage):
                 max(int(num_tokens * 2 / chunk_size), 100),
                 collection.count(),
             ),
-            include=include,
+            include=include,  # type: ignore[arg-type]
         )
 
         num_results = len(result["ids"][0])
-        result = {key: result[key][0] for key in ["ids", *include]}
+        result = {key: result[key][0] for key in ["ids", *include]}  # type: ignore[literal-required]
         # dict of lists -> list of dicts
         results = [
             {key: value[idx] for key, value in result.items()}
