@@ -22,6 +22,7 @@ from typing import (
 )
 
 import pydantic
+import pydantic_core
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
@@ -286,7 +287,9 @@ class Chat:
         }
 
     @contextlib.contextmanager
-    def _format_validation_error(self, foo):
+    def _format_validation_error(
+        self, model_cls: type[pydantic.BaseModel]
+    ) -> Iterator[None]:
         try:
             yield
         except pydantic.ValidationError as validation_error:
@@ -300,13 +303,18 @@ class Chat:
             ]
 
             def format_error(
-                error: dict[str, Any], *, annotation: bool = False, value: bool = False
+                error: pydantic_core.ErrorDetails,
+                *,
+                annotation: bool = False,
+                value: bool = False,
             ) -> str:
-                param = error["loc"][0]
+                param = cast(str, error["loc"][0])
 
                 formatted_error = f"- {param}"
                 if annotation:
-                    annotation_ = foo.model_fields[param].annotation.__name__
+                    annotation_ = cast(
+                        type, model_cls.model_fields[param].annotation
+                    ).__name__
                     formatted_error += f": {annotation_}"
 
                 if value:
