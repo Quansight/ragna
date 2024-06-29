@@ -2,15 +2,15 @@ from collections import defaultdict
 from functools import reduce
 from pathlib import Path
 
-import tomlkit
-import tomlkit.items
 from packaging.requirements import Requirement
 
 import ragna
 from ragna.core import Assistant, SourceStorage
 
 HERE = Path(__file__).parent
-PYPROJECT_TOML = HERE / ".." / "pyproject.toml"
+PROJECT_ROOT = HERE.parent
+REQUIREMENTS_TXT = PROJECT_ROOT / "requirements.txt"
+REQUIREMENTS_BASE_TXT = PROJECT_ROOT / "requirements-base.txt"
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
         extract_builtin_document_handler_requirements(),
         extract_builtin_component_requirements(),
     )
-    update_pyproject_toml(optional_dependencies)
+    create_requirements_txt(optional_dependencies)
 
 
 def make_optional_dependencies(*optional_requirements):
@@ -57,18 +57,23 @@ def extract_builtin_component_requirements():
     return dict(requirements)
 
 
-def update_pyproject_toml(optional_dependencies):
-    with open(PYPROJECT_TOML) as file:
-        document = tomlkit.load(file)
+def create_requirements_txt(optional_dependencies):
+    # Read existing dependencies from requirements-base.txt
+    existing_dependencies = set()
+    if REQUIREMENTS_BASE_TXT.exists():
+        with open(REQUIREMENTS_BASE_TXT, "r") as file:
+            existing_dependencies = set(line.strip() for line in file)
 
-    document["project"]["optional-dependencies"]["all"] = tomlkit.items.Array(
-        list(map(tomlkit.items.String.from_raw, optional_dependencies)),
-        trivia=tomlkit.items.Trivia(),
-        multiline=True,
-    )
+    # Add optional dependencies
+    all_dependencies = existing_dependencies.union(optional_dependencies)
 
-    with open(PYPROJECT_TOML, "w") as file:
-        tomlkit.dump(document, file)
+    # Sort the dependencies to maintain a consistent order
+    sorted_dependencies = sorted(all_dependencies)
+
+    # Overwrite the requirements.txt file with the sorted dependencies
+    with open(REQUIREMENTS_TXT, "w") as file:
+        file.write("\n".join(sorted_dependencies))
+        file.write("\n")
 
 
 def append_version_specifiers(version_specifiers, obj):
