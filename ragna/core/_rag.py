@@ -232,6 +232,26 @@ class Chat:
 
         return answer
 
+    async def generate(self, *, prompt: str) -> str:
+        """Run Inference on assistant endpoint
+
+        Returns:
+            Answer.
+
+        Raises:
+            ragna.core.RagnaException: If chat is not
+                [`prepare`][ragna.core.Chat.prepare]d.
+        """
+        if not self._prepared:
+            raise RagnaException(
+                "Chat is not prepared",
+                chat=self,
+                http_status_code=400,
+                detail=RagnaException.EVENT,
+            )
+
+        return self._run_gen(self.assistant.generate, prompt)
+
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
         documents_ = []
         for document in documents:
