@@ -55,6 +55,9 @@
   [#368](https://github.com/Quansight/ragna/pull/368)
 - add support for chromadb>=0.5.1 by [@pmeier](https://github.com/pmeier) in
   [#435](https://github.com/Quansight/ragna/pull/435)
+- refactor protocol model extraction to only check extra parameters by
+  [@pmeier](https://github.com/pmeier) in
+  [#436](https://github.com/Quansight/ragna/pull/436)
 
 ### New Contributors
 
