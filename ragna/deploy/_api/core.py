@@ -145,6 +145,15 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         with make_session() as session:  # type: ignore[attr-defined]
             yield session
 
+    @app.get("/liveness")
+    async def database_liveness_probe() -> dict[str, str]:
+        try:
+            with get_session() as session:
+                _ = database._get_user_id(session, username="liveness-probe")
+                return {"status": "ok"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
     @app.post("/document")
     async def create_document_upload_info(
         user: UserDependency,
