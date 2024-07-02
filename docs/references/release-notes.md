@@ -1,5 +1,71 @@
 # Release notes
 
+## Version 0.2.1
+
+### Feature changes and enhancements
+
+- Ragna is now available on
+  [conda-forge](https://github.com/conda-forge/ragna-feedstock)! Check out the
+  [installation instructions](../install.md).
+- A new
+  [extensive tutorial on how to use custom components](../generated/tutorials/gallery_custom_components.md)
+  with Ragna is now available!
+
+### Breaking Changes
+
+- The status code for the `POST /chats` endpoint in case a user requests an unknown
+  component was changed from
+  [404](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422) to
+  [422](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404) to avoid
+  confusion.
+- The MosaicML inference API was, to the best of our knowledge, removed. Thus, the
+  `ragna.assistants.Mpt7bInstruct` and `ragna.assistants.Mpt30bInstruct` were defunct
+  with no chance from our side to recover functionality.
+
+### What's Changed
+
+- updated get_component error message from 404 to 422 by
+  [@Tengal-Teemo](https://github.com/Tengal-Teemo) in
+  [#374](https://github.com/Quansight/ragna/pull/374)
+- fix mypy after pydantic 2.7 by [@pmeier](https://github.com/pmeier) in
+  [#390](https://github.com/Quansight/ragna/pull/390)
+- use relative links for all images in UI by [@pmeier](https://github.com/pmeier) in
+  [#393](https://github.com/Quansight/ragna/pull/393)
+- upgrade ruff to 0.4.1 by [@pmeier](https://github.com/pmeier) in
+  [#394](https://github.com/Quansight/ragna/pull/394)
+- Remove Mosaic Assistant by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#387](https://github.com/Quansight/ragna/pull/387)
+- use custom JSON type for database for more generic support by
+  [@pmeier](https://github.com/pmeier) in
+  [#389](https://github.com/Quansight/ragna/pull/389)
+- Add instructions to install from conda-forge. by [@kklein](https://github.com/kklein)
+  in [#396](https://github.com/Quansight/ragna/pull/396)
+- bump mypy to 1.10 by [@pmeier](https://github.com/pmeier) in
+  [#398](https://github.com/Quansight/ragna/pull/398)
+- \#373 Include documentation_helpers in module by
+  [@arjxn-py](https://github.com/arjxn-py) in
+  [#395](https://github.com/Quansight/ragna/pull/395)
+- mypy for sqlalchemy by [@pmeier](https://github.com/pmeier) in
+  [#402](https://github.com/Quansight/ragna/pull/402)
+- update ignored deprecation warnings by [@pmeier](https://github.com/pmeier) in
+  [#412](https://github.com/Quansight/ragna/pull/412)
+- [DOC] Add tutorial for adding your own objects by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#368](https://github.com/Quansight/ragna/pull/368)
+- add support for chromadb>=0.5.1 by [@pmeier](https://github.com/pmeier) in
+  [#435](https://github.com/Quansight/ragna/pull/435)
+- refactor protocol model extraction to only check extra parameters by
+  [@pmeier](https://github.com/pmeier) in
+  [#436](https://github.com/Quansight/ragna/pull/436)
+
+### New Contributors
+
+- [@kklein](https://github.com/kklein) made their first contribution in
+  [#396](https://github.com/Quansight/ragna/pull/396)
+- [@arjxn-py](https://github.com/arjxn-py) made their first contribution in
+  [#395](https://github.com/Quansight/ragna/pull/395)
+
 ## Version 0.2.0
 
 ### Feature changes and enhancements
