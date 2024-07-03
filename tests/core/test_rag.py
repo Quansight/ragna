@@ -45,8 +45,7 @@ class TestChat:
         class ValidationAssistant(Assistant):
             def answer(
                 self,
-                prompt,
-                sources,
+                messages,
                 bool_param: bool,
                 int_param: int,
                 float_param: float,
@@ -65,8 +64,7 @@ class TestChat:
         class ValidationAssistant(Assistant):
             def answer(
                 self,
-                prompt,
-                sources,
+                messages,
                 bool_param: bool,
                 int_param: int,
                 float_param: float,

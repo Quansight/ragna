@@ -1,8 +1,7 @@
-import re
 import textwrap
 from typing import Iterator
 
-from ragna.core import Assistant, Source
+from ragna.core import Assistant, Message
 
 
 class RagnaDemoAssistant(Assistant):
@@ -22,11 +21,8 @@ class RagnaDemoAssistant(Assistant):
     def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
 
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-        if re.search("markdown", prompt, re.IGNORECASE):
-            yield self._markdown_answer()
-        else:
-            yield self._default_answer(prompt, sources)
+    def answer(self, messages: list[Message]) -> Iterator[str]:
+        yield self._default_answer(messages)
 
     def _markdown_answer(self) -> str:
         return textwrap.dedent(
@@ -39,16 +35,19 @@ class RagnaDemoAssistant(Assistant):
             """
         ).strip()
 
-    def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+    def _default_answer(self, messages: list[Message]) -> str:
+        prompt = messages[0].content.strip()
         sources_display = []
-        for source in sources:
-            source_display = f"- {source.document.name}"
-            if source.location:
-                source_display += f", {source.location}"
-            source_display += f": {textwrap.shorten(source.content, width=100)}"
-            sources_display.append(source_display)
-        if len(sources) > 3:
-            sources_display.append("[...]")
+        for message in messages:
+            sources = message.sources
+            for source in sources:
+                source_display = f"- {source.document.name}"
+                if source.location:
+                    source_display += f", {source.location}"
+                source_display += f": {textwrap.shorten(source.content, width=100)}"
+                sources_display.append(source_display)
+            if len(sources) > 3:
+                sources_display.append("[...]")
 
         return (
             textwrap.dedent(

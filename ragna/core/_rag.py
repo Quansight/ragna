@@ -195,6 +195,9 @@ class Chat:
         await self._run(self.source_storage.store, self.documents)
         self._prepared = True
 
+        system_prompt = self.assistant._make_system_content()
+        self._messages.append(system_prompt)
+
         welcome = Message(
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
@@ -220,15 +223,17 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        self._messages.append(Message(content=prompt, role=MessageRole.USER))
-
         sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
 
+        question = Message(content=prompt, role=MessageRole.USER, sources=sources)
+        self._messages.append(question)
+
         answer = Message(
-            content=self._run_gen(self.assistant.answer, prompt, sources),
+            content=self._run_gen(self.assistant.answer, self._messages),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
+
         if not stream:
             await answer.read()
 

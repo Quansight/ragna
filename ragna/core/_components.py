@@ -147,7 +147,7 @@ class SourceStorage(Component, abc.ABC):
         ...
 
 
-class MessageRole(enum.Enum):
+class MessageRole(str, enum.Enum):
     """Message role
 
     Attributes:
@@ -237,13 +237,25 @@ class Assistant(Component, abc.ABC):
 
     __ragna_protocol_methods__ = ["answer"]
 
+    def _make_system_content(self):
+        return Message(
+            content=(
+                "You are a helpful assistant that answers user questions given the context below. "
+                "If you don't know the answer, just say so. Don't try to make up an answer. "
+                "Only use the included messages below to generate the answer."
+            ),
+            role=MessageRole.SYSTEM,
+        )
+
     @abc.abstractmethod
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+    def answer(
+        self,
+        messages: list[Message] = [],
+    ) -> Iterator[str]:
         """Answer a prompt given some sources.
 
         Args:
-            prompt: Prompt to be answered.
-            sources: Sources to use when answering answer the prompt.
+            messages: List of messages to send to the LLM API.
 
         Returns:
             Answer.
