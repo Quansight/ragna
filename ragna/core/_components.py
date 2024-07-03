@@ -185,8 +185,10 @@ class Message:
     ) -> None:
         if isinstance(content, str):
             self._content: str = content
+            print("content", content)
         else:
             self._content_stream: AsyncIterable[str] = content
+            print("content_stream", content)
 
         self.role = role
         self.sources = sources or []

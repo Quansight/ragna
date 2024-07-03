@@ -78,6 +78,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
         formatted_messages = self._format_message_sources(messages)
+        print("formatted_messages: ", formatted_messages)
         async for data in self._stream(
             formatted_messages, max_new_tokens=max_new_tokens
         ):

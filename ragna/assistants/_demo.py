@@ -36,7 +36,7 @@ class RagnaDemoAssistant(Assistant):
         ).strip()
 
     def _default_answer(self, messages: list[Message]) -> str:
-        prompt = messages[0].content.strip()
+        prompt = messages[-1].content.strip()
         sources_display = []
         for message in messages:
             sources = message.sources
