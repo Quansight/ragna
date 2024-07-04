@@ -28,10 +28,11 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             role=MessageRole.SYSTEM,
         )
 
-    def _format_message_sources(self, messages: list[Message]) -> str:
+    async def _format_message_sources(self, messages: list[Message]) -> str:
         sources_prompt = "Include the following sources in your answer:"
         formatted_messages = []
         for message in messages:
+            content = await message.read()
             if message.role == MessageRole.USER:
                 formatted_messages.append(
                     {
@@ -41,9 +42,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
                     }
                 )
 
-            formatted_messages.append(
-                {"content": message.content, "role": message.role}
-            )
+            formatted_messages.append({"content": content, "role": message.role})
         return formatted_messages
 
     def _stream(
@@ -77,7 +76,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         *,
         max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
-        formatted_messages = self._format_message_sources(messages)
+        formatted_messages = await self._format_message_sources(messages)
         print("formatted_messages: ", formatted_messages)
         async for data in self._stream(
             formatted_messages, max_new_tokens=max_new_tokens

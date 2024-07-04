@@ -234,9 +234,9 @@ class Chat:
             sources=sources,
         )
 
-        await answer.read()
-        # if not stream:
-        #     await answer.read()
+        # await answer.read()
+        if not stream:
+            await answer.read()
 
         self._messages.append(answer)
 
