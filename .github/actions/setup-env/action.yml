@@ -7,7 +7,7 @@ inputs:
     description: "Python version to install."
   optional-dependencies:
     default: "true"
-    description: "Install ragna with [all], i.e. all optional dependencies"
+    description: "Whether to install the optional dependencies"
 
 runs:
   using: composite
@@ -64,14 +64,12 @@ runs:
 
     - name: Install ragna
       shell: bash -el {0}
-      run: |
-        if [[ ${{ inputs.optional-dependencies }} == true ]]
-        then
-          PROJECT_PATH='.[all]'
-        else
-          PROJECT_PATH='.'
-        fi
-        pip install --editable "${PROJECT_PATH}"
+      run: pip install --editable .
+
+    - name: Install optional dependencies
+      if: ${{ inputs.optional-dependencies }} == 'true'
+      shell: bash -el {0}
+      run: pip install --requirement ./requirements-optional.txt
 
     - name: Display development environment
       shell: bash -el {0}
