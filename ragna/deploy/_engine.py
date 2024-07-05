@@ -1,7 +1,7 @@
 import uuid
-from typing import Any, AsyncIterator, Optional, Type
+from typing import Any, AsyncIterator, Optional, Type, cast
 
-import aiofiles
+from fastapi import status as http_status_code
 
 import ragna
 from ragna import Rag, core
@@ -20,6 +20,9 @@ class Engine:
         self._config = config
         ragna.local_root(config.local_root)
         self._documents_root = make_directory(config.local_root / "documents")
+        self.supports_store_documents = issubclass(
+            self._config.document, ragna.core.LocalDocument
+        )
 
         self._database = Database(url=config.database_url)
 
@@ -66,38 +69,42 @@ class Engine:
     def register_documents(
         self, *, user: str, document_registrations: list[schemas.DocumentRegistration]
     ) -> list[schemas.Document]:
-        documents = [
-            schemas.Document(name=registration.name, metadata=registration.metadata)
+        # We create core.Document's first, because they might update the metadata
+        core_documents = [
+            self._config.document(
+                name=registration.name, metadata=registration.metadata
+            )
             for registration in document_registrations
         ]
+        documents = [self._to_schema.document(document) for document in core_documents]
+
         with self._database.get_session() as session:
             self._database.add_documents(session, user=user, documents=documents)
+
         return documents
 
     async def store_documents(
         self,
         *,
         user: str,
-        streams: list[tuple[uuid.UUID, AsyncIterator[bytes]]],
-        skip_checks: bool = False,
+        ids_and_streams: list[tuple[uuid.UUID, AsyncIterator[bytes]]],
     ) -> None:
-        if not skip_checks:
-            existing = []
-            for id, _ in streams:
-                if (self._documents_root / str(id)).exists():
-                    existing.append(id)
-            if existing:
-                raise RagnaException("ADDME")
+        if not self.supports_store_documents:
+            raise RagnaException(
+                "Ragna configuration does not support local upload",
+                http_status_code=http_status_code.HTTP_400_BAD_REQUEST,
+            )
 
-            with self._database.get_session() as session:
-                self._database.get_documents(
-                    session, user=user, ids=[id for id, _ in streams]
-                )
+        ids, streams = zip(*ids_and_streams)
 
-        for id, stream in streams:
-            async with aiofiles.open(self._documents_root / str(id), "wb") as file:
-                async for content in stream:
-                    await file.write(content)
+        with self._database.get_session() as session:
+            documents = self._database.get_documents(session, user=user, ids=ids)
+
+        for document, stream in zip(documents, streams):
+            core_document = cast(
+                ragna.core.LocalDocument, self._to_core.document(document)
+            )
+            await core_document._write(stream)
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
@@ -171,6 +178,7 @@ class SchemaToCoreConverter:
         self._rag = rag
 
     def document(self, document: schemas.Document) -> core.Document:
+        # FIXME: config
         return core.LocalDocument(
             id=document.id,
             name=document.name,

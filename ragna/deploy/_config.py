@@ -83,7 +83,6 @@ class Config(BaseSettings):
         "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
     )
 
-    # FIXME: remove
     document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
     source_storages: list[ImportString[type[SourceStorage]]] = [
         "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]

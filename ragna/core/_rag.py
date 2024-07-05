@@ -286,20 +286,14 @@ class Chat:
         return answer
 
     def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
-        documents_ = []
-        for document in documents:
-            if not isinstance(document, Document):
-                document = LocalDocument.from_path(document)
-
-            if not document.is_readable():
-                raise RagnaException(
-                    "Document not readable",
-                    document=document,
-                    http_status_code=404,
-                )
-
-            documents_.append(document)
-        return documents_
+        return [
+            (
+                document
+                if isinstance(document, Document)
+                else LocalDocument.from_path(document)
+            )
+            for document in documents
+        ]
 
     def _unpack_chat_params(
         self, params: dict[str, Any]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Any, Collection, Optional
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
@@ -56,7 +56,7 @@ class Database:
         session.commit()
 
     def _get_orm_documents(
-        self, session: Session, *, user: str, ids: list[uuid.UUID]
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
     ) -> list[orm.Document]:
         # FIXME also check if the user is allowed to access the documents
         # FIXME: maybe just take the user id to avoid getting it twice in add_chat?
@@ -73,7 +73,7 @@ class Database:
         return documents  # type: ignore[no-any-return]
 
     def get_documents(
-        self, session: Session, *, user: str, ids: list[uuid.UUID]
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
     ) -> list[schemas.Document]:
         return [
             self._to_schema.document(document)

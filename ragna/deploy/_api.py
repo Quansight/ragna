@@ -46,7 +46,7 @@ def make_router(engine: Engine) -> APIRouter:
 
         await engine.store_documents(
             user=user,
-            streams=[
+            ids_and_streams=[
                 (uuid.UUID(document.filename), make_content_stream(document))
                 for document in documents
             ],

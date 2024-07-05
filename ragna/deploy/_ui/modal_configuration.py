@@ -125,22 +125,24 @@ class ModalConfiguration(pn.viewable.Viewer):
                 ],
             )
 
-            def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
-                async def content_stream() -> AsyncIterator[bytes]:
-                    yield data
+            if self.api_wrapper._engine.supports_store_documents:
 
-                return content_stream()
+                def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
+                    async def content_stream() -> AsyncIterator[bytes]:
+                        yield data
 
-            await self.api_wrapper._engine.store_documents(
-                user=self.api_wrapper._user,
-                streams=[
-                    (document.id, make_content_stream(data))
-                    for document, data in zip(documents, self.document_uploader.value)
-                ],
-                # We can skip the checks here, because registering and storing is
-                # performed back to back.
-                skip_checks=True,
-            )
+                    return content_stream()
+
+                await self.api_wrapper._engine.store_documents(
+                    user=self.api_wrapper._user,
+                    ids_and_streams=[
+                        (document.id, make_content_stream(data))
+                        for document, data in zip(
+                            documents, self.document_uploader.value
+                        )
+                    ],
+                )
+
             await self.did_finish_upload(documents)
 
     async def did_finish_upload(self, uploaded_documents):
