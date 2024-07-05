@@ -43,26 +43,21 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         assert client.get("/api/chats").raise_for_status().json() == []
 
-        document_upload = (
-            client.post("/api/document", json={"name": document_path.name})
+        documents = (
+            client.post("/api/documents", json=[{"name": document_path.name}])
             .raise_for_status()
             .json()
         )
-        document = document_upload["document"]
+        assert len(documents) == 1
+        document = documents[0]
         assert document["name"] == document_path.name
 
-        parameters = document_upload["parameters"]
         with open(document_path, "rb") as file:
-            client.request(
-                parameters["method"],
-                parameters["url"],
-                data=parameters["data"],
-                files={"file": file},
-            )
+            client.put("/api/documents", files={"documents": (document["id"], file)})
 
         components = client.get("/api/components").raise_for_status().json()
-        documents = components["documents"]
-        assert set(documents) == config.document.supported_suffixes()
+        supported_documents = components["documents"]
+        assert set(supported_documents) == config.document.supported_suffixes()
         source_storages = [
             json_schema["title"] for json_schema in components["source_storages"]
         ]
@@ -77,15 +72,19 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         source_storage = source_storages[0]
         assistant = assistants[0]
 
-        chat_metadata = {
+        chat_creation = {
             "name": "test-chat",
+            "document_ids": [document["id"]],
             "source_storage": source_storage,
             "assistant": assistant,
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
-            "documents": [document],
         }
-        chat = client.post("/api/chats", json=chat_metadata).raise_for_status().json()
-        assert chat["metadata"] == chat_metadata
+        chat = client.post("/api/chats", json=chat_creation).raise_for_status().json()
+        for field in ["name", "source_storage", "assistant", "params"]:
+            assert chat[field] == chat_creation[field]
+        assert [document["id"] for document in chat["documents"]] == chat_creation[
+            "document_ids"
+        ]
         assert not chat["prepared"]
         assert chat["messages"] == []
 
