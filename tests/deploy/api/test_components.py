@@ -6,8 +6,7 @@ from ragna import assistants
 from ragna.core import RagnaException
 from ragna.deploy import Config
 from ragna.deploy._api import app
-
-from .utils import authenticate
+from tests.deploy.utils import authenticate_with_api
 
 
 @pytest.mark.parametrize("ignore_unavailable_components", [True, False])
@@ -27,7 +26,7 @@ def test_ignore_unavailable_components(ignore_unavailable_components):
                 ignore_unavailable_components=ignore_unavailable_components,
             )
         ) as client:
-            authenticate(client)
+            authenticate_with_api(client)
 
             components = client.get("/components").raise_for_status().json()
             assert [assistant["title"] for assistant in components["assistants"]] == [
@@ -66,7 +65,7 @@ def test_unknown_component(tmp_local_root):
     with TestClient(
         app(config=Config(), ignore_unavailable_components=False)
     ) as client:
-        authenticate(client)
+        authenticate_with_api(client)
 
         document_upload = (
             client.post("/document", json={"name": document_path.name})
@@ -96,7 +95,7 @@ def test_unknown_component(tmp_local_root):
             },
         )
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
         error = response.json()["error"]
         assert "Unknown component" in error["message"]

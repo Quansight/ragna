@@ -1,22 +1,18 @@
-import json
-from typing import AsyncIterator, cast
+import abc
+from functools import cached_property
+from typing import Any, AsyncIterator, Optional, cast
 
-from ragna.core import PackageRequirement, Requirement, Source
+from ragna.core import Source
 
-from ._api import ApiAssistant
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
-class OpenaiApiAssistant(ApiAssistant):
-    _API_KEY_ENV_VAR = "OPENAI_API_KEY"
-    _MODEL: str
+class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
+    _MODEL: Optional[str]
 
-    @classmethod
-    def _extra_requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("httpx_sse")]
-
-    @classmethod
-    def display_name(cls) -> str:
-        return f"OpenAI/{cls._MODEL}"
+    @property
+    @abc.abstractmethod
+    def _url(self) -> str: ...
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
@@ -27,50 +23,62 @@ class OpenaiApiAssistant(ApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def _call_api(
+    def _stream(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncIterator[str]:
-        import httpx_sse
-
+    ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
-        async with httpx_sse.aconnect_sse(
-            self._client,
-            "POST",
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self._api_key}",
-            },
-            json={
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": self._make_system_content(sources),
-                    },
-                    {
-                        "role": "user",
-                        "content": prompt,
-                    },
-                ],
-                "model": self._MODEL,
-                "temperature": 0.0,
-                "max_tokens": max_new_tokens,
-                "stream": True,
-            },
-        ) as event_source:
-            await self._assert_api_call_is_success(event_source.response)
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if self._api_key is not None:
+            headers["Authorization"] = f"Bearer {self._api_key}"
 
-            async for sse in event_source.aiter_sse():
-                data = json.loads(sse.data)
-                choice = data["choices"][0]
-                if choice["finish_reason"] is not None:
-                    break
+        json_ = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": self._make_system_content(sources),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            "temperature": 0.0,
+            "max_tokens": max_new_tokens,
+            "stream": True,
+        }
+        if self._MODEL is not None:
+            json_["model"] = self._MODEL
 
-                yield cast(str, choice["delta"]["content"])
+        return self._call_api("POST", self._url, headers=headers, json=json_)
+
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
+            choice = data["choices"][0]
+            if choice["finish_reason"] is not None:
+                break
+
+            yield cast(str, choice["delta"]["content"])
 
 
-class Gpt35Turbo16k(OpenaiApiAssistant):
+class OpenaiAssistant(OpenaiLikeHttpApiAssistant):
+    _API_KEY_ENV_VAR = "OPENAI_API_KEY"
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
+
+    @classmethod
+    def display_name(cls) -> str:
+        return f"OpenAI/{cls._MODEL}"
+
+    @cached_property
+    def _url(self) -> str:
+        return "https://api.openai.com/v1/chat/completions"
+
+
+class Gpt35Turbo16k(OpenaiAssistant):
     """[OpenAI GPT-3.5](https://platform.openai.com/docs/models/gpt-3-5)
 
     !!! info "Required environment variables"
@@ -85,7 +93,7 @@ class Gpt35Turbo16k(OpenaiApiAssistant):
     _MODEL = "gpt-3.5-turbo-16k"
 
 
-class Gpt4(OpenaiApiAssistant):
+class Gpt4(OpenaiAssistant):
     """[OpenAI GPT-4](https://platform.openai.com/docs/models/gpt-4)
 
     !!! info "Required environment variables"

@@ -10,7 +10,8 @@ dependencies:
       - pytest >=6
       - pytest-mock
       - pytest-asyncio
-      - mypy ==1.6.1
+      - pytest-playwright
+      - mypy ==1.10.0
       - pre-commit
       - types-aiofiles
       - sqlalchemy-stubs

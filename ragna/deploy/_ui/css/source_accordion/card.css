@@ -1,0 +1,45 @@
+/* Define some variables */
+:host {
+  --ragna-accordion-header-height: 50px;
+}
+
+/* Resets some existing styles */
+:host(.accordion) {
+  margin-left: 0px;
+  margin-top: 0px;
+  outline: none;
+
+  box-shadow: none;
+}
+
+/* Styles the button itself */
+button.accordion-header {
+  background-color: white !important;
+  height: var(--ragna-accordion-header-height);
+  padding-top: 0px;
+  padding-bottom: 0px;
+  outline: 0px;
+  margin-left: 15px;
+  margin-right: 15px;
+  width: calc(100% - 30px);
+  border-bottom: 1px solid #d9d9d9;
+}
+
+button.accordion-header div.card-button {
+  font-size: 11px;
+  padding-top: 5px;
+  margin-left: 0px;
+  margin-right: 10px;
+}
+
+div.card-header-row {
+  height: var(--ragna-accordion-header-height);
+  background-color: unset !important;
+}
+
+/* styles the content of the sources content (the expanding areas of the Accordion) */
+div.bk-panel-models-markup-HTML.markdown {
+  margin-left: 15px;
+  margin-right: 15px;
+  margin-top: 0px;
+}

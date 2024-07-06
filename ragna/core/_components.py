@@ -4,7 +4,15 @@ import abc
 import enum
 import functools
 import inspect
-from typing import AsyncIterable, AsyncIterator, Iterator, Optional, Type, Union
+from typing import (
+    AsyncIterable,
+    AsyncIterator,
+    Iterator,
+    Optional,
+    Type,
+    Union,
+    get_type_hints,
+)
 
 import pydantic
 import pydantic.utils
@@ -42,6 +50,16 @@ class Component(RequirementsMixin):
     def _protocol_models(
         cls,
     ) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
+        # This method dynamically builds a pydantic.BaseModel for the extra parameters
+        # of each method that is listed in the __ragna_protocol_methods__ class
+        # variable. These models are used by ragna.core.Chat._unpack_chat_params to
+        # validate and distribute the **params passed by the user.
+
+        # Walk up the MRO until we find the __ragna_protocol_methods__ variable. This is
+        # the indicator that we found the protocol class. We use this as a reference for
+        # which params of a protocol method are part of the protocol (think positional
+        # parameters) and which are requested by the concrete class (think keyword
+        # parameters).
         protocol_cls, protocol_methods = next(
             (cls_, cls_.__ragna_protocol_methods__)  # type: ignore[attr-defined]
             for cls_ in cls.__mro__
@@ -49,23 +67,30 @@ class Component(RequirementsMixin):
         )
         models = {}
         for method_name in protocol_methods:
+            num_protocol_params = len(
+                inspect.signature(getattr(protocol_cls, method_name)).parameters
+            )
             method = getattr(cls, method_name)
-            concrete_params = inspect.signature(method).parameters
-            protocol_params = inspect.signature(
-                getattr(protocol_cls, method_name)
-            ).parameters
-            extra_param_names = concrete_params.keys() - protocol_params.keys()
+            params = iter(inspect.signature(method).parameters.values())
+            annotations = get_type_hints(method)
+            # Skip over the protocol parameters in order for the model below to only
+            # comprise concrete parameters.
+            for _ in range(num_protocol_params):
+                next(params)
 
-            models[(cls, method_name)] = pydantic.create_model(  # type: ignore[call-overload]
+            models[(cls, method_name)] = pydantic.create_model(
+                # type: ignore[call-overload]
                 f"{cls.__name__}.{method_name}",
                 **{
-                    (param := concrete_params[param_name]).name: (
-                        param.annotation,
-                        param.default
-                        if param.default is not inspect.Parameter.empty
-                        else ...,
+                    param.name: (
+                        annotations[param.name],
+                        (
+                            param.default
+                            if param.default is not inspect.Parameter.empty
+                            else ...
+                        ),
                     )
-                    for param_name in extra_param_names
+                    for param in params
                 },
             )
         return models

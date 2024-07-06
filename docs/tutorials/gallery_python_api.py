@@ -9,26 +9,22 @@ This tutorial walks you through basic steps of using Ragnas Python API.
 """
 
 # %%
-# Before we start this tutorial, we import some helpers.
-
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd().parent))
-
-import documentation_helpers
-
-# %%
 # ## Step 1: Select relevant documents
 #
 # Ragna uses the RAG technique to answer questions. The context in which the questions
 # will be answered comes from documents that you provide. For this tutorial, let's use a
 # sample document that includes some information about Ragna.
 
-document_path = documentation_helpers.assets / "ragna.txt"
+from pathlib import Path
 
-with open(document_path) as file:
-    print(file.read())
+import ragna._docs as ragna_docs
+
+print(ragna_docs.SAMPLE_CONTENT)
+
+document_path = Path.cwd() / "ragna.txt"
+
+with open(document_path, "w") as file:
+    file.write(ragna_docs.SAMPLE_CONTENT)
 
 # %%
 # !!! tip
@@ -75,8 +71,9 @@ from ragna.assistants import RagnaDemoAssistant
 #     Ragna has builtin support for the following assistants:
 #
 #     - [Anthropic](https://www.anthropic.com/)
-#       - [ragna.assistants.Claude][]
-#       - [ragna.assistants.ClaudeInstant][]
+#       - [ragna.assistants.ClaudeOpus][]
+#       - [ragna.assistants.ClaudeSonnet][]
+#       - [ragna.assistants.ClaudeHaiku][]
 #     - [Cohere](https://cohere.com/)
 #       - [ragna.assistants.Command][]
 #       - [ragna.assistants.CommandLight][]
@@ -88,13 +85,20 @@ from ragna.assistants import RagnaDemoAssistant
 #       - [ragna.assistants.Gpt4][]
 #     - [AI21 Labs](https://www.ai21.com/)
 #       - [ragna.assistants.Jurassic2Ultra][]
-#     - [MosaicML](https://www.mosaicml.com/)
-#       - [ragna.assistants.Mpt7bInstruct][]
-#       - [ragna.assistants.Mpt30bInstruct][]
+#     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
+#       - [ragna.assistants.LlamafileAssistant][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 #
 #     !!! note
 #
-#         To use any of builtin assistants, you need to
+#         To use some of the builtin assistants, you need to
 #         [procure API keys](../../references/faq.md#where-do-i-get-api-keys-for-the-builtin-assistants)
 #         first and set the corresponding environment variables.
 

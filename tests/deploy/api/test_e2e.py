@@ -3,22 +3,9 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from ragna.assistants import RagnaDemoAssistant
 from ragna.deploy import Config
 from ragna.deploy._api import app
-
-from .utils import authenticate
-
-
-class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
-        content = next(super().answer(prompt, sources))
-
-        if multiple_answer_chunks:
-            for chunk in content.split(" "):
-                yield f"{chunk} "
-        else:
-            yield content
+from tests.deploy.utils import TestAssistant, authenticate_with_api
 
 
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
@@ -33,7 +20,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         file.write("!\n")
 
     with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
-        authenticate(client)
+        authenticate_with_api(client)
 
         assert client.get("/chats").raise_for_status().json() == []
 
