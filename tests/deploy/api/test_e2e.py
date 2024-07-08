@@ -109,7 +109,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         assert len(chat["messages"]) == 3
         assert (
             chat["messages"][-2]["role"] == "user"
-            and chat["messages"][-2]["sources"] == []
+            and chat["messages"][-2]["sources"] == message["sources"]
             and chat["messages"][-2]["content"] == prompt
         )
         assert chat["messages"][-1] == message
