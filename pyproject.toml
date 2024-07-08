@@ -1,12 +1,13 @@
 [build-system]
 requires = [
-    "setuptools>=45",
-    "setuptools_scm[toml]>=6.2",
+    "setuptools>=64",
+    "setuptools_scm>=8",
+    "tomlkit; python_version<'3.11'",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Ragna"
+name = "ragna-base"
 description = "RAG orchestration framework"
 license = {file = "LICENSE"}
 authors = [
@@ -50,24 +51,10 @@ Documentation = "https://ragna.chat"
 Changelog = "https://ragna.chat/en/stable/references/release-notes/"
 Repository = "https://github.com/Quansight/ragna"
 
-[project.optional-dependencies]
-# to update the array below, run scripts/update_optional_dependencies.py
-all = [
-    "chromadb>=0.4.13",
-    "httpx_sse",
-    "ijson",
-    "lancedb>=0.2",
-    "pyarrow",
-    "pymupdf>=1.23.6",
-    "python-docx",
-    "python-pptx",
-    "tiktoken",
-]
-
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
 version_scheme = "release-branch-semver"
-local_scheme = "node-and-timestamp"
+local_scheme = "node-and-date"
 
 [project.scripts]
 ragna = "ragna.__main__:app"
