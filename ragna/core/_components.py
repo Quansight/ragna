@@ -239,16 +239,6 @@ class Assistant(Component, abc.ABC):
 
     __ragna_protocol_methods__ = ["answer"]
 
-    def _make_system_content(self):
-        return Message(
-            content=(
-                "You are a helpful assistant that answers user questions given the context below. "
-                "If you don't know the answer, just say so. Don't try to make up an answer. "
-                "Only use the included messages below to generate the answer."
-            ),
-            role=MessageRole.SYSTEM,
-        )
-
     @abc.abstractmethod
     def answer(
         self,

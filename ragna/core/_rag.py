@@ -195,9 +195,6 @@ class Chat:
         await self._run(self.source_storage.store, self.documents)
         self._prepared = True
 
-        system_prompt = self.assistant._make_system_content()
-        self._messages.append(system_prompt)
-
         welcome = Message(
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
