@@ -5,15 +5,7 @@ import io
 import uuid
 from functools import cached_property
 from pathlib import Path
-from typing import (
-    Any,
-    AsyncIterator,
-    Iterator,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, AsyncIterator, Iterator, Optional, Type, TypeVar, Union
 
 import aiofiles
 from pydantic import BaseModel

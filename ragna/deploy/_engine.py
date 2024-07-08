@@ -31,7 +31,7 @@ class Engine:
             ignore_unavailable_components=ignore_unavailable_components,
         )
 
-        self._to_core = SchemaToCoreConverter(self._rag)
+        self._to_core = SchemaToCoreConverter(config=self._config, rag=self._rag)
         self._to_schema = CoreToSchemaConverter()
 
     def _get_component_json_schema(
@@ -174,12 +174,12 @@ class Engine:
 
 
 class SchemaToCoreConverter:
-    def __init__(self, rag: Rag) -> None:
+    def __init__(self, *, config: Config, rag: Rag) -> None:
+        self._config = config
         self._rag = rag
 
     def document(self, document: schemas.Document) -> core.Document:
-        # FIXME: config
-        return core.LocalDocument(
+        return self._config.document(
             id=document.id,
             name=document.name,
             metadata=document.metadata,
