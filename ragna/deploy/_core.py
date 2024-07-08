@@ -79,7 +79,7 @@ def make_app(
         app.include_router(make_api_router(engine), prefix="/api")
 
     if ui:
-        panel_app = make_ui_app(config=config)
+        panel_app = make_ui_app(engine)
         panel_app.serve_with_fastapi(app, endpoint="/ui")
 
     @app.get("/", include_in_schema=False)
