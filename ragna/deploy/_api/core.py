@@ -109,7 +109,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def _get_component_json_schema(
         component: Type[Component],
     ) -> dict[str, dict[str, Any]]:
-        print(component._protocol_model())
         json_schema = component._protocol_model().model_json_schema()
         # FIXME: there is likely a better way to exclude certain fields builtin in
         #  pydantic
