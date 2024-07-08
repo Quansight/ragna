@@ -288,9 +288,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-            chat.messages.append(
-                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
-            )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         core_answer = await core_chat.answer(prompt, stream=stream)
@@ -301,13 +298,13 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 core_answer_stream = aiter(core_answer)
                 content_chunk = await anext(core_answer_stream)
 
+                sources = [
+                    schemas.Source.from_core(source) for source in core_answer.sources
+                ]
                 answer = schemas.Message(
                     content=content_chunk,
                     role=core_answer.role,
-                    sources=[
-                        schemas.Source.from_core(source)
-                        for source in core_answer.sources
-                    ],
+                    sources=sources,
                 )
                 yield answer
 
@@ -320,6 +317,13 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                     yield answer_chunk
 
                 with get_session() as session:
+                    chat.messages.append(
+                        schemas.Message(
+                            content=prompt,
+                            role=ragna.core.MessageRole.USER,
+                            sources=sources,
+                        )
+                    )
                     answer.content = "".join(content_chunks)
                     chat.messages.append(answer)
                     database.update_chat(session, user=user, chat=chat)
@@ -333,8 +337,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             )
         else:
             answer = schemas.Message.from_core(core_answer)
+            question = schemas.Message(
+                content=prompt, role=ragna.core.MessageRole.USER, sources=answer.sources
+            )
 
             with get_session() as session:
+                chat.messages.append(question)
                 chat.messages.append(answer)
                 database.update_chat(session, user=user, chat=chat)
 
