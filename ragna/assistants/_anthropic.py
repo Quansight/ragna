@@ -36,8 +36,8 @@ class AnthropicAssistant(HttpApiAssistant):
             + "</documents>"
         )
 
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    async def generate(
+        self, prompt: str, system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
@@ -52,7 +52,7 @@ class AnthropicAssistant(HttpApiAssistant):
             },
             json={
                 "model": self._MODEL,
-                "system": self._instructize_system_prompt(sources),
+                "system": system,
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
@@ -68,6 +68,13 @@ class AnthropicAssistant(HttpApiAssistant):
                 continue
 
             yield cast(str, data["delta"].pop("text"))
+    
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        system_prompt = self._instructize_system_prompt(sources)
+        yield self.generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
+            
 
 
 class ClaudeOpus(AnthropicAssistant):

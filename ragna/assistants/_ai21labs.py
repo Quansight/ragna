@@ -22,8 +22,8 @@ class Ai21LabsAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    async def generate(
+        self, prompt: str, system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
@@ -46,10 +46,16 @@ class Ai21LabsAssistant(HttpApiAssistant):
                         "role": "user",
                     }
                 ],
-                "system": self._make_system_content(sources),
+                "system": system_prompt,
             },
         ):
             yield cast(str, data["outputs"][0]["text"])
+    
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        system_prompt = self._make_system_content(sources)
+        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote

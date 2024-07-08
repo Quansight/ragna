@@ -23,8 +23,8 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _stream(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    def generate(
+        self, prompt: str, system_prompt: str, *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
@@ -38,7 +38,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             "messages": [
                 {
                     "role": "system",
-                    "content": self._make_system_content(sources),
+                    "content": system_prompt,
                 },
                 {
                     "role": "user",
@@ -53,6 +53,15 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             json_["model"] = self._MODEL
 
         return self._call_api("POST", self._url, headers=headers, json=json_)
+    
+    def _stream(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    ) -> AsyncIterator[dict[str, Any]]:
+        # See https://platform.openai.com/docs/api-reference/chat/create
+        # and https://platform.openai.com/docs/api-reference/chat/streaming
+        system_prompt = self._make_system_content(sources)
+
+        return generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
 
     async def answer(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256

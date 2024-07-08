@@ -24,9 +24,9 @@ class GoogleAssistant(HttpApiAssistant):
                 *[f"\n{source.content}" for source in sources],
             ]
         )
-
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        
+    async def generate(
+        self, prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         async for chunk in self._call_api(
             "POST",
@@ -35,7 +35,7 @@ class GoogleAssistant(HttpApiAssistant):
             headers={"Content-Type": "application/json"},
             json={
                 "contents": [
-                    {"parts": [{"text": self._instructize_prompt(prompt, sources)}]}
+                    {"parts": [{"text": prompt}]}
                 ],
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
@@ -60,6 +60,12 @@ class GoogleAssistant(HttpApiAssistant):
         ):
             yield chunk
 
+    
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        expanded_prompt = self._instructize_prompt(prompt, sources)
+        yield generate(prompt=expanded_prompt, max_new_tokens=max_new_tokens)
 
 class GeminiPro(GoogleAssistant):
     """[Google Gemini Pro](https://ai.google.dev/models/gemini)

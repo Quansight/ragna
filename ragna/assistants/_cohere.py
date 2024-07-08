@@ -24,8 +24,8 @@ class CohereAssistant(HttpApiAssistant):
     def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
-    async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    async def generate(
+        self, prompt: str, system_prompt: str, source_documents: list[dict[str, str]], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
@@ -39,7 +39,7 @@ class CohereAssistant(HttpApiAssistant):
                 "authorization": f"Bearer {self._api_key}",
             },
             json={
-                "preamble_override": self._make_preamble(),
+                "preamble_override": system_prompt,
                 "message": prompt,
                 "model": self._MODEL,
                 "stream": True,
@@ -55,6 +55,16 @@ class CohereAssistant(HttpApiAssistant):
                 raise RagnaException(event["error_message"])
             if "text" in event:
                 yield cast(str, event["text"])
+    
+    async def answer(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        # See https://docs.cohere.com/docs/cochat-beta
+        # See https://docs.cohere.com/reference/chat
+        # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
+        system_prompt = self._make_preamble()
+        source_documents = self._make_source_documents(sources)
+        yield generate(prompt=prompt,system_prompt=system_prompt,source_documents=source_documents,max_new_tokens=max_new_tokens)
 
 
 class Command(CohereAssistant):
