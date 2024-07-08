@@ -14,23 +14,21 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     @abc.abstractmethod
     def _url(self) -> str: ...
 
-    # TODO: move to user config
-    def _make_system_content(self) -> str:
-        # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
+    async def _format_message_sources(self, messages: list[Message]) -> str:
+        # TODO: move to user config
         instruction = (
             "You are a helpful assistant that answers user questions given the context below. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
             "Only use the included messages below to generate the answer."
         )
-
-        return Message(
-            content=instruction,
-            role=MessageRole.SYSTEM,
-        )
-
-    async def _format_message_sources(self, messages: list[Message]) -> str:
-        sources_prompt = "Include the following sources in your answer:"
         formatted_messages = []
+        formatted_messages.append(
+            {
+                "content": instruction,
+                "role": MessageRole.SYSTEM,
+            }
+        )
+        sources_prompt = "Include the following sources in your answer:"
         for message in messages:
             content = await message.read()
             if message.role == MessageRole.USER:
@@ -72,12 +70,11 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
 
     async def answer(
         self,
-        messages: list[Message] = [],
+        messages: list[Message],
         *,
         max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
         formatted_messages = await self._format_message_sources(messages)
-        print("formatted_messages: ", formatted_messages)
         async for data in self._stream(
             formatted_messages, max_new_tokens=max_new_tokens
         ):

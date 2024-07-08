@@ -24,7 +24,8 @@ class RagnaDemoAssistant(Assistant):
     def answer(self, messages: list[Message]) -> Iterator[str]:
         if "markdown" in messages[-1].content.lower():
             yield self._markdown_answer()
-        yield self._default_answer(messages)
+        else:
+            yield self._default_answer(messages)
 
     def _markdown_answer(self) -> str:
         return textwrap.dedent(
