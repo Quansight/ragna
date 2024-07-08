@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Annotated, Optional
 
-import httpx
 import rich
 import typer
 import uvicorn
@@ -74,13 +73,13 @@ def deploy(
     *,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     api: Annotated[
-        Optional[bool],
+        bool,
         typer.Option(
             "--api/--no-api",
             help="Deploy the Ragna REST API.",
             show_default="True if UI is not deployed and otherwise check availability",
         ),
-    ] = None,
+    ] = True,
     ui: Annotated[
         bool,
         typer.Option(
@@ -101,18 +100,7 @@ def deploy(
         typer.Option(help="Open a browser when Ragna is deployed."),
     ] = None,
 ) -> None:
-    def api_available() -> bool:
-        try:
-            return httpx.get(f"{config._url}/health").is_success
-        except httpx.ConnectError:
-            return False
-
-    if api is None:
-        api = not api_available() if ui else True
-
     if not (api or ui):
-        raise Exception
-    elif ui and not api and not api_available():
         raise Exception
 
     if open_browser is None:

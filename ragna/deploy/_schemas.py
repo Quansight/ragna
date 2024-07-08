@@ -15,15 +15,15 @@ class Components(BaseModel):
     assistants: list[dict[str, Any]]
 
 
-class Document(BaseModel):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+class DocumentRegistration(BaseModel):
     name: str
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class DocumentUpload(BaseModel):
-    parameters: ragna.core.DocumentUploadParameters
-    document: Document
+class Document(BaseModel):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    name: str
+    metadata: dict[str, Any]
 
 
 class Source(BaseModel):
@@ -43,16 +43,20 @@ class Message(BaseModel):
     timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
 
 
-class ChatMetadata(BaseModel):
+class ChatCreation(BaseModel):
     name: str
+    document_ids: list[uuid.UUID]
     source_storage: str
     assistant: str
-    params: dict
-    documents: list[Document]
+    params: dict[str, Any] = Field(default_factory=dict)
 
 
 class Chat(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    metadata: ChatMetadata
+    name: str
+    documents: list[Document]
+    source_storage: str
+    assistant: str
+    params: dict[str, Any]
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False

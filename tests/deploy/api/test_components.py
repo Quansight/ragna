@@ -67,31 +67,22 @@ def test_unknown_component(tmp_local_root):
     ) as client:
         authenticate(client)
 
-        document_upload = (
-            client.post("/api/document", json={"name": document_path.name})
+        document = (
+            client.post("/api/documents", json=[{"name": document_path.name}])
             .raise_for_status()
-            .json()
+            .json()[0]
         )
-        document = document_upload["document"]
-        assert document["name"] == document_path.name
 
-        parameters = document_upload["parameters"]
         with open(document_path, "rb") as file:
-            client.request(
-                parameters["method"],
-                parameters["url"],
-                data=parameters["data"],
-                files={"file": file},
-            )
+            client.put("/api/documents", files={"documents": (document["id"], file)})
 
         response = client.post(
             "/api/chats",
             json={
                 "name": "test-chat",
+                "document_ids": [document["id"]],
                 "source_storage": "unknown_source_storage",
                 "assistant": "unknown_assistant",
-                "params": {},
-                "documents": [document],
             },
         )
 
