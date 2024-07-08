@@ -53,11 +53,6 @@ runs:
         mamba env update --file environment-dev.yml
         git checkout -- environment-dev.yml
 
-    - name: Install redis-server if necessary
-      if: (steps.cache.outputs.cache-hit != 'true') && (runner.os != 'Windows')
-      shell: bash -el {0}
-      run: mamba install --yes --channel conda-forge redis-server
-
     - name: Install playwright
       shell: bash -el {0}
       run: playwright install
