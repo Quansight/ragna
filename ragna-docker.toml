@@ -7,18 +7,24 @@ source_storages = [
     "ragna.source_storages.LanceDB"
 ]
 assistants = [
-    "ragna.assistants.Jurassic2Ultra",
-    "ragna.assistants.Claude",
-    "ragna.assistants.ClaudeInstant",
+    "ragna.assistants.ClaudeHaiku",
+    "ragna.assistants.ClaudeOpus",
+    "ragna.assistants.ClaudeSonnet",
     "ragna.assistants.Command",
     "ragna.assistants.CommandLight",
-    "ragna.assistants.RagnaDemoAssistant",
     "ragna.assistants.GeminiPro",
     "ragna.assistants.GeminiUltra",
-    "ragna.assistants.Mpt7bInstruct",
-    "ragna.assistants.Mpt30bInstruct",
-    "ragna.assistants.Gpt4",
+    "ragna.assistants.OllamaGemma2B",
+    "ragna.assistants.OllamaPhi2",
+    "ragna.assistants.OllamaLlama2",
+    "ragna.assistants.OllamaLlava",
+    "ragna.assistants.OllamaMistral",
+    "ragna.assistants.OllamaMixtral",
+    "ragna.assistants.OllamaOrcaMini",
     "ragna.assistants.Gpt35Turbo16k",
+    "ragna.assistants.Gpt4",
+    "ragna.assistants.Jurassic2Ultra",
+    "ragna.assistants.LlamafileAssistant",
 ]
 
 [api]
