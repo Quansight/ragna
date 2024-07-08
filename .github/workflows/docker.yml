@@ -92,7 +92,7 @@ jobs:
           cache-to: type=local,dest=${{ steps.cache.outputs.cache-dir }}
           tags: ${{ steps.metadata.outputs.tagged-image-name }}
           build-args: |
-            SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=${{ steps.metadata.outputs.version }}
+            SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA_BASE=${{ steps.metadata.outputs.version }}
           # Unfortunately, there currently seems to be no way to build a multiplatform
           # image and access a single one for the host platform afterwards. Thus, we
           # only build a multiplatform image when we also want to push to the registry.

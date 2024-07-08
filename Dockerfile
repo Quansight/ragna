@@ -17,10 +17,10 @@ COPY pyproject.toml .
 #    the ragna folder only includes files that we are tracking. Thus, we just include
 #    everything manually.
 # 2. We need to pass the version expliclitly as
-#    --build-arg SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA=...,
+#    --build-arg SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA_BASE=...,
 #    since setuptools-scm cannot infer the version
 RUN echo '[tool.setuptools.package-data]\n"*" = ["*"]' >> pyproject.toml
-ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA
+ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA_BASE
 RUN pip install --progress-bar=off --no-deps .
 
 WORKDIR /var/ragna
