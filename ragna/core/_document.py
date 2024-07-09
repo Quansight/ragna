@@ -125,7 +125,9 @@ class LocalDocument(Document):
 
     async def _write(self, stream: AsyncIterator[bytes]) -> None:
         if self.path.exists():
-            raise RagnaException("ADDME")
+            raise RagnaException(
+                "File already exists", path=self.path, http_detail=RagnaException.EVENT
+            )
 
         async with aiofiles.open(self.path, "wb") as file:
             async for content in stream:
@@ -133,7 +135,9 @@ class LocalDocument(Document):
 
     def read(self) -> bytes:
         if not self.path.is_file():
-            raise RagnaException("ADDME")
+            raise RagnaException(
+                "File does not exist", path=self.path, http_detail=RagnaException.EVENT
+            )
 
         with open(self.path, "rb") as file:
             return file.read()
