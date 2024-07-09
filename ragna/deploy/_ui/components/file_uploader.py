@@ -153,6 +153,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                             multiple
                             onchange="${script('file_input_on_change')}" 
                             accept="${allowed_documents_str}"
+                            webkitdirectory
                     /> 
                 </div>
                 <div id="fileListContainer" class="fileListContainer">
