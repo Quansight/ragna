@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from typing import Any, Collection, Optional
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
@@ -42,83 +42,50 @@ class Database:
 
         return user
 
-    def add_document(
-        self,
-        session: Session,
-        *,
-        user: str,
-        document: schemas.Document,
-        metadata: dict[str, Any],
-    ) -> None:
-        session.add(
-            orm.Document(
-                id=document.id,
-                user_id=self._get_user(session, username=user).id,
-                name=document.name,
-                metadata_=metadata,
-            )
-        )
-        session.commit()
-
     def add_documents(
         self,
         session: Session,
         *,
         user: str,
-        document_metadata_collection: list[tuple[schemas.Document, dict[str, Any]]],
+        documents: list[schemas.Document],
     ) -> None:
-        """
-        Add multiple documents to the database.
-
-        This function allows adding multiple documents at once by calling `add_all`. This is
-        important when there is non-negligible latency attached to each database operation.
-        """
-        documents = [
-            orm.Document(
-                id=document.id,
-                user_id=self._get_user(session, username=user).id,
-                name=document.name,
-                metadata_=metadata,
-            )
-            for document, metadata in document_metadata_collection
-        ]
-        session.add_all(documents)
+        user_id = self._get_user(session, username=user).id
+        session.add_all(
+            [self._to_orm.document(document, user_id=user_id) for document in documents]
+        )
         session.commit()
 
-    def get_document(
-        self, session: Session, *, user: str, id: uuid.UUID
-    ) -> schemas.Document:
-        document = session.execute(
-            select(orm.Document).where(
-                (orm.Document.user_id == self._get_user(session, username=user).id)
-                & (orm.Document.id == id)
-            )
-        ).scalar_one_or_none()
-        return self._to_schema.document(document)
-
-    def add_chat(self, session: Session, *, user: str, chat: schemas.Chat) -> None:
-        document_ids = {document.id for document in chat.metadata.documents}
-        # FIXME also check if the user is allowed to access the documents?
+    def _get_orm_documents(
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
+    ) -> list[orm.Document]:
+        # FIXME also check if the user is allowed to access the documents
+        # FIXME: maybe just take the user id to avoid getting it twice in add_chat?
         documents = (
-            session.execute(
-                select(orm.Document).where(orm.Document.id.in_(document_ids))
-            )
+            session.execute(select(orm.Document).where(orm.Document.id.in_(ids)))
             .scalars()
             .all()
         )
-        if len(documents) != len(document_ids):
+        if len(documents) != len(ids):
             raise RagnaException(
-                str(document_ids - {document.id for document in documents})
+                str(set(ids) - {document.id for document in documents})
             )
 
+        return documents  # type: ignore[no-any-return]
+
+    def get_documents(
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
+    ) -> list[schemas.Document]:
+        return [
+            self._to_schema.document(document)
+            for document in self._get_orm_documents(session, user=user, ids=ids)
+        ]
+
+    def add_chat(self, session: Session, *, user: str, chat: schemas.Chat) -> None:
         orm_chat = self._to_orm.chat(
-            chat,
-            user_id=self._get_user(session, username=user).id,
-            # We have to pass the documents here, because SQLAlchemy does not allow a
-            # second instance of orm.Document with the same primary key in the session.
-            documents=documents,
+            chat, user_id=self._get_user(session, username=user).id
         )
-        session.add(orm_chat)
+        # We need to merge and not add here, because the documents are already in the DB
+        session.merge(orm_chat)
         session.commit()
 
     def _select_chat(self, *, eager: bool = False) -> Any:
@@ -213,21 +180,17 @@ class SchemaToOrmConverter:
         chat: schemas.Chat,
         *,
         user_id: uuid.UUID,
-        documents: Optional[list[orm.Document]] = None,
     ) -> orm.Chat:
-        if documents is None:
-            documents = [
-                self.document(document, user_id=user_id)
-                for document in chat.metadata.documents
-            ]
         return orm.Chat(
             id=chat.id,
             user_id=user_id,
-            name=chat.metadata.name,
-            documents=documents,
-            source_storage=chat.metadata.source_storage,
-            assistant=chat.metadata.assistant,
-            params=chat.metadata.params,
+            name=chat.name,
+            documents=[
+                self.document(document, user_id=user_id) for document in chat.documents
+            ],
+            source_storage=chat.source_storage,
+            assistant=chat.assistant,
+            params=chat.params,
             messages=[
                 self.message(message, chat_id=chat.id) for message in chat.messages
             ],
@@ -262,13 +225,11 @@ class OrmToSchemaConverter:
     def chat(self, chat: orm.Chat) -> schemas.Chat:
         return schemas.Chat(
             id=chat.id,
-            metadata=schemas.ChatMetadata(
-                name=chat.name,
-                documents=[self.document(document) for document in chat.documents],
-                source_storage=chat.source_storage,
-                assistant=chat.assistant,
-                params=chat.params,
-            ),
+            name=chat.name,
+            documents=[self.document(document) for document in chat.documents],
+            source_storage=chat.source_storage,
+            assistant=chat.assistant,
+            params=chat.params,
             messages=[self.message(message) for message in chat.messages],
             prepared=chat.prepared,
         )

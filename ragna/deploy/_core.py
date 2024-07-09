@@ -27,7 +27,6 @@ def make_app(
     ignore_unavailable_components: bool,
     open_browser: bool,
 ) -> FastAPI:
-    ragna.local_root(config.local_root)
     set_redirect_root_path(config.root_path)
 
     lifespan: Optional[Callable[[FastAPI], AsyncContextManager]]
@@ -38,7 +37,7 @@ def make_app(
             def target() -> None:
                 client = httpx.Client(base_url=config._url)
 
-                def server_available():
+                def server_available() -> bool:
                     try:
                         return client.get("/health").is_success
                     except httpx.ConnectError:
@@ -77,7 +76,7 @@ def make_app(
     )
 
     if api:
-        app.include_router(make_api_router(config, engine), prefix="/api")
+        app.include_router(make_api_router(engine), prefix="/api")
 
     if ui:
         panel_app = make_ui_app(config=config)

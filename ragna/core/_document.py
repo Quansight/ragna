@@ -2,26 +2,17 @@ from __future__ import annotations
 
 import abc
 import io
-import os
-import secrets
-import time
 import uuid
+from functools import cached_property
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Type, TypeVar, Union
+from typing import Any, AsyncIterator, Iterator, Optional, Type, TypeVar, Union
 
-import jwt
+import aiofiles
 from pydantic import BaseModel
 
+import ragna
+
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
-
-if TYPE_CHECKING:
-    from ragna.deploy import Config
-
-
-class DocumentUploadParameters(BaseModel):
-    method: str
-    url: str
-    data: dict
 
 
 class Document(RequirementsMixin, abc.ABC):
@@ -62,16 +53,6 @@ class Document(RequirementsMixin, abc.ABC):
 
         return handler
 
-    @classmethod
-    @abc.abstractmethod
-    async def get_upload_info(
-        cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
-        pass
-
-    @abc.abstractmethod
-    def is_readable(self) -> bool: ...
-
     @abc.abstractmethod
     def read(self) -> bytes: ...
 
@@ -88,12 +69,25 @@ class LocalDocument(Document):
         [ragna.core.LocalDocument.from_path][].
     """
 
+    def __init__(
+        self,
+        *,
+        id: Optional[uuid.UUID] = None,
+        name: str,
+        metadata: dict[str, Any],
+        handler: Optional[DocumentHandler] = None,
+    ):
+        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
+        if "path" not in self.metadata:
+            metadata["path"] = str(ragna.local_root() / "documents" / str(self.id))
+
     @classmethod
     def from_path(
         cls,
         path: Union[str, Path],
         *,
         id: Optional[uuid.UUID] = None,
+        name: Optional[str] = None,
         metadata: Optional[dict[str, Any]] = None,
         handler: Optional[DocumentHandler] = None,
     ) -> LocalDocument:
@@ -102,6 +96,7 @@ class LocalDocument(Document):
         Args:
             path: Local path to the file.
             id: ID of the document. If omitted, one is generated.
+            name: Name of the document. If omitted, defaults to the name of the `path`.
             metadata: Optional metadata of the document.
             handler: Document handler. If omitted, a builtin handler is selected based
                 on the suffix of the `path`.
@@ -118,60 +113,34 @@ class LocalDocument(Document):
             )
 
         path = Path(path).expanduser().resolve()
+        if name is None:
+            name = path.name
         metadata["path"] = str(path)
 
-        return cls(id=id, name=path.name, metadata=metadata, handler=handler)
+        return cls(id=id, name=name, metadata=metadata, handler=handler)
 
-    @property
+    @cached_property
     def path(self) -> Path:
         return Path(self.metadata["path"])
 
-    def is_readable(self) -> bool:
-        return self.path.exists()
+    async def _write(self, stream: AsyncIterator[bytes]) -> None:
+        if self.path.exists():
+            raise RagnaException(
+                "File already exists", path=self.path, http_detail=RagnaException.EVENT
+            )
+
+        async with aiofiles.open(self.path, "wb") as file:
+            async for content in stream:
+                await file.write(content)
 
     def read(self) -> bytes:
-        with open(self.path, "rb") as stream:
-            return stream.read()
-
-    _JWT_SECRET = os.environ.get(
-        "RAGNA_API_DOCUMENT_UPLOAD_SECRET", secrets.token_urlsafe(32)[:32]
-    )
-    _JWT_ALGORITHM = "HS256"
-
-    @classmethod
-    async def get_upload_info(
-        cls, *, config: Config, user: str, id: uuid.UUID, name: str
-    ) -> tuple[dict[str, Any], DocumentUploadParameters]:
-        url = f"{config._url}/api/document"
-        data = {
-            "token": jwt.encode(
-                payload={
-                    "user": user,
-                    "id": str(id),
-                    "exp": time.time() + 5 * 60,
-                },
-                key=cls._JWT_SECRET,
-                algorithm=cls._JWT_ALGORITHM,
-            )
-        }
-        metadata = {"path": str(config.local_root / "documents" / str(id))}
-        return metadata, DocumentUploadParameters(method="PUT", url=url, data=data)
-
-    @classmethod
-    def decode_upload_token(cls, token: str) -> tuple[str, uuid.UUID]:
-        try:
-            payload = jwt.decode(
-                token, key=cls._JWT_SECRET, algorithms=[cls._JWT_ALGORITHM]
-            )
-        except jwt.InvalidSignatureError:
+        if not self.path.is_file():
             raise RagnaException(
-                "Token invalid", http_status_code=401, http_detail=RagnaException.EVENT
+                "File does not exist", path=self.path, http_detail=RagnaException.EVENT
             )
-        except jwt.ExpiredSignatureError:
-            raise RagnaException(
-                "Token expired", http_status_code=401, http_detail=RagnaException.EVENT
-            )
-        return payload["user"], uuid.UUID(payload["id"])
+
+        with open(self.path, "rb") as file:
+            return file.read()
 
 
 class Page(BaseModel):

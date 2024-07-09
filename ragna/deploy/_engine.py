@@ -1,8 +1,13 @@
 import uuid
-from typing import Any, AsyncIterator, Optional, Type
+from typing import Any, AsyncIterator, Optional, Type, cast
 
+from fastapi import status as http_status_code
+
+import ragna
 from ragna import Rag, core
 from ragna._compat import aiter, anext
+from ragna._utils import make_directory
+from ragna.core import RagnaException
 from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
@@ -13,15 +18,20 @@ from ._database import Database
 class Engine:
     def __init__(self, *, config: Config, ignore_unavailable_components: bool) -> None:
         self._config = config
+        ragna.local_root(config.local_root)
+        self._documents_root = make_directory(config.local_root / "documents")
+        self.supports_store_documents = issubclass(
+            self._config.document, ragna.core.LocalDocument
+        )
 
         self._database = Database(url=config.database_url)
 
-        self._rag: Rag = Rag(
+        self._rag = Rag(  # type: ignore[var-annotated]
             config=config,
             ignore_unavailable_components=ignore_unavailable_components,
         )
 
-        self._to_core = SchemaToCoreConverter(config=config, rag=self._rag)
+        self._to_core = SchemaToCoreConverter(config=self._config, rag=self._rag)
         self._to_schema = CoreToSchemaConverter()
 
     def _get_component_json_schema(
@@ -56,12 +66,59 @@ class Engine:
             ],
         )
 
-    def create_chat(
-        self, *, user: str, chat_metadata: schemas.ChatMetadata
-    ) -> schemas.Chat:
-        chat = schemas.Chat(metadata=chat_metadata)
+    def register_documents(
+        self, *, user: str, document_registrations: list[schemas.DocumentRegistration]
+    ) -> list[schemas.Document]:
+        # We create core.Document's first, because they might update the metadata
+        core_documents = [
+            self._config.document(
+                name=registration.name, metadata=registration.metadata
+            )
+            for registration in document_registrations
+        ]
+        documents = [self._to_schema.document(document) for document in core_documents]
 
-        # Although we don't need the actual core.Chat here, this just performs the input
+        with self._database.get_session() as session:
+            self._database.add_documents(session, user=user, documents=documents)
+
+        return documents
+
+    async def store_documents(
+        self,
+        *,
+        user: str,
+        ids_and_streams: list[tuple[uuid.UUID, AsyncIterator[bytes]]],
+    ) -> None:
+        if not self.supports_store_documents:
+            raise RagnaException(
+                "Ragna configuration does not support local upload",
+                http_status_code=http_status_code.HTTP_400_BAD_REQUEST,
+            )
+
+        ids, streams = zip(*ids_and_streams)
+
+        with self._database.get_session() as session:
+            documents = self._database.get_documents(session, user=user, ids=ids)
+
+        for document, stream in zip(documents, streams):
+            core_document = cast(
+                ragna.core.LocalDocument, self._to_core.document(document)
+            )
+            await core_document._write(stream)
+
+    def create_chat(
+        self, *, user: str, chat_creation: schemas.ChatCreation
+    ) -> schemas.Chat:
+        params = chat_creation.model_dump()
+        document_ids = params.pop("document_ids")
+        with self._database.get_session() as session:
+            documents = self._database.get_documents(
+                session, user=user, ids=document_ids
+            )
+
+        chat = schemas.Chat(documents=documents, **params)
+
+        # Although we don't need the actual core.Chat here, this performs the input
         # validation.
         self._to_core.chat(chat, user=user)
 
@@ -146,13 +203,13 @@ class SchemaToCoreConverter:
 
     def chat(self, chat: schemas.Chat, *, user: str) -> core.Chat:
         core_chat = self._rag.chat(
-            documents=[self.document(document) for document in chat.metadata.documents],
-            source_storage=chat.metadata.source_storage,
-            assistant=chat.metadata.assistant,
             user=user,
             chat_id=chat.id,
-            chat_name=chat.metadata.name,
-            **chat.metadata.params,
+            chat_name=chat.name,
+            documents=[self.document(document) for document in chat.documents],
+            source_storage=chat.source_storage,
+            assistant=chat.assistant,
+            **chat.params,
         )
         core_chat._messages = [self.message(message) for message in chat.messages]
         core_chat._prepared = chat.prepared
@@ -182,7 +239,9 @@ class CoreToSchemaConverter:
     ) -> schemas.Message:
         return schemas.Message(
             id=message.id,
-            content=content_override or message.content,
+            content=(
+                content_override if content_override is not None else message.content
+            ),
             role=message.role,
             sources=[self.source(source) for source in message.sources],
             timestamp=message.timestamp,
@@ -193,13 +252,11 @@ class CoreToSchemaConverter:
         del params["user"]
         return schemas.Chat(
             id=params.pop("chat_id"),
-            metadata=schemas.ChatMetadata(
-                name=params.pop("chat_name"),
-                source_storage=chat.source_storage.display_name(),
-                assistant=chat.assistant.display_name(),
-                params=params,
-                documents=[self.document(document) for document in chat.documents],
-            ),
+            name=params.pop("chat_name"),
+            documents=[self.document(document) for document in chat.documents],
+            source_storage=chat.source_storage.display_name(),
+            assistant=chat.assistant.display_name(),
+            params=params,
             messages=[self.message(message) for message in chat._messages],
             prepared=chat._prepared,
         )

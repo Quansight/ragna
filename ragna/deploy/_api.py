@@ -1,29 +1,23 @@
 import uuid
-from typing import Annotated, AsyncIterator, cast
+from typing import Annotated, AsyncIterator
 
-import aiofiles
 import pydantic
 from fastapi import (
     APIRouter,
     Body,
     Depends,
-    Form,
-    HTTPException,
     UploadFile,
 )
 from fastapi.responses import StreamingResponse
 
-import ragna
-import ragna.core
 from ragna._compat import anext
 from ragna.core._utils import default_user
-from ragna.deploy import Config
 
 from . import _schemas as schemas
 from ._engine import Engine
 
 
-def make_router(config: Config, engine: Engine) -> APIRouter:
+def make_router(engine: Engine) -> APIRouter:
     router = APIRouter(tags=["API"])
 
     def get_user() -> str:
@@ -31,77 +25,32 @@ def make_router(config: Config, engine: Engine) -> APIRouter:
 
     UserDependency = Annotated[str, Depends(get_user)]
 
-    # TODO: the document endpoints do not go through the engine, because they'll change
-    #  quite drastically when the UI no longer depends on the API
-
-    _database = engine._database
-
-    @router.post("/document")
-    async def create_document_upload_info(
-        user: UserDependency,
-        name: Annotated[str, Body(..., embed=True)],
-    ) -> schemas.DocumentUpload:
-        with _database.get_session() as session:
-            document = schemas.Document(name=name)
-            metadata, parameters = await config.document.get_upload_info(
-                config=config, user=user, id=document.id, name=document.name
-            )
-            document.metadata = metadata
-            _database.add_document(
-                session, user=user, document=document, metadata=metadata
-            )
-            return schemas.DocumentUpload(parameters=parameters, document=document)
-
-    # TODO: Add UI support and documentation for this endpoint (#406)
     @router.post("/documents")
-    async def create_documents_upload_info(
-        user: UserDependency,
-        names: Annotated[list[str], Body(..., embed=True)],
-    ) -> list[schemas.DocumentUpload]:
-        with _database.get_session() as session:
-            document_metadata_collection = []
-            document_upload_collection = []
-            for name in names:
-                document = schemas.Document(name=name)
-                metadata, parameters = await config.document.get_upload_info(
-                    config=config, user=user, id=document.id, name=document.name
-                )
-                document.metadata = metadata
-                document_metadata_collection.append((document, metadata))
-                document_upload_collection.append(
-                    schemas.DocumentUpload(parameters=parameters, document=document)
-                )
+    def register_documents(
+        user: UserDependency, document_registrations: list[schemas.DocumentRegistration]
+    ) -> list[schemas.Document]:
+        return engine.register_documents(
+            user=user, document_registrations=document_registrations
+        )
 
-            _database.add_documents(
-                session,
-                user=user,
-                document_metadata_collection=document_metadata_collection,
-            )
-            return document_upload_collection
+    @router.put("/documents")
+    async def upload_documents(
+        user: UserDependency, documents: list[UploadFile]
+    ) -> None:
+        def make_content_stream(file: UploadFile) -> AsyncIterator[bytes]:
+            async def content_stream() -> AsyncIterator[bytes]:
+                while content := await file.read(16 * 1024):
+                    yield content
 
-    # TODO: Add new endpoint for batch uploading documents (#407)
-    @router.put("/document")
-    async def upload_document(
-        token: Annotated[str, Form()], file: UploadFile
-    ) -> schemas.Document:
-        if not issubclass(config.document, ragna.core.LocalDocument):
-            raise HTTPException(
-                status_code=400,
-                detail="Ragna configuration does not support local upload",
-            )
-        with _database.get_session() as session:
-            user, id = ragna.core.LocalDocument.decode_upload_token(token)
-            document = _database.get_document(session, user=user, id=id)
+            return content_stream()
 
-            core_document = cast(
-                ragna.core.LocalDocument, engine._to_core.document(document)
-            )
-            core_document.path.parent.mkdir(parents=True, exist_ok=True)
-            async with aiofiles.open(core_document.path, "wb") as document_file:
-                while content := await file.read(1024):
-                    await document_file.write(content)
-
-            return document
+        await engine.store_documents(
+            user=user,
+            ids_and_streams=[
+                (uuid.UUID(document.filename), make_content_stream(document))
+                for document in documents
+            ],
+        )
 
     @router.get("/components")
     def get_components(_: UserDependency) -> schemas.Components:
@@ -110,9 +59,9 @@ def make_router(config: Config, engine: Engine) -> APIRouter:
     @router.post("/chats")
     async def create_chat(
         user: UserDependency,
-        chat_metadata: schemas.ChatMetadata,
+        chat_creation: schemas.ChatCreation,
     ) -> schemas.Chat:
-        return engine.create_chat(user=user, chat_metadata=chat_metadata)
+        return engine.create_chat(user=user, chat_creation=chat_creation)
 
     @router.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
