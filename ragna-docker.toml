@@ -3,7 +3,6 @@ authentication = "ragna.deploy.RagnaDemoAuthentication"
 document = "ragna.core.LocalDocument"
 source_storages = [
     "ragna.source_storages.Chroma",
-    "ragna.source_storages.RagnaDemoSourceStorage",
     "ragna.source_storages.LanceDB"
 ]
 assistants = [
@@ -25,6 +24,7 @@ assistants = [
     "ragna.assistants.Gpt4",
     "ragna.assistants.Jurassic2Ultra",
     "ragna.assistants.LlamafileAssistant",
+    "ragna.assistants.RagnaDemoAssistant",
 ]
 
 [api]
