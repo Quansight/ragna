@@ -14,7 +14,9 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     @abc.abstractmethod
     def _url(self) -> str: ...
 
-    async def _format_message_sources(self, messages: list[Message]) -> str:
+    async def _format_message_sources(
+        self, messages: list[Message]
+    ) -> list[dict[str, str]]:
         # TODO: move to user config
         instruction = (
             "You are a helpful assistant that answers user questions given the context below. "
