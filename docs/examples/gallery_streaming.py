@@ -44,8 +44,8 @@ from ragna import assistants
 
 
 class DemoStreamingAssistant(assistants.RagnaDemoAssistant):
-    def answer(self, prompt, sources):
-        content = next(super().answer(prompt, sources))
+    def answer(self, messages):
+        content = next(super().answer(messages))
         for chunk in content.split(" "):
             yield f"{chunk} "
 

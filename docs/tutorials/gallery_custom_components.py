@@ -30,7 +30,7 @@ to incorporate custom components. This tutorial covers how to do that.
 
 import uuid
 
-from ragna.core import Document, Source, SourceStorage
+from ragna.core import Document, Source, SourceStorage, Message
 
 
 class TutorialSourceStorage(SourceStorage):
@@ -61,7 +61,7 @@ class TutorialSourceStorage(SourceStorage):
 # %%
 # ### Assistant
 #
-# [ragna.core.Assistant][]s are objects that take a user prompt and relevant
+# [ragna.core.Assistant][]s are objects that take a list of messages containing one or more user prompts and relevant
 # [ragna.core.Source][]s and generate a response form that. Usually, assistants are
 # LLMs.
 #
@@ -82,8 +82,9 @@ from ragna.core import Assistant, Source
 
 
 class TutorialAssistant(Assistant):
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+    def answer(self, messages: list[Message]) -> Iterator[str]:
         print(f"Running {type(self).__name__}().answer()")
+        prompt, sources = (message := messages[-1]).content, message.sources
         yield (
             f"To answer the user prompt '{prompt}', "
             f"I was given {len(sources)} source(s)."
@@ -254,8 +255,7 @@ rest_api.stop()
 class ElaborateTutorialAssistant(Assistant):
     def answer(
         self,
-        prompt: str,
-        sources: list[Source],
+        messages: list[Message],
         *,
         my_required_parameter: int,
         my_optional_parameter: str = "foo",
@@ -393,9 +393,7 @@ from typing import AsyncIterator
 
 
 class AsyncAssistant(Assistant):
-    async def answer(
-        self, prompt: str, sources: list[Source]
-    ) -> AsyncIterator[str]:
+    async def answer(self, messages: list[Message]) -> AsyncIterator[str]:
         print(f"Running {type(self).__name__}().answer()")
         start = time.perf_counter()
         await asyncio.sleep(0.3)
