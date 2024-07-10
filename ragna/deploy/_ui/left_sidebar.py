@@ -60,8 +60,7 @@ class LeftSidebar(pn.viewable.Viewer):
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
         self.chats.sort(
-            key=lambda chat: chat['messages'][-1]['timestamp'],
-            reverse=True
+            key=lambda chat: chat['messages'][-1]['timestamp'], reverse=True
         )
 
         self.chat_buttons = []
