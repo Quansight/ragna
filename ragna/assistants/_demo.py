@@ -39,9 +39,8 @@ class RagnaDemoAssistant(Assistant):
         ).strip()
 
     def _default_answer(self, messages: list[Message]) -> str:
-        prompt = messages[-1].content.strip()
+        prompt, sources = (message := messages[-1]).content, message.sources
         sources_display = []
-        sources = messages[-1].sources
         for source in sources:
             source_display = f"- {source.document.name}"
             if source.location:
