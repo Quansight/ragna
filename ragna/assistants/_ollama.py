@@ -32,10 +32,8 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        formatted_messages = await self._format_message_sources(messages)
-        async for data in self._stream(
-            formatted_messages, max_new_tokens=max_new_tokens
-        ):
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             # Modeled after
             # https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
             if "error" in data:

@@ -2,7 +2,7 @@ import abc
 from functools import cached_property
 from typing import Any, AsyncIterator, Optional, cast
 
-from ragna.core import Message, MessageRole
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -14,42 +14,17 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     @abc.abstractmethod
     def _url(self) -> str: ...
 
-    async def _format_message_sources(
-        self, messages: list[Message]
-    ) -> list[dict[str, str]]:
-        # TODO: move to user config
+    def _make_system_content(self, sources: list[Source]) -> str:
+        # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
         instruction = (
-            "You are a helpful assistant that answers user questions given the context below. "
+            "You are an helpful assistants that answers user questions given the context below. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
-            "Only use the included messages below to generate the answer."
+            "Only use the sources below to generate the answer."
         )
-        formatted_messages = []
-        formatted_messages.append(
-            {
-                "content": instruction,
-                "role": MessageRole.SYSTEM,
-            }
-        )
-        sources_prompt = "Include the following sources in your answer:"
-        for message in messages:
-            content = await message.read()
-            if message.role == MessageRole.USER:
-                formatted_messages.append(
-                    {
-                        "content": sources_prompt
-                        + "\n\n".join(source.content for source in message.sources),
-                        "role": MessageRole.SYSTEM,
-                    }
-                )
-
-            formatted_messages.append({"content": content, "role": message.role})
-        return formatted_messages
+        return instruction + "\n\n".join(source.content for source in sources)
 
     def _stream(
-        self,
-        messages: list[dict],
-        *,
-        max_new_tokens: int,
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
@@ -60,7 +35,16 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             headers["Authorization"] = f"Bearer {self._api_key}"
 
         json_ = {
-            "messages": messages,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": self._make_system_content(sources),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
             "temperature": 0.0,
             "max_tokens": max_new_tokens,
             "stream": True,
@@ -71,15 +55,10 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return self._call_api("POST", self._url, headers=headers, json=json_)
 
     async def answer(
-        self,
-        messages: list[Message],
-        *,
-        max_new_tokens: int = 256,
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        formatted_messages = await self._format_message_sources(messages)
-        async for data in self._stream(
-            formatted_messages, max_new_tokens=max_new_tokens
-        ):
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:
                 break
