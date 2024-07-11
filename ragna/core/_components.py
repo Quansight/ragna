@@ -238,14 +238,12 @@ class Assistant(Component, abc.ABC):
     __ragna_protocol_methods__ = ["answer"]
 
     @abc.abstractmethod
-    def answer(
-        self,
-        messages: list[Message] = [],
-    ) -> Iterator[str]:
-        """Answer a prompt given some sources.
+    def answer(self, messages: list[Message]) -> Iterator[str]:
+        """Answer a prompt given the chat history.
 
         Args:
-            messages: List of messages to send to the LLM API.
+            messages: List of messages in the chat history. The last item is the current
+                user prompt and has the relevant sources attached to it.
 
         Returns:
             Answer.

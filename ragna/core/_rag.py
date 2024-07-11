@@ -226,11 +226,10 @@ class Chat:
         self._messages.append(question)
 
         answer = Message(
-            content=self._run_gen(self.assistant.answer, self._messages[:]),
+            content=self._run_gen(self.assistant.answer, self._messages.copy()),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
-
         if not stream:
             await answer.read()
 
