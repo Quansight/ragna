@@ -2,7 +2,7 @@ import abc
 from functools import cached_property
 from typing import Any, AsyncIterator, Optional, cast
 
-from ragna.core import Source
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -55,8 +55,9 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return self._call_api("POST", self._url, headers=headers, json=json_)
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
         async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:

@@ -287,12 +287,15 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-            chat.messages.append(
-                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
-            )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         core_answer = await core_chat.answer(prompt, stream=stream)
+        sources = [schemas.Source.from_core(source) for source in core_answer.sources]
+        chat.messages.append(
+            schemas.Message(
+                content=prompt, role=ragna.core.MessageRole.USER, sources=sources
+            )
+        )
 
         if stream:
 
@@ -303,10 +306,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 answer = schemas.Message(
                     content=content_chunk,
                     role=core_answer.role,
-                    sources=[
-                        schemas.Source.from_core(source)
-                        for source in core_answer.sources
-                    ],
+                    sources=sources,
                 )
                 yield answer
 

@@ -5,7 +5,7 @@ import pytest
 from ragna import assistants
 from ragna._compat import anext
 from ragna.assistants._http_api import HttpApiAssistant
-from ragna.core import RagnaException
+from ragna.core import Message, RagnaException
 from tests.utils import skip_on_windows
 
 HTTP_API_ASSISTANTS = [
@@ -25,7 +25,8 @@ HTTP_API_ASSISTANTS = [
 async def test_api_call_error_smoke(mocker, assistant):
     mocker.patch.dict(os.environ, {assistant._API_KEY_ENV_VAR: "SENTINEL"})
 
-    chunks = assistant().answer(prompt="?", sources=[])
+    messages = [Message(content="?", sources=[])]
+    chunks = assistant().answer(messages)
 
     with pytest.raises(RagnaException, match="API call failed"):
         await anext(chunks)
