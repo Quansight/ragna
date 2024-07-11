@@ -2,7 +2,7 @@ import os
 from functools import cached_property
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Message, RagnaException
 
 from ._http_api import HttpStreamingProtocol
 from ._openai import OpenaiLikeHttpApiAssistant
@@ -30,8 +30,9 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
         return f"{base_url}/api/chat"
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
         async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
             # Modeled after
             # https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62

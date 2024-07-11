@@ -147,7 +147,7 @@ class SourceStorage(Component, abc.ABC):
         ...
 
 
-class MessageRole(enum.Enum):
+class MessageRole(str, enum.Enum):
     """Message role
 
     Attributes:
@@ -238,12 +238,12 @@ class Assistant(Component, abc.ABC):
     __ragna_protocol_methods__ = ["answer"]
 
     @abc.abstractmethod
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-        """Answer a prompt given some sources.
+    def answer(self, messages: list[Message]) -> Iterator[str]:
+        """Answer a prompt given the chat history.
 
         Args:
-            prompt: Prompt to be answered.
-            sources: Sources to use when answering answer the prompt.
+            messages: List of messages in the chat history. The last item is the current
+                user prompt and has the relevant sources attached to it.
 
         Returns:
             Answer.
