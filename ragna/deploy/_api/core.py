@@ -296,9 +296,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-            chat.messages.append(
-                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
-            )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         # smoke test to catch errors unrelated to streaming
@@ -311,6 +308,13 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 detail=str(e),
             ) from e
 
+        sources = [schemas.Source.from_core(source) for source in core_answer.sources]
+        chat.messages.append(
+            schemas.Message(
+                content=prompt, role=ragna.core.MessageRole.USER, sources=sources
+            )
+        )
+
         if stream:
             # smoke test to catch errors unrelated to streaming
             # longer-term solution tracked by #409
@@ -320,10 +324,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 answer = schemas.Message(
                     content=content_chunk,
                     role=core_answer.role,
-                    sources=[
-                        schemas.Source.from_core(source)
-                        for source in core_answer.sources
-                    ],
+                    sources=sources,
                 )
             except Exception as e:
                 raise HTTPException(
