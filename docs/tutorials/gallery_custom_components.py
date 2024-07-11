@@ -62,8 +62,8 @@ class TutorialSourceStorage(SourceStorage):
 # ### Assistant
 #
 # [ragna.core.Assistant][]s are objects that take the chat history as list of
-# [ragna.core.Messages][]s and their relevant [ragna.core.Source][]s and generate a
-# response form that. Usually, assistants are LLMs.
+# [ragna.core.Message][]s and their relevant [ragna.core.Source][]s and generate a
+# response from that. Usually, assistants are LLMs.
 #
 # In this tutorial, we define a minimal `TutorialAssistant` that is similar to
 # [ragna.assistants.RagnaDemoAssistant][]. In `.answer()` we mirror back the user
@@ -84,8 +84,8 @@ from ragna.core import Assistant, Source
 class TutorialAssistant(Assistant):
     def answer(self, messages: list[Message]) -> Iterator[str]:
         print(f"Running {type(self).__name__}().answer()")
-        # For simplicity, we only deal with the last message, i.e. the latest user
-        # prompt, here.
+        # For simplicity, we only deal with the last message here, i.e. the latest user
+        # prompt.
         prompt, sources = (message := messages[-1]).content, message.sources
         yield (
             f"To answer the user prompt '{prompt}', "
