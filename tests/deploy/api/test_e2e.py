@@ -6,10 +6,11 @@ from fastapi.testclient import TestClient
 from ragna.deploy import Config
 from ragna.deploy._api import app
 from tests.deploy.utils import TestAssistant, authenticate_with_api
-from tests.utils import skip_on_windows
+
+# from tests.utils import skip_on_windows
 
 
-@skip_on_windows
+# @skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
 def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
