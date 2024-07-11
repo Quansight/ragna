@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from typing import AsyncIterator
 
 import panel as pn
 import param
 
+from ragna.deploy import _schemas as schemas
+
 from . import js
 from . import styles as ui
-from .components.file_uploader import FileUploader
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -82,15 +84,11 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.api_wrapper = api_wrapper
 
-        upload_endpoints = self.api_wrapper.upload_endpoints()
-
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
         )
-        self.document_uploader = FileUploader(
-            [],  # the allowed documents are set in the model_section function
-            upload_endpoints["informations_endpoint"],
-        )
+        # FIXME: accept
+        self.document_uploader = pn.widgets.FileInput(multiple=True)
 
         # Most widgets (including those that use from_param) should be placed after the super init call
         self.cancel_button = pn.widgets.Button(
@@ -114,12 +112,38 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
-    def did_click_on_start_chat_button(self, event):
-        if not self.document_uploader.can_proceed_to_upload():
+    async def did_click_on_start_chat_button(self, event):
+        if not self.document_uploader.value:
             self.change_upload_files_label("missing_file")
         else:
             self.start_chat_button.disabled = True
-            self.document_uploader.perform_upload(event, self.did_finish_upload)
+            documents = self.api_wrapper._engine.register_documents(
+                user=self.api_wrapper._user,
+                document_registrations=[
+                    schemas.DocumentRegistration(name=name)
+                    for name in self.document_uploader.filename
+                ],
+            )
+
+            if self.api_wrapper._engine.supports_store_documents:
+
+                def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
+                    async def content_stream() -> AsyncIterator[bytes]:
+                        yield data
+
+                    return content_stream()
+
+                await self.api_wrapper._engine.store_documents(
+                    user=self.api_wrapper._user,
+                    ids_and_streams=[
+                        (document.id, make_content_stream(data))
+                        for document, data in zip(
+                            documents, self.document_uploader.value
+                        )
+                    ],
+                )
+
+            await self.did_finish_upload(documents)
 
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.

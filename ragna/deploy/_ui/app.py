@@ -6,7 +6,7 @@ import param
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from ragna.deploy import Config
+from ragna.deploy._engine import Engine
 
 from . import js
 from . import styles as ui
@@ -22,13 +22,13 @@ pn.config.browser_info = True
 
 
 class App(param.Parameterized):
-    def __init__(self, *, api_url):
+    def __init__(self, engine: Engine):
         super().__init__()
 
         # Apply the design modifiers to the panel components
         # It returns all the CSS files of the modifiers
         self.css_filepaths = ui.apply_design_modifiers()
-        self.api_url = api_url
+        self._engine = engine
 
     def get_template(self):
         # A bit hacky, but works.
@@ -73,7 +73,7 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        api_wrapper = ApiWrapper(api_url=self.api_url)
+        api_wrapper = ApiWrapper(self._engine)
 
         template = self.get_template()
         main_page = MainPage(api_wrapper=api_wrapper, template=template)
@@ -131,7 +131,7 @@ class App(param.Parameterized):
     def serve_with_fastapi(self, app: FastAPI, endpoint: str):
         self.add_panel_app(app, self.index_page, endpoint)
 
-        for dir in ["css", "imgs", "resources"]:
+        for dir in ["css", "imgs"]:
             app.mount(
                 f"/{dir}",
                 StaticFiles(directory=str(Path(__file__).parent / dir)),
@@ -139,5 +139,5 @@ class App(param.Parameterized):
             )
 
 
-def app(*, config: Config) -> App:
-    return App(api_url=f"{config._url}/api")
+def app(engine: Engine) -> App:
+    return App(engine)
