@@ -2,7 +2,7 @@ import abc
 from functools import cached_property
 from typing import Any, AsyncIterator, Optional, cast
 
-from ragna.core import Source
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -23,7 +23,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def generate(
+    async def generate(
         self, prompt: str, system_prompt: str, *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
@@ -52,21 +52,22 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        return self._call_api("POST", self._url, headers=headers, json=json_)
+        yield self._call_api("POST", self._url, headers=headers, json=json_)
     
-    def _stream(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    async def _stream(
+        self, messages: list[Message], *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
+        prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_system_content(sources)
 
-        return generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
+        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
+        async for data in self._stream(messages, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:
                 break

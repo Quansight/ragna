@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Message, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -30,6 +30,7 @@ class CohereAssistant(HttpApiAssistant):
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
+
         async for event in self._call_api(
             "POST",
             "https://api.cohere.ai/v1/chat",
@@ -57,11 +58,12 @@ class CohereAssistant(HttpApiAssistant):
                 yield cast(str, event["text"])
     
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
+        prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_preamble()
         source_documents = self._make_source_documents(sources)
         yield generate(prompt=prompt,system_prompt=system_prompt,source_documents=source_documents,max_new_tokens=max_new_tokens)

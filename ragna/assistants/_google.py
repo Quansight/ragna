@@ -1,6 +1,6 @@
 from typing import AsyncIterator
 
-from ragna.core import Source
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -24,7 +24,7 @@ class GoogleAssistant(HttpApiAssistant):
                 *[f"\n{source.content}" for source in sources],
             ]
         )
-        
+
     async def generate(
         self, prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
@@ -62,8 +62,9 @@ class GoogleAssistant(HttpApiAssistant):
 
     
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
         expanded_prompt = self._instructize_prompt(prompt, sources)
         yield generate(prompt=expanded_prompt, max_new_tokens=max_new_tokens)
 

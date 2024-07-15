@@ -33,7 +33,6 @@ dependencies = [
     "pydantic-settings>=2",
     "PyJWT",
     "python-multipart",
-    "redis",
     "questionary",
     "rich",
     "sqlalchemy>=2",

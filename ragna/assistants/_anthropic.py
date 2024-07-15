@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import PackageRequirement, RagnaException, Requirement, Source
+from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -41,6 +41,7 @@ class AnthropicAssistant(HttpApiAssistant):
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
+
         async for data in self._call_api(
             "POST",
             "https://api.anthropic.com/v1/messages",
@@ -70,8 +71,9 @@ class AnthropicAssistant(HttpApiAssistant):
             yield cast(str, data["delta"].pop("text"))
     
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._instructize_system_prompt(sources)
         yield self.generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
             

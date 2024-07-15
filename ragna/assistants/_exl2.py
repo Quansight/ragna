@@ -90,7 +90,8 @@ class Exl2Assistant(Assistant):
         yield outputs
             
     
-    async def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
+    async def answer(self, messages: list[Message]) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
         full_prompt = self._render_prompt(prompt)
         input_ids = self._tokenizer.encode(full_prompt)
         #examples at https://github.com/turboderp/exllamav2/blob/master/examples/inference_stream.py
