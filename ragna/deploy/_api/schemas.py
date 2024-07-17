@@ -89,7 +89,14 @@ class Message(BaseModel):
         return ragna.core.Message(
             content=self.content,
             role=self.role,
-            sources=[source.to_core() for source in self.sources],
+            # NOTE: When loading a chat from the database ragna attempts to convert
+            # a schema.Chat into a core.Chat. This fails if the user has defined a
+            # custom Document model. For this branch (deployment), it is unnecessary
+            # to have sources on the reloaded chat message list, so we skip this step
+            # here. This will be resolved as part of the "managed ragna" work and can be
+            # updated at that time
+            # See https://github.com/Quansight/ragna/issues/256
+            sources=[],
         )
 
 
