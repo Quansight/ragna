@@ -213,9 +213,9 @@ pandas==2.1.4
     # via
     #   bokeh
     #   panel
-panel==1.4.2
+panel==1.4.4
     # via Ragna (pyproject.toml)
-param==2.0.1
+param==2.1.1
     # via
     #   panel
     #   pyviz-comms
