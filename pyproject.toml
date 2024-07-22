@@ -27,7 +27,7 @@ dependencies = [
     "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
-    "panel==1.4.4",
+    "panel==1.4.2",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",
