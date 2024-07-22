@@ -103,6 +103,7 @@ class Source(pydantic.BaseModel):
 
     id: str
     document_id: uuid.UUID
+    document_name: str
     location: str
     content: str
     num_tokens: int

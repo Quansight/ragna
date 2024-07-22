@@ -77,8 +77,8 @@ class Rag(Generic[C]):
 
     def chat(
         self,
-        *,
         input: Any,
+        *,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -153,7 +153,8 @@ class Chat:
     ) -> None:
         self._rag = rag
 
-        self.documents, self.metadata_filter = self._parse_input(input)
+        self.documents, self.metadata_filter, self._prepared = self._parse_input(input)
+
         self.source_storage = cast(
             SourceStorage, self._rag._load_component(source_storage)
         )
@@ -165,7 +166,6 @@ class Chat:
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
-        self._prepared = False
         self._messages: list[Message] = []
 
     async def prepare(self) -> Message:
@@ -237,10 +237,9 @@ class Chat:
 
     def _parse_input(
         self, input: Iterable[Any]
-    ) -> tuple[Optional[list[Document]], MetadataFilter]:
+    ) -> tuple[Optional[list[Document]], MetadataFilter, bool]:
         if isinstance(input, MetadataFilter):
-            self._prepared = True
-            return None, input
+            return None, input, True
 
         documents = []
         for document in input:
@@ -262,7 +261,7 @@ class Chat:
                 for document in documents
             ]
         )
-        return documents, metadata_filter
+        return documents, metadata_filter, False
 
     def _unpack_chat_params(
         self, params: dict[str, Any]
