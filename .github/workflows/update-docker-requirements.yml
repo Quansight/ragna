@@ -49,9 +49,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           LAST_MERGED_PR=$(gh pr list --repo $GITHUB_REPOSITORY --state closed --json number --jq '.[0].number')
+          echo "Last merged PR number: $LAST_MERGED_PR"
           PR_INFO=$(gh pr view $LAST_MERGED_PR --repo $GITHUB_REPOSITORY --json author,mergedBy --jq '{author: .author.login, mergedBy: .mergedBy.login}')
+          echo "PR Info: $PR_INFO"
           echo "pr_author=$(echo $PR_INFO | jq -r .author)" >> $GITHUB_ENV
           echo "pr_mergedBy=$(echo $PR_INFO | jq -r .mergedBy)" >> $GITHUB_ENV
+          echo "PR Author: $(echo $PR_INFO | jq -r .author)"
+          echo "PR MergedBy: $(echo $PR_INFO | jq -r .mergedBy)"
 
       - name: Open a PR to update the requirements
         if: ${{ steps.update.outputs.needs-update }}
