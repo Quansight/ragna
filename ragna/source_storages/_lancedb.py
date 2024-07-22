@@ -43,6 +43,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         import pyarrow as pa
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
+        # Create schema at runtime!
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -63,11 +64,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
+        table = self._db.create_table(name=self._embedding_id, schema=self._schema)
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -80,6 +80,7 @@ class LanceDB(VectorDatabaseSourceStorage):
                         {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
+                            "document_name": str(document.name),
                             "page_numbers": self._page_numbers_to_str(
                                 chunk.page_numbers
                             ),

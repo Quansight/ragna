@@ -118,7 +118,7 @@ with open(document_path, "w") as file:
 from ragna import Rag
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=TutorialAssistant,
 )
@@ -273,7 +273,7 @@ class ElaborateTutorialAssistant(Assistant):
 # creating a chat.
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=ElaborateTutorialAssistant,
     my_required_parameter=3,
@@ -289,7 +289,7 @@ print(await chat.answer("Hello!"))
 
 try:
     Rag().chat(
-        documents=[document_path],
+        input=[document_path],
         source_storage=TutorialSourceStorage,
         assistant=ElaborateTutorialAssistant,
     )
@@ -300,7 +300,7 @@ except Exception as exc:
 
 try:
     Rag().chat(
-        documents=[document_path],
+        input=[document_path],
         source_storage=TutorialSourceStorage,
         assistant=ElaborateTutorialAssistant,
         my_required_parameter="bar",
@@ -404,7 +404,7 @@ class AsyncAssistant(Assistant):
 
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=AsyncAssistant,
 )

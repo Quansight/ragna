@@ -16,7 +16,7 @@ def demo_document(tmp_path, request):
 class TestChat:
     def chat(self, documents, **params):
         return Rag().chat(
-            documents=documents,
+            input=documents,
             source_storage=source_storages.RagnaDemoSourceStorage,
             assistant=assistants.RagnaDemoAssistant,
             **params,
