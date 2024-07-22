@@ -1,6 +1,6 @@
 import abc
 from functools import cached_property
-from typing import Any, AsyncIterator, Optional, cast
+from typing import Any, AsyncIterator, Optional, cast, Union
 
 from ragna.core import Message, Source
 
@@ -23,8 +23,27 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
+    def _render_prompt(self, prompt: Union[str,list[Message]], system_prompt: str) -> list[dict]:
+        #need to verify against https://ai.google.dev/api/generate-content#chat_1
+        if isinstance(prompt,str):
+            messages = [
+                        {
+                            "role": "system",
+                            "content": system_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        },
+                    ]
+            return messages
+        else:
+            system_message = [{"role":"system", "content":system_prompt}]
+            messages = [{"role":i["role"],"content":i["content"]} for i in prompt if i["role"] != "system"]
+            return system_message.extend(messages)
+    
     async def generate(
-        self, prompt: str, system_prompt: str, *, max_new_tokens: int
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming

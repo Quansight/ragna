@@ -1,4 +1,4 @@
-from typing import AsyncIterator
+from typing import AsyncIterator, Union
 
 from ragna.core import Message, Source
 
@@ -24,9 +24,17 @@ class GoogleAssistant(HttpApiAssistant):
                 *[f"\n{source.content}" for source in sources],
             ]
         )
-
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> list[dict]:
+        #need to verify against https://ai.google.dev/api/generate-content#chat_1
+        role_mapping = {"user":"user","assistant":"model"}
+        if isinstance(prompt,str):
+            return [{"parts": [{"text": prompt}]}]
+        else:
+            messages = [{"parts":[{"text":i["content"]}], "role":role_mapping[i["role"]]} for i in prompt if i["role"] != "system"]
+            return messages
+    
     async def generate(
-        self, prompt: str, *, max_new_tokens: int = 256
+        self, prompt: Union[str,list[Message]], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         async for chunk in self._call_api(
             "POST",
@@ -34,9 +42,7 @@ class GoogleAssistant(HttpApiAssistant):
             params={"key": self._api_key},
             headers={"Content-Type": "application/json"},
             json={
-                "contents": [
-                    {"parts": [{"text": prompt}]}
-                ],
+                "contents": _render_prompt(prompt),
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
                     {

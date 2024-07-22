@@ -64,14 +64,43 @@ class Exl2Assistant(Assistant):
         self.settings.top_p = 0.8
         self.settings.token_repetition_penalty = 1.05
 
-    def _render_prompt(self, prompt: str) -> str:
-        system_prompt="You are an unbiased, helpful assistant."
-        texts = [f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|>\n"]
-        texts.append(f'<|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|>\n<|start_header_id|>assistant<|end_header_id|>')
-        return ''.join(texts)
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> str:
+        """
+        Llama3 style prompt compile
+        
+        Currently Assuming Enums:
+            SYSTEM = "system"
+            USER = "user"
+            ASSISTANT = "assistant"
+        """
+        if isinstance(prompt,str):
+            system_prompt="You are an unbiased, helpful assistant."
+            texts = [f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|>\n"]
+            texts.append(f'<|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|>\n<|start_header_id|>assistant<|end_header_id|>')
+            return ''.join(texts)
+        else:
+            system_prompt=[i['content'] for i in prompt if i['role'] == 'system']
+            if len(system_prompt) == 0:
+                system_prompt="You are an unbiased, helpful assistant."
+            else:
+                system_prompt = system_prompt[0]
+            texts = [f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|>\n"]
+            for i in prompt:
+                if i['role'] == "user":
+                    texts.append(f'<|start_header_id|>user<|end_header_id|>\n\n{i["content"]}<|eot_id|>\n<|start_header_id|>assistant<|end_header_id|>')
+                elif i['role'] == "assistant":
+                    if i['content'][-10:] == '<|eot_id|>':
+                        texts.append(f'{i["content"]}\n')
+                    elif i['content'][-12:] == '<|eot_id|>\n':
+                        texts.append(f'{i["content"]}')
+                    else:
+                        texts.append(f'{i["content"]}<|eot_id|>\n')
+                else:
+                    pass
+            return ''.join(texts)
 
 
-    async def generate(self, prompt: str) -> str:
+    async def generate(self, prompt: Union[str,list[Message]]) -> str:
         full_prompt = self._render_prompt(prompt)
 
         self._generator = ExLlamaV2DynamicGenerator(

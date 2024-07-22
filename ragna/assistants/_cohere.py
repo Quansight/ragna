@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast
+from typing import AsyncIterator, cast, Union
 
 from ragna.core import Message, RagnaException, Source
 
@@ -24,8 +24,15 @@ class CohereAssistant(HttpApiAssistant):
     def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> str:
+        if isinstance(prompt,str):
+            return prompt
+        else:
+            messages = [i["content"] for i in prompt if i["role"] == "user"][-1]
+            return messages
+
     async def generate(
-        self, prompt: str, system_prompt: str, source_documents: list[dict[str, str]], *, max_new_tokens: int = 256
+        self, prompt: Union[str,list[Message]], system_prompt: str, source_documents: list[dict[str, str]], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
@@ -41,7 +48,7 @@ class CohereAssistant(HttpApiAssistant):
             },
             json={
                 "preamble_override": system_prompt,
-                "message": prompt,
+                "message": _render_prompt(prompt),
                 "model": self._MODEL,
                 "stream": True,
                 "temperature": 0.0,

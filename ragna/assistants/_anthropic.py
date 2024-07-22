@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast
+from typing import AsyncIterator, cast, Union
 
 from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
 
@@ -36,8 +36,15 @@ class AnthropicAssistant(HttpApiAssistant):
             + "</documents>"
         )
 
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> Union[str,list]:
+        if isinstance(prompt,str):
+            return [{"content": prompt, "role": "user",}]
+        else:
+            messages = [{"content":i["content"], "role":i["role"]} for i in prompt if i["role"] != "system"]
+            return messages
+    
     async def generate(
-        self, prompt: str, system_prompt: str, *, max_new_tokens: int = 256
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
@@ -54,7 +61,7 @@ class AnthropicAssistant(HttpApiAssistant):
             json={
                 "model": self._MODEL,
                 "system": system,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": _render_prompt(prompt),
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,

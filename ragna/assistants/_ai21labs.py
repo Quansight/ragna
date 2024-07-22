@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast
+from typing import AsyncIterator, cast, Union
 
 from ragna.core import Message, Source
 
@@ -22,8 +22,15 @@ class Ai21LabsAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> Union[str,list]:
+        if isinstance(prompt,str):
+            return [{"text": prompt, "role": "user",}]
+        else:
+            messages = [{"text":i["content"], "role":i["role"]} for i in prompt if i["role"] != "system"]
+            return messages
+
     async def generate(
-        self, prompt: str, system_prompt: str, *, max_new_tokens: int = 256
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
@@ -41,12 +48,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "numResults": 1,
                 "temperature": 0.0,
                 "maxTokens": max_new_tokens,
-                "messages": [
-                    {
-                        "text": prompt,
-                        "role": "user",
-                    }
-                ],
+                "messages": _render_prompt(prompt),
                 "system": system_prompt,
             },
         ):
