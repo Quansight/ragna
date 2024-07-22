@@ -1,12 +1,9 @@
 name: docker-requirements
 
 on:
-  pull_request:
-    paths:
-      - ".github/workflows/update-docker-requirements.yml"
-      - "pyproject.toml"
-      - "requirements-docker.lock"
-  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   pull-requests: write
