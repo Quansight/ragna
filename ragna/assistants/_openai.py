@@ -1,6 +1,6 @@
 import abc
 from functools import cached_property
-from typing import Any, AsyncIterator, Optional, cast
+from typing import Any, AsyncIterator, Optional, cast, Union
 
 from ragna.core import Message, Source
 
@@ -23,8 +23,27 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _stream(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+    def _render_prompt(self, prompt: Union[str,list[Message]], system_prompt: str) -> list[dict]:
+        #need to verify against https://ai.google.dev/api/generate-content#chat_1
+        if isinstance(prompt,str):
+            messages = [
+                        {
+                            "role": "system",
+                            "content": system_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        },
+                    ]
+            return messages
+        else:
+            system_message = [{"role":"system", "content":system_prompt}]
+            messages = [{"role":i["role"],"content":i["content"]} for i in prompt if i["role"] != "system"]
+            return system_message.extend(messages)
+    
+    async def generate(
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
@@ -38,7 +57,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             "messages": [
                 {
                     "role": "system",
-                    "content": self._make_system_content(sources),
+                    "content": system_prompt,
                 },
                 {
                     "role": "user",
@@ -52,13 +71,22 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        return self._call_api("POST", self._url, headers=headers, json=json_)
+        yield self._call_api("POST", self._url, headers=headers, json=json_)
+    
+    async def _stream(
+        self, messages: list[Message], *, max_new_tokens: int
+    ) -> AsyncIterator[dict[str, Any]]:
+        # See https://platform.openai.com/docs/api-reference/chat/create
+        # and https://platform.openai.com/docs/api-reference/chat/streaming
+        prompt, sources = (message := messages[-1]).content, message.sources
+        system_prompt = self._make_system_content(sources)
+
+        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
+        async for data in self._stream(messages, max_new_tokens=max_new_tokens):
             choice = data["choices"][0]
             if choice["finish_reason"] is not None:
                 break

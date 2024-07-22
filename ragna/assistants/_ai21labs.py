@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast
+from typing import AsyncIterator, cast, Union
 
 from ragna.core import Message, Source
 
@@ -22,13 +22,20 @@ class Ai21LabsAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    async def answer(
-        self, messages: list[Message], *, max_new_tokens: int = 256
+    def _render_prompt(self, prompt: Union[str,list[Message]]) -> Union[str,list]:
+        if isinstance(prompt,str):
+            return [{"text": prompt, "role": "user",}]
+        else:
+            messages = [{"text":i["content"], "role":i["role"]} for i in prompt if i["role"] != "system"]
+            return messages
+
+    async def generate(
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
-        prompt, sources = (message := messages[-1]).content, message.sources
+
         async for data in self._call_api(
             "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
@@ -41,16 +48,18 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "numResults": 1,
                 "temperature": 0.0,
                 "maxTokens": max_new_tokens,
-                "messages": [
-                    {
-                        "text": prompt,
-                        "role": "user",
-                    }
-                ],
-                "system": self._make_system_content(sources),
+                "messages": _render_prompt(prompt),
+                "system": system_prompt,
             },
         ):
             yield cast(str, data["outputs"][0]["text"])
+    
+    async def answer(
+        self, messages: list[Message], *, max_new_tokens: int = 256
+    ) -> AsyncIterator[str]:
+        prompt, sources = (message := messages[-1]).content, message.sources
+        system_prompt = self._make_system_content(sources)
+        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote
