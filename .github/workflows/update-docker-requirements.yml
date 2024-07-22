@@ -32,12 +32,6 @@ jobs:
       - name: Install GitHub CLI
         run: sudo apt-get install gh
 
-      - name: Set up GitHub CLI authentication
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          gh auth login --with-token <<< $GH_TOKEN
-
       - name: Update docker requirements
         id: update
         run: |
@@ -52,7 +46,7 @@ jobs:
       - name: Get last merged PR info
         id: pr_info
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           LAST_MERGED_PR=$(gh pr list --repo $GITHUB_REPOSITORY --state closed --json number --jq '.[0].number')
           PR_INFO=$(gh pr view $LAST_MERGED_PR --repo $GITHUB_REPOSITORY --json author,mergedBy --jq '{author: .author.login, mergedBy: .mergedBy.login}')
