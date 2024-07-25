@@ -2,23 +2,10 @@ import dataclasses
 import hashlib
 import itertools
 from collections import deque
-from typing import (
-    Deque,
-    Iterable,
-    Iterator,
-    Optional,
-    TypeVar,
-    cast,
-)
+from typing import Deque, Iterable, Iterator, Optional, TypeVar, cast
 
 from ragna._compat import itertools_pairwise
-from ragna.core import (
-    PackageRequirement,
-    Page,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+from ragna.core import PackageRequirement, Page, Requirement, Source, SourceStorage
 
 T = TypeVar("T")
 
