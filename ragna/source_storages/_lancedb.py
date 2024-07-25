@@ -1,5 +1,5 @@
 import uuid
-from typing import cast
+from typing import Optional, cast
 
 import ragna
 from ragna.core import (
@@ -40,23 +40,8 @@ class LanceDB(VectorDatabaseSourceStorage):
         super().__init__()
 
         import lancedb
-        import pyarrow as pa
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
-        # Create schema at runtime!
-        self._schema = pa.schema(
-            [
-                pa.field("id", pa.string()),
-                pa.field("document_id", pa.string()),
-                pa.field("page_numbers", pa.string()),
-                pa.field("text", pa.string()),
-                pa.field(
-                    self._VECTOR_COLUMN_NAME,
-                    pa.list_(pa.float32(), self._embedding_dimensions),
-                ),
-                pa.field("num_tokens", pa.int32()),
-            ]
-        )
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
@@ -67,6 +52,34 @@ class LanceDB(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
+
+        import pyarrow as pa
+
+        # TODO: create schema at runtime update when documents contain new metadata fields
+        # currently self.store() can not be used to add new documents to an existing table
+        fields = [
+            pa.field("id", pa.string()),
+            pa.field("document_id", pa.string()),
+            pa.field("document_name", pa.string()),
+            pa.field("page_numbers", pa.string()),
+            pa.field("text", pa.string()),
+            pa.field(
+                self._VECTOR_COLUMN_NAME,
+                pa.list_(pa.float32(), self._embedding_dimensions),
+            ),
+            pa.field("num_tokens", pa.int32()),
+        ]
+
+        document_metadata_keys = list(
+            set().union(*(doc.metadata.keys() for doc in documents))
+        )
+        print(document_metadata_keys)
+
+        for key in document_metadata_keys:
+            fields.append(pa.field(key, pa.string()))
+
+        self._schema = pa.schema(fields)
+        # Misusing self._embedding_id as table name here as placeholder for global table name
         table = self._db.create_table(name=self._embedding_id, schema=self._schema)
 
         for document in documents:
@@ -81,6 +94,7 @@ class LanceDB(VectorDatabaseSourceStorage):
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
                             "document_name": str(document.name),
+                            **document.metadata,
                             "page_numbers": self._page_numbers_to_str(
                                 chunk.page_numbers
                             ),
@@ -130,34 +144,37 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def retrieve(
         self,
-        documents: list[Document],
+        metadata_filter: Optional[MetadataFilter],
         prompt: str,
         *,
-        chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        table = self._db.open_table(str(chat_id))
+        table = self._db.open_table(self._embedding_id)
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
-        # retrieving to few sources and needed to query again.
+        # retrieving too few sources and needing to query again.
         limit = int(num_tokens * 2 / chunk_size)
-        results = (
-            table.search(
-                self._embedding_function([prompt])[0],
-                vector_column_name=self._VECTOR_COLUMN_NAME,
-            )
-            .limit(limit)
-            .to_arrow()
+
+        search = table.search(
+            self._embedding_function([prompt])[0],
+            vector_column_name=self._VECTOR_COLUMN_NAME,
         )
 
-        document_map = {str(document.id): document for document in documents}
+        if metadata_filter:
+            search = search.where(
+                self._translate_metadata_filter(metadata_filter), prefilter=True
+            )
+
+        results = search.limit(limit).to_arrow()
+
         return self._take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["id"],
-                    document=document_map[result["document_id"]],
+                    document_id=result["document_id"],
+                    document_name=result["document_name"],
                     # For some reason adding an empty string during store() results
                     # in this field being None. Thus, we need to parse it back here.
                     # TODO: See if there is a configuration option for this
