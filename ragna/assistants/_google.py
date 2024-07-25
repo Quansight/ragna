@@ -1,37 +1,14 @@
 from typing import AsyncIterator
 
-from ragna._compat import anext
-from ragna.core import PackageRequirement, Requirement, Source
+from ragna.core import Message, Source
 
-from ._http_api import HttpApiAssistant
-
-
-# ijson does not support reading from an (async) iterator, but only from file-like
-# objects, i.e. https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects.
-# See https://github.com/ICRAR/ijson/issues/44 for details.
-# ijson actually doesn't care about most of the file interface and only requires the
-# read() method to be present.
-class AsyncIteratorReader:
-    def __init__(self, ait: AsyncIterator[bytes]) -> None:
-        self._ait = ait
-
-    async def read(self, n: int) -> bytes:
-        # n is usually used to indicate how many bytes to read, but since we want to
-        # return a chunk as soon as it is available, we ignore the value of n. The only
-        # exception is n == 0, which is used by ijson to probe the return type and
-        # set up decoding.
-        if n == 0:
-            return b""
-        return await anext(self._ait, b"")  # type: ignore[call-arg]
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
 class GoogleAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "GOOGLE_API_KEY"
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.JSON
     _MODEL: str
-
-    @classmethod
-    def _extra_requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("ijson")]
 
     @classmethod
     def display_name(cls) -> str:
@@ -49,11 +26,10 @@ class GoogleAssistant(HttpApiAssistant):
         )
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        import ijson
-
-        async with self._client.stream(
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async for chunk in self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
@@ -64,7 +40,10 @@ class GoogleAssistant(HttpApiAssistant):
                 ],
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
-                    {"category": f"HARM_CATEGORY_{category}", "threshold": "BLOCK_NONE"}
+                    {
+                        "category": f"HARM_CATEGORY_{category}",
+                        "threshold": "BLOCK_NONE",
+                    }
                     for category in [
                         "HARASSMENT",
                         "HATE_SPEECH",
@@ -78,14 +57,9 @@ class GoogleAssistant(HttpApiAssistant):
                     "maxOutputTokens": max_new_tokens,
                 },
             },
-        ) as response:
-            await self._assert_api_call_is_success(response)
-
-            async for chunk in ijson.items(
-                AsyncIteratorReader(response.aiter_bytes(1024)),
-                "item.candidates.item.content.parts.item.text",
-            ):
-                yield chunk
+            parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
+        ):
+            yield chunk
 
 
 class GeminiPro(GoogleAssistant):
