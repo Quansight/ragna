@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import inspect
+import itertools
 import uuid
+from collections import defaultdict
 from typing import (
     Any,
     AsyncIterator,
@@ -19,6 +22,7 @@ from typing import (
 )
 
 import pydantic
+import pydantic_core
 from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
@@ -216,12 +220,13 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        self._messages.append(Message(content=prompt, role=MessageRole.USER))
-
         sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
 
+        question = Message(content=prompt, role=MessageRole.USER, sources=sources)
+        self._messages.append(question)
+
         answer = Message(
-            content=self._run_gen(self.assistant.answer, prompt, sources),
+            content=self._run_gen(self.assistant.answer, self._messages.copy()),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
@@ -251,6 +256,15 @@ class Chat:
     def _unpack_chat_params(
         self, params: dict[str, Any]
     ) -> dict[Callable, dict[str, Any]]:
+        # This method does two things:
+        # 1. Validate the **params against the signatures of the protocol methods of the
+        #    used components. This makes sure that
+        #    - No parameter is passed that isn't used by at least one component
+        #    - No parameter is missing that is needed by at least one component
+        #    - No parameter is passed in the wrong type
+        # 2. Prepare the distribution of the parameters to the protocol method that
+        #    requested them. The actual distribution happens in self._run and
+        #    self._run_gen, but is only a dictionary lookup by then.
         component_models = {
             getattr(component, name): model
             for component in [self.source_storage, self.assistant]
@@ -258,19 +272,103 @@ class Chat:
         }
 
         ChatModel = merge_models(
-            str(self.params["chat_id"]),
+            f"{self.__module__}.{type(self).__name__}-{self.params['chat_id']}",
             SpecialChatParams,
             *component_models.values(),
             config=pydantic.ConfigDict(extra="forbid"),
         )
 
-        chat_params = ChatModel.model_validate(params, strict=True).model_dump(
-            exclude_none=True
-        )
+        with self._format_validation_error(ChatModel):
+            chat_model = ChatModel.model_validate(params, strict=True)
+
+        chat_params = chat_model.model_dump(exclude_none=True)
         return {
             fn: model(**chat_params).model_dump()
             for fn, model in component_models.items()
         }
+
+    @contextlib.contextmanager
+    def _format_validation_error(
+        self, model_cls: type[pydantic.BaseModel]
+    ) -> Iterator[None]:
+        try:
+            yield
+        except pydantic.ValidationError as validation_error:
+            errors = defaultdict(list)
+            for error in validation_error.errors():
+                errors[error["type"]].append(error)
+
+            parts = [
+                f"Validating the Chat parameters resulted in {validation_error.error_count()} errors:",
+                "",
+            ]
+
+            def format_error(
+                error: pydantic_core.ErrorDetails,
+                *,
+                annotation: bool = False,
+                value: bool = False,
+            ) -> str:
+                param = cast(str, error["loc"][0])
+
+                formatted_error = f"- {param}"
+                if annotation:
+                    annotation_ = cast(
+                        type, model_cls.model_fields[param].annotation
+                    ).__name__
+                    formatted_error += f": {annotation_}"
+
+                if value:
+                    value_ = error["input"]
+                    formatted_error += (
+                        f" = {value_!r}" if annotation else f"={value_!r}"
+                    )
+
+                return formatted_error
+
+            if "extra_forbidden" in errors:
+                parts.extend(
+                    [
+                        "The following parameters are unknown:",
+                        "",
+                        *[
+                            format_error(error, value=True)
+                            for error in errors["extra_forbidden"]
+                        ],
+                        "",
+                    ]
+                )
+
+            if "missing" in errors:
+                parts.extend(
+                    [
+                        "The following parameters are missing:",
+                        "",
+                        *[
+                            format_error(error, annotation=True)
+                            for error in errors["missing"]
+                        ],
+                        "",
+                    ]
+                )
+
+            type_errors = ["string_type", "int_type", "float_type", "bool_type"]
+            if any(type_error in errors for type_error in type_errors):
+                parts.extend(
+                    [
+                        "The following parameters have the wrong type:",
+                        "",
+                        *[
+                            format_error(error, annotation=True, value=True)
+                            for error in itertools.chain.from_iterable(
+                                errors[type_error] for type_error in type_errors
+                            )
+                        ],
+                        "",
+                    ]
+                )
+
+            raise RagnaException("\n".join(parts))
 
     async def _run(
         self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any

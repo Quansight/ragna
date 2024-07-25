@@ -1,8 +1,7 @@
-import re
 import textwrap
 from typing import Iterator
 
-from ragna.core import Assistant, Source
+from ragna.core import Assistant, Message, MessageRole
 
 
 class RagnaDemoAssistant(Assistant):
@@ -22,11 +21,11 @@ class RagnaDemoAssistant(Assistant):
     def display_name(cls) -> str:
         return "Ragna/DemoAssistant"
 
-    def answer(self, prompt: str, sources: list[Source]) -> Iterator[str]:
-        if re.search("markdown", prompt, re.IGNORECASE):
+    def answer(self, messages: list[Message]) -> Iterator[str]:
+        if "markdown" in messages[-1].content.lower():
             yield self._markdown_answer()
         else:
-            yield self._default_answer(prompt, sources)
+            yield self._default_answer(messages)
 
     def _markdown_answer(self) -> str:
         return textwrap.dedent(
@@ -39,7 +38,8 @@ class RagnaDemoAssistant(Assistant):
             """
         ).strip()
 
-    def _default_answer(self, prompt: str, sources: list[Source]) -> str:
+    def _default_answer(self, messages: list[Message]) -> str:
+        prompt, sources = (message := messages[-1]).content, message.sources
         sources_display = []
         for source in sources:
             source_display = f"- {source.document.name}"
@@ -50,13 +50,16 @@ class RagnaDemoAssistant(Assistant):
         if len(sources) > 3:
             sources_display.append("[...]")
 
+        n_messages = len([m for m in messages if m.role == MessageRole.USER])
         return (
             textwrap.dedent(
                 """
-                I'm a demo assistant and can be used to try Ragnas workflow.
+                I'm a demo assistant and can be used to try Ragna's workflow.
                 I will only mirror back my inputs. 
+
+                So far I have received {n_messages} messages.
                 
-                Your prompt was:
+                Your last prompt was:
 
                 > {prompt}
 
@@ -66,5 +69,10 @@ class RagnaDemoAssistant(Assistant):
                 """
             )
             .strip()
-            .format(name=str(self), prompt=prompt, sources="\n".join(sources_display))
+            .format(
+                name=str(self),
+                n_messages=n_messages,
+                prompt=prompt,
+                sources="\n".join(sources_display),
+            )
         )

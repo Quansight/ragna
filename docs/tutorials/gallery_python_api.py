@@ -87,6 +87,14 @@ from ragna.assistants import RagnaDemoAssistant
 #       - [ragna.assistants.Jurassic2Ultra][]
 #     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
 #       - [ragna.assistants.LlamafileAssistant][]
+#     - [Ollama](https://ollama.com/)
+#       - [ragna.assistants.OllamaGemma2B][]
+#       - [ragna.assistants.OllamaLlama2][]
+#       - [ragna.assistants.OllamaLlava][]
+#       - [ragna.assistants.OllamaMistral][]
+#       - [ragna.assistants.OllamaMixtral][]
+#       - [ragna.assistants.OllamaOrcaMini][]
+#       - [ragna.assistants.OllamaPhi2][]
 #
 #     !!! note
 #

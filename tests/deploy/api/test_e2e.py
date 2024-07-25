@@ -1,31 +1,15 @@
 import json
-import time
 
 import pytest
 from fastapi.testclient import TestClient
 
-from ragna.assistants import RagnaDemoAssistant
 from ragna.deploy import Config
 from ragna.deploy._api import app
-
-from .utils import authenticate
-
-
-class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool):
-        # Simulate a "real" assistant through a small delay. See
-        # https://github.com/Quansight/ragna/pull/401#issuecomment-2095851440
-        # for why this is needed.
-        time.sleep(1e-3)
-        content = next(super().answer(prompt, sources))
-
-        if multiple_answer_chunks:
-            for chunk in content.split(" "):
-                yield f"{chunk} "
-        else:
-            yield content
+from tests.deploy.utils import TestAssistant, authenticate_with_api
+from tests.utils import skip_on_windows
 
 
+@skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
 def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
@@ -38,7 +22,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         file.write("!\n")
 
     with TestClient(app(config=config, ignore_unavailable_components=False)) as client:
-        authenticate(client)
+        authenticate_with_api(client)
 
         assert client.get("/chats").raise_for_status().json() == []
 
@@ -125,12 +109,12 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         chat = client.get(f"/chats/{chat['id']}").raise_for_status().json()
         assert len(chat["messages"]) == 3
+        assert chat["messages"][-1] == message
         assert (
             chat["messages"][-2]["role"] == "user"
-            and chat["messages"][-2]["sources"] == []
+            and chat["messages"][-2]["sources"] == message["sources"]
             and chat["messages"][-2]["content"] == prompt
         )
-        assert chat["messages"][-1] == message
 
         client.delete(f"/chats/{chat['id']}").raise_for_status()
         assert client.get("/chats").raise_for_status().json() == []

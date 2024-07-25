@@ -1,12 +1,13 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import PackageRequirement, RagnaException, Requirement, Source
+from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
 
-from ._http_api import HttpApiAssistant
+from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
 class AnthropicAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
+    _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
     _MODEL: str
 
     @classmethod
@@ -36,11 +37,12 @@ class AnthropicAssistant(HttpApiAssistant):
         )
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
-        async for data in self._stream_sse(
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async for data in self._call_api(
             "POST",
             "https://api.anthropic.com/v1/messages",
             headers={
