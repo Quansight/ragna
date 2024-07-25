@@ -36,11 +36,14 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
-    def _get_collection(self) -> chromadb.Collection:
+    def _get_collection(self, corpus_name: Optional[str]) -> chromadb.Collection:
         from chromadb.api.types import EmbeddingFunction as ChromaEmbeddingFunction
 
+        if corpus_name is None:
+            corpus_name = self._embedding_id
+
         return self._client.get_or_create_collection(
-            self._embedding_id,
+            corpus_name,
             embedding_function=cast(ChromaEmbeddingFunction, self._embedding_function),
         )
 
@@ -48,10 +51,11 @@ class Chroma(VectorDatabaseSourceStorage):
         self,
         documents: list[Document],
         *,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._get_collection()
+        collection = self._get_collection(corpus_name=corpus_name)
 
         ids = []
         texts = []
@@ -122,11 +126,11 @@ class Chroma(VectorDatabaseSourceStorage):
         metadata_filter: MetadataFilter,
         prompt: str,
         *,
-        chat_id: uuid.UUID,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._get_collection()
+        collection = self._get_collection(corpus_name=corpus_name)
 
         result = collection.query(
             query_texts=prompt,
@@ -174,8 +178,6 @@ class Chroma(VectorDatabaseSourceStorage):
                 Source(
                     id=result["id"],
                     document_name=result["metadata"]["document_name"],
-                    # FIXME: We no longer have access to the document here
-                    # maybe reflect the same in the demo component
                     document_id=result["metadata"]["document_id"],
                     location=result["metadata"]["page_numbers"],
                     content=result["document"],
