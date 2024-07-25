@@ -238,10 +238,7 @@ class Chat:
     def _parse_input(
         self, input: Optional[Iterable[Any]]
     ) -> tuple[Optional[list[Document]], Optional[MetadataFilter], bool]:
-        if input is None:
-            return None, None, True
-
-        if isinstance(input, MetadataFilter):
+        if isinstance(input, MetadataFilter) or input is None:
             return None, input, True
 
         documents = []
