@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/update-docker-requirements.yml"
+      - "pyproject.toml"
+      - "requirements-docker.lock"
   workflow_dispatch:
 
 permissions:
@@ -44,18 +48,16 @@ jobs:
           echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
 
       - name: Get last merged PR info
-        id: pr_info
+        id: pr-info
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           LAST_MERGED_PR=$(gh pr list --repo $GITHUB_REPOSITORY --state closed --json number --jq '.[0].number')
           echo "Last merged PR number: $LAST_MERGED_PR"
-          PR_INFO=$(gh pr view $LAST_MERGED_PR --repo $GITHUB_REPOSITORY --json author,mergedBy --jq '{author: .author.login, mergedBy: .mergedBy.login}')
+          PR_INFO=$(gh pr view $LAST_MERGED_PR --repo $GITHUB_REPOSITORY --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
           echo "PR Info: $PR_INFO"
-          echo "pr_author=$(echo $PR_INFO | jq -r .author)" >> $GITHUB_ENV
-          echo "pr_mergedBy=$(echo $PR_INFO | jq -r .mergedBy)" >> $GITHUB_ENV
-          echo "PR Author: $(echo $PR_INFO | jq -r .author)"
-          echo "PR MergedBy: $(echo $PR_INFO | jq -r .mergedBy)"
+          echo "author=$(echo ${PR_INFO} | jq -r .author)" | tee --append $GITHUB_OUTPUT
+          echo "merger=$(echo ${PR_INFO} | jq -r .merger)" | tee --append $GITHUB_OUTPUT
 
       - name: Open a PR to update the requirements
         if: ${{ steps.update.outputs.needs-update }}
