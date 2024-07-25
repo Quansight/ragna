@@ -132,6 +132,7 @@ class Chroma(VectorDatabaseSourceStorage):
     ) -> list[Source]:
         collection = self._get_collection(corpus_name=corpus_name)
 
+        include = ["distances", "metadatas", "documents"]
         result = collection.query(
             query_texts=prompt,
             where=self._translate_metadata_filter(metadata_filter),
@@ -150,22 +151,19 @@ class Chroma(VectorDatabaseSourceStorage):
                 max(int(num_tokens * 2 / chunk_size), 100),
                 collection.count(),
             ),
-            include=["distances", "metadatas", "documents"],
+            include=include,  # type: ignore[arg-type]
         )
 
         num_results = len(result["ids"][0])
-        result = {
-            key: [None] * num_results if value is None else value[0]  # type: ignore[index]
-            for key, value in result.items()
-        }
+        result = {key: result[key][0] for key in ["ids", *include]}  # type: ignore[literal-required]
         # dict of lists -> list of dicts
         results = [
-            {key[:-1]: value[idx] for key, value in result.items()}
+            {key: value[idx] for key, value in result.items()}
             for idx in range(num_results)
         ]
 
         # That should be the default, but let's make extra sure here
-        results = sorted(results, key=lambda r: r["distance"])
+        results = sorted(results, key=lambda r: r["distances"])
 
         # TODO: we should have some functionality here to remove results with a high
         #  distance to keep only "valid" sources. However, there are two issues:
@@ -176,12 +174,12 @@ class Chroma(VectorDatabaseSourceStorage):
         return self._take_sources_up_to_max_tokens(
             (
                 Source(
-                    id=result["id"],
-                    document_name=result["metadata"]["document_name"],
-                    document_id=result["metadata"]["document_id"],
-                    location=result["metadata"]["page_numbers"],
-                    content=result["document"],
-                    num_tokens=result["metadata"]["num_tokens"],
+                    id=result["ids"],
+                    document_name=result["metadatas"]["document_name"],
+                    document_id=result["metadatas"]["document_id"],
+                    location=result["metadatas"]["page_numbers"],
+                    content=result["documents"],
+                    num_tokens=result["metadatas"]["num_tokens"],
                 )
                 for result in results
             ),

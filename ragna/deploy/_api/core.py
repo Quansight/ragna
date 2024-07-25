@@ -233,11 +233,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             chat_name=chat.metadata.name,
             **chat.metadata.params,
         )
-        # FIXME: We need to reconstruct the previous messages here. Right now this is
-        #  not needed, because the chat itself never accesses past messages. However,
-        #  if we implement a chat history feature, i.e. passing past messages to
-        #  the assistant, this becomes crucial.
-        core_chat._messages = []
+        core_chat._messages = [message.to_core() for message in chat.messages]
         core_chat._prepared = chat.prepared
 
         return core_chat
@@ -291,12 +287,15 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     ) -> schemas.Message:
         with get_session() as session:
             chat = database.get_chat(session, user=user, id=id)
-            chat.messages.append(
-                schemas.Message(content=prompt, role=ragna.core.MessageRole.USER)
-            )
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
         core_answer = await core_chat.answer(prompt, stream=stream)
+        sources = [schemas.Source.from_core(source) for source in core_answer.sources]
+        chat.messages.append(
+            schemas.Message(
+                content=prompt, role=ragna.core.MessageRole.USER, sources=sources
+            )
+        )
 
         if stream:
 
@@ -307,10 +306,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 answer = schemas.Message(
                     content=content_chunk,
                     role=core_answer.role,
-                    sources=[
-                        schemas.Source.from_core(source)
-                        for source in core_answer.sources
-                    ],
+                    sources=sources,
                 )
                 yield answer
 

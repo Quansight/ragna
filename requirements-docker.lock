@@ -213,9 +213,9 @@ pandas==2.1.4
     # via
     #   bokeh
     #   panel
-panel==1.4.2
+panel==1.4.4
     # via Ragna (pyproject.toml)
-param==2.0.1
+param==2.1.1
     # via
     #   panel
     #   pyviz-comms
@@ -304,8 +304,6 @@ questionary==2.0.1
     # via Ragna (pyproject.toml)
 ratelimiter==1.2.0.post0
     # via lancedb
-redis==5.0.1
-    # via Ragna (pyproject.toml)
 regex==2023.12.25
     # via tiktoken
 requests==2.31.0
