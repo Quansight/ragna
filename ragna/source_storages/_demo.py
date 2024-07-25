@@ -1,7 +1,7 @@
 import functools
 import textwrap
 import uuid
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 from ragna.core import (
     Document,
@@ -80,10 +80,13 @@ class RagnaDemoSourceStorage(SourceStorage):
                         rows_map[idx] = row
                 idcs_groups.append(idcs_group)
             idcs = functools.reduce(
-                (
-                    set.intersection
-                    if metadata_filter.operator is MetadataOperator.AND
-                    else set.union
+                cast(
+                    Callable[[set[int], set[int]], set[int]],
+                    (
+                        set.intersection
+                        if metadata_filter.operator is MetadataOperator.AND
+                        else set.union
+                    ),
                 ),
                 idcs_groups,
             )
