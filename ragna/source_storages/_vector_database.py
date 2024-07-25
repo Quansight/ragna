@@ -52,11 +52,15 @@ class VectorDatabaseSourceStorage(SourceStorage):
         ]
 
     def __init__(self) -> None:
+        import chromadb.api.types
         import chromadb.utils.embedding_functions
         import tiktoken
 
-        self._embedding_function = chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2()
-        self._embedding_name = self._embedding_function.MODEL_NAME
+        self._embedding_function = cast(
+            chromadb.api.types.EmbeddingFunction,
+            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),  # type: ignore[attr-defined]
+        )
+        self._embedding_name = self._embedding_function.MODEL_NAME  # type: ignore[attr-defined]
         self._embedding_id = hashlib.md5(
             self._embedding_name.encode(), usedforsecurity=False
         ).hexdigest()

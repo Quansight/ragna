@@ -6,6 +6,7 @@ import inspect
 import itertools
 import uuid
 from collections import defaultdict
+from pathlib import Path
 from typing import (
     Any,
     AsyncIterator,
@@ -81,7 +82,7 @@ class Rag(Generic[C]):
 
     def chat(
         self,
-        input: Any,
+        input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]],
         *,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
@@ -150,7 +151,7 @@ class Chat:
         self,
         rag: Rag,
         *,
-        input: Any,
+        input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -241,7 +242,7 @@ class Chat:
         return answer
 
     def _parse_input(
-        self, input: Optional[Iterable[Any]]
+        self, input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]]
     ) -> tuple[Optional[list[Document]], Optional[MetadataFilter], bool]:
         if isinstance(input, MetadataFilter) or input is None:
             return None, input, True
