@@ -65,7 +65,8 @@ class Source(BaseModel):
     def to_core(self) -> ragna.core.Source:
         return ragna.core.Source(
             id=self.id,
-            document=self.document.to_core(),
+            document_id=self.document_id,
+            document_name=self.document_name,
             location=self.location,
             content=self.content,
             num_tokens=self.num_tokens,
