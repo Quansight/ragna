@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import uuid
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
-from ragna.core import (
-    Document,
-    Source,
-)
+from ragna.core import Document, MetadataFilter, MetadataOperator, Source
 
 from ._vector_database import VectorDatabaseSourceStorage
+
+if TYPE_CHECKING:
+    import chromadb
 
 
 class Chroma(VectorDatabaseSourceStorage):
@@ -33,17 +36,19 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
+    def _get_collection(self) -> chromadb.Collection:
+        return self._client.get_or_create_collection(
+            self._embedding_id, embedding_function=self._embedding_function
+        )
+
     def store(
         self,
         documents: list[Document],
         *,
-        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._client.create_collection(
-            str(chat_id), embedding_function=self._embedding_function
-        )
+        collection = self._get_collection()
 
         ids = []
         texts = []
@@ -59,6 +64,8 @@ class Chroma(VectorDatabaseSourceStorage):
                 metadatas.append(
                     {
                         "document_id": str(document.id),
+                        "document_name": document.name,
+                        **document.metadata,
                         "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
                         "num_tokens": chunk.num_tokens,
                     }
@@ -70,22 +77,56 @@ class Chroma(VectorDatabaseSourceStorage):
             metadatas=metadatas,  # type: ignore[arg-type]
         )
 
+    # https://docs.trychroma.com/usage-guide#using-where-filters
+    _METADATA_OPERATOR_MAP = {
+        MetadataOperator.AND: "$and",
+        MetadataOperator.OR: "$or",
+        MetadataOperator.EQ: "$eq",
+        MetadataOperator.NE: "$ne",
+        MetadataOperator.LT: "$lt",
+        MetadataOperator.LE: "$lte",
+        MetadataOperator.GT: "$gt",
+        MetadataOperator.GE: "$gte",
+        MetadataOperator.IN: "$in",
+        MetadataOperator.NOT_IN: "$nin",
+    }
+
+    def _translate_metadata_filter(
+        self, metadata_filter: MetadataFilter
+    ) -> dict[str, Any]:
+        if metadata_filter.operator is MetadataOperator.RAW:
+            return cast(dict[str, Any], metadata_filter.value)
+        elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+            return {
+                self._METADATA_OPERATOR_MAP[metadata_filter.operator]: [
+                    self._translate_metadata_filter(child)
+                    for child in metadata_filter.value
+                ]
+            }
+        else:
+            return {
+                metadata_filter.key: {
+                    self._METADATA_OPERATOR_MAP[
+                        metadata_filter.operator
+                    ]: metadata_filter.value
+                }
+            }
+
     def retrieve(
         self,
-        documents: list[Document],
+        metadata_filter: MetadataFilter,
         prompt: str,
         *,
         chat_id: uuid.UUID,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._client.get_collection(
-            str(chat_id), embedding_function=self._embedding_function
-        )
+        collection = self._get_collection()
 
         include = ["distances", "metadatas", "documents"]
         result = collection.query(
             query_texts=prompt,
+            where=self._translate_metadata_filter(metadata_filter),
             n_results=min(
                 # We cannot retrieve source by a maximum number of tokens. Thus, we
                 # estimate how many sources we have to query. We overestimate by a
@@ -121,12 +162,13 @@ class Chroma(VectorDatabaseSourceStorage):
         #  2. Whatever threshold we use is very much dependent on the encoding method
         #  Thus, we likely need to have a callable parameter for this class
 
-        document_map = {str(document.id): document for document in documents}
         return self._take_sources_up_to_max_tokens(
             (
                 Source(
                     id=result["ids"],
-                    document=document_map[result["metadatas"]["document_id"]],
+                    # FIXME: We no longer have access to the document here
+                    # maybe reflect the same in the demo component
+                    document_id=result["metadatas"]["document_id"],
                     location=result["metadatas"]["page_numbers"],
                     content=result["documents"],
                     num_tokens=result["metadatas"]["num_tokens"],

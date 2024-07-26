@@ -27,6 +27,7 @@ from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
+from ._metadata_filter import MetadataFilter
 from ._utils import RagnaException, default_user, merge_models
 
 T = TypeVar("T")
@@ -80,8 +81,8 @@ class Rag(Generic[C]):
 
     def chat(
         self,
+        input: Any,
         *,
-        documents: Iterable[Any],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
@@ -89,7 +90,7 @@ class Rag(Generic[C]):
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. If any item is not a [ragna.core.Document][],
+            input: Documents to use. If any item is not a [ragna.core.Document][],
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
@@ -97,7 +98,7 @@ class Rag(Generic[C]):
         """
         return Chat(
             self,
-            documents=documents,
+            input=input,
             source_storage=source_storage,
             assistant=assistant,
             **params,
@@ -149,14 +150,15 @@ class Chat:
         self,
         rag: Rag,
         *,
-        documents: Iterable[Any],
+        input: Any,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
         **params: Any,
     ) -> None:
         self._rag = rag
 
-        self.documents = self._parse_documents(documents)
+        self.documents, self.metadata_filter, self._prepared = self._parse_input(input)
+
         self.source_storage = cast(
             SourceStorage, self._rag._load_component(source_storage)
         )
@@ -168,7 +170,6 @@ class Chat:
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
-        self._prepared = False
         self._messages: list[Message] = []
 
     async def prepare(self) -> Message:
@@ -184,7 +185,7 @@ class Chat:
             ragna.core.RagnaException: If chat is already
                 [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if self._prepared:
+        if self._prepared or self.documents is None:
             raise RagnaException(
                 "Chat is already prepared",
                 chat=self,
@@ -220,7 +221,9 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
+        sources = await self._run(
+            self.source_storage.retrieve, self.metadata_filter, prompt
+        )
 
         question = Message(content=prompt, role=MessageRole.USER, sources=sources)
         self._messages.append(question)
@@ -237,9 +240,14 @@ class Chat:
 
         return answer
 
-    def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
-        documents_ = []
-        for document in documents:
+    def _parse_input(
+        self, input: Iterable[Any]
+    ) -> tuple[Optional[list[Document]], MetadataFilter, bool]:
+        if isinstance(input, MetadataFilter):
+            return None, input, True
+
+        documents = []
+        for document in input:
             if not isinstance(document, Document):
                 document = LocalDocument.from_path(document)
 
@@ -250,8 +258,15 @@ class Chat:
                     http_status_code=404,
                 )
 
-            documents_.append(document)
-        return documents_
+            documents.append(document)
+
+        metadata_filter = MetadataFilter.or_(
+            [
+                MetadataFilter.eq("document_id", str(document.id))
+                for document in documents
+            ]
+        )
+        return documents, metadata_filter, False
 
     def _unpack_chat_params(
         self, params: dict[str, Any]

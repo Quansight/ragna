@@ -110,7 +110,7 @@ from ragna.assistants import RagnaDemoAssistant
 from ragna import Rag
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=RagnaDemoSourceStorage,
     assistant=RagnaDemoAssistant,
 )

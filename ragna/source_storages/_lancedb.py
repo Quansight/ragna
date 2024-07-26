@@ -1,7 +1,15 @@
 import uuid
+from typing import cast
 
 import ragna
-from ragna.core import Document, PackageRequirement, Requirement, Source
+from ragna.core import (
+    Document,
+    MetadataFilter,
+    MetadataOperator,
+    PackageRequirement,
+    Requirement,
+    Source,
+)
 
 from ._vector_database import VectorDatabaseSourceStorage
 
@@ -35,6 +43,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         import pyarrow as pa
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
+        # Create schema at runtime!
         self._schema = pa.schema(
             [
                 pa.field("id", pa.string()),
@@ -55,11 +64,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         self,
         documents: list[Document],
         *,
-        chat_id: uuid.UUID,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        table = self._db.create_table(name=str(chat_id), schema=self._schema)
+        table = self._db.create_table(name=self._embedding_id, schema=self._schema)
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -72,6 +80,7 @@ class LanceDB(VectorDatabaseSourceStorage):
                         {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
+                            "document_name": str(document.name),
                             "page_numbers": self._page_numbers_to_str(
                                 chunk.page_numbers
                             ),
@@ -83,6 +92,41 @@ class LanceDB(VectorDatabaseSourceStorage):
                         }
                     ]
                 )
+
+    # https://lancedb.github.io/lancedb/sql/
+    _METADATA_OPERATOR_MAP = {
+        MetadataOperator.AND: "AND",
+        MetadataOperator.OR: "OR",
+        MetadataOperator.EQ: "=",
+        MetadataOperator.LT: "<",
+        MetadataOperator.LE: "<=",
+        MetadataOperator.GT: ">",
+        MetadataOperator.GE: ">=",
+        MetadataOperator.IN: "IN",
+    }
+
+    def _translate_metadata_filter(self, metadata_filter: MetadataFilter) -> str:
+        if metadata_filter.operator is MetadataOperator.RAW:
+            return cast(str, metadata_filter.value)
+        elif metadata_filter.operator in {
+            MetadataOperator.AND,
+            MetadataOperator.OR,
+        }:
+            return f" {self._METADATA_OPERATOR_MAP[metadata_filter.operator]} ".join(
+                f"({self._translate_metadata_filter(child)})"
+                for child in metadata_filter.value
+            )
+        elif metadata_filter.operator is MetadataOperator.NE:
+            return f"NOT ({self._translate_metadata_filter(MetadataFilter.eq(metadata_filter.key, metadata_filter.value))})"
+        elif metadata_filter.operator is MetadataOperator.NOT_IN:
+            return f"NOT ({self._translate_metadata_filter(MetadataFilter.in_(metadata_filter.key, metadata_filter.value))})"
+        else:
+            value = (
+                tuple(metadata_filter.value)
+                if metadata_filter.operator is MetadataOperator.IN
+                else metadata_filter.value
+            )
+            return f"{metadata_filter.key} {self._METADATA_OPERATOR_MAP[metadata_filter.operator]} {value!r}"
 
     def retrieve(
         self,

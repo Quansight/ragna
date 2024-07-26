@@ -69,7 +69,7 @@ with open(document_path, "w") as file:
     file.write(ragna_docs.SAMPLE_CONTENT)
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=source_storages.RagnaDemoSourceStorage,
     assistant=DemoStreamingAssistant,
 )

@@ -21,7 +21,7 @@ class TestChat:
         **params,
     ):
         return Rag().chat(
-            documents=documents,
+            input=documents,
             source_storage=source_storage,
             assistant=assistant,
             **params,

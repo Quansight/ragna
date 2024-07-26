@@ -214,7 +214,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
-            documents=[
+            input=[
                 config.document(
                     id=document.id,
                     name=document.name,

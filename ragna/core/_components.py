@@ -4,6 +4,7 @@ import abc
 import enum
 import functools
 import inspect
+import uuid
 from typing import (
     AsyncIterable,
     AsyncIterator,
@@ -18,6 +19,7 @@ import pydantic
 import pydantic.utils
 
 from ._document import Document
+from ._metadata_filter import MetadataFilter
 from ._utils import RequirementsMixin, merge_models
 
 
@@ -75,6 +77,7 @@ class Component(RequirementsMixin):
             annotations = get_type_hints(method)
             # Skip over the protocol parameters in order for the model below to only
             # comprise concrete parameters.
+
             for _ in range(num_protocol_params):
                 next(params)
 
@@ -112,13 +115,15 @@ class Source(pydantic.BaseModel):
         num_tokens: Number of tokens of the content.
     """
 
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-
     id: str
-    document: Document
+    document_id: uuid.UUID
+    document_name: str
     location: str
     content: str
     num_tokens: int
+
+    def __hash__(self) -> int:
+        return hash(self.id)
 
 
 class SourceStorage(Component, abc.ABC):
@@ -134,7 +139,7 @@ class SourceStorage(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+    def retrieve(self, metadata_filter: MetadataFilter, prompt: str) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
