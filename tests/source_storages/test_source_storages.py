@@ -1,10 +1,11 @@
 import pytest
 
 from ragna.core import LocalDocument, MetadataFilter
-from ragna.source_storages import LanceDB
+from ragna.source_storages import Chroma, LanceDB
 
 METADATAS = [
     {"key": "value"},
+    {"key": "value", "other_key": "other_value"},
     {"key": "other_value"},
     {"other_key": "value"},
     {"other_key": "other_value"},
@@ -13,68 +14,70 @@ METADATAS = [
 ]
 
 metadata_filters = pytest.mark.parametrize(
-    "metadata_filter",
+    "metadata_filter,n_expected_sources",
     [
-        pytest.param(MetadataFilter.raw("raw"), id="raw"),
         pytest.param(
             MetadataFilter.and_(
                 [
-                    MetadataFilter.raw("raw"),
                     MetadataFilter.eq("key", "value"),
+                    MetadataFilter.eq("other_key", "other_value"),
                 ]
             ),
+            1,
             id="and",
         ),
         pytest.param(
             MetadataFilter.or_(
                 [
-                    MetadataFilter.raw("raw"),
                     MetadataFilter.eq("key", "value"),
+                    MetadataFilter.eq("key", "other_value"),
                 ]
             ),
+            3,
             id="or",
         ),
         pytest.param(
             MetadataFilter.and_(
                 [
-                    MetadataFilter.raw("raw"),
+                    MetadataFilter.eq("key", "value"),
                     MetadataFilter.or_(
                         [
-                            MetadataFilter.eq("key", "value"),
+                            MetadataFilter.eq("key", "other_value"),
                             MetadataFilter.ne("other_key", "other_value"),
                         ]
                     ),
                 ]
             ),
+            1,
             id="and-nested",
         ),
         pytest.param(
             MetadataFilter.or_(
                 [
-                    MetadataFilter.raw("raw"),
+                    MetadataFilter.eq("key", "value"),
                     MetadataFilter.and_(
                         [
-                            MetadataFilter.eq("key", "value"),
+                            MetadataFilter.eq("key", "other_value"),
                             MetadataFilter.ne("other_key", "other_value"),
                         ]
                     ),
                 ]
             ),
+            2,
             id="or-nested",
         ),
-        pytest.param(MetadataFilter.eq("key", "value"), id="eq"),
-        pytest.param(MetadataFilter.ne("key", "value"), id="ne"),
-        pytest.param(MetadataFilter.in_("key", ["foo", "bar"]), id="in"),
-        pytest.param(MetadataFilter.not_in("key", ["foo", "bar"]), id="not_in"),
-        pytest.param(None, id="none"),
+        pytest.param(MetadataFilter.eq("key", "value"), 2, id="eq"),
+        pytest.param(MetadataFilter.ne("key", "value"), 5, id="ne"),
+        pytest.param(MetadataFilter.in_("key", ["foo", "bar"]), 2, id="in"),
+        pytest.param(MetadataFilter.not_in("key", ["foo", "bar"]), 5, id="not_in"),
+        pytest.param(None, 7, id="none"),
     ],
 )
 
 
 @metadata_filters
-# @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
-@pytest.mark.parametrize("source_storage_cls", [LanceDB])
-def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, request):
+@pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
+def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_sources):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
     documents = []
@@ -93,6 +96,4 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, request):
 
     prompt = "What is the secret number?"
     sources = source_storage.retrieve(metadata_filter=metadata_filter, prompt=prompt)
-    assert sources
-
-    # assert secret in sources[0].content
+    assert len(sources) == n_expected_sources

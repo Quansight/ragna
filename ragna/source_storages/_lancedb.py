@@ -40,22 +40,10 @@ class LanceDB(VectorDatabaseSourceStorage):
         super().__init__()
 
         import lancedb
+        import pyarrow as pa
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
 
-    _VECTOR_COLUMN_NAME = "embedded_text"
-
-    def store(
-        self,
-        documents: list[Document],
-        *,
-        chunk_size: int = 500,
-        chunk_overlap: int = 250,
-    ) -> None:
-        import pyarrow as pa
-
-        # TODO: create schema at runtime update when documents contain new metadata fields
-        # currently self.store() can not be used to add new documents to an existing table
         fields = [
             pa.field("id", pa.string()),
             pa.field("document_id", pa.string()),
@@ -69,17 +57,37 @@ class LanceDB(VectorDatabaseSourceStorage):
             pa.field("num_tokens", pa.int32()),
         ]
 
-        document_metadata_keys = list(
-            set().union(*(doc.metadata.keys() for doc in documents))
-        )
-        print(document_metadata_keys)
-
-        for key in document_metadata_keys:
-            fields.append(pa.field(key, pa.string()))
-
         self._schema = pa.schema(fields)
+
+    _VECTOR_COLUMN_NAME = "embedded_text"
+
+    def store(
+        self,
+        documents: list[Document],
+        *,
+        chunk_size: int = 500,
+        chunk_overlap: int = 250,
+        overwrite: bool = False,
+    ) -> None:
+
+        import pyarrow as pa
+
         # Misusing self._embedding_id as table name here as placeholder for global table name
-        table = self._db.create_table(name=self._embedding_id, schema=self._schema)
+        table = self._db.create_table(
+            name=self._embedding_id, schema=self._schema, exist_ok=not overwrite
+        )
+
+        document_metadata_cols = {
+            k: "''"
+            for doc in documents
+            for k in doc.metadata.keys()
+            if k not in self._schema.names
+        }
+
+        if document_metadata_cols:
+            table.add_columns(document_metadata_cols)
+            for col in document_metadata_cols.keys():
+                self._schema = self._schema.append(pa.field(col, pa.string()))
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -89,7 +97,8 @@ class LanceDB(VectorDatabaseSourceStorage):
             ):
                 table.add(
                     [
-                        {
+                        document_metadata_cols  # ensure all columns exist
+                        | {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
                             "document_name": str(document.name),
