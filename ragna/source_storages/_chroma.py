@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import ragna
 from ragna.core import Document, MetadataFilter, MetadataOperator, Source
@@ -36,19 +36,23 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
-    def _get_collection(self) -> chromadb.Collection:
+    def _get_collection(self, corpus_name: Optional[str]) -> chromadb.Collection:
+        if corpus_name is None:
+            corpus_name = self._embedding_id
+
         return self._client.get_or_create_collection(
-            self._embedding_id, embedding_function=self._embedding_function
+            corpus_name, embedding_function=self._embedding_function
         )
 
     def store(
         self,
         documents: list[Document],
         *,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._get_collection()
+        collection = self._get_collection(corpus_name=corpus_name)
 
         ids = []
         texts = []
@@ -92,9 +96,11 @@ class Chroma(VectorDatabaseSourceStorage):
     }
 
     def _translate_metadata_filter(
-        self, metadata_filter: MetadataFilter
-    ) -> dict[str, Any]:
-        if metadata_filter.operator is MetadataOperator.RAW:
+        self, metadata_filter: Optional[MetadataFilter]
+    ) -> Optional[dict[str, Any]]:
+        if metadata_filter is None:
+            return None
+        elif metadata_filter.operator is MetadataOperator.RAW:
             return cast(dict[str, Any], metadata_filter.value)
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             return {
@@ -117,11 +123,11 @@ class Chroma(VectorDatabaseSourceStorage):
         metadata_filter: MetadataFilter,
         prompt: str,
         *,
-        chat_id: uuid.UUID,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        collection = self._get_collection()
+        collection = self._get_collection(corpus_name=corpus_name)
 
         include = ["distances", "metadatas", "documents"]
         result = collection.query(
@@ -166,8 +172,7 @@ class Chroma(VectorDatabaseSourceStorage):
             (
                 Source(
                     id=result["ids"],
-                    # FIXME: We no longer have access to the document here
-                    # maybe reflect the same in the demo component
+                    document_name=result["metadatas"]["document_name"],
                     document_id=result["metadatas"]["document_id"],
                     location=result["metadatas"]["page_numbers"],
                     content=result["documents"],

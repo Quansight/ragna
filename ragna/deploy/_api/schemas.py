@@ -45,7 +45,8 @@ class DocumentUpload(BaseModel):
 class Source(BaseModel):
     # See orm.Source on why this is not a UUID
     id: str
-    document: Document
+    document_id: uuid.UUID
+    document_name: str
     location: str
     content: str
     num_tokens: int
@@ -54,7 +55,8 @@ class Source(BaseModel):
     def from_core(cls, source: ragna.core.Source) -> Source:
         return cls(
             id=source.id,
-            document=Document.from_core(source.document),
+            document_id=source.document_id,
+            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -63,7 +65,8 @@ class Source(BaseModel):
     def to_core(self) -> ragna.core.Source:
         return ragna.core.Source(
             id=self.id,
-            document=self.document.to_core(),
+            document_id=self.document_id,
+            document_name=self.document_name,
             location=self.location,
             content=self.content,
             num_tokens=self.num_tokens,

@@ -81,10 +81,6 @@ def add_documents(
     session.commit()
 
 
-def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
-    return schemas.Document(id=document.id, name=document.name)
-
-
 @functools.lru_cache(maxsize=1024)
 def get_document(
     session: Session, *, user: str, id: uuid.UUID
@@ -95,7 +91,7 @@ def get_document(
             & (orm.Document.id == id)
         )
     ).scalar_one_or_none()
-    return _orm_to_schema_document(document), document.metadata_
+    return schemas.Document(id=document.id, name=document.name), document.metadata_
 
 
 def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
@@ -137,7 +133,8 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             sources=[
                 schemas.Source(
                     id=source.id,
-                    document=_orm_to_schema_document(source.document),
+                    document_id=source.document_id,
+                    document_name=source.document_name,
                     location=source.location,
                     content=source.content,
                     num_tokens=source.num_tokens,
@@ -215,7 +212,8 @@ def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Sourc
     if orm_source is None:
         orm_source = orm.Source(
             id=source.id,
-            document_id=source.document.id,
+            document_id=source.document_id,
+            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,

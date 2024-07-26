@@ -1,7 +1,7 @@
 import functools
 import textwrap
 import uuid
-from typing import Any
+from typing import Any, Callable, Optional, cast
 
 from ragna.core import (
     Document,
@@ -51,7 +51,7 @@ class RagnaDemoSourceStorage(SourceStorage):
             ]
         )
 
-    _METADATA_OPERATOR_MAP = {
+    _METADATA_OPERATOR_MAP: dict[MetadataOperator, Callable[[Any, Any], bool]] = {
         MetadataOperator.EQ: lambda a, b: a == b,
         MetadataOperator.NE: lambda a, b: a != b,
         MetadataOperator.LT: lambda a, b: a < b,
@@ -63,9 +63,11 @@ class RagnaDemoSourceStorage(SourceStorage):
     }
 
     def _apply_filter(
-        self, metadata_filter: MetadataFilter
+        self, metadata_filter: Optional[MetadataFilter]
     ) -> list[tuple[int, dict[str, Any]]]:
-        if metadata_filter.operator is MetadataOperator.RAW:
+        if metadata_filter is None:
+            return list(enumerate(self._storage))
+        elif metadata_filter.operator is MetadataOperator.RAW:
             raise RagnaException
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             idcs_groups = []
@@ -78,10 +80,13 @@ class RagnaDemoSourceStorage(SourceStorage):
                         rows_map[idx] = row
                 idcs_groups.append(idcs_group)
             idcs = functools.reduce(
-                (
-                    set.intersection
-                    if metadata_filter.operator is MetadataOperator.AND
-                    else set.union
+                cast(
+                    Callable[[set[int], set[int]], set[int]],
+                    (
+                        set.intersection
+                        if metadata_filter.operator is MetadataOperator.AND
+                        else set.union
+                    ),
                 ),
                 idcs_groups,
             )
