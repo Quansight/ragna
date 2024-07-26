@@ -52,7 +52,6 @@ class LanceDB(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-
         import pyarrow as pa
 
         # TODO: create schema at runtime update when documents contain new metadata fields
