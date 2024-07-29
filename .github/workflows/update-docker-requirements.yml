@@ -49,6 +49,8 @@ jobs:
 
       - name: Check if commit is associated with a PR
         id: pr-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           PR_NUMBER=$(gh api \
             -H 'Accept: application/vnd.github+json' \
