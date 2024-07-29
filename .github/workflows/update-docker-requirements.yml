@@ -47,17 +47,27 @@ jobs:
           NEEDS_UPDATE=$(git diff --quiet && echo 'false' || echo 'true')
           echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
 
-      - name: Get last merged PR info
-        id: pr-info
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Check if commit is associated with a PR
+        id: pr-check
         run: |
-          LAST_MERGED_PR=$(gh pr list --repo $GITHUB_REPOSITORY --state closed --json number --jq '.[0].number')
-          echo "Last merged PR number: $LAST_MERGED_PR"
-          PR_INFO=$(gh pr view $LAST_MERGED_PR --repo $GITHUB_REPOSITORY --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
-          echo "PR Info: $PR_INFO"
-          echo "author=$(echo ${PR_INFO} | jq -r .author)" | tee --append $GITHUB_OUTPUT
-          echo "merger=$(echo ${PR_INFO} | jq -r .merger)" | tee --append $GITHUB_OUTPUT
+          PR_NUMBER=$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            /repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
+            --jq '.[0].number' || echo "none")
+          if [ "${PR_NUMBER}" != "none" ]; then
+            HAS_PR='true'
+            PR_INFO=$(gh pr view ${PR_NUMBER} --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
+            AUTHOR=$(echo ${PR_INFO} | jq -r .author)
+            MERGER=$(echo ${PR_INFO} | jq -r .merger)
+          else
+            HAS_PR='false'
+            AUTHOR=${{ github.actor }}
+            MERGER="none"
+          fi
+
+          echo "has-pr=${HAS_PR}" | tee --append $GITHUB_OUTPUT
+          echo "author=${AUTHOR}" | tee --append $GITHUB_OUTPUT
+          echo "merger=${MERGER}" | tee --append $GITHUB_OUTPUT
 
       - name: Open a PR to update the requirements
         if: ${{ steps.update.outputs.needs-update }}
@@ -66,13 +76,9 @@ jobs:
           commit-message: update requirements-docker.lock
           branch: update-docker-requirements
           branch-suffix: timestamp
-          base: ${{ github.head_ref || github.ref_name }}
+          base: main
           title: Update requirements-docker.lock
-          # prettier-ignore
-          body:
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          reviewers: ${{ env.pr_author }},${{ env.pr_mergedBy }}
-
-      - name: Show diff
-        if: ${{ steps.update.outputs.needs-update }}
-        run: git diff --exit-code
+          body: |
+            Automatic update of requirements-docker.lock.
+            [Workflow run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          reviewers: ${{ steps.pr-check.outputs.merger }}
