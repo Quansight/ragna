@@ -54,17 +54,20 @@ jobs:
             /repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
             --jq '.[0].number' || echo "none")
           if [ "${PR_NUMBER}" != "none" ]; then
-            HAS_PR='true'
             PR_INFO=$(gh pr view ${PR_NUMBER} --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
-            AUTHOR=$(echo ${PR_INFO} | jq -r .author)
-            MERGER=$(echo ${PR_INFO} | jq -r .merger)
+
+            if [ $? -eq 0 ]; then
+              AUTHOR=$(echo ${PR_INFO} | jq -r .author)
+              MERGER=$(echo ${PR_INFO} | jq -r .merger)
+            else
+              AUTHOR=${{ github.actor }}
+              MERGER="none"
+            fi
           else
-            HAS_PR='false'
             AUTHOR=${{ github.actor }}
             MERGER="none"
           fi
 
-          echo "has-pr=${HAS_PR}" | tee --append $GITHUB_OUTPUT
           echo "author=${AUTHOR}" | tee --append $GITHUB_OUTPUT
           echo "merger=${MERGER}" | tee --append $GITHUB_OUTPUT
 
@@ -80,4 +83,5 @@ jobs:
           body: |
             Automatic update of requirements-docker.lock.
             [Workflow run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{ steps.pr-check.outputs['cc-author'] }}
           reviewers: ${{ steps.pr-check.outputs.merger }}
