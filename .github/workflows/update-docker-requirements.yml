@@ -13,6 +13,7 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  issues: write
 
 jobs:
   update:
@@ -20,7 +21,7 @@ jobs:
     defaults:
       run:
         shell: bash -el {0}
-
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -85,3 +86,32 @@ jobs:
             [Workflow run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
             ${{ steps.pr-check.outputs.author != 'none' && format('cc @{0}', steps.pr-check.outputs.author) || '' }}
           reviewers: ${{ steps.pr-check.outputs.merger }}
+
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: update
+    if: failure()
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueTitle = 'Workflow Failure: docker-requirements';
+            const issueBody = `The workflow 'docker-requirements' has failed.
+            Please check the details at: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            `;
+            const { data: issues } = await github.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open'
+            });
+            const existingIssue = issues.find(issue => issue.title === issueTitle);
+            if (!existingIssue) {
+              await github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody
+              });
+            }
