@@ -33,9 +33,6 @@ jobs:
           python-version: "3.11"
           optional-dependencies: "false"
 
-      - name: Install GitHub CLI
-        run: sudo apt-get install gh
-
       - name: Update docker requirements
         id: update
         run: |
