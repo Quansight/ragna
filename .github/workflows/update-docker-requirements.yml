@@ -52,8 +52,8 @@ jobs:
           PR_NUMBER=$(gh api \
             -H 'Accept: application/vnd.github+json' \
             /repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
-            --jq '.[0].number' || echo "none")
-          if [ "${PR_NUMBER}" != "none" ]; then
+            --jq '.[0].number')
+          if [ $? -eq 0 ]; then
             PR_INFO=$(gh pr view ${PR_NUMBER} --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
 
             if [ $? -eq 0 ]; then
