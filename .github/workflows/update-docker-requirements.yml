@@ -83,5 +83,5 @@ jobs:
           body: |
             Automatic update of requirements-docker.lock.
             [Workflow run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            ${{ steps.pr-check.outputs['cc-author'] }}
+            ${{ steps.pr-check.outputs.author != 'none' && format('cc @{0}', steps.pr-check.outputs.author) || '' }}
           reviewers: ${{ steps.pr-check.outputs.merger }}
