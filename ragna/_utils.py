@@ -94,7 +94,7 @@ def timeout_after(
     seconds: float = 30, *, message: str = ""
 ) -> Callable[[Callable], Callable]:
     timeout = f"Timeout after {seconds:.1f} seconds"
-    message = timeout if message else f"{timeout}: {message}"
+    message = f"{timeout}: {message}" if message else timeout
 
     def decorator(fn: Callable) -> Callable:
         if is_debugging():
