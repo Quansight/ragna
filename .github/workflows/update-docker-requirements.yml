@@ -56,14 +56,8 @@ jobs:
             --jq '.[0].number')
           if [ $? -eq 0 ]; then
             PR_INFO=$(gh pr view ${PR_NUMBER} --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
-
-            if [ $? -eq 0 ]; then
-              AUTHOR=$(echo ${PR_INFO} | jq -r .author)
-              MERGER=$(echo ${PR_INFO} | jq -r .merger)
-            else
-              AUTHOR=${{ github.actor }}
-              MERGER="none"
-            fi
+            AUTHOR=$(echo ${PR_INFO} | jq -r .author)
+            MERGER=$(echo ${PR_INFO} | jq -r .merger)
           else
             AUTHOR=${{ github.actor }}
             MERGER="none"
