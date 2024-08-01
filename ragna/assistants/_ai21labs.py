@@ -29,7 +29,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
         prompt, sources = (message := messages[-1]).content, message.sources
-        async for data in self._call_api(
+        async with self._call_api(
             "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
             headers={
@@ -49,8 +49,9 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 ],
                 "system": self._make_system_content(sources),
             },
-        ):
-            yield cast(str, data["outputs"][0]["text"])
+        ) as stream:
+            async for data in stream:
+                yield cast(str, data["outputs"][0]["text"])
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote
