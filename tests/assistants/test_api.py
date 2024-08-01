@@ -57,7 +57,7 @@ def streaming_server():
             except httpx.ConnectError:
                 return False
 
-        @timeout_after(10, message="Streaming server failed to start")
+        @timeout_after(10, message="Failed to start streaming server")
         def wait():
             while not up():
                 time.sleep(0.2)
