@@ -102,6 +102,7 @@ class HttpStreamingAssistant(HttpApiAssistant):
                 yield chunk
 
 
+@skip_on_windows
 @pytest.mark.parametrize("streaming_protocol", list(HttpStreamingProtocol))
 async def test_http_streaming(streaming_server, streaming_protocol):
     assistant = HttpStreamingAssistant.new(streaming_server, streaming_protocol)
@@ -117,6 +118,7 @@ async def test_http_streaming(streaming_server, streaming_protocol):
         next(expected_chunks)
 
 
+@skip_on_windows
 @pytest.mark.parametrize("streaming_protocol", list(HttpStreamingProtocol))
 def test_http_streaming_termination(streaming_server, streaming_protocol):
     # Non-regression test for https://github.com/Quansight/ragna/pull/462
