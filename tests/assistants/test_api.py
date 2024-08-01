@@ -67,28 +67,44 @@ def streaming_server():
         yield base_url
 
 
+class HttpStreamingAssistant(HttpApiAssistant):
+    _API_KEY_ENV_VAR = None
+
+    @staticmethod
+    def new(base_url, streaming_protocol):
+        cls = type(
+            f"{streaming_protocol.name.title()}{HttpStreamingAssistant.__name__}",
+            (HttpStreamingAssistant,),
+            dict(_STREAMING_PROTOCOL=streaming_protocol),
+        )
+        return cls(base_url)
+
+    def __init__(self, base_url):
+        super().__init__()
+        self._endpoint = f"{base_url}/{self._STREAMING_PROTOCOL.name.lower()}"
+
+    async def answer(self, messages):
+        if self._STREAMING_PROTOCOL is HttpStreamingProtocol.JSON:
+            parse_kwargs = dict(item="item")
+        else:
+            parse_kwargs = dict()
+
+        async with self._call_api(
+            "POST",
+            self._endpoint,
+            content=messages[-1].content,
+            parse_kwargs=parse_kwargs,
+        ) as stream:
+            async for chunk in stream:
+                if chunk.get("break"):
+                    break
+
+                yield chunk
+
+
 @pytest.mark.parametrize("streaming_protocol", list(HttpStreamingProtocol))
 async def test_http_streaming(streaming_server, streaming_protocol):
-    class HttpStreamingAssistant(HttpApiAssistant):
-        _STREAMING_PROTOCOL = streaming_protocol
-        _API_KEY_ENV_VAR = None
-
-        async def answer(self, messages):
-            if streaming_protocol is HttpStreamingProtocol.JSON:
-                parse_kwargs = dict(item="item")
-            else:
-                parse_kwargs = dict()
-
-            async with self._call_api(
-                "POST",
-                f"{streaming_server}/{streaming_protocol.name.lower()}",
-                content=messages[-1].content,
-                parse_kwargs=parse_kwargs,
-            ) as stream:
-                async for chunk in stream:
-                    yield chunk
-
-    assistant = HttpStreamingAssistant()
+    assistant = HttpStreamingAssistant.new(streaming_server, streaming_protocol)
 
     expected = [{"chunk": chunk} for chunk in ["foo", "bar", "baz"]]
     expected_chunks = iter(expected)
@@ -105,30 +121,8 @@ async def test_http_streaming(streaming_server, streaming_protocol):
 def test_http_streaming_termination(streaming_server, streaming_protocol):
     # Non-regression test for https://github.com/Quansight/ragna/pull/462
 
-    class HttpStreamingAssistant(HttpApiAssistant):
-        _STREAMING_PROTOCOL = streaming_protocol
-        _API_KEY_ENV_VAR = None
-
-        async def answer(self, messages):
-            if streaming_protocol is HttpStreamingProtocol.JSON:
-                parse_kwargs = dict(item="item")
-            else:
-                parse_kwargs = dict()
-
-            async with self._call_api(
-                "POST",
-                f"{streaming_server}/{streaming_protocol.name.lower()}",
-                content=messages[-1].content,
-                parse_kwargs=parse_kwargs,
-            ) as stream:
-                async for chunk in stream:
-                    if chunk["break"]:
-                        break
-
-                    yield chunk
-
     async def main():
-        assistant = HttpStreamingAssistant()
+        assistant = HttpStreamingAssistant.new(streaming_server, streaming_protocol)
 
         expected = [
             {"chunk": "foo", "break": False},
