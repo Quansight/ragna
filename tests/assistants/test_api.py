@@ -106,9 +106,9 @@ class HttpStreamingAssistant(HttpApiAssistant):
 async def test_http_streaming(streaming_server, streaming_protocol):
     assistant = HttpStreamingAssistant.new(streaming_server, streaming_protocol)
 
-    expected = [{"chunk": chunk} for chunk in ["foo", "bar", "baz"]]
-    expected_chunks = iter(expected)
-    actual_chunks = assistant.answer([Message(content=json.dumps(expected))])
+    data = [{"chunk": chunk} for chunk in ["foo", "bar", "baz"]]
+    expected_chunks = iter(data)
+    actual_chunks = assistant.answer([Message(content=json.dumps(data))])
     async for actual_chunk in actual_chunks:
         expected_chunk = next(expected_chunks)
         assert actual_chunk == expected_chunk
@@ -124,15 +124,13 @@ def test_http_streaming_termination(streaming_server, streaming_protocol):
     async def main():
         assistant = HttpStreamingAssistant.new(streaming_server, streaming_protocol)
 
-        expected = [
+        data = [
             {"chunk": "foo", "break": False},
             {"chunk": "bar", "break": False},
             {"chunk": "baz", "break": True},
         ]
-        expected_chunks = itertools.takewhile(
-            lambda chunk: not chunk["break"], expected
-        )
-        actual_chunks = assistant.answer([Message(content=json.dumps(expected))])
+        expected_chunks = itertools.takewhile(lambda chunk: not chunk["break"], data)
+        actual_chunks = assistant.answer([Message(content=json.dumps(data))])
         async for actual_chunk in actual_chunks:
             expected_chunk = next(expected_chunks)
             assert actual_chunk == expected_chunk
