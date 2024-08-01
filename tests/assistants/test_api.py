@@ -89,17 +89,16 @@ class HttpStreamingAssistant(HttpApiAssistant):
         else:
             parse_kwargs = dict()
 
-        async with self._call_api(
+        async for chunk in self._call_api(
             "POST",
             self._endpoint,
             content=messages[-1].content,
             parse_kwargs=parse_kwargs,
-        ) as stream:
-            async for chunk in stream:
-                if chunk.get("break"):
-                    break
+        ):
+            if chunk.get("break"):
+                break
 
-                yield chunk
+            yield chunk
 
 
 @pytest.mark.parametrize("streaming_protocol", list(HttpStreamingProtocol))

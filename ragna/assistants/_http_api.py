@@ -2,7 +2,7 @@ import contextlib
 import enum
 import json
 import os
-from typing import Any, AsyncContextManager, AsyncIterator, Optional
+from typing import Any, AsyncIterator, Optional
 
 import httpx
 
@@ -47,7 +47,7 @@ class HttpApiCaller:
         *,
         parse_kwargs: Optional[dict[str, Any]] = None,
         **kwargs: Any,
-    ) -> AsyncContextManager[AsyncIterator[Any]]:
+    ) -> AsyncIterator[Any]:
         if self._protocol is None:
             call_method = self._no_stream
         else:
@@ -56,10 +56,8 @@ class HttpApiCaller:
                 HttpStreamingProtocol.JSONL: self._stream_jsonl,
                 HttpStreamingProtocol.JSON: self._stream_json,
             }[self._protocol]
-
         return call_method(method, url, parse_kwargs=parse_kwargs or {}, **kwargs)
 
-    @contextlib.asynccontextmanager
     async def _no_stream(
         self,
         method: str,
@@ -70,13 +68,8 @@ class HttpApiCaller:
     ) -> AsyncIterator[Any]:
         response = await self._client.request(method, url, **kwargs)
         await self._assert_api_call_is_success(response)
+        yield response.json()
 
-        async def stream() -> AsyncIterator[Any]:
-            yield response.json()
-
-        yield stream()
-
-    @contextlib.asynccontextmanager
     async def _stream_sse(
         self,
         method: str,
@@ -92,13 +85,9 @@ class HttpApiCaller:
         ) as event_source:
             await self._assert_api_call_is_success(event_source.response)
 
-            async def stream() -> AsyncIterator[Any]:
-                async for sse in event_source.aiter_sse():
-                    yield json.loads(sse.data)
+            async for sse in event_source.aiter_sse():
+                yield json.loads(sse.data)
 
-            yield stream()
-
-    @contextlib.asynccontextmanager
     async def _stream_jsonl(
         self,
         method: str,
@@ -110,11 +99,8 @@ class HttpApiCaller:
         async with self._client.stream(method, url, **kwargs) as response:
             await self._assert_api_call_is_success(response)
 
-            async def stream() -> AsyncIterator[Any]:
-                async for chunk in response.aiter_lines():
-                    yield json.loads(chunk)
-
-            yield stream()
+            async for chunk in response.aiter_lines():
+                yield json.loads(chunk)
 
     # ijson does not support reading from an (async) iterator, but only from file-like
     # objects, i.e. https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects.
@@ -134,7 +120,6 @@ class HttpApiCaller:
                 return b""
             return await anext(self._ait, b"")  # type: ignore[call-arg]
 
-    @contextlib.asynccontextmanager
     async def _stream_json(
         self,
         method: str,
@@ -151,13 +136,10 @@ class HttpApiCaller:
         async with self._client.stream(method, url, **kwargs) as response:
             await self._assert_api_call_is_success(response)
 
-            async def stream() -> AsyncIterator[Any]:
-                async for chunk in ijson.items(
-                    self._AsyncIteratorReader(response.aiter_bytes(chunk_size)), item
-                ):
-                    yield chunk
-
-            yield stream()
+            async for chunk in ijson.items(
+                self._AsyncIteratorReader(response.aiter_bytes(chunk_size)), item
+            ):
+                yield chunk
 
     async def _assert_api_call_is_success(self, response: httpx.Response) -> None:
         if response.is_success:

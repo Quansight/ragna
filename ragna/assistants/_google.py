@@ -29,7 +29,7 @@ class GoogleAssistant(HttpApiAssistant):
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         prompt, sources = (message := messages[-1]).content, message.sources
-        async with self._call_api(
+        async for chunk in self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
@@ -58,9 +58,8 @@ class GoogleAssistant(HttpApiAssistant):
                 },
             },
             parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
-        ) as stream:
-            async for chunk in stream:
-                yield chunk
+        ):
+            yield chunk
 
 
 class GeminiPro(GoogleAssistant):
