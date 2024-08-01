@@ -1,4 +1,3 @@
-import socket
 import subprocess
 import sys
 import time
@@ -11,12 +10,7 @@ from playwright.sync_api import Page, expect
 from ragna._utils import timeout_after
 from ragna.deploy import Config
 from tests.deploy.utils import TestAssistant
-
-
-def get_available_port():
-    with socket.socket() as s:
-        s.bind(("", 0))
-        return s.getsockname()[1]
+from tests.utils import get_available_port
 
 
 @pytest.fixture
