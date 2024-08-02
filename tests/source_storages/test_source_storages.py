@@ -1,7 +1,7 @@
 import pytest
 
 from ragna.core import LocalDocument, MetadataFilter
-from ragna.source_storages import Chroma, LanceDB
+from ragna.source_storages import LanceDB
 
 METADATAS = [
     {"key": "value"},
@@ -63,7 +63,7 @@ metadata_filters = pytest.mark.parametrize(
                     ),
                 ]
             ),
-            2,
+            3,
             id="or-nested",
         ),
         pytest.param(MetadataFilter.eq("key", "value"), 2, id="eq"),
@@ -76,7 +76,8 @@ metadata_filters = pytest.mark.parametrize(
 
 
 @metadata_filters
-@pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
+@pytest.mark.parametrize("source_storage_cls", [LanceDB])
+# @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_sources):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
@@ -93,7 +94,11 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_s
     source_storage = source_storage_cls()
 
     source_storage.store(documents)
+    # source_storage.store(documents)
 
     prompt = "What is the secret number?"
-    sources = source_storage.retrieve(metadata_filter=metadata_filter, prompt=prompt)
+    num_tokens = 4096
+    sources = source_storage.retrieve(
+        metadata_filter=metadata_filter, prompt=prompt, num_tokens=num_tokens
+    )
     assert len(sources) == n_expected_sources

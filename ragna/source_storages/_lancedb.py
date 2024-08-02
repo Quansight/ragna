@@ -61,33 +61,36 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
+    def _get_table(self, corpus_name: Optional[str] = None):
+
+        table_name = corpus_name or self._embedding_id
+        return self._db.create_table(
+            name=table_name,
+            schema=self._schema,
+            exist_ok=True,
+        )
+
     def store(
         self,
         documents: list[Document],
         *,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
-        overwrite: bool = False,
     ) -> None:
 
-        import pyarrow as pa
-
-        # Misusing self._embedding_id as table name here as placeholder for global table name
-        table = self._db.create_table(
-            name=self._embedding_id, schema=self._schema, exist_ok=not overwrite
+        table = self._get_table(corpus_name)
+        all_fields = list(
+            set(table.schema.names)
+            | set([k for doc in documents for k in doc.metadata.keys()])
         )
+        missing_fields = [
+            field for field in all_fields if field not in table.schema.names
+        ]
 
-        document_metadata_cols = {
-            k: "''"
-            for doc in documents
-            for k in doc.metadata.keys()
-            if k not in self._schema.names
-        }
-
-        if document_metadata_cols:
-            table.add_columns(document_metadata_cols)
-            for col in document_metadata_cols.keys():
-                self._schema = self._schema.append(pa.field(col, pa.string()))
+        if missing_fields:
+            table.add_columns({field: "''" for field in missing_fields})
+            self._schema = table.schema
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -97,7 +100,9 @@ class LanceDB(VectorDatabaseSourceStorage):
             ):
                 table.add(
                     [
-                        document_metadata_cols  # ensure all columns exist
+                        {
+                            field: "''" for field in missing_fields
+                        }  # ensure all columns exist
                         | {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
@@ -155,10 +160,11 @@ class LanceDB(VectorDatabaseSourceStorage):
         metadata_filter: Optional[MetadataFilter],
         prompt: str,
         *,
+        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
-        table = self._db.open_table(self._embedding_id)
+        table = self._get_table(corpus_name)
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
