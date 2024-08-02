@@ -106,7 +106,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             # just for panel, we just inject them into the scope here, which will be
             # parsed by panel down the line. After this initial request, the values are
             # tied to the active session and don't have to be set again.
-            extra_cookies = {
+            extra_cookies: dict[str, Union[str, bytes]] = {
                 "user": session.user.name,
                 "id_token": base64.b64encode(json.dumps(session.user.data).encode()),
             }
@@ -285,7 +285,7 @@ class DummyBasicAuth(Auth):
             )
         )
 
-    async def login(self, request: Request) -> Union[schemas.User, HTMLResponse]:
+    async def login(self, request: Request) -> Union[schemas.User, Response]:
         async with request.form() as form:
             username = cast(str, form.get("username"))
             password = cast(str, form.get("password"))
