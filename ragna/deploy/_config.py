@@ -69,7 +69,7 @@ class Config(BaseSettings):
         return env_settings, init_settings
 
     @model_validator(mode="after")
-    def _resolve_dependent_default(self) -> Config:
+    def _resolve_dependent_default_values(self) -> Config:
         for name, info in self.model_fields.items():
             value = getattr(self, name)
             if isinstance(value, DependentDefaultValue):
