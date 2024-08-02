@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Type, Union
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Type,
+    Union,
+)
 
 import tomlkit
 import tomlkit.container
@@ -20,58 +26,27 @@ from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
 
-if TYPE_CHECKING:
-    DependentDefaultField = Any
-else:
 
-    class DependentDefaultField:
-        """This class exists for a specific use case:
-
-        - We have values for which we need the validated config to compute the default,
-          e.g. the default origins can only be computed after we know the hostname and
-          port.
-        - We want to use the plain annotations rather than allowing a sentinel type, e.g.
-          `str` vs. `Optional[str]`.
-
-        It can be used just as `pydantic.Field` but additionally takes a callable. This
-        callable gets called with the partially resolved model and should return the
-        resolved value for this field it was used.
-        """
-
-        _RESERVED_PARAMS = ["default", "default_factory", "validate_default"]
-
-        def __new__(
-            cls,
-            dependent_default: Callable[[DependentDefaultSettings], Any],
-            **kwargs: Any,
-        ) -> Field:
-            if any(param in kwargs for param in cls._RESERVED_PARAMS):
-                reserved_params = ", ".join(
-                    repr(param) for param in cls._RESERVED_PARAMS
-                )
-                raise Exception(
-                    f"The parameters {reserved_params} are reserved "
-                    f"and cannot be passed."
-                )
-
-            self = super().__new__(cls)
-            self.resolve = dependent_default
-            # We are not setting 'default' here, because otherwise Pydantic tries to
-            # deepcopy this object down the line.
-            return Field(default_factory=lambda: self, validate_default=False)
+class DependentDefaultValue:
+    def __init__(self, resolve: Callable[[Config], Any]):
+        self.resolve = resolve
 
 
-class DependentDefaultSettings(BaseSettings):
-    @model_validator(mode="after")
-    def _resolve_dependent_default(self) -> DependentDefaultSettings:
-        for name, info in self.model_fields.items():
-            value = getattr(self, name)
-            if isinstance(value, DependentDefaultField):  # type: ignore[misc]
-                setattr(self, name, value.resolve(self))
-        return self
+_RESERVED_PARAMS = ["default", "default_factory", "validate_default"]
 
 
-class Config(DependentDefaultSettings):
+def DependentDefaultField(resolve: Callable[[Config], Any], **kwargs: Any) -> Any:
+    if any(param in kwargs for param in _RESERVED_PARAMS):
+        reserved_params = ", ".join(repr(param) for param in _RESERVED_PARAMS)
+        raise Exception(
+            f"The parameters {reserved_params} are reserved " f"and cannot be passed."
+        )
+    return Field(
+        default=DependentDefaultValue(resolve), validate_default=False, **kwargs
+    )
+
+
+class Config(BaseSettings):
     """Ragna configuration"""
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
@@ -98,6 +73,14 @@ class Config(DependentDefaultSettings):
         #  3. Configuration file
         #  4. Default
         return env_settings, init_settings
+
+    @model_validator(mode="after")
+    def _resolve_dependent_default(self) -> Config:
+        for name, info in self.model_fields.items():
+            value = getattr(self, name)
+            if isinstance(value, DependentDefaultValue):
+                setattr(self, name, value.resolve(self))
+        return self
 
     local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
         default_factory=ragna.local_root
