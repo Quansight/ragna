@@ -273,9 +273,17 @@ class DummyBasicAuth(Auth):
         self._password = os.environ.get("RAGNA_DUMMY_BASIC_AUTH_PASSWORD")
 
     def login_page(
-        self, request: Request, *, fail_reason: Optional[str] = None
+        self,
+        request: Request,
+        *,
+        username: Optional[str] = None,
+        fail_reason: Optional[str] = None,
     ) -> HTMLResponse:
-        return HTMLResponse(templates.render("basic_auth.html"))
+        return HTMLResponse(
+            templates.render(
+                "basic_auth.html", username=username, fail_reason=fail_reason
+            )
+        )
 
     async def login(self, request: Request) -> Union[schemas.User, HTMLResponse]:
         async with request.form() as form:
@@ -292,11 +300,14 @@ class DummyBasicAuth(Auth):
                 http_detail=RagnaException.MESSAGE,
             )
 
-        if (self._password is not None and password != self._password) or (
+        if not username:
+            return self.login_page(request, fail_reason="Username cannot be empty")
+        elif (self._password is not None and password != self._password) or (
             self._password is None and password != username
         ):
-            # FIXME: send the login page again with a failure message
-            return HTMLResponse("Unauthorized!")
+            return self.login_page(
+                request, username=username, fail_reason="Password incorrect"
+            )
 
         return schemas.User(name=username)
 

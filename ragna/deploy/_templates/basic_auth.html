@@ -1,4 +1,9 @@
 {% extends "base.html" %} {% block content %}
+{% if fail_reason %}
+<div style="color: red">
+  {{ fail_reason }}
+</div>
+{% endif %}
 <form action="/login" method="post" id="basic-auth">
   <div>
     <input
@@ -7,6 +12,9 @@
       placeholder="username"
       name="username"
       autocomplete="username"
+      {% if username %}
+      value="{{ username }}"
+      {% endif %}
     />
   </div>
   <div>
