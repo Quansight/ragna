@@ -1,0 +1,24 @@
+{% extends "base.html" %} {% block content %}
+<form action="/login" method="post" id="basic-auth">
+  <div>
+    <input
+      type="text"
+      class="form-control"
+      placeholder="username"
+      name="username"
+      autocomplete="username"
+    />
+  </div>
+  <div>
+    <input
+      type="password"
+      class="form-control"
+      placeholder="password"
+      name="password"
+    />
+  </div>
+</form>
+<div>
+  <button type="submit" form="basic-auth" class="btn btn-primary">Login</button>
+</div>
+{% endblock %}

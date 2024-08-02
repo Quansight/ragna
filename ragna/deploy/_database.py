@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import secrets
 import uuid
-from typing import Any, Collection, Optional
+from typing import Any, Collection, Optional, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
@@ -11,6 +12,14 @@ from ragna.core import RagnaException
 
 from . import _orm as orm
 from . import _schemas as schemas
+
+
+class UnknownUser(Exception):
+    def __init__(
+        self, name: Optional[str] = None, api_key: Optional[str] = None
+    ) -> None:
+        self.name = name
+        self.api_key = api_key
 
 
 class Database:
@@ -28,19 +37,51 @@ class Database:
         self._to_orm = SchemaToOrmConverter()
         self._to_schema = OrmToSchemaConverter()
 
-    def _get_user(self, session: Session, *, username: str) -> orm.User:
-        user: Optional[orm.User] = session.execute(
-            select(orm.User).where(orm.User.name == username)
-        ).scalar_one_or_none()
+    def _get_orm_user(
+        self,
+        session: Session,
+        *,
+        name: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ) -> orm.User:
+        selector = select(orm.User)
+        if name is None and api_key is None:
+            raise RagnaException
+        elif name is not None:
+            selector = selector.where(orm.User.name == name)
+        elif api_key is not None:
+            selector = selector.where(orm.User.api_key == api_key)
+
+        user = cast(Optional[orm.User], session.execute(selector).scalar_one_or_none())
 
         if user is None:
-            # Add a new user if the current username is not registered yet. Since this
-            # is behind the authentication layer, we don't need any extra security here.
-            user = orm.User(id=uuid.uuid4(), name=username)
-            session.add(user)
-            session.commit()
+            raise UnknownUser(name=name, api_key=api_key)
 
         return user
+
+    def maybe_add_user(self, session: Session, *, user: schemas.User) -> None:
+        try:
+            self._get_orm_user(session, name=user.name)
+        except UnknownUser:
+            orm_user = orm.User(
+                id=uuid.uuid4(), name=user.name, api_key=secrets.token_urlsafe(32)[:32]
+            )
+            session.add(orm_user)
+            session.commit()
+
+    def get_user(
+        self,
+        session: Session,
+        *,
+        name: Optional[str] = None,
+        api_key: Optional[str] = None,
+    ) -> Optional[schemas.User]:
+        try:
+            return self._to_schema.user(
+                self._get_orm_user(session, name=name, api_key=api_key)
+            )
+        except UnknownUser:
+            return None
 
     def add_documents(
         self,
@@ -49,7 +90,7 @@ class Database:
         user: str,
         documents: list[schemas.Document],
     ) -> None:
-        user_id = self._get_user(session, username=user).id
+        user_id = self._get_orm_user(session, name=user).id
         session.add_all(
             [self._to_orm.document(document, user_id=user_id) for document in documents]
         )
@@ -82,7 +123,7 @@ class Database:
 
     def add_chat(self, session: Session, *, user: str, chat: schemas.Chat) -> None:
         orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_user(session, username=user).id
+            chat, user_id=self._get_orm_user(session, name=user).id
         )
         # We need to merge and not add here, because the documents are already in the DB
         session.merge(orm_chat)
@@ -102,7 +143,7 @@ class Database:
             self._to_schema.chat(chat)
             for chat in session.execute(
                 self._select_chat(eager=True).where(
-                    orm.Chat.user_id == self._get_user(session, username=user).id
+                    orm.Chat.user_id == self._get_orm_user(session, name=user).id
                 )
             )
             .scalars()
@@ -117,7 +158,7 @@ class Database:
             session.execute(
                 self._select_chat(eager=eager).where(
                     (orm.Chat.id == id)
-                    & (orm.Chat.user_id == self._get_user(session, username=user).id)
+                    & (orm.Chat.user_id == self._get_orm_user(session, name=user).id)
                 )
             )
             .unique()
@@ -134,7 +175,7 @@ class Database:
 
     def update_chat(self, session: Session, user: str, chat: schemas.Chat) -> None:
         orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_user(session, username=user).id
+            chat, user_id=self._get_orm_user(session, name=user).id
         )
         session.merge(orm_chat)
         session.commit()
@@ -199,6 +240,9 @@ class SchemaToOrmConverter:
 
 
 class OrmToSchemaConverter:
+    def user(self, user: orm.User) -> schemas.User:
+        return schemas.User(name=user.name)
+
     def document(self, document: orm.Document) -> schemas.Document:
         return schemas.Document(
             id=document.id, name=document.name, metadata=document.metadata_
