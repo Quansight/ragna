@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Type, Union
 
 import tomlkit
 import tomlkit.container
@@ -20,34 +20,58 @@ from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
 
-T = TypeVar("T")
+if TYPE_CHECKING:
+    DependentDefaultField = Any
+else:
 
+    class DependentDefaultField:
+        """This class exists for a specific use case:
 
-class AfterConfigValidateDefault(Generic[T]):
-    """This class exists for a specific use case:
+        - We have values for which we need the validated config to compute the default,
+          e.g. the default origins can only be computed after we know the hostname and
+          port.
+        - We want to use the plain annotations rather than allowing a sentinel type, e.g.
+          `str` vs. `Optional[str]`.
 
-    - We have values for which we need the validated config to compute the default,
-      e.g. the API default origins can only be computed after we know the UI hostname
-      and port.
-    - We want to use the plain annotations rather than allowing a sentinel type, e.g.
-      `str` vs. `Optional[str]`.
-    """
-
-    def __init__(self, make_default: Callable[[Config], T]) -> None:
-        self.make_default = make_default
-
-    @classmethod
-    def make(cls, make_default: Callable[[Config], T]) -> Any:
-        """Creates a default sentinel that is resolved after the config is validated.
-
-        Args:
-            make_default: Callable that takes the validated config and returns the
-                resolved value.
+        It can be used just as `pydantic.Field` but additionally takes a callable. This
+        callable gets called with the partially resolved model and should return the
+        resolved value for this field it was used.
         """
-        return Field(default=cls(make_default), validate_default=False)
+
+        _RESERVED_PARAMS = ["default", "default_factory", "validate_default"]
+
+        def __new__(
+            cls,
+            dependent_default: Callable[[DependentDefaultSettings], Any],
+            **kwargs: Any,
+        ) -> Field:
+            if any(param in kwargs for param in cls._RESERVED_PARAMS):
+                reserved_params = ", ".join(
+                    repr(param) for param in cls._RESERVED_PARAMS
+                )
+                raise Exception(
+                    f"The parameters {reserved_params} are reserved "
+                    f"and cannot be passed."
+                )
+
+            self = super().__new__(cls)
+            self.resolve = dependent_default
+            # We are not setting 'default' here, because otherwise Pydantic tries to
+            # deepcopy this object down the line.
+            return Field(default_factory=lambda: self, validate_default=False)
 
 
-class Config(BaseSettings):
+class DependentDefaultSettings(BaseSettings):
+    @model_validator(mode="after")
+    def _resolve_dependent_default(self) -> DependentDefaultSettings:
+        for name, info in self.model_fields.items():
+            value = getattr(self, name)
+            if isinstance(value, DependentDefaultField):  # type: ignore[misc]
+                setattr(self, name, value.resolve(self))
+        return self
+
+
+class Config(DependentDefaultSettings):
     """Ragna configuration"""
 
     model_config = SettingsConfigDict(env_prefix="ragna_")
@@ -94,24 +118,13 @@ class Config(BaseSettings):
     hostname: str = "127.0.0.1"
     port: int = 31476
     root_path: str = ""
-    origins: list[str] = AfterConfigValidateDefault.make(
+    origins: list[str] = DependentDefaultField(
         lambda config: [f"http://{config.hostname}:{config.port}"]
     )
 
-    database_url: str = AfterConfigValidateDefault.make(
+    database_url: str = DependentDefaultField(
         lambda config: f"sqlite:///{config.local_root}/ragna.db",
     )
-
-    @model_validator(mode="after")
-    def _validate_model(self) -> Config:
-        self._resolve_default_sentinels(self)
-        return self
-
-    def _resolve_default_sentinels(self, config: Config) -> None:
-        for name, info in self.model_fields.items():
-            value = getattr(self, name)
-            if isinstance(value, AfterConfigValidateDefault):
-                setattr(self, name, value.make_default(config))
 
     @property
     def _url(self) -> str:
