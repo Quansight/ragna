@@ -101,7 +101,7 @@ class LanceDB(VectorDatabaseSourceStorage):
                 table.add(
                     [
                         {
-                            field: "''" for field in missing_fields
+                            field: "''" for field in all_fields
                         }  # ensure all columns exist
                         | {
                             "id": str(uuid.uuid4()),

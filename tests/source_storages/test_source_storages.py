@@ -94,7 +94,6 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_s
     source_storage = source_storage_cls()
 
     source_storage.store(documents)
-    # source_storage.store(documents)
 
     prompt = "What is the secret number?"
     num_tokens = 4096
@@ -102,3 +101,6 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_s
         metadata_filter=metadata_filter, prompt=prompt, num_tokens=num_tokens
     )
     assert len(sources) == n_expected_sources
+
+    # Should be able to call .store() multiple times
+    source_storage.store(documents)
