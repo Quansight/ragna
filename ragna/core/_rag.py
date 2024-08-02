@@ -273,12 +273,13 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        self._messages.append(Message(content=prompt, role=MessageRole.USER))
-
         sources = await self._run(self.source_storage.retrieve, self.documents, prompt)
 
+        question = Message(content=prompt, role=MessageRole.USER, sources=sources)
+        self._messages.append(question)
+
         answer = Message(
-            content=self._run_gen(self.assistant.answer, prompt, sources),
+            content=self._run_gen(self.assistant.answer, self._messages.copy()),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )

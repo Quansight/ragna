@@ -9,7 +9,7 @@ from ragna.deploy._core import make_app
 
 
 class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool = True):
+    def answer(self, messages, *, multiple_answer_chunks: bool = True):
         # Simulate a "real" assistant through a small delay. See
         # https://github.com/Quansight/ragna/pull/401#issuecomment-2095851440
         # for why this is needed.
@@ -18,7 +18,7 @@ class TestAssistant(RagnaDemoAssistant):
         # the tests in deploy/ui/test_ui.py. This can be removed if TestAssistant
         # is ever removed from that file.
         time.sleep(1e-3)
-        content = next(super().answer(prompt, sources))
+        content = next(super().answer(messages))
 
         if multiple_answer_chunks:
             for chunk in content.split(" "):

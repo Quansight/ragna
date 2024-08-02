@@ -6,6 +6,9 @@ dependencies:
   - pip
   - git-lfs
   - pip:
+      - httpx_sse
+      - ijson
+      - sse_starlette
       - python-dotenv
       - pytest >=6
       - pytest-mock

@@ -1,6 +1,6 @@
 from typing import AsyncIterator, cast
 
-from ragna.core import RagnaException, Source
+from ragna.core import Message, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -25,12 +25,13 @@ class CohereAssistant(HttpApiAssistant):
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        async for event in self._call_api(
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async with self._call_api(
             "POST",
             "https://api.cohere.ai/v1/chat",
             headers={
@@ -47,14 +48,15 @@ class CohereAssistant(HttpApiAssistant):
                 "max_tokens": max_new_tokens,
                 "documents": self._make_source_documents(sources),
             },
-        ):
-            if event["event_type"] == "stream-end":
-                if event["event_type"] == "COMPLETE":
-                    break
+        ) as stream:
+            async for event in stream:
+                if event["event_type"] == "stream-end":
+                    if event["event_type"] == "COMPLETE":
+                        break
 
-                raise RagnaException(event["error_message"])
-            if "text" in event:
-                yield cast(str, event["text"])
+                    raise RagnaException(event["error_message"])
+                if "text" in event:
+                    yield cast(str, event["text"])
 
 
 class Command(CohereAssistant):
