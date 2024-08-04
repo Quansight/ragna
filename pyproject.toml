@@ -34,12 +34,12 @@ dependencies = [
     "PyJWT",
     "python-multipart",
     "questionary",
-    "rich<12",
+    "rich",
     "sqlalchemy>=2",
     "starlette",
     "tomlkit",
     "typer",
-    "uvicorn<26",
+    "uvicorn",
 ]
 dynamic = ["version"]
 
