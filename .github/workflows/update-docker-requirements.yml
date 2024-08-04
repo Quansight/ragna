@@ -8,7 +8,6 @@ on:
       - ".github/workflows/update-docker-requirements.yml"
       - "pyproject.toml"
       - "requirements-docker.lock"
-  workflow_dispatch:
 
 permissions:
   pull-requests: write
@@ -48,7 +47,7 @@ jobs:
       - name: Check if commit is associated with a PR
         id: pr-check
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           PR_NUMBER=$(gh api \
             -H 'Accept: application/vnd.github+json' \
@@ -85,6 +84,8 @@ jobs:
         if: failure()
         uses: JasonEtco/create-an-issue@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         with:
           filename: .github/ISSUE_TEMPLATE/DOCKER_ISSUE_TEMPLATE.md
