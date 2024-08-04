@@ -82,5 +82,7 @@ jobs:
         uses: JasonEtco/create-an-issue@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
         with:
           filename: .github/ISSUE_TEMPLATE/DOCKER_ISSUE_TEMPLATE.md

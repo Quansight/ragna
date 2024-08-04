@@ -4,6 +4,6 @@ labels: "bug"
 ---
 
 The workflow 'docker-requirements' has failed. Please check the details at: [Workflow
-Run Details](https://github.com/{{ repository }}/actions/runs/{{ run_id }})
+Run Details](https://github.com/{{ env.REPOSITORY }}/actions/runs/{{ env.RUN_ID }}
 
 Triggered by: @{{ actor }}
