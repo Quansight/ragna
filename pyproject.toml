@@ -34,7 +34,7 @@ dependencies = [
     "PyJWT",
     "python-multipart",
     "questionary",
-    "rich",
+    "rich<13",
     "sqlalchemy>=2",
     "starlette",
     "tomlkit",

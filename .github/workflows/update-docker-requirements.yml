@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test-ci
     paths:
       - ".github/workflows/update-docker-requirements.yml"
       - "pyproject.toml"
