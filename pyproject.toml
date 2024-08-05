@@ -28,9 +28,9 @@ dependencies = [
     "httpx",
     "importlib_metadata>=4.6; python_version<'3.10'",
     "packaging",
-    # FIXME: pin them to released versions
+    # FIXME: pin to a released version
     "bokeh-fastapi",
-    "panel",
+    "panel==1.4.4",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",

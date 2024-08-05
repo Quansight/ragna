@@ -60,9 +60,7 @@ runs:
     - name: Install dev dependencies
       shell: bash -el {0}
       run: |
-        pip install \
-          git+https://github.com/bokeh/bokeh-fastapi.git@main \
-          git+https://github.com/holoviz/panel@7377c9e99bef0d32cbc65e94e908e365211f4421
+        pip install git+https://github.com/bokeh/bokeh-fastapi.git@main
 
     - name: Install ragna
       shell: bash -el {0}
