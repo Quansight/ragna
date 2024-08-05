@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import enum
-import json
 import textwrap
-from typing import Any, Literal, Sequence, cast
+from typing import Any, Literal, Sequence, Union, cast
+
+import pydantic
+import pydantic_core
 
 
 class MetadataOperator(enum.Enum):
@@ -66,32 +68,63 @@ class MetadataFilter:
         else:
             return (self.key == other.key) and (self.value == other.value)
 
-    def _to_json(self) -> dict[str, Any]:
+    def to_primitive(self) -> dict[str, Any]:
         if self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
-            value = [child._to_json() for child in self.value]
+            value = [child.to_primitive() for child in self.value]
         else:
             value = self.value
 
         return {self.operator.name: {self.key: value}}
 
-    def to_json(self) -> str:
-        return json.dumps(self._to_json())
-
     @classmethod
-    def _from_json(cls, json_obj: dict[str, Any]) -> MetadataFilter:
+    def from_primitive(cls, json_obj: dict[str, Any]) -> MetadataFilter:
         operator, key_value = next(iter(json_obj.items()))
         operator = MetadataOperator.__members__[operator]
         key_value = cast(dict[str, Any], key_value)
         key, value = next(iter(key_value.items()))
 
         if operator in {MetadataOperator.AND, MetadataOperator.OR}:
-            value = [cls._from_json(child) for child in value]
+            value = [cls.from_primitive(child) for child in value]
 
         return cls(operator, key, value)
 
     @classmethod
-    def from_json(cls, json_str: str) -> MetadataFilter:
-        return cls._from_json(json.loads(json_str))
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: pydantic.GetCoreSchemaHandler
+    ) -> pydantic_core.CoreSchema:
+        def validate(value: Union[MetadataFilter, dict[str, Any]]) -> MetadataFilter:
+            if isinstance(value, MetadataFilter):
+                return value
+            else:
+                return cls.from_primitive(value)
+
+        def serialize(value: Union[MetadataFilter, dict[str, Any]]) -> dict[str, Any]:
+            if isinstance(value, MetadataFilter):
+                return value.to_primitive()
+            else:
+                return value
+
+        dict_schema = pydantic_core.core_schema.dict_schema(
+            keys_schema=pydantic_core.core_schema.literal_schema(
+                list(MetadataOperator.__members__)
+            ),
+        )
+        return pydantic_core.core_schema.no_info_after_validator_function(
+            # allowed input schemas
+            schema=pydantic_core.core_schema.union_schema(
+                [
+                    pydantic_core.core_schema.is_instance_schema(cls),
+                    dict_schema,
+                ]
+            ),
+            # function to be applied after the input schema check
+            function=validate,
+            serialization=pydantic_core.core_schema.plain_serializer_function_ser_schema(
+                function=serialize,
+                return_schema=dict_schema,
+                when_used="json",
+            ),
+        )
 
     @classmethod
     def raw(cls, value: Any) -> MetadataFilter:

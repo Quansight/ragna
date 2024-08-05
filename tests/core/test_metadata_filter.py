@@ -1,3 +1,4 @@
+import pydantic
 import pytest
 
 from ragna.core import MetadataFilter, MetadataOperator
@@ -70,8 +71,28 @@ def test_self_similarity(metadata_filter):
 
 
 @metadata_filters
-def test_json_roundtrip(metadata_filter):
-    assert MetadataFilter.from_json(metadata_filter.to_json()) == metadata_filter
+def test_primitive_roundtrip(metadata_filter):
+    assert (
+        MetadataFilter.from_primitive(metadata_filter.to_primitive()) == metadata_filter
+    )
+
+
+@metadata_filters
+def test_pydantic(metadata_filter):
+    class Model(pydantic.BaseModel):
+        mf: MetadataFilter
+
+    assert Model(mf=metadata_filter).mf == metadata_filter
+    assert Model(mf=metadata_filter.to_primitive()).mf == metadata_filter
+    assert Model(mf=metadata_filter).model_dump(mode="json") == {
+        "mf": metadata_filter.to_primitive()
+    }
+
+
+@metadata_filters
+def test_pydantic_deserialize(metadata_filter):
+    class Model(pydantic.BaseModel):
+        metadata_filter: MetadataFilter
 
 
 @metadata_filters
