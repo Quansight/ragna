@@ -21,7 +21,30 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     />
   </head>
+  <style>
+      body {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        background-color: ghost-white;
+      }
+
+      .auth {
+        height: 400px;
+        width: 400px;
+        background-color: white;
+        padding: 20px;
+        box-shadow: 20px;
+        background-color: red;
+      }
+
+      {{ __template_css__ }}
+  </style>
   <body>
-    {% block content %}{% endblock %}
+    <div class="auth">
+      {% block content %}{% endblock %}
+    </div>
   </body>
 </html>
