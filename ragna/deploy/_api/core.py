@@ -21,7 +21,14 @@ import ragna
 import ragna.core
 from ragna._compat import aiter, anext
 from ragna._utils import handle_localhost_origins
-from ragna.core import Assistant, Component, Rag, RagnaException, SourceStorage
+from ragna.core import (
+    Assistant,
+    Component,
+    MetadataFilter,
+    Rag,
+    RagnaException,
+    SourceStorage,
+)
 from ragna.core._rag import SpecialChatParams
 from ragna.deploy import Config
 
@@ -214,18 +221,25 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
         core_chat = rag.chat(
-            input=[
-                config.document(
-                    id=document.id,
-                    name=document.name,
-                    metadata=database.get_document(
-                        session,
-                        user=user,
-                        id=document.id,
-                    )[1],
+            input=(
+                chat.metadata.input
+                if (
+                    chat.metadata.input is None
+                    or isinstance(chat.metadata.input, MetadataFilter)
                 )
-                for document in chat.metadata.documents
-            ],
+                else [
+                    config.document(
+                        id=document.id,
+                        name=document.name,
+                        metadata=database.get_document(
+                            session,
+                            user=user,
+                            id=document.id,
+                        )[1],
+                    )
+                    for document in chat.metadata.input
+                ]
+            ),
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,
@@ -245,6 +259,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     ) -> schemas.Chat:
         with get_session() as session:
             chat = schemas.Chat(metadata=chat_metadata)
+            chat.prepared = chat.metadata.input is None or isinstance(
+                chat.metadata.input, MetadataFilter
+            )
 
             # Although we don't need the actual ragna.core.Chat object here,
             # we use it to validate the documents and metadata.

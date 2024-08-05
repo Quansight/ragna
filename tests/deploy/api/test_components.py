@@ -91,7 +91,7 @@ def test_unknown_component(tmp_local_root):
                 "source_storage": "unknown_source_storage",
                 "assistant": "unknown_assistant",
                 "params": {},
-                "documents": [document],
+                "input": [document],
             },
         )
 

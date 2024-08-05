@@ -87,7 +87,7 @@ class ApiWrapper(param.Parameterized):
             "/chats",
             json={
                 "name": name,
-                "documents": documents,
+                "input": documents,
                 "source_storage": source_storage,
                 "assistant": assistant,
                 "params": params,

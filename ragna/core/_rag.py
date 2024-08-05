@@ -191,7 +191,7 @@ class Chat:
                 "Chat is already prepared",
                 chat=self,
                 http_status_code=400,
-                detail=RagnaException.EVENT,
+                http_detail=RagnaException.EVENT,
             )
 
         await self._run(self.source_storage.store, self.documents)
@@ -219,7 +219,7 @@ class Chat:
                 "Chat is not prepared",
                 chat=self,
                 http_status_code=400,
-                detail=RagnaException.EVENT,
+                http_detail=RagnaException.EVENT,
             )
 
         sources = await self._run(
