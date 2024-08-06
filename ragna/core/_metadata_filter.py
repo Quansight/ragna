@@ -23,10 +23,6 @@ class MetadataOperator(enum.Enum):
 
 
 class MetadataFilter:
-    # These are just to be consistent. The actual values have no effect.
-    _RAW_KEY = "filter"
-    _CHILDREN_KEY = "children"
-
     def __init__(self, operator: MetadataOperator, key: str, value: Any) -> None:
         self.operator = operator
         self.key = key
@@ -69,22 +65,26 @@ class MetadataFilter:
             return (self.key == other.key) and (self.value == other.value)
 
     def to_primitive(self) -> dict[str, Any]:
-        if self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+        if self.operator is MetadataOperator.RAW:
+            value = self.value
+        elif self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             value = [child.to_primitive() for child in self.value]
         else:
-            value = self.value
+            value = {self.key: self.value}
 
-        return {self.operator.name: {self.key: value}}
+        return {self.operator.name: value}
 
     @classmethod
-    def from_primitive(cls, json_obj: dict[str, Any]) -> MetadataFilter:
-        operator, key_value = next(iter(json_obj.items()))
-        operator = MetadataOperator.__members__[operator]
-        key_value = cast(dict[str, Any], key_value)
-        key, value = next(iter(key_value.items()))
-
-        if operator in {MetadataOperator.AND, MetadataOperator.OR}:
+    def from_primitive(cls, obj: dict[str, Any]) -> MetadataFilter:
+        operator, value = next(iter(obj.items()))
+        operator = MetadataOperator.__members__[operator.upper()]
+        if operator is MetadataOperator.RAW:
+            key = ""
+        elif operator in {MetadataOperator.AND, MetadataOperator.OR}:
+            key = ""
             value = [cls.from_primitive(child) for child in value]
+        else:
+            key, value = next(iter(cast(dict[str, Any], value).items()))
 
         return cls(operator, key, value)
 
@@ -128,7 +128,7 @@ class MetadataFilter:
 
     @classmethod
     def raw(cls, value: Any) -> MetadataFilter:
-        return cls(MetadataOperator.RAW, cls._RAW_KEY, value)
+        return cls(MetadataOperator.RAW, "", value)
 
     @staticmethod
     def _flatten(
@@ -147,7 +147,7 @@ class MetadataFilter:
     def and_(cls, children: Sequence[MetadataFilter]) -> MetadataFilter:
         return cls(
             MetadataOperator.AND,
-            cls._CHILDREN_KEY,
+            "",
             cls._flatten(MetadataOperator.AND, children),
         )
 
@@ -155,7 +155,7 @@ class MetadataFilter:
     def or_(cls, children: list[MetadataFilter]) -> MetadataFilter:
         return cls(
             MetadataOperator.OR,
-            cls._CHILDREN_KEY,
+            "",
             cls._flatten(MetadataOperator.OR, children),
         )
 
