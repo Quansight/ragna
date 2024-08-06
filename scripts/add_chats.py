@@ -54,13 +54,7 @@ def main():
             "/chats",
             json={
                 "name": "Test chat",
-                # "input": None,
-                "input": MetadataFilter.or_(
-                    [
-                        MetadataFilter.eq("document_id", document["id"])
-                        for document in documents[2:]
-                    ]
-                ).to_primitive(),
+                "input": None,
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
                 "params": {},
