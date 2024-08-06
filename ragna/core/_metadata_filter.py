@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import enum
-import json
 import textwrap
-from typing import Any, Literal, Sequence, cast
+from typing import Any, Literal, Sequence, Union, cast
+
+import pydantic
+import pydantic_core
 
 
 class MetadataOperator(enum.Enum):
@@ -21,10 +23,6 @@ class MetadataOperator(enum.Enum):
 
 
 class MetadataFilter:
-    # These are just to be consistent. The actual values have no effect.
-    _RAW_KEY = "filter"
-    _CHILDREN_KEY = "children"
-
     def __init__(self, operator: MetadataOperator, key: str, value: Any) -> None:
         self.operator = operator
         self.key = key
@@ -66,36 +64,71 @@ class MetadataFilter:
         else:
             return (self.key == other.key) and (self.value == other.value)
 
-    def _to_json(self) -> dict[str, Any]:
-        if self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
-            value = [child._to_json() for child in self.value]
-        else:
+    def to_primitive(self) -> dict[str, Any]:
+        if self.operator is MetadataOperator.RAW:
             value = self.value
+        elif self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+            value = [child.to_primitive() for child in self.value]
+        else:
+            value = {self.key: self.value}
 
-        return {self.operator.name: {self.key: value}}
-
-    def to_json(self) -> str:
-        return json.dumps(self._to_json())
+        return {self.operator.name: value}
 
     @classmethod
-    def _from_json(cls, json_obj: dict[str, Any]) -> MetadataFilter:
-        operator, key_value = next(iter(json_obj.items()))
-        operator = MetadataOperator.__members__[operator]
-        key_value = cast(dict[str, Any], key_value)
-        key, value = next(iter(key_value.items()))
-
-        if operator in {MetadataOperator.AND, MetadataOperator.OR}:
-            value = [cls._from_json(child) for child in value]
+    def from_primitive(cls, obj: dict[str, Any]) -> MetadataFilter:
+        operator, value = next(iter(obj.items()))
+        operator = MetadataOperator.__members__[operator.upper()]
+        if operator is MetadataOperator.RAW:
+            key = ""
+        elif operator in {MetadataOperator.AND, MetadataOperator.OR}:
+            key = ""
+            value = [cls.from_primitive(child) for child in value]
+        else:
+            key, value = next(iter(cast(dict[str, Any], value).items()))
 
         return cls(operator, key, value)
 
     @classmethod
-    def from_json(cls, json_str: str) -> MetadataFilter:
-        return cls._from_json(json.loads(json_str))
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: pydantic.GetCoreSchemaHandler
+    ) -> pydantic_core.CoreSchema:
+        def validate(value: Union[MetadataFilter, dict[str, Any]]) -> MetadataFilter:
+            if isinstance(value, MetadataFilter):
+                return value
+            else:
+                return cls.from_primitive(value)
+
+        def serialize(value: Union[MetadataFilter, dict[str, Any]]) -> dict[str, Any]:
+            if isinstance(value, MetadataFilter):
+                return value.to_primitive()
+            else:
+                return value
+
+        dict_schema = pydantic_core.core_schema.dict_schema(
+            keys_schema=pydantic_core.core_schema.literal_schema(
+                list(MetadataOperator.__members__)
+            ),
+        )
+        return pydantic_core.core_schema.no_info_after_validator_function(
+            # allowed input schemas
+            schema=pydantic_core.core_schema.union_schema(
+                [
+                    pydantic_core.core_schema.is_instance_schema(cls),
+                    dict_schema,
+                ]
+            ),
+            # function to be applied after the input schema check
+            function=validate,
+            serialization=pydantic_core.core_schema.plain_serializer_function_ser_schema(
+                function=serialize,
+                return_schema=dict_schema,
+                when_used="json",
+            ),
+        )
 
     @classmethod
     def raw(cls, value: Any) -> MetadataFilter:
-        return cls(MetadataOperator.RAW, cls._RAW_KEY, value)
+        return cls(MetadataOperator.RAW, "", value)
 
     @staticmethod
     def _flatten(
@@ -114,7 +147,7 @@ class MetadataFilter:
     def and_(cls, children: Sequence[MetadataFilter]) -> MetadataFilter:
         return cls(
             MetadataOperator.AND,
-            cls._CHILDREN_KEY,
+            "",
             cls._flatten(MetadataOperator.AND, children),
         )
 
@@ -122,7 +155,7 @@ class MetadataFilter:
     def or_(cls, children: list[MetadataFilter]) -> MetadataFilter:
         return cls(
             MetadataOperator.OR,
-            cls._CHILDREN_KEY,
+            "",
             cls._flatten(MetadataOperator.OR, children),
         )
 
