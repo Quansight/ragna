@@ -11,16 +11,12 @@ from ragna.source_storages import RagnaDemoSourceStorage
 @pytest.mark.parametrize("input_type", ["corpus", "metadata_filter", "documents"])
 def test_e2e(tmp_local_root, input_type):
     async def main(*, input, source_storage, assistant):
-        chat = Rag().chat(
+        async with Rag().chat(
             input=input,
             source_storage=source_storage,
             assistant=assistant,
-        )
-
-        if not (input is None or isinstance(input, MetadataFilter)):
-            await chat.prepare()
-
-        return await chat.answer("?")
+        ) as chat:
+            return await chat.answer("?")
 
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
