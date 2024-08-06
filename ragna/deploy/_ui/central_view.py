@@ -182,24 +182,73 @@ class CentralView(pn.viewable.Viewer):
         )
         self.on_click_chat_info = None
 
+    def convert_metadata_filters_to_human(self, metadata_filters):
+        operator_map = {
+            "EQ": "==",
+            "NE": "!=",
+            "GT": ">",
+            "LT": "<",
+            "GTE": ">=",
+            "LTE": "<=",
+            "IN": "in",
+            "NOT_IN": "not in",
+            # 'RAW': 'raw'
+        }
+        result = []
+
+        def parse_dict(d):
+            if "AND" in d:
+                return f"({' AND '.join(parse_dict(item) for item in d['AND'])})"
+            if "OR" in d:
+                return f"({' OR '.join(parse_dict(item) for item in d['OR'])})"
+            for key, value in d.items():
+                if key in operator_map:
+                    # Assuming the value is a dictionary with a single key-value pair
+                    field, val = next(iter(value.items()))
+                    return f"{field} {operator_map[key]} {val}"
+
+        for key, value in metadata_filters.items():
+            result.append(parse_dict({key: value}))
+        return " AND ".join(result).strip("()")
+
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is None:
             return
 
-        pills = "".join(
-            [
-                f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                for d in self.current_chat["metadata"]["documents"]
-            ]
-        )
+        if isinstance(self.current_chat["metadata"]["input"], list):
+            # Documents
+            title = "Uploaded Files"
 
-        grid_height = len(self.current_chat["metadata"]["documents"]) // 3
+            pills = "".join(
+                [
+                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                    for d in self.current_chat["metadata"]["input"]
+                ]
+            )
+
+            details = f"<div class='details'>{pills}</div><br />\n\n"
+            grid_height = len(self.current_chat["metadata"]["input"]) // 3
+
+        elif isinstance(self.current_chat["metadata"]["input"], dict):
+            # Metadata filters
+            title = "Metadata Filters"
+            metadata_filters_readable = self.convert_metadata_filters_to_human(
+                self.current_chat["metadata"]["input"]
+            )
+
+            details = f"<div class='details details_block' style='display:block;'>{metadata_filters_readable}</div><br />\n\n"
+            grid_height = 1
+
+        else:
+            title = ""
+            pills = ""
+            grid_height = 1
 
         markdown = "\n".join(
             [
                 "To change configurations, start a new chat.\n",
-                "**Uploaded Files**",
-                f"<div class='pills_list'>{pills}</div><br />\n\n",
+                f"**{title}**",
+                details,
                 "----",
                 "**Source Storage**",
                 f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
@@ -225,11 +274,17 @@ class CentralView(pn.viewable.Viewer):
                     # The CSS rule below relies on a variable value, so we can't move it into modifers
                     stylesheets=[
                         ui.css(
-                            ":host(.chat_info_markdown) .pills_list",
+                            ":host(.chat_info_markdown) .details",
                             {
                                 "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
                             },
-                        )
+                        ),
+                        ui.css(
+                            ":host(.chat_info_markdown) .details_block",
+                            {
+                                "display": "block",
+                            },
+                        ),
                     ],
                 ),
             ],

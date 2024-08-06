@@ -1,0 +1,6 @@
+:host(.metadata-filter-key),
+:host(.metadata-filter-operator) {
+  max-width: 30%;
+  min-width: 30%;
+  height: 30px;
+}

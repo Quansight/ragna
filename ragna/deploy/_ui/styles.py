@@ -50,7 +50,13 @@ css_modifiers = {
         pn.widgets.IntSlider,
         pn.layout.Card,
         pn.Row,
+        pn.Column,
         pn.widgets.Button,
+        pn.widgets.ButtonIcon,
+        pn.widgets.Select,
+        pn.widgets.TextInput,
+        pn.widgets.Checkbox,
+        pn.widgets.RadioBoxGroup,
     ],
 }
 

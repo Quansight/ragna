@@ -124,8 +124,11 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
-        self.corpus_or_upload_radiobutton = pn.widgets.RadioButtonGroup.from_param(
-            self.param.corpus_or_upload, inline=True, title=""
+        self.corpus_or_upload_radiobutton = pn.widgets.RadioBoxGroup.from_param(
+            self.param.corpus_or_upload,
+            inline=True,
+            title="",
+            css_classes=["modal_configuration_radio_button_group"],
         )
 
         self.metadata_filters_builder = MetadataFiltersBuilder()
