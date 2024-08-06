@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 
 import panel as pn
@@ -6,6 +7,10 @@ import param
 from . import js
 from . import styles as ui
 from .components.file_uploader import FileUploader
+from .components.metadata_filters_builder import MetadataFiltersBuilder
+
+USE_CORPUS_LABEL = "Use existing corpus"
+USE_UPLOAD_LABEL = "Upload new documents"
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -77,6 +82,10 @@ class ModalConfiguration(pn.viewable.Viewer):
 
     advanced_config_collapsed = param.Boolean(default=True)
 
+    corpus_or_upload = param.Selector(
+        objects=[USE_CORPUS_LABEL, USE_UPLOAD_LABEL], default=USE_CORPUS_LABEL
+    )
+
     def __init__(self, api_wrapper, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
@@ -115,17 +124,32 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
+        self.corpus_or_upload_radiobutton = pn.widgets.RadioButtonGroup.from_param(
+            self.param.corpus_or_upload, inline=True, title=""
+        )
+
+        self.metadata_filters_builder = MetadataFiltersBuilder()
+
     def did_click_on_start_chat_button(self, event):
-        if not self.document_uploader.can_proceed_to_upload():
-            self.change_upload_files_label("missing_file")
-        else:
+        if self.corpus_or_upload == USE_UPLOAD_LABEL:
+            if not self.document_uploader.can_proceed_to_upload():
+                self.change_upload_files_label("missing_file")
+            else:
+                self.start_chat_button.disabled = True
+                self.document_uploader.perform_upload(event, self.did_finish_upload)
+
+        elif self.corpus_or_upload == USE_CORPUS_LABEL:
             self.start_chat_button.disabled = True
-            self.document_uploader.perform_upload(event, self.did_finish_upload)
+
+            asyncio.ensure_future(
+                self.did_finish_upload(
+                    self.metadata_filters_builder.get_metadata_filters()
+                )
+            )
 
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
-
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
@@ -311,6 +335,15 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         return pn.Column(toggle_button, card)
 
+    @pn.depends("corpus_or_upload")
+    def corpus_or_upload_row(self):
+        print(self.corpus_or_upload)
+
+        if self.corpus_or_upload == USE_CORPUS_LABEL:
+            return self.metadata_filters_builder
+        else:
+            return pn.Column(self.upload_files_label, self.upload_row)
+
     def __panel__(self):
         return pn.Column(
             pn.pane.HTML(
@@ -327,8 +360,8 @@ class ModalConfiguration(pn.viewable.Viewer):
             ui.divider(),
             self.advanced_config_ui,
             ui.divider(),
-            self.upload_files_label,
-            self.upload_row,
+            self.corpus_or_upload_radiobutton,
+            self.corpus_or_upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
             min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
             min_width=ui.CONFIG_MODAL_WIDTH,
