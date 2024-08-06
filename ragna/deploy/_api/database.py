@@ -134,7 +134,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
                 schemas.Source(
                     id=source.id,
                     document_id=source.document_id,
-                    document_name=source.document_name,
+                    document_name=source.document.name,
                     location=source.location,
                     content=source.content,
                     num_tokens=source.num_tokens,
@@ -213,7 +213,6 @@ def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Sourc
         orm_source = orm.Source(
             id=source.id,
             document_id=source.document_id,
-            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,

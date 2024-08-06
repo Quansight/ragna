@@ -1,12 +1,27 @@
 import asyncio
 
+import pytest
+
 from ragna import Rag
 from ragna.assistants import RagnaDemoAssistant
-from ragna.core import LocalDocument, Message, MessageRole
+from ragna.core import LocalDocument, Message, MessageRole, MetadataFilter
 from ragna.source_storages import RagnaDemoSourceStorage
 
 
-def test_e2e(tmp_local_root):
+@pytest.mark.parametrize("input_type", ["corpus", "metadata_filter", "documents"])
+def test_e2e(tmp_local_root, input_type):
+    async def main(*, input, source_storage, assistant):
+        chat = Rag().chat(
+            input=input,
+            source_storage=source_storage,
+            assistant=assistant,
+        )
+
+        if not (input is None or isinstance(input, MetadataFilter)):
+            await chat.prepare()
+
+        return await chat.answer("?")
+
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
     document_path = document_root / "test.txt"
@@ -15,22 +30,25 @@ def test_e2e(tmp_local_root):
 
     document = LocalDocument.from_path(document_path)
 
-    async def main(*, documents, source_storage, assistant):
-        async with Rag().chat(
-            input=documents,
-            source_storage=source_storage,
-            assistant=assistant,
-        ) as chat:
-            return await chat.answer("?")
+    source_storage = RagnaDemoSourceStorage()
+    if input_type == "documents":
+        input = [document]
+    else:
+        source_storage.store([document])
+
+        if input_type == "corpus":
+            input = None
+        elif input_type == "metadata_filter":
+            input = MetadataFilter.eq("document_id", str(document.id))
 
     answer = asyncio.run(
         main(
-            documents=[document],
-            source_storage=RagnaDemoSourceStorage,
+            input=input,
+            source_storage=source_storage,
             assistant=RagnaDemoAssistant,
         )
     )
 
     assert isinstance(answer, Message)
     assert answer.role is MessageRole.ASSISTANT
-    assert {source.document.name for source in answer.sources} == {document.name}
+    assert {source.document_name for source in answer.sources} == {document.name}
