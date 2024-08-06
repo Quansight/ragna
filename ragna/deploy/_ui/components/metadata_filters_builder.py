@@ -1,35 +1,50 @@
+from datetime import datetime
+
 import panel as pn
 import param
 
 from ragna.core._metadata_filter import MetadataFilter
+
+METADATA_FILTERS = {
+    "document_name": {"type": str},
+    "document_size": {"type": int},
+    "document_last_modified": {"type": datetime},
+    "document_extension": {"type": str},
+    "document_created": {"type": datetime},
+    "ingestion_date": {"type": datetime},
+    # "path" : {"type":str},
+}
+
+
+FILTERS_PER_TYPE = {
+    str: ["==", "!=", "in", "not in"],
+    int: ["==", "!=", ">", "<", ">=", "<=", "in", "not in"],
+    datetime: ["==", "!=", ">", "<", ">=", "<="],
+}
+
+PLACEHOLDERS_PER_METADATA_KEY = {
+    "document_name": "",
+    "document_size": "",
+    "document_last_modified": "YYYY-mm-dd HH:MM:SS",
+    "document_extension": "",
+    "document_created": "YYYY-mm-dd HH:MM:SS",
+    "ingestion_date": "YYYY-mm-dd HH:MM:SS",
+    # "path" : "path/to/document",
+}
 
 
 class FilterRow(pn.viewable.Viewer):
     key = param.Selector(
         objects=[
             "",  # empty one for the first row
-            # hardcoded list for now
-            "document_name",
-            "document_size",
-            "document_last_modified",
-            "document_extension",
-            "document_created",
-            "ingestion_date",
-            # "path"
+            *METADATA_FILTERS.keys(),
         ],
         default="",
     )
     operator = param.Selector(
         objects=[
             "",  # empty one for the first row
-            "==",
-            "!=",
-            ">",
-            "<",
-            ">=",
-            "<=",
-            "in",
-            "not in",
+            # Filled later based on the key
             # "raw"
         ]
     )
@@ -38,11 +53,31 @@ class FilterRow(pn.viewable.Viewer):
     def __init__(self, **params):
         super().__init__(**params)
 
+    @param.depends("key", watch=True)
+    def key_did_change(self):
+        if self.key == "":
+            self.operator = ""
+            return
+
+        self.param.operator.objects = [""] + FILTERS_PER_TYPE[
+            METADATA_FILTERS[self.key]["type"]
+        ]
+
+    @param.depends("key", watch=True)
+    def value_text_input(self):
+        placeholder = ""
+        if self.key != "":
+            placeholder = PLACEHOLDERS_PER_METADATA_KEY[self.key]
+
+        return pn.widgets.TextInput.from_param(
+            self.param.value, name="", placeholder=placeholder
+        )
+
     def __panel__(self):
         return pn.Row(
             pn.widgets.Select.from_param(self.param.key, name=""),
             pn.widgets.Select.from_param(self.param.operator, name=""),
-            pn.widgets.TextInput.from_param(self.param.value, name=""),
+            self.value_text_input,
             # sizing_mode="stretch_width",
         )
 
@@ -83,12 +118,7 @@ class FilterRow(pn.viewable.Viewer):
 
 
 class MetadataFiltersBuilder(pn.viewable.Viewer):
-    metadata_filters = param.List(
-        [
-            # FilterRow(key="", operator="", value="")
-            FilterRow(key="document_name", operator="==", value="applications.md")
-        ]
-    )
+    metadata_filters = param.List([FilterRow(key="", operator="", value="")])
 
     def __init__(self, **params):
         super().__init__(**params)

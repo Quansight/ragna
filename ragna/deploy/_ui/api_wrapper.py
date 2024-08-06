@@ -95,8 +95,8 @@ class ApiWrapper(param.Parameterized):
         )
         chat = response.raise_for_status().json()
 
-        response = await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
-        response.raise_for_status()
+        # response = await self.client.post(f"/chats/{chat['id']}/prepare", timeout=None)
+        # response.raise_for_status()
 
         return chat["id"]
 
