@@ -81,6 +81,28 @@ def add_documents(
     session.commit()
 
 
+def _orm_to_schema_document(document: orm.Document) -> schemas.Document:
+    return schemas.Document(id=document.id, name=document.name)
+
+
+def get_documents(
+    session: Session,
+    *,
+    user: str,
+) -> list[schemas.Document]:
+    return [
+        _orm_to_schema_document(document)
+        for document in session.execute(
+            select(orm.Document).where(
+                (orm.Document.user_id == _get_user_id(session, user))
+            )
+        )
+        .scalars()
+        .unique()
+        .all()
+    ]
+
+
 @functools.lru_cache(maxsize=1024)
 def get_document(
     session: Session, *, user: str, id: uuid.UUID

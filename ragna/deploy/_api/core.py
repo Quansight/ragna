@@ -244,6 +244,30 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
             return document
 
+    @app.get("/documents")
+    async def get_documents(user: UserDependency) -> list[schemas.Document]:
+        with get_session() as session:
+            return database.get_documents(session, user=user)
+
+    @app.get("/documents/{id}")
+    async def get_document(user: UserDependency, id: uuid.UUID) -> schemas.Document:
+        with get_session() as session:
+            document, _ = database.get_document(session, user=user, id=id)
+            return document
+
+    @app.get("/documents/{id}/content")
+    async def get_document_content(user: UserDependency, id: uuid.UUID) -> bytes:
+        with get_session() as session:
+            _, metadata = database.get_document(session, user=user, id=id)
+            if "path" not in metadata:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Document path not found",
+                )
+            with aiofiles.open(metadata["path"], "rb") as file:
+                while content := await file.read(1024):
+                    yield content
+
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
