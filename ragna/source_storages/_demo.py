@@ -35,7 +35,7 @@ class RagnaDemoSourceStorage(SourceStorage):
         self._storage.extend(
             [
                 dict(
-                    document_id=document.id,
+                    document_id=str(document.id),
                     document_name=document.name,
                     **document.metadata,
                     __id__=str(uuid.uuid4()),

@@ -81,7 +81,7 @@ class Chroma(VectorDatabaseSourceStorage):
             metadatas=metadatas,  # type: ignore[arg-type]
         )
 
-    # https://docs.trychroma.com/usage-guide#using-where-filters
+    # https://docs.trychroma.com/guides#using-where-filters
     _METADATA_OPERATOR_MAP = {
         MetadataOperator.AND: "$and",
         MetadataOperator.OR: "$or",

@@ -103,7 +103,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             )
 
         assert message["role"] == "assistant"
-        assert {source["document"]["name"] for source in message["sources"]} == {
+        assert {source["document_name"] for source in message["sources"]} == {
             document_path.name
         }
 

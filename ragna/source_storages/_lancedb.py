@@ -157,7 +157,8 @@ class LanceDB(VectorDatabaseSourceStorage):
             (
                 Source(
                     id=result["id"],
-                    document=document_map[result["document_id"]],
+                    document_id=uuid.UUID(result["document_id"]),
+                    document_name=document_map[result["document_id"]].name,
                     # For some reason adding an empty string during store() results
                     # in this field being None. Thus, we need to parse it back here.
                     # TODO: See if there is a configuration option for this
