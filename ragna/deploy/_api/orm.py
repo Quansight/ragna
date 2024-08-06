@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy import Column, ForeignKey, Table, types
 from sqlalchemy.engine import Dialect
@@ -19,14 +19,16 @@ class Json(types.TypeDecorator):
 
     cache_ok = True
 
-    def process_bind_param(self, value: Any, dialect: Dialect) -> str:
+    def process_bind_param(self, value: Any, dialect: Dialect) -> Optional[str]:
+        if value is None:
+            return value
+
         return json.dumps(value)
 
-    def process_result_value(
-        self,
-        value: str,  # type: ignore[override]
-        dialect: Dialect,
-    ) -> Any:
+    def process_result_value(self, value: Optional[str], dialect: Dialect) -> Any:
+        if value is None:
+            return value
+
         return json.loads(value)
 
 
@@ -72,12 +74,27 @@ class Document(Base):
     )
 
 
+class MetadataFilter(Base):
+    __tablename__ = "metadata_filters"
+
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
+    user_id = Column(ForeignKey("users.id"))
+
+    data = Column(Json, nullable=False)
+
+    chat_id = Column(ForeignKey("chats.id"), nullable=True)
+    chat = relationship("Chat", back_populates="metadata_filter", uselist=False)
+
+
 class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     user_id = Column(ForeignKey("users.id"))
     name = Column(types.String, nullable=False)
+    metadata_filter = relationship(
+        "MetadataFilter", back_populates="chat", uselist=False
+    )
     documents = relationship(
         "Document",
         secondary=document_chat_association_table,
