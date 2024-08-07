@@ -1,5 +1,5 @@
 import uuid
-from typing import TYPE_CHECKING, Optional, cast
+from typing import Any, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -12,9 +12,6 @@ from ragna.core import (
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
-
-if TYPE_CHECKING:
-    from lancedb.table import LanceTable
 
 
 class LanceDB(VectorDatabaseSourceStorage):
@@ -64,7 +61,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
-    def _get_table(self, corpus_name: Optional[str] = None) -> LanceTable:
+    def _get_table(self, corpus_name: Optional[str] = None) -> Any:
         return self._db.create_table(
             name=corpus_name or self._embedding_id,
             schema=self._schema,
