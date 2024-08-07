@@ -119,6 +119,8 @@ class LocalDocument(Document):
 
         path = Path(path).expanduser().resolve()
         metadata["path"] = str(path)
+        metadata["extension"] = "".join(path.suffixes)
+        metadata["size"] = path.stat().st_size
 
         return cls(id=id, name=path.name, metadata=metadata, handler=handler)
 
