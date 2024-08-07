@@ -44,28 +44,26 @@ class LanceDB(VectorDatabaseSourceStorage):
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
 
-        fields = [
-            pa.field("id", pa.string()),
-            pa.field("document_id", pa.string()),
-            pa.field("document_name", pa.string()),
-            pa.field("page_numbers", pa.string()),
-            pa.field("text", pa.string()),
-            pa.field(
-                self._VECTOR_COLUMN_NAME,
-                pa.list_(pa.float32(), self._embedding_dimensions),
-            ),
-            pa.field("num_tokens", pa.int32()),
-        ]
-
-        self._schema = pa.schema(fields)
+        self._schema = pa.schema(
+            [
+                pa.field("id", pa.string()),
+                pa.field("document_id", pa.string()),
+                pa.field("document_name", pa.string()),
+                pa.field("page_numbers", pa.string()),
+                pa.field("text", pa.string()),
+                pa.field(
+                    self._VECTOR_COLUMN_NAME,
+                    pa.list_(pa.float32(), self._embedding_dimensions),
+                ),
+                pa.field("num_tokens", pa.int32()),
+            ]
+        )
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
     def _get_table(self, corpus_name: Optional[str] = None):
-
-        table_name = corpus_name or self._embedding_id
         return self._db.create_table(
-            name=table_name,
+            name=corpus_name or self._embedding_id,
             schema=self._schema,
             exist_ok=True,
         )
@@ -78,19 +76,19 @@ class LanceDB(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-
         table = self._get_table(corpus_name)
-        all_fields = list(
-            set(table.schema.names)
-            | set([k for doc in documents for k in doc.metadata.keys()])
-        )
-        missing_fields = [
-            field for field in all_fields if field not in table.schema.names
-        ]
+        document_fields = {
+            field for document in documents for field in document.metadata.keys()
+        }
+        schema_fields = set(table.schema.names)
+        missing_fields = document_fields - schema_fields
 
         if missing_fields:
             table.add_columns({field: "''" for field in missing_fields})
             self._schema = table.schema
+
+        extra_fields = schema_fields - document_fields
+        extra_metadata = {field: "''" for field in extra_fields}
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -101,13 +99,9 @@ class LanceDB(VectorDatabaseSourceStorage):
                 table.add(
                     [
                         {
-                            field: "''" for field in all_fields
-                        }  # ensure all columns exist
-                        | {
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
                             "document_name": str(document.name),
-                            **document.metadata,
                             "page_numbers": self._page_numbers_to_str(
                                 chunk.page_numbers
                             ),
@@ -116,6 +110,10 @@ class LanceDB(VectorDatabaseSourceStorage):
                                 [chunk.text]
                             )[0],
                             "num_tokens": chunk.num_tokens,
+                            # Unpacking the default metadata first so it can be
+                            # overwritten by concrete values if present
+                            **extra_metadata,
+                            **document.metadata,
                         }
                     ]
                 )
