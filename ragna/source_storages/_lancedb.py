@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -12,6 +12,9 @@ from ragna.core import (
 )
 
 from ._vector_database import VectorDatabaseSourceStorage
+
+if TYPE_CHECKING:
+    from lancedb.table import LanceTable
 
 
 class LanceDB(VectorDatabaseSourceStorage):
@@ -61,7 +64,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
-    def _get_table(self, corpus_name: Optional[str] = None):
+    def _get_table(self, corpus_name: Optional[str] = None) -> LanceTable:
         return self._db.create_table(
             name=corpus_name or self._embedding_id,
             schema=self._schema,
@@ -77,6 +80,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         chunk_overlap: int = 250,
     ) -> None:
         table = self._get_table(corpus_name)
+
         document_fields = {
             field for document in documents for field in document.metadata.keys()
         }
