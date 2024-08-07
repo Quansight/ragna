@@ -87,8 +87,7 @@ class LanceDB(VectorDatabaseSourceStorage):
             table.add_columns({field: "''" for field in missing_fields})
             self._schema = table.schema
 
-        extra_fields = schema_fields - document_fields
-        extra_metadata = {field: "''" for field in extra_fields}
+        default_metadata = {field: "''" for field in table.schema.names}
 
         for document in documents:
             for chunk in self._chunk_pages(
@@ -99,6 +98,10 @@ class LanceDB(VectorDatabaseSourceStorage):
                 table.add(
                     [
                         {
+                            # Unpacking the default metadata first so it can be
+                            # overwritten by concrete values if present
+                            **default_metadata,
+                            **document.metadata,
                             "id": str(uuid.uuid4()),
                             "document_id": str(document.id),
                             "document_name": str(document.name),
@@ -110,10 +113,6 @@ class LanceDB(VectorDatabaseSourceStorage):
                                 [chunk.text]
                             )[0],
                             "num_tokens": chunk.num_tokens,
-                            # Unpacking the default metadata first so it can be
-                            # overwritten by concrete values if present
-                            **extra_metadata,
-                            **document.metadata,
                         }
                     ]
                 )
