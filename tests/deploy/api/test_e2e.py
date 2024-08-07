@@ -65,7 +65,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             "source_storage": source_storage,
             "assistant": assistant,
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
-            "documents": [document],
+            "input": [document],
         }
         chat = client.post("/chats", json=chat_metadata).raise_for_status().json()
         assert chat["metadata"] == chat_metadata
@@ -103,7 +103,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             )
 
         assert message["role"] == "assistant"
-        assert {source["document"]["name"] for source in message["sources"]} == {
+        assert {source["document_name"] for source in message["sources"]} == {
             document_path.name
         }
 

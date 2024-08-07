@@ -4,6 +4,7 @@ import os
 
 import httpx
 
+from ragna.core import MetadataFilter
 from ragna.core._utils import default_user
 
 
@@ -53,7 +54,7 @@ def main():
             "/chats",
             json={
                 "name": "Test chat",
-                "documents": documents[:2],
+                "input": None,
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
                 "params": {},
@@ -63,7 +64,6 @@ def main():
         .json()
     )
 
-    client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
     client.post(
         f"/chats/{chat['id']}/answer",
         json={"prompt": "Hello!"},
@@ -76,7 +76,7 @@ def main():
             "/chats",
             json={
                 "name": f"Chat {datetime.datetime.now():%x %X}",
-                "documents": documents[2:4],
+                "input": documents[:2],
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
                 "params": {},
@@ -102,7 +102,12 @@ def main():
                     "Really long chat name that likely needs to be truncated somehow. "
                     "If you can read this, truncating failed :boom:"
                 ),
-                "documents": [documents[i] for i in [0, 2, 4]],
+                "input": MetadataFilter.or_(
+                    [
+                        MetadataFilter.eq("document_id", document["id"])
+                        for document in documents[2:]
+                    ]
+                ).to_primitive(),
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
                 "params": {},
@@ -111,7 +116,6 @@ def main():
         .raise_for_status()
         .json()
     )
-    client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
     client.post(
         f"/chats/{chat['id']}/answer",
         json={"prompt": "Hello!"},

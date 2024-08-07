@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.orm import sessionmaker as _sessionmaker
 
-from ragna.core import RagnaException
+from ragna.core import MetadataFilter, RagnaException
 
 from . import orm, schemas
 
@@ -95,21 +95,44 @@ def get_document(
 
 
 def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
-    document_ids = {document.id for document in chat.metadata.documents}
-    documents = (
-        session.execute(select(orm.Document).where(orm.Document.id.in_(document_ids)))
-        .scalars()
-        .all()
-    )
-    if len(documents) != len(document_ids):
-        raise RagnaException(
-            str(set(document_ids) - {document.id for document in documents})
+    user_id = _get_user_id(session, user)
+
+    documents: list[orm.Document]
+    if chat.metadata.input is None:
+        metadata_filter = None
+        documents = []
+    elif isinstance(chat.metadata.input, MetadataFilter):
+        metadata_filter = orm.MetadataFilter(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            data=chat.metadata.input.to_primitive(),
         )
+        session.add(metadata_filter)
+        session.commit()
+        session.refresh(metadata_filter)
+
+        documents = []
+    else:
+        metadata_filter = None
+        document_ids = {document.id for document in chat.metadata.input}
+        documents = (
+            session.execute(
+                select(orm.Document).where(orm.Document.id.in_(document_ids))
+            )
+            .scalars()
+            .all()
+        )
+        if len(documents) != len(document_ids):
+            raise RagnaException(
+                str(set(document_ids) - {document.id for document in documents})
+            )
+
     session.add(
         orm.Chat(
             id=chat.id,
-            user_id=_get_user_id(session, user),
+            user_id=user_id,
             name=chat.metadata.name,
+            metadata_filter=metadata_filter,
             documents=documents,
             source_storage=chat.metadata.source_storage,
             assistant=chat.metadata.assistant,
@@ -121,10 +144,15 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
 
 
 def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
-    documents = [
-        schemas.Document(id=document.id, name=document.name)
-        for document in chat.documents
-    ]
+    if chat.metadata_filter is not None:
+        input = MetadataFilter.from_primitive(chat.metadata_filter.data)
+    elif chat.documents:
+        input = [
+            schemas.Document(id=document.id, name=document.name)
+            for document in chat.documents
+        ]
+    else:
+        input = None
     messages = [
         schemas.Message(
             id=message.id,
@@ -134,7 +162,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
                 schemas.Source(
                     id=source.id,
                     document_id=source.document_id,
-                    document_name=source.document_name,
+                    document_name=source.document.name,
                     location=source.location,
                     content=source.content,
                     num_tokens=source.num_tokens,
@@ -149,7 +177,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
         id=chat.id,
         metadata=schemas.ChatMetadata(
             name=chat.name,
-            documents=documents,
+            input=input,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
             params=chat.params,
@@ -213,7 +241,6 @@ def _schema_to_orm_source(session: Session, source: schemas.Source) -> orm.Sourc
         orm_source = orm.Source(
             id=source.id,
             document_id=source.document_id,
-            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,

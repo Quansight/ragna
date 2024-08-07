@@ -181,26 +181,18 @@ class Chat:
 
         Returns:
             Welcome message.
-
-        Raises:
-            ragna.core.RagnaException: If chat is already
-                [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if self._prepared or self.documents is None:
-            raise RagnaException(
-                "Chat is already prepared",
-                chat=self,
-                http_status_code=400,
-                detail=RagnaException.EVENT,
-            )
-
-        await self._run(self.source_storage.store, self.documents)
-        self._prepared = True
-
         welcome = Message(
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
+
+        if self._prepared:
+            return welcome
+
+        await self._run(self.source_storage.store, self.documents)
+        self._prepared = True
+
         self._messages.append(welcome)
         return welcome
 
@@ -219,7 +211,7 @@ class Chat:
                 "Chat is not prepared",
                 chat=self,
                 http_status_code=400,
-                detail=RagnaException.EVENT,
+                http_detail=RagnaException.EVENT,
             )
 
         sources = await self._run(

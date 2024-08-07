@@ -140,7 +140,7 @@ def test_start_chat(config, page: Page) -> None:
         ).json()
         assert len(chats) == 1
         chat = chats[0]
-        chat_documents = chat["metadata"]["documents"]
+        chat_documents = chat["metadata"]["input"]
         assert len(chat_documents) == 1
         assert chat_documents[0]["name"] == document_name
 

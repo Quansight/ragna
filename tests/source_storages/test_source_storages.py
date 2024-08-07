@@ -91,7 +91,6 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, n_expected_s
         )
 
     source_storage = source_storage_cls()
-
     source_storage.store(documents)
 
     prompt = "What is the secret number?"
