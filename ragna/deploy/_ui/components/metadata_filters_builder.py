@@ -53,28 +53,45 @@ class FilterRow(pn.viewable.Viewer):
     def __init__(self, on_delete_callback, **params):
         super().__init__(**params)
 
-        self.delete_button = pn.widgets.ButtonIcon(
-            icon="trash",
-            width=25,
-            height=25,
-            description="Delete metadata filter",
-            css_classes=["metadata-filter", "metadata-filter-delete"],
+        self.key_select = pn.widgets.Select.from_param(
+            self.param.key,
+            name="",
+            css_classes=["metadata-filter", "metadata-filter-key"],
         )
-        self.delete_button.on_click(on_delete_callback)
+
+        self.operator_select = pn.widgets.Select.from_param(
+            self.param.operator,
+            name="",
+            css_classes=["metadata-filter", "metadata-filter-operator"],
+            disabled=True,
+        )
 
         self.value_text_input = pn.widgets.TextInput.from_param(
             self.param.value,
             name="",
             placeholder="",
             css_classes=["metadata-filter", "metadata-filter-value"],
+            disabled=True,
         )
+
+        self.delete_button = pn.widgets.ButtonIcon(
+            icon="trash",
+            width=25,
+            height=25,
+            css_classes=["metadata-filter", "metadata-filter-delete"],
+        )
+        self.delete_button.on_click(on_delete_callback)
 
     @param.depends("key", watch=True)
     def key_did_change(self):
         if self.key == "":
             self.operator = ""
+            self.value_text_input.disabled = True
+            self.operator_select.disabled = True
             return
 
+        self.value_text_input.disabled = False
+        self.operator_select.disabled = False
         self.param.operator.objects = [""] + FILTERS_PER_TYPE[
             METADATA_FILTERS[self.key]["type"]
         ]
@@ -89,22 +106,61 @@ class FilterRow(pn.viewable.Viewer):
 
     def __panel__(self):
         return pn.Row(
-            pn.widgets.Select.from_param(
-                self.param.key,
-                name="",
-                css_classes=["metadata-filter", "metadata-filter-key"],
-            ),
-            pn.widgets.Select.from_param(
-                self.param.operator,
-                name="",
-                css_classes=["metadata-filter", "metadata-filter-operator"],
-            ),
+            self.key_select,
+            self.operator_select,
             self.value_text_input,
             self.delete_button,
         )
 
     def is_empty(self):
         return self.key == "" and self.operator == "" and self.value == ""
+
+    def validate_value(self):
+        if self.value == "":
+            return False
+
+        if METADATA_FILTERS[self.key]["type"] == int:
+            try:
+                int(self.value)
+            except ValueError:
+                return False
+        elif METADATA_FILTERS[self.key]["type"] == datetime:
+            try:
+                datetime.strptime(self.value, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return False
+
+        return True
+
+    def validate(self):
+        def change_valid_status(valid, widget):
+            if valid:
+                widget.css_classes = [
+                    c for c in widget.css_classes if c != "metadata-filter-error"
+                ]
+            else:
+                widget.css_classes = widget.css_classes + ["metadata-filter-error"]
+
+        if self.key == "":
+            change_valid_status(False, self.key_select)
+            return False
+
+        change_valid_status(True, self.key_select)
+
+        result = True
+        if self.operator == "":
+            change_valid_status(False, self.operator_select)
+            result = False
+        else:
+            change_valid_status(True, self.operator_select)
+
+        if not self.validate_value():
+            change_valid_status(False, self.value_text_input)
+            result = False
+        else:
+            change_valid_status(True, self.value_text_input)
+
+        return result
 
     def __str__(self):
         return f"{self.key} {self.operator} {self.value}"
@@ -146,7 +202,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         super().__init__(**params)
 
         self.add_filter_button = pn.widgets.ButtonIcon(
-            icon="circle-plus", width=25, height=25, description="New metadata filter"
+            icon="circle-plus", width=25, height=25
         )
         self.add_filter_button.on_click(self.did_click_add_filter_button)
 
@@ -203,6 +259,15 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
                     if f.get_metadata_filter() is not None
                 ]
             ).to_primitive()
+
+    def validate(self):
+        result = True
+        for filter in self.metadata_filters:
+            if not filter.validate():
+                result = False
+                # Do not break, we want to call validate() on every filters
+
+        return result
 
     def __panel__(self):
         return pn.Column(

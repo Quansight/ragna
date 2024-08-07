@@ -142,8 +142,11 @@ class ModalConfiguration(pn.viewable.Viewer):
                 self.document_uploader.perform_upload(event, self.did_finish_upload)
 
         elif self.corpus_or_upload == USE_CORPUS_LABEL:
-            self.start_chat_button.disabled = True
+            if not self.metadata_filters_builder.validate():
+                # The Metadata Filters Builder updates its UI when calling validate()
+                return
 
+            self.start_chat_button.disabled = True
             asyncio.ensure_future(
                 self.did_finish_upload(
                     self.metadata_filters_builder.get_metadata_filters()

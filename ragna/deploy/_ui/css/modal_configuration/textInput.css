@@ -3,3 +3,7 @@
   min-width: 25%;
   height: 30px;
 }
+
+:host(.metadata-filter-error) input.bk-input {
+  border: 2px red solid !important;
+}
