@@ -263,6 +263,14 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
     def validate(self):
         result = True
         for filter in self.metadata_filters:
+            # If the last filter is empty, and we have other filters, we do not want to validate it
+            if (
+                len(self.metadata_filters) > 1
+                and filter == self.metadata_filters[-1]
+                and filter.is_empty()
+            ):
+                continue
+
             if not filter.validate():
                 result = False
                 # Do not break, we want to call validate() on every filters
