@@ -8,11 +8,8 @@ from ragna.core._metadata_filter import MetadataFilter
 METADATA_FILTERS = {
     "document_name": {"type": str},
     "file_size": {"type": int},
-    "document_last_modified": {"type": datetime},
     "file_extension": {"type": str},
-    "document_created": {"type": datetime},
-    "ingestion_date": {"type": datetime},
-    # "path" : {"type":str},
+    # "creation_date": {"type": datetime},
 }
 
 
@@ -25,11 +22,8 @@ FILTERS_PER_TYPE = {
 PLACEHOLDERS_PER_METADATA_KEY = {
     "document_name": "",
     "file_size": "",
-    "document_last_modified": "YYYY-mm-dd HH:MM:SS",
-    "document_extension": "",
-    "document_created": "YYYY-mm-dd HH:MM:SS",
-    "ingestion_date": "YYYY-mm-dd HH:MM:SS",
-    # "path" : "path/to/document",
+    "file_extension": "",
+    # "creation_date": "YYYY-mm-dd HH:MM:SS",
 }
 
 
