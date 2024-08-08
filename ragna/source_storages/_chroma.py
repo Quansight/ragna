@@ -103,12 +103,15 @@ class Chroma(VectorDatabaseSourceStorage):
         elif metadata_filter.operator is MetadataOperator.RAW:
             return cast(dict[str, Any], metadata_filter.value)
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
-            return {
-                self._METADATA_OPERATOR_MAP[metadata_filter.operator]: [
-                    self._translate_metadata_filter(child)
-                    for child in metadata_filter.value
-                ]
-            }
+            child_filters = [
+                self._translate_metadata_filter(child)
+                for child in metadata_filter.value
+            ]
+            if len(child_filters) > 1:
+                operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
+                return {operator: child_filters}
+            else:
+                return child_filters[0]
         else:
             return {
                 metadata_filter.key: {
