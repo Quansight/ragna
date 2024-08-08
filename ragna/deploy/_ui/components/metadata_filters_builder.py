@@ -115,18 +115,28 @@ class FilterRow(pn.viewable.Viewer):
     def is_empty(self):
         return self.key == "" and self.operator == "" and self.value == ""
 
-    def validate_value(self):
-        if self.value == "":
+    def validate_value(self, value):
+        if value == "":
             return False
+
+        if self.operator == "in" or self.operator == "not in":
+            values = value.split(",")
+            if len(values) > 1:
+                for val in values:
+                    if not self.validate_value(val.strip()):
+                        return False
+                return True
+            else:
+                value = values[0]
 
         if METADATA_FILTERS[self.key]["type"] == int:
             try:
-                int(self.value)
+                int(value)
             except ValueError:
                 return False
         elif METADATA_FILTERS[self.key]["type"] == datetime:
             try:
-                datetime.strptime(self.value, "%Y-%m-%d %H:%M:%S")
+                datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 return False
 
@@ -154,7 +164,7 @@ class FilterRow(pn.viewable.Viewer):
         else:
             change_valid_status(True, self.operator_select)
 
-        if not self.validate_value():
+        if not self.validate_value(self.value):
             change_valid_status(False, self.value_text_input)
             result = False
         else:
