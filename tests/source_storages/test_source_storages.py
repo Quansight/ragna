@@ -66,6 +66,18 @@ metadata_filters = pytest.mark.parametrize(
             [0, 1],
             id="or-nested",
         ),
+        pytest.param(
+            MetadataFilter.and_(
+                [MetadataFilter.in_("other_key", ["value", "other_value"])]
+            ),
+            [1, 3, 4],
+            id="and-single",
+        ),
+        pytest.param(
+            MetadataFilter.or_([MetadataFilter.eq("other_key", "other_value")]),
+            [1, 4],
+            id="or-single",
+        ),
         pytest.param(MetadataFilter.eq("key", "value"), [0, 1], id="eq"),
         pytest.param(MetadataFilter.ne("key", "value"), [2, 5, 6], id="ne"),
         pytest.param(MetadataFilter.in_("key", ["foo", "bar"]), [5, 6], id="in"),
