@@ -7,8 +7,9 @@ from ragna.core._metadata_filter import MetadataFilter
 
 METADATA_FILTERS = {
     "document_name": {"type": str},
-    "file_size": {"type": int},
-    "file_extension": {"type": str},
+    "size": {"type": int},
+    "extension": {"type": str},
+    "section": {"type": str},
     # "creation_date": {"type": datetime},
 }
 
@@ -16,13 +17,14 @@ METADATA_FILTERS = {
 FILTERS_PER_TYPE = {
     str: ["==", "!=", "in", "not in"],
     int: ["==", "!=", ">", "<", ">=", "<=", "in", "not in"],
-    datetime: ["==", "!=", ">", "<", ">=", "<="],
+    # datetime: ["==", "!=", ">", "<", ">=", "<="],
 }
 
 PLACEHOLDERS_PER_METADATA_KEY = {
     "document_name": "",
-    "file_size": "",
-    "file_extension": "",
+    "size": "",
+    "extension": "",
+    "section": "",
     # "creation_date": "YYYY-mm-dd HH:MM:SS",
 }
 
