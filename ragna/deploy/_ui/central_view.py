@@ -240,6 +240,8 @@ class CentralView(pn.viewable.Viewer):
             grid_height = 1
 
         else:
+            # In this case, we're using the whole corpus
+            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
             title = ""
             pills = ""
             grid_height = 1

@@ -272,6 +272,8 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         if len(self.metadata_filters) == 0:
             return None
         elif len(self.metadata_filters) == 1:
+            if self.metadata_filters[0].is_empty():
+                return []
             return self.metadata_filters[0].get_metadata_filter().to_primitive()
         else:
             return MetadataFilter.and_(
@@ -285,12 +287,9 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
     def validate(self):
         result = True
         for filter in self.metadata_filters:
-            # If the last filter is empty, and we have other filters, we do not want to validate it
-            if (
-                len(self.metadata_filters) > 1
-                and filter == self.metadata_filters[-1]
-                and filter.is_empty()
-            ):
+            # If the last filter is empty, we do not want to validate it.
+            # This allows to have only one empty filter, to question on the whole corpus.
+            if filter == self.metadata_filters[-1] and filter.is_empty():
                 continue
 
             if not filter.validate():
