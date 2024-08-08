@@ -199,10 +199,22 @@ class FilterRow(pn.viewable.Viewer):
         # if operator == "raw":
         #    return MetadataFilter.RAW
 
+    def convert_value(self, value):
+        try:
+            if METADATA_FILTERS[self.key]["type"] == int:
+                return int(value)
+            elif METADATA_FILTERS[self.key]["type"] == datetime:
+                return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+            return value
+        except ValueError:
+            return value
+
     def get_metadata_filter(self):
         if self.key == "" or self.operator == "" or self.value == "":
             return None
-        return self.convert_operator(self.operator)(key=self.key, value=self.value)
+        return self.convert_operator(self.operator)(
+            key=self.key, value=self.convert_value(self.value)
+        )
 
 
 class MetadataFiltersBuilder(pn.viewable.Viewer):
