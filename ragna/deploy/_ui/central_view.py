@@ -303,7 +303,7 @@ class CentralView(pn.viewable.Viewer):
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{rank}. {source['document']['name']}</b> {location}",
+                    f"<b>{rank}. {source['document_name']}</b> {location}",
                     pn.pane.Markdown(source["content"], css_classes=["source-content"]),
                 )
             )

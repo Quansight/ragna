@@ -39,9 +39,9 @@ class ChatConfig(param.Parameterized):
     )
 
     max_context_tokens = param.Integer(
-        step=500,
-        bounds=(1, 8000),
-        default=2000,
+        step=1_000,
+        bounds=(1, 8_000),
+        default=8_000,
         doc=(
             "Maximum number of context tokens and in turn the number of document chunks "
             "pulled out of the vector database."

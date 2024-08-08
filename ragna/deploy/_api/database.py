@@ -153,6 +153,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
         ]
     else:
         input = None
+    print()
     messages = [
         schemas.Message(
             id=message.id,
@@ -191,7 +192,11 @@ def _select_chat(*, eager: bool = False) -> Any:
     selector = select(orm.Chat)
     if eager:
         selector = selector.options(  # type: ignore[attr-defined]
-            joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+            (
+                joinedload(orm.Chat.messages)
+                .joinedload(orm.Message.sources)
+                .joinedload(orm.Source.document)
+            ),
             joinedload(orm.Chat.documents),
         )
     return selector
