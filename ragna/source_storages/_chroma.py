@@ -112,6 +112,14 @@ class Chroma(VectorDatabaseSourceStorage):
                 return {operator: child_filters}
             else:
                 return child_filters[0]
+        else:
+            return {
+                metadata_filter.key: {
+                    self._METADATA_OPERATOR_MAP[
+                        metadata_filter.operator
+                    ]: metadata_filter.value
+                }
+            }
 
     def retrieve(
         self,
