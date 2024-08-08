@@ -267,7 +267,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             return None
         elif len(self.metadata_filters) == 1:
             if self.metadata_filters[0].is_empty():
-                return []
+                return None
             return self.metadata_filters[0].get_metadata_filter().to_primitive()
         else:
             return MetadataFilter.and_(
