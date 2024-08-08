@@ -220,7 +220,6 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
-        print()
         if chat.metadata.input is None or isinstance(
             chat.metadata.input, MetadataFilter
         ):

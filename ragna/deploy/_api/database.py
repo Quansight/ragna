@@ -153,7 +153,6 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
         ]
     else:
         input = None
-    print()
     messages = [
         schemas.Message(
             id=message.id,
