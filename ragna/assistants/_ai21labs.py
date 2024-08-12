@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast, Union
+from typing import AsyncIterator, Union, cast
 
 from ragna.core import Message, Source
 
@@ -22,16 +22,47 @@ class Ai21LabsAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _render_prompt(self, prompt: Union[str,list[Message]]) -> Union[str,list]:
-        if isinstance(prompt,str):
-            return [{"text": prompt, "role": "user",}]
+    def _render_prompt(self, prompt: Union[str, list[Message]]) -> Union[str, list]:
+        """
+        Ingests ragna messages-list or a single string prompt and converts to assistant-appropriate format.
+
+        Returns:
+            ordered list of dicts with 'text' and 'role' keys
+        """
+        if isinstance(prompt, str):
+            return [
+                {
+                    "text": prompt,
+                    "role": "user",
+                }
+            ]
         else:
-            messages = [{"text":i["content"], "role":i["role"]} for i in prompt if i["role"] != "system"]
+            messages = [
+                {"text": i["content"], "role": i["role"]}
+                for i in prompt
+                if i["role"] != "system"
+            ]
             return messages
 
     async def generate(
-        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256
+        self,
+        prompt: Union[str, list[Message]],
+        system_prompt: str,
+        *,
+        max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
+        """
+        Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
+        This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
+
+        Args:
+            prompt: Either a single prompt string or a list of ragna messages
+            system_prompt: System prompt string
+            max_new_tokens: Max number of completion tokens (default 256_
+
+        Returns:
+            async streamed inference response string chunks
+        """
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
@@ -53,13 +84,15 @@ class Ai21LabsAssistant(HttpApiAssistant):
             },
         ):
             yield cast(str, data["outputs"][0]["text"])
-    
+
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_system_content(sources)
-        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
+        yield generate(
+            prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
+        )
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote

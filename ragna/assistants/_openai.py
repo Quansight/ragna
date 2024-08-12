@@ -24,7 +24,12 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return instruction + "\n\n".join(source.content for source in sources)
 
     def _render_prompt(self, prompt: Union[str,list[Message]], system_prompt: str) -> list[dict]:
-        #need to verify against https://ai.google.dev/api/generate-content#chat_1
+        """
+        Ingests ragna messages-list or a single string prompt and converts to assistant-appropriate format.
+
+        Returns:
+            ordered list of dicts with 'content' and 'role' keys
+        """
         if isinstance(prompt,str):
             messages = [
                         {
@@ -45,6 +50,18 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     async def generate(
         self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int
     ) -> AsyncIterator[dict[str, Any]]:
+            """
+        Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
+        This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
+
+        Args:
+            prompt: Either a single prompt string or a list of ragna messages
+            system_prompt: System prompt string
+            max_new_tokens: Max number of completion tokens (default 256)
+
+        Returns:
+            yield call to self._call_api with formatted headers and json
+        """
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         headers = {

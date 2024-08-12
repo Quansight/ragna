@@ -1,4 +1,4 @@
-from typing import AsyncIterator, cast, Union
+from typing import AsyncIterator, Union, cast
 
 from ragna.core import Message, RagnaException, Source
 
@@ -24,16 +24,40 @@ class CohereAssistant(HttpApiAssistant):
     def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
-    def _render_prompt(self, prompt: Union[str,list[Message]]) -> str:
-        if isinstance(prompt,str):
+    def _render_prompt(self, prompt: Union[str, list[Message]]) -> str:
+        """
+        Ingests ragna messages-list or a single string prompt and converts to assistant-appropriate format.
+
+        Returns:
+            prompt string
+        """
+        if isinstance(prompt, str):
             return prompt
         else:
             messages = [i["content"] for i in prompt if i["role"] == "user"][-1]
             return messages
 
     async def generate(
-        self, prompt: Union[str,list[Message]], system_prompt: str, source_documents: list[dict[str, str]], *, max_new_tokens: int = 256
+        self,
+        prompt: Union[str, list[Message]],
+        system_prompt: str,
+        source_documents: list[dict[str, str]],
+        *,
+        max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
+        """
+        Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
+        This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
+
+        Args:
+            prompt: Either a single prompt string or a list of ragna messages
+            system_prompt: System prompt string
+            source_documents: List of source content dicts with 'title' and 'snippet' keys
+            max_new_tokens: Max number of completion tokens (default 256)
+
+        Returns:
+            async streamed inference response string chunks
+        """
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
@@ -63,7 +87,7 @@ class CohereAssistant(HttpApiAssistant):
                 raise RagnaException(event["error_message"])
             if "text" in event:
                 yield cast(str, event["text"])
-    
+
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
@@ -73,7 +97,12 @@ class CohereAssistant(HttpApiAssistant):
         prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_preamble()
         source_documents = self._make_source_documents(sources)
-        yield generate(prompt=prompt,system_prompt=system_prompt,source_documents=source_documents,max_new_tokens=max_new_tokens)
+        yield generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            source_documents=source_documents,
+            max_new_tokens=max_new_tokens,
+        )
 
 
 class Command(CohereAssistant):
