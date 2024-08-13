@@ -24,6 +24,7 @@ class TestChat:
             input=documents,
             source_storage=source_storage,
             assistant=assistant,
+            corpus_name="test-corpus",
             **params,
         )
 

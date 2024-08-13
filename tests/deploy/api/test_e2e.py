@@ -64,6 +64,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             "name": "test-chat",
             "source_storage": source_storage,
             "assistant": assistant,
+            "corpus_name": "test-corpus",
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
             "input": [document],
         }

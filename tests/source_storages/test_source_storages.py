@@ -109,16 +109,19 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
         )
 
     source_storage = source_storage_cls()
-    source_storage.store(documents)
+    source_storage.store("test-corpus", documents)
 
     prompt = "What is the secret number?"
     num_tokens = 4096
     sources = source_storage.retrieve(
-        metadata_filter=metadata_filter, prompt=prompt, num_tokens=num_tokens
+        corpus_name="test-corpus",
+        metadata_filter=metadata_filter,
+        prompt=prompt,
+        num_tokens=num_tokens,
     )
 
     actual_idcs = sorted(map(int, (source.document_name for source in sources)))
     assert actual_idcs == expected_idcs
 
     # Should be able to call .store() multiple times
-    source_storage.store(documents)
+    source_storage.store("test-corpus", documents)

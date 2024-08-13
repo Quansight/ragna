@@ -102,6 +102,7 @@ class ChatMetadata(BaseModel):
     assistant: str
     params: dict
     input: Union[None, ragna.core.MetadataFilter, list[Document]]
+    corpus_name: str
 
 
 class Chat(BaseModel):

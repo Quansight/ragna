@@ -242,6 +242,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             input=input,
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
+            corpus_name=chat.metadata.corpus_name,
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,
