@@ -220,25 +220,26 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
-        if chat.metadata.input is None or isinstance(
-            chat.metadata.input, MetadataFilter
-        ):
-            input = chat.metadata.input
-        else:
-            input = [
-                config.document(
-                    id=document.id,
-                    name=document.name,
-                    metadata=database.get_document(
-                        session,
-                        user=user,
-                        id=document.id,
-                    )[1],
-                )
-                for document in chat.metadata.input
-            ]
         core_chat = rag.chat(
-            input=input,
+            input=(
+                chat.metadata.input
+                if (
+                    chat.metadata.input is None
+                    or isinstance(chat.metadata.input, MetadataFilter)
+                )
+                else [
+                    config.document(
+                        id=document.id,
+                        name=document.name,
+                        metadata=database.get_document(
+                            session,
+                            user=user,
+                            id=document.id,
+                        )[1],
+                    )
+                    for document in chat.metadata.input
+                ]
+            ),
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
             user=user,

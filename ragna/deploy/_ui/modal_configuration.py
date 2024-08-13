@@ -39,9 +39,9 @@ class ChatConfig(param.Parameterized):
     )
 
     max_context_tokens = param.Integer(
-        step=1_000,
-        bounds=(1, 8_000),
-        default=8_000,
+        step=500,
+        bounds=(1, 8000),
+        default=2000,
         doc=(
             "Maximum number of context tokens and in turn the number of document chunks "
             "pulled out of the vector database."
@@ -156,6 +156,7 @@ class ModalConfiguration(pn.viewable.Viewer):
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
+
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
