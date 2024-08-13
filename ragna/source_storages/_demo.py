@@ -30,8 +30,9 @@ class RagnaDemoSourceStorage(SourceStorage):
 
     def __init__(self) -> None:
         self._storage: list[dict[str, Any]] = []
+        self._corpus_name = "Demo Corpus"
 
-    def store(self, documents: list[Document]) -> None:
+    def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
         self._storage.extend(
             [
                 dict(
@@ -105,7 +106,9 @@ class RagnaDemoSourceStorage(SourceStorage):
 
             return rows_with_idx
 
-    def retrieve(self, metadata_filter: MetadataFilter, prompt: str) -> list[Source]:
+    def retrieve(
+        self, corpus_name: Optional[str], metadata_filter: MetadataFilter, prompt: str
+    ) -> list[Source]:
         return [
             Source(
                 id=row["__id__"],

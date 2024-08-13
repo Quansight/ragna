@@ -46,9 +46,9 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def store(
         self,
+        corpus_name: Optional[str],
         documents: list[Document],
         *,
-        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
@@ -123,10 +123,10 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def retrieve(
         self,
+        corpus_name: Optional[str],
         metadata_filter: MetadataFilter,
         prompt: str,
         *,
-        corpus_name: Optional[str] = None,
         chunk_size: int = 500,
         num_tokens: int = 1024,
     ) -> list[Source]:
