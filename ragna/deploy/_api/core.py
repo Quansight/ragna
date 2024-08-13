@@ -1,6 +1,6 @@
 import contextlib
 import uuid
-from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
+from typing import Annotated, Any, AsyncIterator, Iterator, Type, Union, cast
 
 import aiofiles
 from fastapi import (
@@ -220,6 +220,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
+        input: Union[None, MetadataFilter, list[ragna.core.Document]]
         if chat.metadata.input is None or isinstance(
             chat.metadata.input, MetadataFilter
         ):
