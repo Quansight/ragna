@@ -290,6 +290,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
             welcome = schemas.Message.from_core(await core_chat.prepare())
 
+            if chat.prepared:
+                return welcome
+
             chat.prepared = True
             chat.messages.append(welcome)
             database.update_chat(session, user=user, chat=chat)

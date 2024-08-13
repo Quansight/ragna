@@ -102,7 +102,7 @@ class Chat(Base):
     )
     source_storage = Column(types.String, nullable=False)
     assistant = Column(types.String, nullable=False)
-    corpus_name = Column(types.String, nullable=False)
+    corpus_name = Column(types.String, nullable=True)
     params = Column(Json, nullable=False)
     messages = relationship(
         "Message", cascade="all, delete", order_by="Message.timestamp"
