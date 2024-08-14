@@ -219,7 +219,6 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
         self.delete_buttons = []
 
-        # dummy_row = FilterRow(key="document_name", operator="==", value="applications.md")
         self.metadata_filters.append(self.empty_filter())
 
     def empty_filter(self):
@@ -236,8 +235,6 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             self.metadata_filters = self.metadata_filters + [new_metadata_filter_row]
 
     def delete_metadata_filter(self, event):
-        print("should delete filter : ", event)
-
         filter_to_remove = None
         for filter in self.metadata_filters:
             if event.obj == filter.delete_button:

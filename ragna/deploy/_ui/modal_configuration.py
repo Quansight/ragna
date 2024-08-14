@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime, timedelta, timezone
 
 import panel as pn
@@ -133,7 +132,7 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.metadata_filters_builder = MetadataFiltersBuilder()
 
-    def did_click_on_start_chat_button(self, event):
+    async def did_click_on_start_chat_button(self, event):
         if self.corpus_or_upload == USE_UPLOAD_LABEL:
             if not self.document_uploader.can_proceed_to_upload():
                 self.change_upload_files_label("missing_file")
@@ -147,10 +146,9 @@ class ModalConfiguration(pn.viewable.Viewer):
                 return
 
             self.start_chat_button.disabled = True
-            asyncio.ensure_future(
-                self.did_finish_upload(
-                    self.metadata_filters_builder.get_metadata_filters()
-                )
+
+            await self.did_finish_upload(
+                self.metadata_filters_builder.get_metadata_filters()
             )
 
     async def did_finish_upload(self, uploaded_documents):
