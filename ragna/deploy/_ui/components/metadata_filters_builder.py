@@ -41,7 +41,6 @@ class FilterRow(pn.viewable.Viewer):
         objects=[
             "",  # empty one for the first row
             # Filled later based on the key
-            # "raw"
         ]
     )
     value = param.String()
