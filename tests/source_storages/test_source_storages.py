@@ -125,3 +125,51 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
 
     # Should be able to call .store() multiple times
     source_storage.store("test-corpus", documents)
+
+
+@pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
+def test_corpus_names(tmp_local_root, source_storage_cls):
+    document_root = tmp_local_root / "documents"
+    document_root.mkdir()
+
+    secret_path = document_root / "secret_doc"
+    with open(secret_path, "w") as file:
+        file.write("The secret number is 42!\n")
+    secret_document = LocalDocument.from_path(
+        secret_path,
+        handler=PlainTextDocumentHandler(),
+    )
+
+    dummy_path = document_root / "dummy_doc"
+    with open(dummy_path, "w") as file:
+        file.write("Dummy Doc!\n")
+    dummy_document = LocalDocument.from_path(
+        dummy_path,
+        handler=PlainTextDocumentHandler(),
+    )
+
+    source_storage = source_storage_cls()
+    source_storage.store("test-corpus-secret", [secret_document])
+
+    source_storage = source_storage_cls()
+    source_storage.store("test-corpus-dummy", [dummy_document])
+
+    prompt = "What is the secret number?"
+    num_tokens = 4096
+    secret_sources = source_storage.retrieve(
+        corpus_name="test-corpus-secret",
+        prompt=prompt,
+        metadata_filter=None,
+        num_tokens=num_tokens,
+    )
+    assert "The secret number is 42" in secret_sources[0].content
+
+    prompt = "What is the secret number?"
+    num_tokens = 4096
+    secret_sources = source_storage.retrieve(
+        corpus_name="test-corpus-dummy",
+        prompt=prompt,
+        metadata_filter=None,
+        num_tokens=num_tokens,
+    )
+    assert "The secret number is 42" not in secret_sources[0].content

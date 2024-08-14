@@ -15,7 +15,7 @@ def test_e2e(tmp_local_root, input_type):
             input=input,
             source_storage=source_storage,
             assistant=assistant,
-            corpus_name="test-corpus",
+            corpus_name=None,
         ) as chat:
             return await chat.answer("?")
 
@@ -31,7 +31,7 @@ def test_e2e(tmp_local_root, input_type):
     if input_type == "documents":
         input = [document]
     else:
-        source_storage.store("test-corpus", [document])
+        source_storage.store(None, [document])
 
         if input_type == "corpus":
             input = None

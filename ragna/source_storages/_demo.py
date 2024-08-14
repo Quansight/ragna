@@ -29,11 +29,10 @@ class RagnaDemoSourceStorage(SourceStorage):
         return "Ragna/DemoSourceStorage"
 
     def __init__(self) -> None:
-        self._storage: list[dict[str, Any]] = []
-        self._corpus_name = "Demo Corpus"
+        self._storage: dict[Optional[str], list[dict[str, Any]]] = {None: []}
 
     def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
-        self._storage.extend(
+        self._storage[corpus_name].extend(
             [
                 dict(
                     document_id=str(document.id),
