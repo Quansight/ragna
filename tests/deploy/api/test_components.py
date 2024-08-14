@@ -90,6 +90,7 @@ def test_unknown_component(tmp_local_root):
                 "name": "test-chat",
                 "source_storage": "unknown_source_storage",
                 "assistant": "unknown_assistant",
+                "corpus_name": "test-corpus",
                 "params": {},
                 "input": [document],
             },

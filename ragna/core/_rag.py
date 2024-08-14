@@ -86,6 +86,7 @@ class Rag(Generic[C]):
         *,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        corpus_name: Optional[str],
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
@@ -95,6 +96,7 @@ class Rag(Generic[C]):
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
+            corpus_name: Corpus name to use for the source storage.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -102,6 +104,7 @@ class Rag(Generic[C]):
             input=input,
             source_storage=source_storage,
             assistant=assistant,
+            corpus_name=corpus_name,
             **params,
         )
 
@@ -144,6 +147,7 @@ class Chat:
             [ragna.core.LocalDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
+        corpus_name: Corpus name to use for the source storage.
         **params: Additional parameters passed to the source storage and assistant.
     """
 
@@ -154,6 +158,7 @@ class Chat:
         input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
+        corpus_name: Optional[str],
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -164,6 +169,8 @@ class Chat:
             SourceStorage, self._rag._load_component(source_storage)
         )
         self.assistant = cast(Assistant, self._rag._load_component(assistant))
+
+        self.corpus_name = corpus_name
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -190,7 +197,7 @@ class Chat:
         if self._prepared:
             return welcome
 
-        await self._run(self.source_storage.store, self.documents)
+        await self._run(self.source_storage.store, self.corpus_name, self.documents)
         self._prepared = True
 
         self._messages.append(welcome)
@@ -215,7 +222,7 @@ class Chat:
             )
 
         sources = await self._run(
-            self.source_storage.retrieve, self.metadata_filter, prompt
+            self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
         )
 
         question = Message(content=prompt, role=MessageRole.USER, sources=sources)

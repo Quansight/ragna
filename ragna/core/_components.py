@@ -130,20 +130,24 @@ class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod
-    def store(self, documents: list[Document]) -> None:
+    def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
         """Store content of documents.
 
         Args:
+            corpus_name: Name of the corpus to store the documents in.
             documents: Documents to store.
         """
         ...
 
     @abc.abstractmethod
-    def retrieve(self, metadata_filter: MetadataFilter, prompt: str) -> list[Source]:
+    def retrieve(
+        self, corpus_name: Optional[str], metadata_filter: MetadataFilter, prompt: str
+    ) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
-            documents: Documents to retrieve sources from.
+            corpus_name: Name of the corpus to retrieve sources from.
+            metadata_filter: Filter to select available sources.
             prompt: Prompt to retrieve sources for.
 
         Returns:

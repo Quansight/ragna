@@ -29,10 +29,10 @@ class RagnaDemoSourceStorage(SourceStorage):
         return "Ragna/DemoSourceStorage"
 
     def __init__(self) -> None:
-        self._storage: list[dict[str, Any]] = []
+        self._storage: dict[Optional[str], list[dict[str, Any]]] = {None: []}
 
-    def store(self, documents: list[Document]) -> None:
-        self._storage.extend(
+    def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
+        self._storage[None].extend(
             [
                 dict(
                     document_id=str(document.id),
@@ -66,7 +66,7 @@ class RagnaDemoSourceStorage(SourceStorage):
         self, metadata_filter: Optional[MetadataFilter]
     ) -> list[tuple[int, dict[str, Any]]]:
         if metadata_filter is None:
-            return list(enumerate(self._storage))
+            return list(enumerate(self._storage[None]))
         elif metadata_filter.operator is MetadataOperator.RAW:
             raise RagnaException
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
@@ -93,7 +93,7 @@ class RagnaDemoSourceStorage(SourceStorage):
             return [(idx, rows_map[idx]) for idx in sorted(idcs)]
         else:
             rows_with_idx = []
-            for idx, row in enumerate(self._storage):
+            for idx, row in enumerate(self._storage[None]):
                 value = row.get(metadata_filter.key)
                 if value is None:
                     continue
@@ -105,7 +105,9 @@ class RagnaDemoSourceStorage(SourceStorage):
 
             return rows_with_idx
 
-    def retrieve(self, metadata_filter: MetadataFilter, prompt: str) -> list[Source]:
+    def retrieve(
+        self, corpus_name: Optional[str], metadata_filter: MetadataFilter, prompt: str
+    ) -> list[Source]:
         return [
             Source(
                 id=row["__id__"],
