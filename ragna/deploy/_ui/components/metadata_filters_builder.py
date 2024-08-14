@@ -3,7 +3,7 @@ from datetime import datetime
 import panel as pn
 import param
 
-from ragna.core._metadata_filter import MetadataFilter
+from ragna.core._metadata_filter import MetadataFilter, MetadataOperator
 
 METADATA_FILTERS = {
     "document_name": {"type": str},
@@ -176,14 +176,14 @@ class FilterRow(pn.viewable.Viewer):
 
     def convert_operator(self, operator):
         return {
-            "==": MetadataFilter.eq,
-            "!=": MetadataFilter.ne,
-            ">": MetadataFilter.gt,
-            "<": MetadataFilter.lt,
-            ">=": MetadataFilter.ge,
-            "<=": MetadataFilter.le,
-            "in": MetadataFilter.in_,
-            "not in": MetadataFilter.not_in,
+            "==": MetadataOperator.EQ,
+            "!=": MetadataOperator.NE,
+            ">": MetadataOperator.GT,
+            "<": MetadataOperator.LT,
+            ">=": MetadataOperator.GE,
+            "<=": MetadataOperator.LE,
+            "in": MetadataOperator.IN,
+            "not in": MetadataOperator.NOT_IN,
         }[operator]
 
     def convert_value(self, value):
@@ -199,8 +199,10 @@ class FilterRow(pn.viewable.Viewer):
     def get_metadata_filter(self):
         if self.key == "" or self.operator == "" or self.value == "":
             return None
-        return self.convert_operator(self.operator)(
-            key=self.key, value=self.convert_value(self.value)
+        return MetadataFilter(
+            operator=self.convert_operator(self.operator),
+            key=self.key,
+            value=self.convert_value(self.value),
         )
 
 
