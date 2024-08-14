@@ -66,7 +66,7 @@ class RagnaDemoSourceStorage(SourceStorage):
         self, metadata_filter: Optional[MetadataFilter]
     ) -> list[tuple[int, dict[str, Any]]]:
         if metadata_filter is None:
-            return list(enumerate(self._storage))
+            return list(enumerate(self._storage[None]))
         elif metadata_filter.operator is MetadataOperator.RAW:
             raise RagnaException
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
@@ -93,7 +93,7 @@ class RagnaDemoSourceStorage(SourceStorage):
             return [(idx, rows_map[idx]) for idx in sorted(idcs)]
         else:
             rows_with_idx = []
-            for idx, row in enumerate(self._storage):
+            for idx, row in enumerate(self._storage[None]):
                 value = row.get(metadata_filter.key)
                 if value is None:
                     continue
