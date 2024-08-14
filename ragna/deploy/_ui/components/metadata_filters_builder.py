@@ -175,25 +175,16 @@ class FilterRow(pn.viewable.Viewer):
         return f"[key:{self.key} \t op:{self.operator} \t val:{self.value}]"
 
     def convert_operator(self, operator):
-        if operator == "==":
-            return MetadataFilter.eq
-        if operator == "!=":
-            return MetadataFilter.ne
-        if operator == ">":
-            return MetadataFilter.gt
-        if operator == "<":
-            return MetadataFilter.lt
-        if operator == ">=":
-            return MetadataFilter.ge
-        if operator == "<=":
-            return MetadataFilter.le
-        if operator == "in":
-            return MetadataFilter.in_
-        if operator == "not in":
-            return MetadataFilter.not_in
-
-        # if operator == "raw":
-        #    return MetadataFilter.RAW
+        return {
+            "==": MetadataFilter.eq,
+            "!=": MetadataFilter.ne,
+            ">": MetadataFilter.gt,
+            "<": MetadataFilter.lt,
+            ">=": MetadataFilter.ge,
+            "<=": MetadataFilter.le,
+            "in": MetadataFilter.in_,
+            "not in": MetadataFilter.not_in,
+        }[operator]
 
     def convert_value(self, value):
         try:
