@@ -32,7 +32,7 @@ class RagnaDemoSourceStorage(SourceStorage):
         self._storage: dict[Optional[str], list[dict[str, Any]]] = {None: []}
 
     def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
-        self._storage[corpus_name].extend(
+        self._storage[None].extend(
             [
                 dict(
                     document_id=str(document.id),
