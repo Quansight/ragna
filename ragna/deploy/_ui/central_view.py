@@ -282,10 +282,10 @@ class CentralView(pn.viewable.Viewer):
                             },
                         ),
                         ui.css(
-                            ":host(.chat_info_markdown) .details_block",
+                            ":host(.chat_info_markdown) .details_block"
                             {
-                                "display": "block",
-                            },
+                                "display": "block"
+                            }
                         ),
                     ],
                 ),
