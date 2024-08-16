@@ -290,13 +290,13 @@ def ingest(
                     session = make_session()
                     session.add_all(orm_documents)
                     source_storage().store(corpus_name, document_instances)
+                    session.commit()
                 except Exception:
                     documents_not_ingested.extend(
                         documents[batch_number : batch_number + BATCH_SIZE]
                     )
                     session.rollback()
                 finally:
-                    session.commit()
                     session.close()
 
                 if not ignore_log:
