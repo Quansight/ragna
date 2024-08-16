@@ -9,6 +9,7 @@ import httpx
 import rich
 import typer
 import uvicorn
+from rich.console import Console
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 import ragna
@@ -189,8 +190,8 @@ def ingest(
     user: Optional[str] = typer.Option(
         None, help="User to link the documents to in the ragna database."
     ),
-    verbose: bool = typer.Option(
-        False, help="Print the documents that could not be ingested."
+    report_failures: bool = typer.Option(
+        False, help="Output to STDERR the documents that failed to be ingested."
     ),
     ignore_log: bool = typer.Option(
         False, help="Ignore the log file and re-ingest all documents."
@@ -213,12 +214,12 @@ def ingest(
 
     if user is None:
         user = default_user()
-    with make_session() as session:
+    with make_session() as session:  # type: ignore[attr-defined]
         user_id = database._get_user_id(session, user)
 
     # Log (JSONL) for recording which files previously added to vector database.
     # Each entry has keys for 'user', 'corpus_name', 'source_storage' and 'document'.
-    ingestion_log = {}
+    ingestion_log: dict[str, set[str]] = {}
     if not ignore_log:
         ingestion_log_file = Path.cwd() / ".ragna_ingestion_log.jsonl"
         if ingestion_log_file.exists():
@@ -241,7 +242,6 @@ def ingest(
             total=len(config.source_storages),
         )
 
-        bad_documents_collection = {}
         for source_storage in config.source_storages:
             BATCH_SIZE = 10
             number_of_batches = len(documents) // BATCH_SIZE
@@ -250,8 +250,8 @@ def ingest(
                 total=number_of_batches,
             )
 
-            documents_not_ingested = []
             for batch_number in range(0, len(documents), BATCH_SIZE):
+                documents_not_ingested = []
                 document_instances = []
                 orm_documents = []
 
@@ -316,18 +316,14 @@ def ingest(
                                 + "\n"
                             )
 
-                progress.advance(source_storage_task)
+                if report_failures:
+                    Console(file=sys.stderr).print(
+                        f"{source_storage.__name__} failed to embed:\n{documents_not_ingested}",
+                    )
 
-            bad_documents_collection[source_storage.__name__] = set(
-                documents_not_ingested
-            )
+                progress.advance(source_storage_task)
 
             progress.update(source_storage_task, completed=number_of_batches)
             progress.advance(overall_task)
 
         progress.update(overall_task, completed=len(config.source_storages))
-
-        if verbose:
-            typer.echo(
-                f"Failed to embed the following documents: {bad_documents_collection}"
-            )
