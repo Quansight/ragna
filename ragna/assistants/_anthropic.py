@@ -36,7 +36,7 @@ class AnthropicAssistant(HttpApiAssistant):
             + "</documents>"
         )
 
-    def _render_prompt(self, prompt: Union[str, list[Message]]) -> Union[str, list]:
+    def _render_prompt(self, prompt: Union[str, list[Message]]) -> list[dict]:
         """
         Ingests ragna messages-list or a single string prompt and converts to assistant-appropriate format.
 

@@ -48,7 +48,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             return system_message.extend(messages)
     
     async def generate(
-        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int
+        self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256
     ) -> AsyncIterator[dict[str, Any]]:
             """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
