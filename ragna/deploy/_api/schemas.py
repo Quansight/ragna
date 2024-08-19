@@ -26,14 +26,14 @@ class Document(BaseModel):
             name=document.name,
         )
 
-    def to_core(self) -> ragna.core.Document:
+    def to_core(self, metadata={}) -> ragna.core.Document:
         return ragna.core.LocalDocument(
             id=self.id,
             name=self.name,
             # TEMP: setting an empty metadata dict for now.
             # Will be resolved as part of the "managed ragna" work:
             # https://github.com/Quansight/ragna/issues/256
-            metadata={},
+            metadata=metadata,
         )
 
 

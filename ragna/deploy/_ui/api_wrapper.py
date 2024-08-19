@@ -63,11 +63,7 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     async def get_document_content(self, document_id):
-        async with self.client.stream(
-            "GET", f"/documents/{document_id}/content"
-        ) as stream:
-            async for chunk in stream.aiter_bytes():
-                print(chunk)
+        return (await self.client.get(f"/documents/{document_id}/content")).read()
 
     async def answer(self, chat_id, prompt):
         async with self.client.stream(

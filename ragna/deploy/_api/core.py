@@ -258,15 +258,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     @app.get("/documents/{id}/content")
     async def get_document_content(user: UserDependency, id: uuid.UUID) -> bytes:
         with get_session() as session:
-            _, metadata = database.get_document(session, user=user, id=id)
-            if "path" not in metadata:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Document path not found",
-                )
-            with aiofiles.open(metadata["path"], "rb") as file:
-                while content := await file.read(1024):
-                    yield content
+            document, metadata = database.get_document(session, user=user, id=id)
+            core_document = document.to_core(metadata)
+            return core_document.read()
 
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat

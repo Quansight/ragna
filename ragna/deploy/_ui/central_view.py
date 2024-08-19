@@ -235,26 +235,30 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
-    async def on_click_open_source_file(self, source):
-        return await self.api_wrapper.get_document_content(source["document"]["id"])
-
-    def on_click_source_info_wrapper(self, event, sources):
+    async def on_click_source_info_wrapper(self, event, sources):
         if self.on_click_chat_info is None:
             return
 
         source_infos = []
         for rank, source in enumerate(sources, 1):
+
+            async def on_click_open_source_file(self, source):
+                return await self.api_wrapper.get_document_content(
+                    source["document"]["id"]
+                )
+
             button = pn.widgets.Button(
                 name="Open File",
-                on_click=lambda event: self.on_click_open_source_file(source),
+                on_click=self.on_click_open_source_file(source),
             )
+            print(source)
 
             location = source["location"]
             if location:
                 location = f": page(s) {location}"
             source_infos.append(
                 pn.layout.Row(
-                    f"<b>{rank}. {source['document']['name']}</b> {location}",
+                    f"<b>{rank}. {source['document_name']}</b> {location}",
                 )
             )
             source_infos.append(
