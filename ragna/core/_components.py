@@ -155,6 +155,14 @@ class SourceStorage(Component, abc.ABC):
         """
         ...
 
+    def list_corpuses(self) -> list[str]:
+        """List available corpuses.
+
+        Returns:
+            List of available corpuses.
+        """
+        raise NotImplementedError
+
 
 class MessageRole(str, enum.Enum):
     """Message role

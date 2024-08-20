@@ -155,8 +155,14 @@ def test_corpus_names(tmp_local_root, source_storage_cls):
 
     source_storage = source_storage_cls()
 
+    assert source_storage.list_corpuses() == []
     source_storage.store(secret_corpus_name, [secret_document])
     source_storage.store(dummy_corpus_name, [dummy_document])
+
+    assert set(source_storage.list_corpuses()) == {
+        dummy_corpus_name,
+        secret_corpus_name,
+    }
 
     prompt = "What is the secret number?"
     num_tokens = 4096

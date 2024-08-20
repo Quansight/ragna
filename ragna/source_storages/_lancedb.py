@@ -190,6 +190,9 @@ class LanceDB(VectorDatabaseSourceStorage):
             )
             return f"{key} {operator} {value!r}"
 
+    def list_corpuses(self) -> list[str]:
+        return self._db.table_names()
+
     def retrieve(
         self,
         corpus_name: str,

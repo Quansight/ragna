@@ -44,6 +44,9 @@ class Chroma(VectorDatabaseSourceStorage):
             corpus_name, embedding_function=self._embedding_function
         )
 
+    def list_corpuses(self) -> list[str]:
+        return [collection.name for collection in self._client.list_collections()]
+
     def store(
         self,
         corpus_name: str,
