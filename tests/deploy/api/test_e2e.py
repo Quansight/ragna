@@ -74,6 +74,9 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         assert not chat["prepared"]
         assert chat["messages"] == []
 
+        corpuses = client.get("/corpuses").json()
+        assert corpuses == []
+
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
@@ -85,6 +88,9 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
+
+        corpuses = client.get("/corpuses").json()
+        assert corpuses == [str(corpus_name)]
 
         prompt = "?"
         if stream_answer:
