@@ -187,8 +187,9 @@ class CentralView(pn.viewable.Viewer):
         if self.on_click_chat_info is None:
             return
 
+        # see _api/schemas.py for `input` type definitions
         if isinstance(self.current_chat["metadata"]["input"], list):
-            # Documents
+            # `Document`s provided as list
             title = "Uploaded Files"
 
             pills = "".join(
@@ -202,8 +203,9 @@ class CentralView(pn.viewable.Viewer):
             grid_height = len(self.current_chat["metadata"]["input"]) // 3
 
         elif isinstance(self.current_chat["metadata"]["input"], dict):
-            # Metadata filters
+            # `MetadataFilter`s provided as dict
             title = "Metadata Filters"
+
             metadata_filters_readable = str(
                 MetadataFilter.from_primitive(self.current_chat["metadata"]["input"])
             )
@@ -211,11 +213,16 @@ class CentralView(pn.viewable.Viewer):
             details = f"<div class='details details_block' style='display:block;'>{metadata_filters_readable}</div><br />\n\n"
             grid_height = 1
 
-        else:
-            # In this case, we're using the whole corpus
-            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
+        elif self.current_chat["metadata"]["input"] is None:
             title = ""
-            pills = ""
+
+            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
+            grid_height = 1
+
+        else:
+            title = ""
+
+            details = "<div class='details'>Unable to infer the `input` type.<br /> Defaulting to using the whole corpus.</div><br />\n\n"
             grid_height = 1
 
         markdown = "\n".join(
