@@ -1,6 +1,6 @@
 import contextlib
 import uuid
-from typing import Annotated, Any, AsyncIterator, Iterator, Type, cast
+from typing import Annotated, Any, AsyncIterator, Iterator, Type, Union, cast
 
 import aiofiles
 from fastapi import (
@@ -220,28 +220,29 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
     ) -> ragna.core.Chat:
-        core_chat = rag.chat(
-            input=(
-                chat.metadata.input
-                if (
-                    chat.metadata.input is None
-                    or isinstance(chat.metadata.input, MetadataFilter)
-                )
-                else [
-                    config.document(
+        input: Union[None, MetadataFilter, list[ragna.core.Document]]
+        if chat.metadata.input is None or isinstance(
+            chat.metadata.input, MetadataFilter
+        ):
+            input = chat.metadata.input
+        else:
+            input = [
+                config.document(
+                    id=document.id,
+                    name=document.name,
+                    metadata=database.get_document(
+                        session,
+                        user=user,
                         id=document.id,
-                        name=document.name,
-                        metadata=database.get_document(
-                            session,
-                            user=user,
-                            id=document.id,
-                        )[1],
-                    )
-                    for document in chat.metadata.input
-                ]
-            ),
+                    )[1],
+                )
+                for document in chat.metadata.input
+            ]
+        core_chat = rag.chat(
+            input=input,
             source_storage=get_component(chat.metadata.source_storage),  # type: ignore[arg-type]
             assistant=get_component(chat.metadata.assistant),  # type: ignore[arg-type]
+            corpus_name=chat.metadata.corpus_name,
             user=user,
             chat_id=chat.id,
             chat_name=chat.metadata.name,
@@ -288,6 +289,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             core_chat = schema_to_core_chat(session, user=user, chat=chat)
 
             welcome = schemas.Message.from_core(await core_chat.prepare())
+
+            if chat.prepared:
+                return welcome
 
             chat.prepared = True
             chat.messages.append(welcome)

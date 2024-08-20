@@ -12,7 +12,8 @@ from tests.utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
-def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
+@pytest.mark.parametrize("corpus_name", ["test-corpus", None])
+def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name):
     config = Config(local_root=tmp_local_root, assistants=[TestAssistant])
 
     document_root = config.local_root / "documents"
@@ -64,6 +65,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             "name": "test-chat",
             "source_storage": source_storage,
             "assistant": assistant,
+            "corpus_name": corpus_name,
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
             "input": [document],
         }

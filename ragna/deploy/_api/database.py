@@ -136,6 +136,7 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
             documents=documents,
             source_storage=chat.metadata.source_storage,
             assistant=chat.metadata.assistant,
+            corpus_name=chat.metadata.corpus_name,
             params=chat.metadata.params,
             prepared=chat.prepared,
         )
@@ -180,6 +181,7 @@ def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
             input=input,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
+            corpus_name=chat.corpus_name,
             params=chat.params,
         ),
         messages=messages,
@@ -191,7 +193,11 @@ def _select_chat(*, eager: bool = False) -> Any:
     selector = select(orm.Chat)
     if eager:
         selector = selector.options(  # type: ignore[attr-defined]
-            joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+            (
+                joinedload(orm.Chat.messages)
+                .joinedload(orm.Message.sources)
+                .joinedload(orm.Source.document)
+            ),
             joinedload(orm.Chat.documents),
         )
     return selector
