@@ -68,6 +68,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             value=self.content_pane.object, title="Copy"
         )
 
+        async def click_source_info_callback_wrapper(event):
+            return await on_click_source_info_callback(event, sources)
+
         # we make this available on the instance so that we can toggle the visibility
         self.assistant_toolbar = pn.Row(
             self.clipboard_button,
@@ -75,9 +78,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                 name="Source Info",
                 icon="info-circle",
                 css_classes=["source-info-button"],
-                on_click=lambda event: self.on_click_source_info_callback(
-                    event, self.sources
-                ),
+                on_click=click_source_info_callback_wrapper,
             ),
             visible=assistant_toolbar_visible,
         )
@@ -100,8 +101,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             object=object,
             role=role,
             user=user,
-            sources=sources,
-            on_click_source_info_callback=on_click_source_info_callback,
+            # sources=sources,
+            # on_click_source_info_callback=on_click_source_info_callback,
             timestamp=timestamp,
             show_timestamp=show_timestamp,
             show_reaction_icons=False,
@@ -242,16 +243,15 @@ class CentralView(pn.viewable.Viewer):
         source_infos = []
         for rank, source in enumerate(sources, 1):
 
-            async def on_click_open_source_file(self, source):
+            async def on_click_open_source_file(event, source=source):
                 return await self.api_wrapper.get_document_content(
                     source["document"]["id"]
                 )
 
             button = pn.widgets.Button(
                 name="Open File",
-                on_click=self.on_click_open_source_file(source),
+                on_click=on_click_open_source_file,
             )
-            print(source)
 
             location = source["location"]
             if location:
