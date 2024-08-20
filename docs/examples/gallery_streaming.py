@@ -119,9 +119,10 @@ chat = (
         "/chats",
         json={
             "name": "Tutorial REST API",
-            "documents": [document],
+            "input": [document],
             "source_storage": source_storages.RagnaDemoSourceStorage.display_name(),
             "assistant": DemoStreamingAssistant.display_name(),
+            "corpus_name": None,
             "params": {},
         },
     )

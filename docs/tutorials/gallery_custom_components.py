@@ -29,21 +29,29 @@ to incorporate custom components. This tutorial covers how to do that.
 #     this tutorial in the [Custom Parameters](#custom-parameters) section.
 
 import uuid
+from typing import Optional
 
-from ragna.core import Document, Source, SourceStorage, Message
+from ragna.core import Document, Source, SourceStorage, Message, MetadataFilter
 
 
 class TutorialSourceStorage(SourceStorage):
     def __init__(self):
         self._storage: dict[uuid.UUID, list[Source]] = {}
 
-    def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
+    def store(
+        self,
+        corpus_name: Optional[str],
+        documents: list[Document],
+        *,
+        chat_id: uuid.UUID,
+    ) -> None:
         print(f"Running {type(self).__name__}().store()")
 
         self._storage[chat_id] = [
             Source(
                 id=str(uuid.uuid4()),
-                document=document,
+                document_id=document.id,
+                document_name=document.name,
                 location="N/A",
                 content=(content := next(document.extract_pages()).text[:100]),
                 num_tokens=len(content.split()),
@@ -52,7 +60,12 @@ class TutorialSourceStorage(SourceStorage):
         ]
 
     def retrieve(
-        self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
+        self,
+        corpus_name: Optional[str],
+        metadata_filter: MetadataFilter,
+        prompt: str,
+        *,
+        chat_id: uuid.UUID,
     ) -> list[Source]:
         print(f"Running {type(self).__name__}().retrieve()")
         return self._storage[chat_id]
@@ -204,9 +217,10 @@ response = client.post(
     "/chats",
     json={
         "name": "Tutorial REST API",
-        "documents": [document],
+        "input": [document],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": TutorialAssistant.display_name(),
+        "corpus_name": None,
         "params": {},
     },
 ).raise_for_status()
@@ -331,9 +345,10 @@ response = client.post(
     "/chats",
     json={
         "name": "Tutorial REST API",
-        "documents": [document],
+        "input": [document],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": ElaborateTutorialAssistant.display_name(),
+        "corpus_name": None,
         "params": {
             "my_required_parameter": 3,
             "my_optional_parameter": "bar",

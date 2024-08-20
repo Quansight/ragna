@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections.abc
 import contextlib
 import datetime
 import inspect
@@ -12,8 +13,8 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
+    Collection,
     Generic,
-    Iterable,
     Iterator,
     Optional,
     Type,
@@ -82,21 +83,34 @@ class Rag(Generic[C]):
 
     def chat(
         self,
-        input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]],
+        input: Union[
+            MetadataFilter,
+            None,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ],
         *,
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        corpus_name: Optional[str],
+        corpus_name: Optional[str] = None,
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            input: Documents to use. If any item is not a [ragna.core.Document][],
-                [ragna.core.LocalDocument.from_path][] is invoked on it.
+            input: Subject of the chat. Available options:
+
+                - `None`: Use the full corpus of documents specified by `corpus_name`.
+                -  [ragna.core.MetadataFilter][]: Use the given subset of the corpus of
+                   documents specified by `corpus_name`.
+                - Single document or a collection of documents to use. If any item is
+                  not a [ragna.core.Document][], it is assumed to be a path and
+                  [ragna.core.LocalDocument.from_path][] is invoked on it.
             source_storage: Source storage to use.
             assistant: Assistant to use.
-            corpus_name: Corpus name to use for the source storage.
+            corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
@@ -143,11 +157,17 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. If any item is not a [ragna.core.Document][],
-            [ragna.core.LocalDocument.from_path][] is invoked on it.
+        input: Subject of the chat. Available options:
+
+            - `None`: Use the full corpus of documents specified by `corpus_name`.
+            -  [ragna.core.MetadataFilter][]: Use the given subset of the corpus of
+               documents specified by `corpus_name`.
+            - Single document or a collection of documents to use. If any item is not a
+              [ragna.core.Document][], it is assumed to be a path and
+              [ragna.core.LocalDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
-        corpus_name: Corpus name to use for the source storage.
+        corpus_name: Corpus of documents to use.
         **params: Additional parameters passed to the source storage and assistant.
     """
 
@@ -155,10 +175,17 @@ class Chat:
         self,
         rag: Rag,
         *,
-        input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]],
+        input: Union[
+            MetadataFilter,
+            None,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ],
         source_storage: Union[Type[SourceStorage], SourceStorage],
         assistant: Union[Type[Assistant], Assistant],
-        corpus_name: Optional[str],
+        corpus_name: Optional[str] = None,
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -241,10 +268,21 @@ class Chat:
         return answer
 
     def _parse_input(
-        self, input: Union[MetadataFilter, None, Iterable[Union[Document, str, Path]]]
+        self,
+        input: Union[
+            MetadataFilter,
+            None,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ],
     ) -> tuple[Optional[list[Document]], Optional[MetadataFilter], bool]:
         if isinstance(input, MetadataFilter) or input is None:
             return None, input, True
+
+        if not isinstance(input, collections.abc.Collection):
+            input = [input]
 
         documents = []
         for document in input:

@@ -23,6 +23,10 @@ class MetadataOperator(enum.Enum):
 
 
 class MetadataFilter:
+    """
+    ADDME
+    """
+
     def __init__(self, operator: MetadataOperator, key: str, value: Any) -> None:
         self.operator = operator
         self.key = key

@@ -158,9 +158,10 @@ response = client.post(
     "/chats",
     json={
         "name": "Tutorial REST API",
-        "documents": [document],
+        "input": [document],
         "source_storage": source_storage,
         "assistant": assistant,
+        "corpus_name": None,
         "params": {},
     },
 ).raise_for_status()
