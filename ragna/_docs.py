@@ -32,6 +32,9 @@ https://github.com/Quansight/ragna under the BSD 3-Clause license.
 class RestApi:
     def __init__(self) -> None:
         self._process: Optional[subprocess.Popen] = None
+        # In case the documentation errors before we call RestApi.stop, we still need to
+        # stop the server to avoid zombie processes
+        atexit.register(self.stop, quiet=True)
 
     def start(
         self,
@@ -50,9 +53,6 @@ class RestApi:
         client = httpx.Client(base_url=config.api.url)
 
         self._process = self._start_api(config_path, python_path, client)
-        # In case the documentation errors before we call RestApi.stop, we still need to
-        # stop the server to avoid zombie processes
-        atexit.register(self.stop, quiet=True)
 
         if authenticate:
             self._authenticate(client)
