@@ -37,9 +37,6 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def _get_collection(self, corpus_name: str) -> chromadb.Collection:
-        if corpus_name == "default":
-            corpus_name = self._embedding_id
-
         return self._client.get_or_create_collection(
             corpus_name, embedding_function=self._embedding_function
         )

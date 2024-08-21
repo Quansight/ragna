@@ -146,18 +146,17 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         )
 
     @app.get("/corpuses")
-    async def get_corpuses(_: UserDependency) -> list[str]:
+    async def get_corpuses(_: UserDependency) -> dict[str, list[str]]:
         source_storages = [
             source_storage
             for source_storage in components_map.values()
             if isinstance(source_storage, SourceStorage)
         ]
 
-        return [
-            corpus
+        return {
+            source_storage.display_name(): source_storage.list_corpuses()
             for source_storage in source_storages
-            for corpus in source_storage.list_corpuses()
-        ]
+        }
 
     make_session = database.get_sessionmaker(config.api.database_url)
 

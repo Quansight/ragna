@@ -17,10 +17,11 @@ from typing import (
 
 import pydantic
 import pydantic.utils
+from fastapi import status
 
 from ._document import Document
 from ._metadata_filter import MetadataFilter
-from ._utils import RequirementsMixin, merge_models
+from ._utils import RagnaException, RequirementsMixin, merge_models
 
 
 class Component(RequirementsMixin):
@@ -161,7 +162,12 @@ class SourceStorage(Component, abc.ABC):
         Returns:
             List of available corpuses.
         """
-        raise NotImplementedError
+        raise RagnaException(
+            "list_corpuses is not implemented",
+            source_storage=self.__class__.display_name(),
+            http_status_code=status.HTTP_400_BAD_REQUEST,
+            http_detail=RagnaException.MESSAGE,
+        )
 
 
 class MessageRole(str, enum.Enum):
