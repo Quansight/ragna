@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import uuid
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from pydantic import BaseModel, Field
 
@@ -101,8 +101,8 @@ class ChatMetadata(BaseModel):
     source_storage: str
     assistant: str
     params: dict
-    input: Union[None, ragna.core.MetadataFilter, list[Document]]
-    corpus_name: Optional[str] = None
+    input: Union[None, ragna.core.MetadataFilter, list[Document]] = None
+    corpus_name: str = "default"
 
 
 class Chat(BaseModel):
