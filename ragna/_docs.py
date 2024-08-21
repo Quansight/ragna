@@ -178,7 +178,7 @@ class RestApi:
         if self._process is None:
             return
 
-        self._process.kill()
+        self._process.terminate()
         stdout, _ = self._process.communicate()
 
         if not quiet:
