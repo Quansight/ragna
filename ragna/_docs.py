@@ -1,3 +1,4 @@
+import atexit
 import inspect
 import itertools
 import os
@@ -49,6 +50,9 @@ class RestApi:
         client = httpx.Client(base_url=config.api.url)
 
         self._process = self._start_api(config_path, python_path, client)
+        # In case the documentation errors before we call RestApi.stop, we still need to
+        # stop the server to avoid zombie processes
+        atexit.register(self.stop, quiet=True)
 
         if authenticate:
             self._authenticate(client)
@@ -179,6 +183,3 @@ class RestApi:
 
         if not quiet:
             print(stdout.decode())
-
-    def __del__(self) -> None:
-        self.stop(quiet=True)
