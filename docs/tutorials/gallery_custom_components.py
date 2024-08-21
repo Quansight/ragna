@@ -322,7 +322,7 @@ config = Config(
 rest_api = ragna_docs.RestApi()
 
 client, document = rest_api.start(config, authenticate=True, upload_document=True)
-raise Exception
+
 # %%
 # To pass custom parameters, define them in the `params` mapping when creating a new
 # chat.
