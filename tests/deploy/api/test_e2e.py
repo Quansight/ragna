@@ -12,7 +12,7 @@ from tests.utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
-@pytest.mark.parametrize("corpus_name", ["test-corpus", None])
+@pytest.mark.parametrize("corpus_name", ["default", "test-corpus"])
 def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name):
     config = Config(local_root=tmp_local_root, assistants=[TestAssistant])
 

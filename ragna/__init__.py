@@ -13,10 +13,11 @@ from ._utils import local_root
 # isort: split
 
 from . import assistants, core, deploy, source_storages
-from .core import Rag
+from .core import MetadataFilter, Rag
 
 __all__ = [
     "__version__",
+    "MetadataFilter",
     "Rag",
     "assistants",
     "core",
