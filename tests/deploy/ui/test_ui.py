@@ -3,7 +3,6 @@ import sys
 import time
 
 import httpx
-import panel as pn
 import pytest
 from playwright.sync_api import Page, expect
 
@@ -61,8 +60,8 @@ class Server:
             time.sleep(1)
 
     def stop(self):
-        self.proc.kill()
-        pn.state.kill_all_servers()
+        self.proc.terminate()
+        self.proc.communicate()
 
     def __enter__(self):
         self.start()
