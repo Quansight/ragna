@@ -148,7 +148,7 @@ def ui(
             stderr=sys.stderr,
         )
 
-        def shutdown_api():
+        def shutdown_api() -> None:
             process.terminate()
             process.communicate()
 
