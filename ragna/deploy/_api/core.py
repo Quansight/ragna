@@ -151,7 +151,15 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         source_storage: Optional[str] = None,
     ) -> dict[str, list[str]]:
         if source_storage is not None:
-            source_storages = [get_component(source_storage)]
+            component = components_map.get(source_storage)
+            if component is None or not isinstance(component, SourceStorage):
+                raise RagnaException(
+                    "Unknown source storage",
+                    display_name=source_storage,
+                    http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    http_detail=RagnaException.MESSAGE,
+                )
+            source_storages = [component]
         else:
             source_storages = [
                 source_storage
