@@ -1,6 +1,6 @@
 import contextlib
 import uuid
-from typing import Annotated, Any, AsyncIterator, Iterator, Type, Union, cast
+from typing import Annotated, Any, AsyncIterator, Iterator, Optional, Type, Union, cast
 
 import aiofiles
 from fastapi import (
@@ -146,12 +146,18 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         )
 
     @app.get("/corpuses")
-    async def get_corpuses(_: UserDependency) -> dict[str, list[str]]:
-        source_storages = [
-            source_storage
-            for source_storage in components_map.values()
-            if isinstance(source_storage, SourceStorage)
-        ]
+    async def get_corpuses(
+        _: UserDependency,
+        source_storage: Optional[str] = None,
+    ) -> dict[str, list[str]]:
+        if source_storage is not None:
+            source_storages = [get_component(source_storage)]
+        else:
+            source_storages = [
+                source_storage
+                for source_storage in components_map.values()
+                if isinstance(source_storage, SourceStorage)
+            ]
 
         return {
             source_storage.display_name(): source_storage.list_corpuses()

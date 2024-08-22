@@ -1,5 +1,6 @@
 import json
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -90,7 +91,19 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         assert chat["messages"][-1] == message
 
         corpuses = client.get("/corpuses").raise_for_status().json()
-        assert corpuses == {source_storage: [str(corpus_name)]}
+        assert corpuses == {source_storage: [corpus_name]}
+
+        corpuses = (
+            client.get(f"/corpuses?source_storage={source_storage}")
+            .raise_for_status()
+            .json()
+        )
+        assert corpuses == {source_storage: [corpus_name]}
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/corpuses?source_storage=unknown_source_storage"
+            ).raise_for_status()
 
         prompt = "?"
         if stream_answer:
