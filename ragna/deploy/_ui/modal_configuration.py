@@ -227,7 +227,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
-    @pn.depends("config", "config.assistant_name", "config.source_storage_name")
     def advanced_config(self, is_corpus=False):
         disabled_assistant = self.config.is_assistant_disabled()
         disabled_source_storage = self.config.is_source_storage_disabled()
