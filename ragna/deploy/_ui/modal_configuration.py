@@ -130,7 +130,6 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.corpus_or_upload_radiobutton = pn.widgets.RadioButtonGroup.from_param(
             self.param.corpus_or_upload,
-            css_classes=["modal_configuration_radio_button_group"],
             button_style="outline",
             button_type="primary",
         )
