@@ -112,6 +112,12 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.cancel_button.on_click(self.cancel_button_callback)
 
+        self.corpus_name_input = pn.widgets.TextInput(
+            name="",
+            placeholder="Enter name of corpus to upload data to (optional)",
+            width=335,
+        )
+
         self.start_chat_button = pn.widgets.Button(
             name="Start Conversation", button_type="primary", min_width=375
         )
@@ -353,9 +359,11 @@ class ModalConfiguration(pn.viewable.Viewer):
     @pn.depends("advanced_config_collapsed", watch=True)
     def shrink_upload_container_height(self):
         if self.advanced_config_collapsed:
-            self.document_uploader.height_upload_container = "160px"
+            self.document_uploader.height_upload_container = ui.FILE_CONTAINER_HEIGHT
         else:
-            self.document_uploader.height_upload_container = "90px"
+            self.document_uploader.height_upload_container = (
+                ui.FILE_CONTAINER_HEIGHT_REDUCED
+            )
 
     @pn.depends(
         "corpus_or_upload",
@@ -371,11 +379,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         else:
             return pn.Column(
                 pn.pane.HTML("<b>Corpus Name</b>"),
-                pn.widgets.TextInput(
-                    name="",
-                    placeholder="Enter name of corpus to upload data to (optional)",
-                    width=335,
-                ),
+                self.corpus_name_input,
                 self.upload_files_label,
                 self.upload_row,
             )
