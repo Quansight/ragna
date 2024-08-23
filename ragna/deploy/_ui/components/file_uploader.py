@@ -5,6 +5,8 @@ import param
 from panel.reactive import ReactiveHTML
 from panel.widgets import Widget
 
+from .. import styles as ui
+
 
 class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     allowed_documents = param.List(default=[])
@@ -12,7 +14,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     file_list = param.List(default=[])
 
-    height_upload_container = param.String(default="160px")
+    height_upload_container = param.String(default=ui.FILE_CONTAINER_HEIGHT)
 
     custom_js = param.String(default="")
     uploaded_documents_json = param.String(default="")
@@ -84,7 +86,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                     margin-right: 10px;
                     border: 1px dashed var(--accent-color);
                     border-radius: 5px;
-                    height:${height_upload_container};
+                    height:100%;
                     display:flex;
                     text-align: center;
                     justify-content: center;
@@ -103,8 +105,6 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                 .fileUploadDropArea.draggedOver {
                     border-width: 3px;
                 }
-
-
                 
                 .fileUpload {
                     height: 100% !important;
