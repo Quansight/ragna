@@ -202,7 +202,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
     def render_filters_rows(self):
         return pn.Column(
             *self.filter_rows,
-            css_classes=["metadata-filter-collection"],
+            css_classes=["metadata-filter-row-collection"],
         )
 
     def construct_metadata_filters(self):
