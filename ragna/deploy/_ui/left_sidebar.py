@@ -25,12 +25,12 @@ class LeftSidebar(pn.viewable.Viewer):
             on_error=lambda x: print(f"error sync on {x}"),
         )
 
-    def trigger_on_click_new_chat(self, event):
+    async def trigger_on_click_new_chat(self, event):
         if event.old > event.new:
             return
 
         if self.on_click_new_chat is not None:
-            self.on_click_new_chat(event)
+            await self.on_click_new_chat(event)
 
     def on_click_chat_wrapper(self, event, chat):
         # This is a hack to avoid the event being triggered twice in a row

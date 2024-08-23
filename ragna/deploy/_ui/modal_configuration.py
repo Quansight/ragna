@@ -85,15 +85,20 @@ class ModalConfiguration(pn.viewable.Viewer):
         objects=[USE_CORPUS_LABEL, USE_UPLOAD_LABEL], default=USE_CORPUS_LABEL
     )
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(
+        self, api_wrapper, components, corpus_names, corpus_metadata, **params
+    ):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
         self.api_wrapper = api_wrapper
 
+        self.corpus_names = corpus_names
+        self.corpus_metadata = corpus_metadata
+
         upload_endpoints = self.api_wrapper.upload_endpoints()
 
         self.chat_name_input = pn.widgets.TextInput.from_param(
-            self.param.chat_name,
+            self.param.chat_name, name=""
         )
         self.document_uploader = FileUploader(
             [],  # the allowed documents are set in the model_section function
@@ -123,14 +128,16 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
-        self.corpus_or_upload_radiobutton = pn.widgets.RadioBoxGroup.from_param(
+        self.corpus_or_upload_radiobutton = pn.widgets.RadioButtonGroup.from_param(
             self.param.corpus_or_upload,
-            inline=True,
-            title="",
             css_classes=["modal_configuration_radio_button_group"],
+            button_style="outline",
+            button_type="primary",
         )
 
-        self.metadata_filters_builder = MetadataFiltersBuilder()
+        # self.metadata_filters_builder = MetadataFiltersBuilder()
+
+        self.create_config(components)
 
     async def did_click_on_start_chat_button(self, event):
         if self.corpus_or_upload == USE_UPLOAD_LABEL:
@@ -148,7 +155,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.start_chat_button.disabled = True
 
             await self.did_finish_upload(
-                self.metadata_filters_builder.get_metadata_filters()
+                self.metadata_filters_builder.construct_metadata_builders()
             )
 
     async def did_finish_upload(self, uploaded_documents):
@@ -184,13 +191,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         else:
             self.upload_files_label.object = "<b>Upload files</b> (required)"
 
-    async def model_section(self):
-        # prevents re-rendering the section
+    def create_config(self, components):
         if self.config is None:
-            # Retrieve the components from the API and build a config object
-            components = await self.api_wrapper.get_components()
-            # TODO : use the components to set up the default values for the various params
-
             config = ChatConfig()
             config.allowed_documents = components["documents"]
 
@@ -210,6 +212,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.config = config
             self.document_uploader.allowed_documents = config.allowed_documents
 
+    def model_section(self):
         return pn.Row(
             pn.Column(
                 pn.pane.HTML("<b>Assistants</b>"),
@@ -228,7 +231,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
 
     @pn.depends("config", "config.assistant_name", "config.source_storage_name")
-    def advanced_config_ui(self):
+    def advanced_config_upload(self):
         if self.config is None:
             return
 
@@ -333,43 +336,96 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         toggle_button.on_click(toggle_card)
 
-        toggle_button.js_on_click(
-            args={"card": card},
-            code=js.JS_TOGGLE_CARD,
+        return pn.Column(toggle_button, card)
+
+    def advanced_config_corpus(self):
+        disabled_assistant = self.config.is_assistant_disabled()
+
+        assistant_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_assistant else []),
+        ]
+
+        card = pn.Card(
+            pn.Column(
+                pn.widgets.IntSlider.from_param(
+                    self.config.param.max_new_tokens,
+                    bar_color=ui.MAIN_COLOR,
+                    css_classes=assistant_css_classes,
+                    disabled=disabled_assistant,
+                ),
+                margin=(0, 0, 0, 0),
+            ),
+            collapsed=self.advanced_config_collapsed,
+            collapsible=True,
+            hide_header=True,
+            css_classes=["modal_configuration_advanced_card"],
         )
+
+        def toggle_card(event):
+            if event.old < event.new:
+                # This callback is triggered when the card is rerendered,
+                # after changing the assistant, for example.
+                # This test prevents collapsing the card when it is not needed
+
+                card.collapsed = not card.collapsed
+                self.advanced_config_collapsed = card.collapsed
+
+            toggle_button = event.obj
+
+            if card.collapsed:
+                toggle_button.name = toggle_button.name.replace("▼", "▶")
+            else:
+                toggle_button.name = toggle_button.name.replace("▶", "▼")
+
+            print(card.collapsed)
+
+        toggle_button = pn.widgets.Button(
+            name="Advanced Configuration of Assistants   ▶",
+            button_type="light",
+            css_classes=["modal_configuration_toggle_button"],
+        )
+
+        toggle_button.on_click(toggle_card)
 
         return pn.Column(toggle_button, card)
 
-    @pn.depends("corpus_or_upload")
+    @pn.depends("corpus_or_upload", "config.source_storage_name")
     def corpus_or_upload_row(self):
-        print(self.corpus_or_upload)
+        print("f")
 
         if self.corpus_or_upload == USE_CORPUS_LABEL:
-            return self.metadata_filters_builder
+            return MetadataFiltersBuilder(
+                corpus_names=self.corpus_names[self.config.source_storage_name],
+                corpus_metadata=self.corpus_metadata[self.config.source_storage_name],
+            )
+
         else:
-            return pn.Column(self.upload_files_label, self.upload_row)
+            return pn.Column(
+                self.upload_files_label,
+                self.upload_row,
+            )
 
     def __panel__(self):
         return pn.Column(
             pn.pane.HTML(
                 f"""<h2>Start a new chat</h2>
-                         Let's set up the configurations for your new chat !<br />
                          <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
                          """,
             ),
+            self.corpus_or_upload_radiobutton,
             ui.divider(),
             pn.pane.HTML("<b>Chat name</b>"),
             self.chat_name_input,
             ui.divider(),
             self.model_section,
             ui.divider(),
-            self.advanced_config_ui,
+            self.advanced_config_corpus,
             ui.divider(),
-            self.corpus_or_upload_radiobutton,
             self.corpus_or_upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
             min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
             min_width=ui.CONFIG_MODAL_WIDTH,
-            sizing_mode="stretch_both",
-            height_policy="max",
+            sizing_mode="stretch_height",
+            styles={"overflow-y": "hidden"},
         )
