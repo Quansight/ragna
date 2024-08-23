@@ -54,7 +54,6 @@ css_modifiers = {
         pn.widgets.Button,
         pn.widgets.ButtonIcon,
         pn.widgets.Select,
-        pn.widgets.TextInput,
     ],
 }
 

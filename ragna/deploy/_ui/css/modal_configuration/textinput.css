@@ -1,9 +1,0 @@
-:host(.metadata-filter-value) {
-  max-width: 25%;
-  min-width: 25%;
-  height: 30px;
-}
-
-:host(.metadata-filter-error) input.bk-input {
-  border: 2px red solid !important;
-}

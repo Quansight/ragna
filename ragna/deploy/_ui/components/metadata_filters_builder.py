@@ -29,21 +29,21 @@ class FilterRow(pn.viewable.Viewer):
         self.key_select = pn.widgets.Select.from_param(
             self.param.key,
             name="",
-            css_classes=["metadata-filter", "metadata-filter-key"],
+            css_classes=["metadata-filter-row", "metadata-filter-key"],
             disabled=key_select_disabled,
         )
 
         self.operator_select = pn.widgets.Select.from_param(
             self.param.operator,
             name="",
-            css_classes=["metadata-filter", "metadata-filter-operator"],
+            css_classes=["metadata-filter-row", "metadata-filter-operator"],
             disabled=True,
         )
 
         self.value_select = pn.widgets.Select.from_param(
             self.param.value,
             name="",
-            css_classes=["metadata-filter", "metadata-filter-value"],
+            css_classes=["metadata-filter-row", "metadata-filter-value"],
             disabled=True,
         )
 
@@ -51,7 +51,7 @@ class FilterRow(pn.viewable.Viewer):
             icon="trash",
             width=25,
             height=25,
-            css_classes=["metadata-filter", "metadata-filter-delete"],
+            css_classes=["metadata-filter-row", "metadata-filter-delete"],
         )
         self.delete_button.on_click(on_delete_callback)
 
@@ -59,10 +59,10 @@ class FilterRow(pn.viewable.Viewer):
     def set_css(widget, valid=True):
         if valid:
             widget.css_classes = [
-                c for c in widget.css_classes if c != "metadata-filter-error"
+                c for c in widget.css_classes if c != "metadata-filter-row-error"
             ]
         else:
-            widget.css_classes = widget.css_classes + ["metadata-filter-error"]
+            widget.css_classes = widget.css_classes + ["metadata-filter-row-error"]
 
     @param.depends("key", watch=True)
     def key_did_change(self):
@@ -123,7 +123,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         self.corpus_names_select = pn.widgets.Select(
             options=[""] + self.corpus_names,
             name="",
-            css_classes=["metadata-filter", "metadata-filter-key"],
+            css_classes=["metadata-filter-row", "metadata-filter-key"],
         )
 
         self.corpus_metadata = corpus_metadata
@@ -203,7 +203,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
     def render_filters_rows(self):
         return pn.Column(
             *self.filter_rows,
-            css_classes=["metadata-filters"],
+            css_classes=["metadata-filter-collection"],
         )
 
     def construct_metadata_filters(self):

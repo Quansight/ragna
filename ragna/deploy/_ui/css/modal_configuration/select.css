@@ -11,6 +11,6 @@
   height: 30px;
 }
 
-:host(.metadata-filter-error) select.bk-input {
+:host(.metadata-filter-row-error) select.bk-input {
   border: 2px red solid !important;
 }
