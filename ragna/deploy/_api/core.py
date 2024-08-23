@@ -14,7 +14,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 import ragna
@@ -260,7 +260,10 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         with get_session() as session:
             document, metadata = database.get_document(session, user=user, id=id)
             core_document = document.to_core(metadata)
-            return core_document.read()
+            content = core_document.read()
+            headers = {"Content-Disposition": "inline; filename=sample.pdf"}
+
+            return Response(content, media_type="application/pdf", headers=headers)
 
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat

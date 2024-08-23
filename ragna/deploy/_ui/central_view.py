@@ -242,15 +242,15 @@ class CentralView(pn.viewable.Viewer):
 
         source_infos = []
         for rank, source in enumerate(sources, 1):
-
-            async def on_click_open_source_file(event, source=source):
-                return await self.api_wrapper.get_document_content(
-                    source["document"]["id"]
-                )
-
             button = pn.widgets.Button(
                 name="Open File",
-                on_click=on_click_open_source_file,
+            )
+            (
+                button.js_on_click(
+                    code=self.api_wrapper.create_document_content_js(
+                        source["document_id"]
+                    )
+                ),
             )
 
             location = source["location"]

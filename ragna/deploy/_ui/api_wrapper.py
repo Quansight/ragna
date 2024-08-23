@@ -62,8 +62,20 @@ class ApiWrapper(param.Parameterized):
             chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
         return json_data
 
-    async def get_document_content(self, document_id):
-        return (await self.client.get(f"/documents/{document_id}/content")).read()
+    def create_document_content_js(self, document_id):
+        return f"""
+              fetch(
+                "{self.client.base_url}/documents/{document_id}/content",
+                {{ headers: {{"Authorization": "Bearer {self.auth_token}"}} }}
+              ).then((response) => response.blob())
+                .then((blob) => {{
+                  var _url = window.URL.createObjectURL(blob);
+                  console.log(_url);
+                  window.open(_url, "_blank").focus();
+              }}).catch((err) => {{
+                console.log(err);
+              }});
+        """
 
     async def answer(self, chat_id, prompt):
         async with self.client.stream(
