@@ -23,7 +23,6 @@ class FilterRow(pn.viewable.Viewer):
         if valid_key_value_pairs:
             key_select_disabled = False
             self.param.key.objects = [""] + list(valid_key_value_pairs.keys())
-        if valid_key_value_pairs:
             self.valid_key_value_pairs = valid_key_value_pairs
 
         self.key_select = pn.widgets.Select.from_param(
