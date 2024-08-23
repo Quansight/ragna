@@ -134,8 +134,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             button_type="primary",
         )
 
-        # self.metadata_filters_builder = MetadataFiltersBuilder()
-
         self.create_config(components)
 
     async def did_click_on_start_chat_button(self, event):
@@ -229,10 +227,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
-    def advanced_config_upload(self):
-        if self.config is None:
-            return
-
+    def advanced_config(self, is_corpus=False):
         disabled_assistant = self.config.is_assistant_disabled()
         disabled_source_storage = self.config.is_source_storage_disabled()
 
@@ -246,57 +241,82 @@ class ModalConfiguration(pn.viewable.Viewer):
             *(["disabled"] if disabled_assistant else []),
         ]
 
-        card = pn.Card(
-            pn.Row(
-                pn.Column(
-                    pn.widgets.IntSlider.from_param(
-                        self.config.param.chunk_size,
-                        name="Chunk Size",
-                        bar_color=ui.MAIN_COLOR,
-                        css_classes=source_storage_css_classes,
-                        width_policy="max",
-                        disabled=disabled_source_storage,
-                    ),
-                    pn.widgets.IntSlider.from_param(
-                        self.config.param.chunk_overlap,
-                        name="Chunk Overlap",
-                        bar_color=ui.MAIN_COLOR,
-                        css_classes=source_storage_css_classes,
-                        width_policy="max",
-                        disabled=disabled_source_storage,
-                    ),
-                    margin=(0, 20, 0, 0),
-                    width_policy="max",
+        if is_corpus:
+            card = pn.Card(
+                pn.widgets.IntSlider.from_param(
+                    self.config.param.max_new_tokens,
+                    bar_color=ui.MAIN_COLOR,
+                    css_classes=assistant_css_classes,
+                    disabled=disabled_assistant,
+                    margin=(0, 0, 0, 11),
                 ),
-                pn.Column(
-                    pn.widgets.IntSlider.from_param(
-                        self.config.param.max_context_tokens,
-                        bar_color=ui.MAIN_COLOR,
-                        css_classes=source_storage_css_classes,
+                collapsed=self.advanced_config_collapsed,
+                collapsible=True,
+                hide_header=True,
+                css_classes=["modal_configuration_advanced_card"],
+            )
+            toggle_button = pn.widgets.Button(
+                name="Advanced Configuration of Assistants   ▶",
+                button_type="light",
+                css_classes=["modal_configuration_toggle_button"],
+            )
+        else:
+            card = pn.Card(
+                pn.Row(
+                    pn.Column(
+                        pn.widgets.IntSlider.from_param(
+                            self.config.param.chunk_size,
+                            name="Chunk Size",
+                            bar_color=ui.MAIN_COLOR,
+                            css_classes=source_storage_css_classes,
+                            width_policy="max",
+                            disabled=disabled_source_storage,
+                        ),
+                        pn.widgets.IntSlider.from_param(
+                            self.config.param.chunk_overlap,
+                            name="Chunk Overlap",
+                            bar_color=ui.MAIN_COLOR,
+                            css_classes=source_storage_css_classes,
+                            width_policy="max",
+                            disabled=disabled_source_storage,
+                        ),
+                        margin=(0, 20, 0, 0),
                         width_policy="max",
-                        disabled=disabled_source_storage,
                     ),
-                    pn.widgets.IntSlider.from_param(
-                        self.config.param.max_new_tokens,
-                        bar_color=ui.MAIN_COLOR,
-                        css_classes=assistant_css_classes,
+                    pn.Column(
+                        pn.widgets.IntSlider.from_param(
+                            self.config.param.max_context_tokens,
+                            bar_color=ui.MAIN_COLOR,
+                            css_classes=source_storage_css_classes,
+                            width_policy="max",
+                            disabled=disabled_source_storage,
+                        ),
+                        pn.widgets.IntSlider.from_param(
+                            self.config.param.max_new_tokens,
+                            bar_color=ui.MAIN_COLOR,
+                            css_classes=assistant_css_classes,
+                            width_policy="max",
+                            disabled=disabled_assistant,
+                        ),
                         width_policy="max",
-                        disabled=disabled_assistant,
+                        height_policy="max",
+                        margin=(0, 20, 0, 0),
+                        styles={
+                            "border-left": "1px solid var(--neutral-stroke-divider-rest)"
+                        },
                     ),
-                    width_policy="max",
-                    height_policy="max",
-                    margin=(0, 20, 0, 0),
-                    styles={
-                        "border-left": "1px solid var(--neutral-stroke-divider-rest)"
-                    },
+                    width=ui.CONFIG_MODAL_WIDTH,
                 ),
-                width=800,
-            ),
-            collapsed=self.advanced_config_collapsed,
-            collapsible=True,
-            hide_header=True,
-            css_classes=["modal_configuration_advanced_card"],
-        )
+                collapsed=self.advanced_config_collapsed,
+                collapsible=True,
+                hide_header=True,
+                css_classes=["modal_configuration_advanced_card"],
+            )
+            toggle_button = pn.widgets.Button(
+                name="Advanced Configuration of Assistants and Source Storages   ▶",
+                button_type="light",
+                css_classes=["modal_configuration_toggle_button"],
+            )
 
         def toggle_card(event):
             if event.old < event.new:
@@ -314,58 +334,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             else:
                 toggle_button.name = toggle_button.name.replace("▶", "▼")
 
-        toggle_button = pn.widgets.Button(
-            name="Advanced Configuration of Assistants and Source Storages   ▶",
-            button_type="light",
-            css_classes=["modal_configuration_toggle_button"],
-        )
-        toggle_button.on_click(toggle_card)
-
-        return pn.Column(toggle_button, card)
-
-    def advanced_config_corpus(self):
-        disabled_assistant = self.config.is_assistant_disabled()
-
-        assistant_css_classes = [
-            "modal_configuration_int_slider",
-            *(["disabled"] if disabled_assistant else []),
-        ]
-
-        card = pn.Card(
-            pn.widgets.IntSlider.from_param(
-                self.config.param.max_new_tokens,
-                bar_color=ui.MAIN_COLOR,
-                css_classes=assistant_css_classes,
-                disabled=disabled_assistant,
-                margin=(0, 0, 0, 11),
-            ),
-            collapsed=self.advanced_config_collapsed,
-            collapsible=True,
-            hide_header=True,
-            css_classes=["modal_configuration_advanced_card"],
-        )
-
-        def toggle_card(event):
-            if event.old < event.new:
-                # This callback is triggered when the card is rerendered,
-                # after changing the assistant, for example.
-                # This test prevents collapsing the card when it is not needed
-
-                card.collapsed = not card.collapsed
-                self.advanced_config_collapsed = card.collapsed
-
-            toggle_button = event.obj
-
-            if card.collapsed:
-                toggle_button.name = toggle_button.name.replace("▼", "▶")
-            else:
-                toggle_button.name = toggle_button.name.replace("▶", "▼")
-
-        toggle_button = pn.widgets.Button(
-            name="Advanced Configuration of Assistants   ▶",
-            button_type="light",
-            css_classes=["modal_configuration_toggle_button"],
-        )
         toggle_button.on_click(toggle_card)
 
         return pn.Column(toggle_button, card)
@@ -378,9 +346,9 @@ class ModalConfiguration(pn.viewable.Viewer):
     )
     def corpus_or_upload_config(self):
         if self.corpus_or_upload == USE_CORPUS_LABEL:
-            return self.advanced_config_corpus()
+            return self.advanced_config(is_corpus=True)
         else:
-            return self.advanced_config_upload()
+            return self.advanced_config(is_corpus=False)
 
     @pn.depends("advanced_config_collapsed", watch=True)
     def shrink_upload_container_height(self):
