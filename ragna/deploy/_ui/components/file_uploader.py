@@ -41,7 +41,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         if self.after_upload_callback is not None:
             await self.after_upload_callback(json.loads(self.uploaded_documents_json))
 
-    def perform_upload(self, event=None, after_upload_callback=None):
+    def perform_upload(self, event=None, after_upload_callback=None, corpus_name=""):
         self.after_upload_callback = after_upload_callback
 
         self.loading = True
@@ -60,7 +60,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         self.custom_js = (
             final_callback_js
             + random_id
-            + f"""upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
+            + f"""upload( self.get_upload_files(), '{corpus_name}',  '{self.token}', '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {

@@ -75,14 +75,6 @@ class FilterRow(pn.viewable.Viewer):
         self.operator_select.disabled = False
         self.param.value.objects = [""] + self.valid_key_value_pairs[self.key]
 
-    def __panel__(self):
-        return pn.Row(
-            self.key_select,
-            self.operator_select,
-            self.value_select,
-            self.delete_button,
-        )
-
     def is_empty(self):
         return self.key == "" and self.operator == "" and self.value == ""
 
@@ -106,13 +98,23 @@ class FilterRow(pn.viewable.Viewer):
         return not (self.key == "" or self.operator == "" or self.value == "")
 
     def construct_metadata_filter(self):
+        # probably not required, but just in case
         if self.key == "" or self.operator == "" or self.value == "":
             return None
-        return MetadataFilter(self.operator, self.key, self.value)
+
+        return MetadataFilter(MetadataOperator[self.operator], self.key, self.value)
+
+    def __panel__(self):
+        return pn.Row(
+            self.key_select,
+            self.operator_select,
+            self.value_select,
+            self.delete_button,
+        )
 
 
 class MetadataFiltersBuilder(pn.viewable.Viewer):
-    metadata_filters = param.List([])
+    filter_rows = param.List([])
     corpus_names = param.List([])
 
     def __init__(self, corpus_metadata, **params):
@@ -126,19 +128,19 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
         self.corpus_metadata = corpus_metadata
 
-        self.add_filter_button = pn.widgets.ButtonIcon(
+        self.add_filter_row_button = pn.widgets.ButtonIcon(
             icon="circle-plus", width=25, height=25
         )
-        self.add_filter_button.on_click(self.did_click_add_filter_button)
+        self.add_filter_row_button.on_click(self.did_click_add_filter_row_button)
 
         self.delete_buttons = []
 
-        self.metadata_filters = [
+        self.filter_rows = [
             FilterRow(
                 key="",
                 operator="",
                 value="",
-                on_delete_callback=self.delete_metadata_filter,
+                on_delete_callback=self.delete_filter_row,
             )
         ]
 
@@ -146,7 +148,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
     def activate_filter_rows(self, event):
         if event.new != "":
-            self.metadata_filters = [
+            self.filter_rows = [
                 FilterRow(
                     valid_key_value_pairs=self.corpus_metadata[
                         self.corpus_names_select.value
@@ -154,26 +156,26 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
                     key="",
                     operator="",
                     value="",
-                    on_delete_callback=self.delete_metadata_filter,
+                    on_delete_callback=self.delete_filter_row,
                 )
             ]
 
-    def did_click_add_filter_button(self, event):
-        if not self.metadata_filters[-1].is_empty():
-            new_metadata_filter_row = FilterRow(
+    def did_click_add_filter_row_button(self, event):
+        if not self.filter_rows[-1].is_empty():
+            new_filter_row = FilterRow(
                 valid_key_value_pairs=self.corpus_metadata[
                     self.corpus_names_select.value
                 ],
                 key="",
                 operator="",
                 value="",
-                on_delete_callback=self.delete_metadata_filter,
+                on_delete_callback=self.delete_filter_row,
             )
-            self.metadata_filters = self.metadata_filters + [new_metadata_filter_row]
+            self.filter_rows = self.filter_rows + [new_filter_row]
 
-    def delete_metadata_filter(self, event):
+    def delete_filter_row(self, event):
         filter_row_to_remove = None
-        for filter_row in self.metadata_filters:
+        for filter_row in self.filter_rows:
             if event.obj == filter_row.delete_button:
                 filter_row_to_remove = filter_row
                 break
@@ -181,9 +183,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         if filter_row_to_remove is None:
             return
 
-        new_filter_rows = [
-            f for f in self.metadata_filters if f != filter_row_to_remove
-        ]
+        new_filter_rows = [f for f in self.filter_rows if f != filter_row_to_remove]
         if len(new_filter_rows) == 0:
             new_filter_rows.append(
                 FilterRow(
@@ -193,23 +193,23 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
                     key="",
                     operator="",
                     value="",
-                    on_delete_callback=self.delete_metadata_filter,
+                    on_delete_callback=self.delete_filter_row,
                 )
             )
 
-        self.metadata_filters = new_filter_rows
+        self.filter_rows = new_filter_rows
 
-    @pn.depends("metadata_filters")
-    def render_metadata_filters_rows(self):
+    @pn.depends("filter_rows")
+    def render_filters_rows(self):
         return pn.Column(
-            *self.metadata_filters,
+            *self.filter_rows,
             css_classes=["metadata-filters"],
         )
 
     def construct_metadata_filters(self):
         metadata_filters = [
             filter_row.construct_metadata_filter()
-            for filter_row in self.metadata_filters
+            for filter_row in self.filter_rows
             if filter_row.construct_metadata_filter() is not None
         ]
 
@@ -222,13 +222,13 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
     def validate(self):
         result = True
-        for filter in self.metadata_filters:
+        for filter_row in self.filter_rows:
             # If the last filter is empty, we do not want to validate it.
             # This allows to have only one empty filter, to question on the whole corpus.
-            if filter == self.metadata_filters[-1] and filter.is_empty():
+            if filter_row == self.filter_rows[-1] and filter_row.is_empty():
                 continue
 
-            if not filter.validate():
+            if not filter_row.validate():
                 result = False
                 # Do not break, we want to call validate() on every filters
 
@@ -240,9 +240,9 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             self.corpus_names_select,
             pn.pane.HTML("<b>Metadata Filters</b>"),
             pn.Column(
-                self.render_metadata_filters_rows,
-                pn.Row(self.add_filter_button),
-                max_height=120,
+                self.render_filters_rows,
+                pn.Row(self.add_filter_row_button),
+                max_height=160,
             ),
             sizing_mode="stretch_both",
             height_policy="max",
