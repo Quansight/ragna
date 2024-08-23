@@ -1,4 +1,4 @@
-def reset_modal_size(width, height):
+def set_modal_size(width, height):
     return f"""
     document.getElementById("pn-Modal").style.setProperty("--dialog-height","{height}px", "important")
     document.getElementById("pn-Modal").style.setProperty("--dialog-width","{width}px", "important")

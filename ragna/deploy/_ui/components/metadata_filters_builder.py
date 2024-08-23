@@ -236,14 +236,13 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
     def __panel__(self):
         return pn.Column(
-            pn.pane.Markdown("#### Available Corpuses"),
+            pn.pane.HTML("<b>Available Corpuses</b>"),
             self.corpus_names_select,
-            pn.pane.Markdown("#### Metadata Filters"),
+            pn.pane.HTML("<b>Metadata Filters</b>"),
             pn.Column(
                 self.render_metadata_filters_rows,
                 pn.Row(self.add_filter_button),
-                max_height=80,
-                height_policy="min",
+                max_height=120,
             ),
             sizing_mode="stretch_both",
             height_policy="max",

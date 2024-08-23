@@ -12,6 +12,8 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
 
     file_list = param.List(default=[])
 
+    height_upload_container = param.String(default="160px")
+
     custom_js = param.String(default="")
     uploaded_documents_json = param.String(default="")
 
@@ -74,7 +76,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                 }
 
                 .fileUploadContainer {
-                    height: 130px;
+                    height: ${height_upload_container};
                 }
 
                 .fileUploadDropArea {
@@ -82,7 +84,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                     margin-right: 10px;
                     border: 1px dashed var(--accent-color);
                     border-radius: 5px;
-                    height:100%;
+                    height:${height_upload_container};
                     display:flex;
                     text-align: center;
                     justify-content: center;
@@ -102,9 +104,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                     border-width: 3px;
                 }
 
-                .fileUploadDropArea.uploaded {
-                    height: calc(100% - 40px);
-                }
+
                 
                 .fileUpload {
                     height: 100% !important;
@@ -115,15 +115,20 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
                 .fileListContainer {
                     display:flex;
                     flex-direction: row;
-                    height: 44px;
-                    overflow:scroll;
-                    padding-top:14px;
+                    flex-wrap: wrap;
+                    height: 40px;
+                    overflow-y:scroll;
+                    overflow-x:hidden;
+                    margin-top: 10px;
+                    margin-bottom: 10px;
+                    padding-top:5px;
                     padding-left:6px;
+                    padding-bottom:5px;
                 }
                 
                 .chat_document_pill {
                     background-color: rgb(241,241,241);
-                    margin-top:0px; 
+                    margin-top:5px; 
                     margin-left: 5px;   
                     margin-right: 5px;
                     padding: 5px 15px;

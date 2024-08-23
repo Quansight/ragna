@@ -102,9 +102,7 @@ def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> st
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
-# set modal height
-CONFIG_MODAL_MIN_HEIGHT = 700
-CONFIG_MODAL_MAX_HEIGHT = 850
+CONFIG_MODAL_HEIGHT = 700
 CONFIG_MODAL_WIDTH = 800
 
 

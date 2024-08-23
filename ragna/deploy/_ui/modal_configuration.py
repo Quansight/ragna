@@ -230,7 +230,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
-    @pn.depends("config", "config.assistant_name", "config.source_storage_name")
     def advanced_config_upload(self):
         if self.config is None:
             return
@@ -251,12 +250,6 @@ class ModalConfiguration(pn.viewable.Viewer):
         card = pn.Card(
             pn.Row(
                 pn.Column(
-                    pn.pane.HTML(
-                        """<h2> Retrieval Method</h2>
-                            <span>Adjusting these settings requires re-embedding the documents, which may take some time.
-                            </span><br />
-                                         """
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.chunk_size,
                         name="Chunk Size",
@@ -277,12 +270,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                     width_policy="max",
                 ),
                 pn.Column(
-                    pn.pane.HTML(
-                        """<h2> Model Configuration</h2>
-                            <span>Changing these parameters alters the output. This might affect accuracy and efficiency.
-                            </span><br />
-                                         """
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_context_tokens,
                         bar_color=ui.MAIN_COLOR,
@@ -304,7 +291,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                         "border-left": "1px solid var(--neutral-stroke-divider-rest)"
                     },
                 ),
-                height=250,
+                width=800,
             ),
             collapsed=self.advanced_config_collapsed,
             collapsible=True,
@@ -329,11 +316,10 @@ class ModalConfiguration(pn.viewable.Viewer):
                 toggle_button.name = toggle_button.name.replace("▶", "▼")
 
         toggle_button = pn.widgets.Button(
-            name="Advanced Configurations   ▶",
+            name="Advanced Configuration of Assistants and Source Storages   ▶",
             button_type="light",
             css_classes=["modal_configuration_toggle_button"],
         )
-
         toggle_button.on_click(toggle_card)
 
         return pn.Column(toggle_button, card)
@@ -347,14 +333,12 @@ class ModalConfiguration(pn.viewable.Viewer):
         ]
 
         card = pn.Card(
-            pn.Column(
-                pn.widgets.IntSlider.from_param(
-                    self.config.param.max_new_tokens,
-                    bar_color=ui.MAIN_COLOR,
-                    css_classes=assistant_css_classes,
-                    disabled=disabled_assistant,
-                ),
-                margin=(0, 0, 0, 0),
+            pn.widgets.IntSlider.from_param(
+                self.config.param.max_new_tokens,
+                bar_color=ui.MAIN_COLOR,
+                css_classes=assistant_css_classes,
+                disabled=disabled_assistant,
+                margin=(0, 0, 0, 11),
             ),
             collapsed=self.advanced_config_collapsed,
             collapsible=True,
@@ -378,22 +362,39 @@ class ModalConfiguration(pn.viewable.Viewer):
             else:
                 toggle_button.name = toggle_button.name.replace("▶", "▼")
 
-            print(card.collapsed)
-
         toggle_button = pn.widgets.Button(
             name="Advanced Configuration of Assistants   ▶",
             button_type="light",
             css_classes=["modal_configuration_toggle_button"],
         )
-
         toggle_button.on_click(toggle_card)
 
         return pn.Column(toggle_button, card)
 
-    @pn.depends("corpus_or_upload", "config.source_storage_name")
-    def corpus_or_upload_row(self):
-        print("f")
+    @pn.depends(
+        "corpus_or_upload",
+        "config",
+        "config.assistant_name",
+        "config.source_storage_name",
+    )
+    def corpus_or_upload_config(self):
+        if self.corpus_or_upload == USE_CORPUS_LABEL:
+            return self.advanced_config_corpus()
+        else:
+            return self.advanced_config_upload()
 
+    @pn.depends("advanced_config_collapsed", watch=True)
+    def shrink_upload_container_height(self):
+        if self.advanced_config_collapsed:
+            self.document_uploader.height_upload_container = "160px"
+        else:
+            self.document_uploader.height_upload_container = "90px"
+
+    @pn.depends(
+        "corpus_or_upload",
+        "config.source_storage_name",
+    )
+    def corpus_or_upload_row(self):
         if self.corpus_or_upload == USE_CORPUS_LABEL:
             return MetadataFiltersBuilder(
                 corpus_names=self.corpus_names[self.config.source_storage_name],
@@ -402,6 +403,12 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         else:
             return pn.Column(
+                pn.pane.HTML("<b>Corpus Name</b>"),
+                pn.widgets.TextInput(
+                    name="",
+                    placeholder="Enter name of corpus to upload data to (optional)",
+                    width=335,
+                ),
                 self.upload_files_label,
                 self.upload_row,
             )
@@ -409,8 +416,8 @@ class ModalConfiguration(pn.viewable.Viewer):
     def __panel__(self):
         return pn.Column(
             pn.pane.HTML(
-                f"""<h2>Start a new chat</h2>
-                         <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
+                f"""<h2 style="margin-bottom: 5px;">Start a new chat</h2>
+                         <script>{js.set_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_HEIGHT)}</script>
                          """,
             ),
             self.corpus_or_upload_radiobutton,
@@ -420,12 +427,11 @@ class ModalConfiguration(pn.viewable.Viewer):
             ui.divider(),
             self.model_section,
             ui.divider(),
-            self.advanced_config_corpus,
+            self.corpus_or_upload_config,
             ui.divider(),
             self.corpus_or_upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
-            min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
+            min_height=ui.CONFIG_MODAL_HEIGHT,
             min_width=ui.CONFIG_MODAL_WIDTH,
-            sizing_mode="stretch_height",
             styles={"overflow-y": "hidden"},
         )
