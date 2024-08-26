@@ -78,6 +78,9 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         corpuses = client.get("/corpuses").raise_for_status().json()
         assert corpuses == {source_storage: []}
 
+        corpuses_metadata = client.get("/corpuses/metadata").raise_for_status().json()
+        assert corpuses_metadata == {source_storage: []}
+
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
@@ -103,6 +106,25 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
             client.get(
                 "/corpuses", params={"source_storage": "unknown_source_storage"}
+            ).raise_for_status()
+
+        corpuses = client.get("/corpuses/metadata").raise_for_status().json()
+        # assert corpuses == {source_storage: {corpus_name: {}}}
+
+        corpuses = (
+            client.get(
+                "/corpuses/metadata",
+                params={"source_storage": source_storage, corpus_name: corpus_name},
+            )
+            .raise_for_status()
+            .json()
+        )
+        # assert corpuses == {source_storage: {corpus_name: {}}}
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/corpuses/metadata",
+                params={"source_storage": "unknown_source_storage"},
             ).raise_for_status()
 
         prompt = "?"
