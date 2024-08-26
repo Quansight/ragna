@@ -1,3 +1,4 @@
+import atexit
 import inspect
 import itertools
 import os
@@ -31,6 +32,9 @@ https://github.com/Quansight/ragna under the BSD 3-Clause license.
 class RestApi:
     def __init__(self) -> None:
         self._process: Optional[subprocess.Popen] = None
+        # In case the documentation errors before we call RestApi.stop, we still need to
+        # stop the server to avoid zombie processes
+        atexit.register(self.stop, quiet=True)
 
     def start(
         self,
@@ -174,11 +178,8 @@ class RestApi:
         if self._process is None:
             return
 
-        self._process.kill()
+        self._process.terminate()
         stdout, _ = self._process.communicate()
 
         if not quiet:
             print(stdout.decode())
-
-    def __del__(self) -> None:
-        self.stop(quiet=True)

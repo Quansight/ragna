@@ -53,9 +53,6 @@ class LanceDB(VectorDatabaseSourceStorage):
     _VECTOR_COLUMN_NAME = "embedded_text"
 
     def _get_table(self, corpus_name: str) -> lancedb.table.Table:
-        if corpus_name == "default":
-            corpus_name = self._embedding_id
-
         if corpus_name in self._db.table_names():
             return self._db.open_table(corpus_name)
         else:
@@ -189,6 +186,9 @@ class LanceDB(VectorDatabaseSourceStorage):
                 else metadata_filter.value
             )
             return f"{key} {operator} {value!r}"
+
+    def list_corpuses(self) -> list[str]:
+        return list(self._db.table_names())
 
     def retrieve(
         self,
