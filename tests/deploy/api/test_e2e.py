@@ -3,10 +3,7 @@ import json
 import pytest
 
 from ragna.deploy import Config
-from tests.deploy.utils import (
-    TestAssistant,
-    make_api_client,
-)
+from tests.deploy.utils import TestAssistant, make_api_client
 from tests.utils import skip_on_windows
 
 
