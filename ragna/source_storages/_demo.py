@@ -1,9 +1,8 @@
 import functools
 import textwrap
 import uuid
+from collections import defaultdict
 from typing import Any, Callable, Optional, cast
-
-from fastapi import status
 
 from ragna.core import (
     Document,
@@ -13,6 +12,8 @@ from ragna.core import (
     Source,
     SourceStorage,
 )
+
+from ._utils import raise_no_corpuses_available, raise_non_existing_corpus
 
 
 class RagnaDemoSourceStorage(SourceStorage):
@@ -36,8 +37,52 @@ class RagnaDemoSourceStorage(SourceStorage):
     def list_corpuses(self) -> list[str]:
         return list(self._storage.keys())
 
+    def _get_corpus(
+        self, corpus_name: str, *, create: bool = False
+    ) -> list[dict[str, Any]]:
+        if create:
+            return self._storage.setdefault(corpus_name, [])
+
+        if not self._storage:
+            raise_no_corpuses_available(self)
+
+        corpus = self._storage.get(corpus_name)
+        if corpus is None:
+            raise_non_existing_corpus(self, corpus_name)
+
+        return corpus
+
+    def list_metadata(
+        self, corpus_name: Optional[str] = None
+    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+        if corpus_name is None:
+            corpus_names = self.list_corpuses()
+        else:
+            corpus_names = [corpus_name]
+
+        metadata = {}
+        for corpus_name in corpus_names:
+            corpus = self._get_corpus(corpus_name)
+            corpus_metadata = defaultdict(set)
+
+            for row in corpus:
+                for key, value in row.items():
+                    if (key.startswith("__") and key.endswith("__")) or value is None:
+                        continue
+
+                    corpus_metadata[key].add(value)
+
+            metadata[corpus_name] = {
+                key: ({type(value) for value in values}.pop(), sorted(values))
+                for key, values in corpus_metadata.items()
+            }
+
+        return metadata
+
     def store(self, corpus_name: str, documents: list[Document]) -> None:
-        corpus = self._storage.setdefault(corpus_name, [])
+        corpus = self._get_corpus(corpus_name, create=True)
+        # FIXME: handle updating metadata (either introducing new or filling with None)
+        #  and add a type check
         corpus.extend(
             [
                 dict(
@@ -114,14 +159,6 @@ class RagnaDemoSourceStorage(SourceStorage):
     def retrieve(
         self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
     ) -> list[Source]:
-        corpus = self._storage.get(corpus_name)
-        if corpus is None:
-            raise RagnaException(
-                "Corpus does not exist",
-                corpus_name=corpus_name,
-                http_status_code=status.HTTP_400_BAD_REQUEST,
-                http_detail=RagnaException.MESSAGE,
-            )
         return [
             Source(
                 id=row["__id__"],
@@ -131,5 +168,7 @@ class RagnaDemoSourceStorage(SourceStorage):
                 content=row["__content__"],
                 num_tokens=row["__num_tokens__"],
             )
-            for _, row in self._apply_filter(corpus, metadata_filter)
+            for _, row in self._apply_filter(
+                self._get_corpus(corpus_name), metadata_filter
+            )
         ]
