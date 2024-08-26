@@ -6,6 +6,7 @@ import functools
 import inspect
 import uuid
 from typing import (
+    Any,
     AsyncIterable,
     AsyncIterator,
     Iterator,
@@ -164,6 +165,24 @@ class SourceStorage(Component, abc.ABC):
         """
         raise RagnaException(
             "list_corpuses is not implemented",
+            source_storage=self.__class__.display_name(),
+            http_status_code=status.HTTP_400_BAD_REQUEST,
+            http_detail=RagnaException.MESSAGE,
+        )
+
+    def list_metadata(
+        self, corpus_name: Optional[str] = None
+    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+        """List available metadata for corpuses.
+
+        Args:
+            corpus_name: Only return metadata for this corpus.
+
+        Returns:
+            List of available metadata.
+        """
+        raise RagnaException(
+            "list_metadata is not implemented",
             source_storage=self.__class__.display_name(),
             http_status_code=status.HTTP_400_BAD_REQUEST,
             http_detail=RagnaException.MESSAGE,
