@@ -248,7 +248,9 @@ class CentralView(pn.viewable.Viewer):
             (
                 button.js_on_click(
                     code=self.api_wrapper.create_document_content_js(
-                        source["document_id"]
+                        source["document_id"],
+                        source["document_name"],
+                        source["location"],
                     )
                 ),
             )

@@ -62,7 +62,8 @@ class ApiWrapper(param.Parameterized):
             chat["messages"] = [self.improve_message(msg) for msg in chat["messages"]]
         return json_data
 
-    def create_document_content_js(self, document_id):
+    def create_document_content_js(self, document_id, document_name, page_numbers):
+        anchor = page_numbers[0]
         return f"""
               fetch(
                 "{self.client.base_url}/documents/{document_id}/content",
@@ -78,7 +79,7 @@ class ApiWrapper(param.Parameterized):
                   var mimetype = headers.get("content-type"); 
                   var file = new File([blob], "{document_id}", {{ type: mimetype }});
                   var _url = window.URL.createObjectURL(file);
-                  window.open(_url, "_blank").focus();
+                  window.open(_url + "#{anchor}", "_blank").focus();
               }}).catch((err) => {{
                 console.log(err);
               }});
