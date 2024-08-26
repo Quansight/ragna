@@ -53,14 +53,25 @@ client.get("/health").raise_for_status()
 # %%
 # ## Step 2: Authentication
 #
-# In order to use Ragna's REST API, we need to authenticate first. To forge an API token
-# we send a request to the `/token` endpoint. This is processed by the
-# [ragna.deploy.Auth][] class, which can be overridden through the
-# config. For this tutorial, we use the default
-# [ragna.deploy.NoAuth][], which requires a matching username and
-# password.
+# In order to use Ragna's REST API, we need to authenticate first. This is handled by
+# the [ragna.deploy.Auth][] class, which can be overridden through the config. By
+# default, [ragna.deploy.NoAuth][] is used. By hitting the `/login` endpoint, we get a
+# session cookie, which is later used to authorize our requests.
 
 client.get("/login", follow_redirects=True)
+dict(client.cookies)
+
+# %%
+# !!! note
+#
+#     In a regular deployment, you'll have login through your browser and create an API
+#     key in your profile page. The API key is used as
+#     [bearer token](https://swagger.io/docs/specification/authentication/bearer-authentication/)
+#     and can be set with
+#
+#     ```python
+#     httpx.Client(..., headers={"Authorization": f"Bearer {RAGNA_API_KEY}"})
+#     ```
 
 # %%
 # ## Step 3: Uploading documents
@@ -88,28 +99,23 @@ with open(document_path, "w") as file:
 # %%
 # The upload process in Ragna consists of two parts:
 #
-# 1. Announce the file to be uploaded. Under the hood this pre-registers the document
-#    in Ragnas database and returns information about how the upload is to be performed.
-#    This is handled by the [ragna.core.Document][] class. By default,
-#    [ragna.core.LocalDocument][] is used, which uploads the files to the local file
-#    system.
-# 2. Perform the actual upload with the information from step 1.
+# 1. Announce the file to be uploaded. Under the hood this registers the document
+#    in Ragna's database and returns the document ID, which is needed for the upload.
 
 response = client.post(
     "/api/documents", json=[{"name": document_path.name}]
 ).raise_for_status()
 documents = response.json()
-print(json.dumps(response.json(), indent=2))
+print(json.dumps(documents, indent=2))
 
 # %%
-# The returned JSON contains two parts: the document object that we are later going to
-# use to create a chat as well as the upload parameters.
-# !!! note
+# 2. Perform the actual upload with the information from step 1. through a
+# [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/)
+# with the following parameters:
 #
-#     The `"token"` in the response is *not* the Ragna REST API token, but rather a
-#     separate one to perform the document upload.
-#
-# We perform the actual upload with the latter now.
+# - The field is `documents` for all entries
+# - The field name is the ID of the document returned by step 1.
+# - The field value is the binary content of the document.
 
 client.put(
     "/api/documents",
