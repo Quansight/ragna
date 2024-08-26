@@ -4,14 +4,14 @@ from typing import Any, AsyncIterator, Optional, Type, cast
 from fastapi import status as http_status_code
 
 import ragna
-from ragna import Rag, core
+from ragna import core
 from ragna._compat import aiter, anext
 from ragna._utils import make_directory
-from ragna.core import RagnaException
+from ragna.core import Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
-from ragna.deploy import Config
 
 from . import _schemas as schemas
+from ._config import Config
 from ._database import Database
 
 
@@ -33,6 +33,16 @@ class Engine:
 
         self._to_core = SchemaToCoreConverter(config=self._config, rag=self._rag)
         self._to_schema = CoreToSchemaConverter()
+
+    def maybe_add_user(self, user: schemas.User) -> None:
+        with self._database.get_session() as session:
+            return self._database.maybe_add_user(session, user=user)
+
+    def get_user(
+        self, name: Optional[str] = None, api_key: Optional[str] = None
+    ) -> Optional[schemas.User]:
+        with self._database.get_session() as session:
+            return self._database.get_user(session, name=name, api_key=api_key)
 
     def _get_component_json_schema(
         self,

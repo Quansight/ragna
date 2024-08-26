@@ -91,7 +91,7 @@ nav:
       - community/contribute.md
   - References:
       - references/python-api.md
-      - references/rest-api.md
+      - references/deploy.md
       - references/cli.md
       - references/config.md
       - references/faq.md

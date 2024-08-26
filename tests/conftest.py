@@ -3,7 +3,7 @@ import pytest
 import ragna
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def tmp_local_root(tmp_path):
     old = ragna.local_root()
     try:

@@ -137,9 +137,9 @@
   </tr>
   </table>
 
-- The classes [ragna.deploy.Authentication][], [ragna.deploy.RagnaDemoAuthentication][],
-  and [ragna.deploy.Config][] moved from the [ragna.core][] module to a new
-  [ragna.deploy][] module.
+- The classes `ragna.deploy.Authentication`, `ragna.deploy.RagnaDemoAuthentication`, and
+  [ragna.deploy.Config][] moved from the [ragna.core][] module to a new [ragna.deploy][]
+  module.
 - [ragna.core.Component][], which is the superclass for [ragna.core.Assistant][] and
   [ragna.core.SourceStorage][], no longer takes a [ragna.deploy.Config][] to
   instantiate. For example

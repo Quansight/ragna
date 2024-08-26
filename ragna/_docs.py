@@ -11,11 +11,12 @@ from typing import Any, Optional, cast
 
 import httpx
 
-from ragna._utils import timeout_after
 from ragna.core import RagnaException
 from ragna.deploy import Config
 
-__all__ = ["SAMPLE_CONTENT", "RestApi"]
+from ._utils import BackgroundSubprocess
+
+__all__ = ["SAMPLE_CONTENT", "RagnaDeploy"]
 
 SAMPLE_CONTENT = """\
 Ragna is an open source project built by Quansight. It is designed to allow
@@ -29,51 +30,25 @@ https://github.com/Quansight/ragna under the BSD 3-Clause license.
 """
 
 
-class RestApi:
-    def __init__(self) -> None:
-        self._process: Optional[subprocess.Popen] = None
-        # In case the documentation errors before we call RestApi.stop, we still need to
-        # stop the server to avoid zombie processes
-        atexit.register(self.stop, quiet=True)
+class RagnaDeploy:
+    def __init__(self, config: Config) -> None:
+        self.config = config
+        python_path, config_path = self._prepare_config()
+        self._process = self._deploy(config, config_path, python_path)
+        # In case the documentation errors before we call RagnaDeploy.terminate,
+        # we still need to stop the server to avoid zombie processes
+        atexit.register(self.terminate, quiet=True)
 
-    def start(
-        self,
-        config: Config,
-        *,
-        authenticate: bool = False,
-        upload_document: bool = False,
-    ) -> tuple[httpx.Client, Optional[dict]]:
-        if upload_document and not authenticate:
-            raise RagnaException(
-                "Cannot upload a document without authenticating first. "
-                "Set authenticate=True when using upload_document=True."
-            )
-        python_path, config_path = self._prepare_config(config)
-
-        client = httpx.Client(base_url=config.api.url)
-
-        self._process = self._start_api(config_path, python_path, client)
-
-        if authenticate:
-            self._authenticate(client)
-
-        if upload_document:
-            document = self._upload_document(client)
-        else:
-            document = None
-
-        return client, document
-
-    def _prepare_config(self, config: Config) -> tuple[str, str]:
+    def _prepare_config(self) -> tuple[str, str]:
         deploy_directory = Path(tempfile.mkdtemp())
 
-        python_path = (
-            f"{deploy_directory}{os.pathsep}{os.environ.get('PYTHONPATH', '')}"
+        python_path = os.pathsep.join(
+            [str(deploy_directory), os.environ.get("PYTHONPATH", "")]
         )
         config_path = str(deploy_directory / "ragna.toml")
 
-        config.local_root = deploy_directory
-        config.api.database_url = f"sqlite:///{deploy_directory / 'ragna.db'}"
+        self.config.local_root = deploy_directory
+        self.config.database_url = f"sqlite:///{deploy_directory / 'ragna.db'}"
 
         sys.modules["__main__"].__file__ = inspect.getouterframes(
             inspect.currentframe()
@@ -88,98 +63,92 @@ class RestApi:
             file.write("from ragna import *\n")
             file.write("from ragna.core import *\n")
 
-            for component in itertools.chain(config.source_storages, config.assistants):
+            for component in itertools.chain(
+                self.config.source_storages, self.config.assistants
+            ):
                 if component.__module__ == "__main__":
                     custom_components.add(component)
                     file.write(f"{textwrap.dedent(inspect.getsource(component))}\n\n")
                     component.__module__ = custom_module
 
-        config.to_file(config_path)
+        self.config.to_file(config_path)
 
         for component in custom_components:
             component.__module__ = "__main__"
 
         return python_path, config_path
 
-    def _start_api(
-        self, config_path: str, python_path: str, client: httpx.Client
-    ) -> subprocess.Popen:
+    def _deploy(
+        self, config: Config, config_path: str, python_path: str
+    ) -> BackgroundSubprocess:
         env = os.environ.copy()
         env["PYTHONPATH"] = python_path
 
-        process = subprocess.Popen(
-            [sys.executable, "-m", "ragna", "api", "--config", config_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            env=env,
-        )
-
-        def check_api_available() -> bool:
+        def startup_fn() -> bool:
             try:
-                return client.get("/").is_success
+                return httpx.get(f"{config._url}/health").is_success
             except httpx.ConnectError:
                 return False
 
-        failure_message = "Failed to the start the Ragna REST API."
+        if startup_fn():
+            raise RagnaException("ragna server is already running")
 
-        @timeout_after(60, message=failure_message)
-        def wait_for_api() -> None:
-            print("Starting Ragna REST API")
-            while not check_api_available():
-                try:
-                    stdout, stderr = process.communicate(timeout=1)
-                except subprocess.TimeoutExpired:
-                    print(".", end="")
-                    continue
-                else:
-                    parts = [failure_message]
-                    if stdout:
-                        parts.append(f"\n\nSTDOUT:\n\n{stdout.decode()}")
-                    if stderr:
-                        parts.append(f"\n\nSTDERR:\n\n{stderr.decode()}")
+        return BackgroundSubprocess(
+            sys.executable,
+            "-m",
+            "ragna",
+            "deploy",
+            "--api",
+            "--no-ui",
+            "--config",
+            config_path,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+            startup_fn=startup_fn,
+            startup_timeout=60,
+        )
 
-                    raise RuntimeError("".join(parts))
+    def get_http_client(
+        self,
+        *,
+        authenticate: bool = False,
+        upload_document: bool = False,
+    ) -> tuple[httpx.Client, Optional[dict[str, Any]]]:
+        if upload_document and not authenticate:
+            raise RagnaException(
+                "Cannot upload a document without authenticating first. "
+                "Set authenticate=True when using upload_document=True."
+            )
 
-            print()
+        client = httpx.Client(base_url=self.config._url)
 
-        wait_for_api()
-        return process
+        if authenticate:
+            client.get("/login", follow_redirects=True)
 
-    def _authenticate(self, client: httpx.Client) -> None:
-        username = password = "Ragna"
+        if upload_document:
+            name, content = "ragna.txt", SAMPLE_CONTENT
 
-        response = client.post(
-            "/token",
-            data={"username": username, "password": password},
-        ).raise_for_status()
-        token = response.json()
+            response = client.post(
+                "/api/documents", json=[{"name": name}]
+            ).raise_for_status()
+            document = cast(dict[str, Any], response.json()[0])
 
-        client.headers["Authorization"] = f"Bearer {token}"
+            client.put(
+                "/api/documents",
+                files=[("documents", (document["id"], content.encode()))],
+            )
+        else:
+            document = None
 
-    def _upload_document(self, client: httpx.Client) -> dict[str, Any]:
-        name, content = "ragna.txt", SAMPLE_CONTENT
+        return client, document
 
-        response = client.post("/document", json={"name": name}).raise_for_status()
-        document_upload = response.json()
-
-        document = cast(dict[str, Any], document_upload["document"])
-
-        parameters = document_upload["parameters"]
-        client.request(
-            parameters["method"],
-            parameters["url"],
-            data=parameters["data"],
-            files={"file": content},
-        ).raise_for_status()
-
-        return document
-
-    def stop(self, *, quiet: bool = False) -> None:
+    def terminate(self, quiet: bool = False) -> None:
         if self._process is None:
             return
 
-        self._process.terminate()
-        stdout, _ = self._process.communicate()
+        output = self._process.terminate()
 
-        if not quiet:
-            print(stdout.decode())
+        if output and not quiet:
+            stdout, _ = output
+            print(stdout)

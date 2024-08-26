@@ -4,7 +4,6 @@ __all__ = [
     "Component",
     "Document",
     "DocumentHandler",
-    "DocumentUploadParameters",
     "DocxDocumentHandler",
     "PptxDocumentHandler",
     "EnvVarRequirement",
