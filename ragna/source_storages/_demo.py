@@ -33,6 +33,9 @@ class RagnaDemoSourceStorage(SourceStorage):
     def __init__(self) -> None:
         self._storage: dict[str, list[dict[str, Any]]] = {}
 
+    def list_corpuses(self) -> list[str]:
+        return list(self._storage.keys())
+
     def store(self, corpus_name: str, documents: list[Document]) -> None:
         corpus = self._storage.setdefault(corpus_name, [])
         corpus.extend(
