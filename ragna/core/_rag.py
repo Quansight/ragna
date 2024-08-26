@@ -145,7 +145,6 @@ class Rag(Generic[C]):
         Args:
             documents: Documents to use. If any item is not a [ragna.core.Document][],
                 [ragna.core.LocalDocument.from_path][] is invoked on it.
-            FIXME
             source_storage: Source storage to use.
             assistant: Assistant to use.
             **params: Additional parameters passed to the source storage and assistant.

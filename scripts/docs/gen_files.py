@@ -9,7 +9,7 @@ import mkdocs_gen_files
 import typer.rich_utils
 
 from ragna.deploy import Config
-from ragna.deploy._api import app as api_app
+from ragna.deploy._core import make_app as make_deploy_app
 
 # This is currently needed when using top-level async code in the galleries. It has to
 # be placed before the ragna.deploy._cli import as this ultimately import panel, which
@@ -17,12 +17,12 @@ from ragna.deploy._api import app as api_app
 # See https://github.com/smarie/mkdocs-gallery/issues/93
 asyncio.get_event_loop_policy()._local._set_called = False
 
-from ragna.deploy._cli import app as cli_app  # noqa: E402
+from ragna._cli import app as cli_app  # noqa: E402
 
 
 def main():
     cli_reference()
-    api_reference()
+    deploy_reference()
     config_reference()
 
 
@@ -51,8 +51,14 @@ def cli_reference():
             file.write(get_doc(command.name or command.callback.__name__))
 
 
-def api_reference():
-    app = api_app(config=Config(), ignore_unavailable_components=False)
+def deploy_reference():
+    app = make_deploy_app(
+        config=Config(),
+        api=True,
+        ui=True,
+        ignore_unavailable_components=False,
+        open_browser=False,
+    )
     openapi_json = fastapi.openapi.utils.get_openapi(
         title=app.title,
         version=app.version,

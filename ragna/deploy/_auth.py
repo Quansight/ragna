@@ -200,6 +200,10 @@ UserDependency = Annotated[schemas.User, Depends(_get_user)]
 
 
 class Auth(abc.ABC):
+    """
+    ADDME
+    """
+
     @classmethod
     def _add_to_app(
         cls, app: FastAPI, *, config: Config, engine: Engine, api: bool, ui: bool
@@ -247,6 +251,10 @@ class Auth(abc.ABC):
 
 
 class NoAuth(Auth):
+    """
+    ADDME
+    """
+
     def login_page(self, request: Request) -> Response:
         # To invoke the login() method below, the client either needs to
         # - POST /login or
