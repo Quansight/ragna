@@ -1,8 +1,8 @@
 import abc
 from functools import cached_property
-from typing import Any, AsyncIterator, Optional, cast
+from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast
 
-from ragna.core import Source
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -23,9 +23,9 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _stream(
+    def _call_openai_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncIterator[dict[str, Any]]:
+    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         headers = {
@@ -55,14 +55,18 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return self._call_api("POST", self._url, headers=headers, json=json_)
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for data in self._stream(prompt, sources, max_new_tokens=max_new_tokens):
-            choice = data["choices"][0]
-            if choice["finish_reason"] is not None:
-                break
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async with self._call_openai_api(
+            prompt, sources, max_new_tokens=max_new_tokens
+        ) as stream:
+            async for data in stream:
+                choice = data["choices"][0]
+                if choice["finish_reason"] is not None:
+                    break
 
-            yield cast(str, choice["delta"]["content"])
+                yield cast(str, choice["delta"]["content"])
 
 
 class OpenaiAssistant(OpenaiLikeHttpApiAssistant):

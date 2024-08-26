@@ -1,11 +1,10 @@
 import pytest
 from fastapi import status
-from fastapi.testclient import TestClient
 
 from ragna import assistants
 from ragna.core import RagnaException
 from ragna.deploy import Config
-from tests.deploy.utils import authenticate_with_api, make_api_app
+from tests.deploy.utils import make_api_app, make_api_client
 
 
 @pytest.mark.parametrize("ignore_unavailable_components", [True, False])
@@ -19,14 +18,10 @@ def test_ignore_unavailable_components(ignore_unavailable_components):
     config = Config(assistants=[available_assistant, unavailable_assistant])
 
     if ignore_unavailable_components:
-        with TestClient(
-            make_api_app(
-                config=config,
-                ignore_unavailable_components=ignore_unavailable_components,
-            )
+        with make_api_client(
+            config=config,
+            ignore_unavailable_components=ignore_unavailable_components,
         ) as client:
-            authenticate_with_api(client)
-
             components = client.get("/api/components").raise_for_status().json()
             assert [assistant["title"] for assistant in components["assistants"]] == [
                 available_assistant.display_name()
@@ -61,11 +56,9 @@ def test_unknown_component(tmp_local_root):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with TestClient(
-        make_api_app(config=Config(), ignore_unavailable_components=False)
+    with make_api_client(
+        config=Config(), ignore_unavailable_components=False
     ) as client:
-        authenticate_with_api(client)
-
         document = (
             client.post("/api/documents", json=[{"name": document_path.name}])
             .raise_for_status()

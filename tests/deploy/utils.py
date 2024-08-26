@@ -1,15 +1,15 @@
-import os
+import contextlib
 import time
 
 from fastapi.testclient import TestClient
 
 from ragna.assistants import RagnaDemoAssistant
-from ragna.core._utils import default_user
+from ragna.deploy._auth import SessionMiddleware
 from ragna.deploy._core import make_app
 
 
 class TestAssistant(RagnaDemoAssistant):
-    def answer(self, prompt, sources, *, multiple_answer_chunks: bool = True):
+    def answer(self, messages, *, multiple_answer_chunks: bool = True):
         # Simulate a "real" assistant through a small delay. See
         # https://github.com/Quansight/ragna/pull/401#issuecomment-2095851440
         # for why this is needed.
@@ -18,7 +18,7 @@ class TestAssistant(RagnaDemoAssistant):
         # the tests in deploy/ui/test_ui.py. This can be removed if TestAssistant
         # is ever removed from that file.
         time.sleep(1e-3)
-        content = next(super().answer(prompt, sources))
+        content = next(super().answer(messages))
 
         if multiple_answer_chunks:
             for chunk in content.split(" "):
@@ -38,19 +38,17 @@ def make_api_app(*, config, ignore_unavailable_components):
 
 
 def authenticate_with_api(client: TestClient) -> None:
-    return
-    username = default_user()
-    token = (
-        client.post(
-            "/token",
-            data={
-                "username": username,
-                "password": os.environ.get(
-                    "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-                ),
-            },
+    client.get("/login", follow_redirects=True).raise_for_status()
+    assert SessionMiddleware._COOKIE_NAME in client.cookies
+
+
+@contextlib.contextmanager
+def make_api_client(*, config, ignore_unavailable_components):
+    with TestClient(
+        make_api_app(
+            config=config,
+            ignore_unavailable_components=ignore_unavailable_components,
         )
-        .raise_for_status()
-        .json()
-    )
-    client.headers["Authorization"] = f"Bearer {token}"
+    ) as client:
+        authenticate_with_api(client)
+        yield client

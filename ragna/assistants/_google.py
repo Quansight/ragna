@@ -1,6 +1,6 @@
 from typing import AsyncIterator
 
-from ragna.core import Source
+from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -26,9 +26,10 @@ class GoogleAssistant(HttpApiAssistant):
         )
 
     async def answer(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+        self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for chunk in self._call_api(
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
@@ -57,8 +58,9 @@ class GoogleAssistant(HttpApiAssistant):
                 },
             },
             parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
-        ):
-            yield chunk
+        ) as stream:
+            async for chunk in stream:
+                yield chunk
 
 
 class GeminiPro(GoogleAssistant):

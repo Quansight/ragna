@@ -1,16 +1,18 @@
 name: docker-requirements
 
 on:
-  pull_request:
+  push:
+    branches:
+      - main
     paths:
       - ".github/workflows/update-docker-requirements.yml"
       - "pyproject.toml"
       - "requirements-docker.lock"
-  workflow_dispatch:
 
 permissions:
   pull-requests: write
   contents: write
+  issues: write
 
 jobs:
   update:
@@ -42,24 +44,48 @@ jobs:
           NEEDS_UPDATE=$(git diff --quiet && echo 'false' || echo 'true')
           echo "needs-update=${NEEDS_UPDATE}" | tee --append $GITHUB_OUTPUT
 
+      - name: Check if commit is associated with a PR
+        id: pr-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER=$(gh api \
+            -H 'Accept: application/vnd.github+json' \
+            /repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
+            --jq '.[0].number')
+          if [ $? -eq 0 ]; then
+            PR_INFO=$(gh pr view ${PR_NUMBER} --json author,mergedBy --jq '{author: .author.login, merger: .mergedBy.login}')
+            AUTHOR=$(echo ${PR_INFO} | jq -r .author)
+            MERGER=$(echo ${PR_INFO} | jq -r .merger)
+          else
+            AUTHOR=${{ github.actor }}
+            MERGER="none"
+          fi
+
+          echo "author=${AUTHOR}" | tee --append $GITHUB_OUTPUT
+          echo "merger=${MERGER}" | tee --append $GITHUB_OUTPUT
+
       - name: Open a PR to update the requirements
-        # prettier-ignore
-        if:
-          ${{ steps.update.outputs.needs-update && github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.update.outputs.needs-update }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update requirements-docker.lock
           branch: update-docker-requirements
           branch-suffix: timestamp
-          base: ${{ github.head_ref || github.ref_name }}
+          base: main
           title: Update requirements-docker.lock
-          # prettier-ignore
-          body:
-            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          reviewers: ${{ github.actor }}
+          body: |
+            Automatic update of requirements-docker.lock.
+            [Workflow run details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            ${{ steps.pr-check.outputs.author != 'none' && format('cc @{0}', steps.pr-check.outputs.author) || '' }}
+          reviewers: ${{ steps.pr-check.outputs.merger }}
 
-      - name: Show diff
-        # prettier-ignore
-        if:
-          ${{ steps.update.outputs.needs-update && github.event_name != 'workflow_dispatch' }}
-        run: git diff --exit-code
+      - name: Create failure issue
+        if: failure()
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/DOCKER_ISSUE_TEMPLATE.md

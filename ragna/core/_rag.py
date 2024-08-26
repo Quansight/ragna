@@ -153,8 +153,8 @@ class Rag(Generic[C]):
         return Chat(
             self,
             documents=documents,
-            source_storage=cast(SourceStorage, self._load_component(source_storage)),  #  type: ignore[arg-type]
-            assistant=cast(Assistant, self._load_component(assistant)),  #  type: ignore[arg-type]
+            source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
+            assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
             **params,
         )
 
@@ -273,14 +273,17 @@ class Chat:
                 detail=RagnaException.EVENT,
             )
 
-        self._messages.append(Message(content=prompt, role=MessageRole.USER))
-
         sources = await self._as_awaitable(
             self.source_storage.retrieve, self.documents, prompt
         )
 
+        question = Message(content=prompt, role=MessageRole.USER, sources=sources)
+        self._messages.append(question)
+
         answer = Message(
-            content=self._as_async_iterator(self.assistant.answer, prompt, sources),
+            content=self._as_async_iterator(
+                self.assistant.answer, self._messages.copy()
+            ),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
