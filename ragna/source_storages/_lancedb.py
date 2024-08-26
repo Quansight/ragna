@@ -92,7 +92,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def list_metadata(
         self, corpus_name: Optional[str] = None
-    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+    ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         if corpus_name is None:
             corpus_names = self.list_corpuses()
         else:
@@ -118,7 +118,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
             metadata[corpus_name] = {
                 key: (
-                    {type(value) for value in values}.pop(),
+                    {type(value).__name__ for value in values}.pop(),
                     sorted(values),
                 )
                 for key, values in corpus_metadata.items()

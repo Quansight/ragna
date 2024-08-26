@@ -172,7 +172,7 @@ class SourceStorage(Component, abc.ABC):
 
     def list_metadata(
         self, corpus_name: Optional[str] = None
-    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+    ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         """List available metadata for corpuses.
 
         Args:

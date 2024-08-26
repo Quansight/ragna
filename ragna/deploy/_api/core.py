@@ -172,6 +172,40 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             for source_storage in source_storages
         }
 
+    @app.get("/corpuses/metadata")
+    async def get_corpus_metadata(
+        _: UserDependency,
+        source_storage: Optional[str] = None,
+        corpus_name: Optional[str] = None,
+    ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
+        if source_storage is not None:
+            component = components_map.get(source_storage)
+            if component is None or not isinstance(component, SourceStorage):
+                raise RagnaException(
+                    "Unknown source storage",
+                    display_name=source_storage,
+                    http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    http_detail=RagnaException.MESSAGE,
+                )
+            source_storages = [component]
+        else:
+            source_storages = [
+                source_storage
+                for source_storage in components_map.values()
+                if isinstance(source_storage, SourceStorage)
+            ]
+
+        if corpus_name is not None:
+            return {
+                source_storage.display_name(): source_storage.list_metadata(corpus_name)
+                for source_storage in source_storages
+            }
+        else:
+            return {
+                source_storage.display_name(): source_storage.list_metadata()
+                for source_storage in source_storages
+            }
+
     make_session = database.get_sessionmaker(config.api.database_url)
 
     @contextlib.contextmanager
