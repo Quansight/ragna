@@ -116,6 +116,8 @@ class LocalDocument(Document):
         if name is None:
             name = path.name
         metadata["path"] = str(path)
+        metadata["extension"] = "".join(path.suffixes)
+        metadata["size"] = path.stat().st_size
 
         return cls(id=id, name=name, metadata=metadata, handler=handler)
 
