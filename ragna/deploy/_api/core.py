@@ -195,16 +195,10 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                 if isinstance(source_storage, SourceStorage)
             ]
 
-        if corpus_name is not None:
-            return {
-                source_storage.display_name(): source_storage.list_metadata(corpus_name)
-                for source_storage in source_storages
-            }
-        else:
-            return {
-                source_storage.display_name(): source_storage.list_metadata()
-                for source_storage in source_storages
-            }
+        return {
+            source_storage.display_name(): source_storage.list_metadata(corpus_name)
+            for source_storage in source_storages
+        }
 
     make_session = database.get_sessionmaker(config.api.database_url)
 
