@@ -1,8 +1,8 @@
-function upload(files, corpus_name, token, informationEndpoint, final_callback) {
-  uploadBatches(files, corpus_name, token, informationEndpoint).then(final_callback);
+function upload(files, token, informationEndpoint, final_callback) {
+  uploadBatches(files, token, informationEndpoint).then(final_callback);
 }
 
-async function uploadBatches(files, corpus_name, token, informationEndpoint) {
+async function uploadBatches(files, token, informationEndpoint) {
   const batchSize = 500;
   const queue = Array.from(files);
 
@@ -11,7 +11,7 @@ async function uploadBatches(files, corpus_name, token, informationEndpoint) {
   while (queue.length) {
     const batch = queue.splice(0, batchSize);
     await Promise.all(
-      batch.map((file) => uploadFile(file, corpus_name, token, informationEndpoint)),
+      batch.map((file) => uploadFile(file, token, informationEndpoint)),
     ).then((results) => {
       uploaded.push(...results);
     });
@@ -20,9 +20,7 @@ async function uploadBatches(files, corpus_name, token, informationEndpoint) {
   return uploaded;
 }
 
-async function uploadFile(file, corpus_name, token, informationEndpoint) {
-  // TODO: Need to decide how corpus_name is passed when uploading files
-
+async function uploadFile(file, token, informationEndpoint) {
   const response = await fetch(informationEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

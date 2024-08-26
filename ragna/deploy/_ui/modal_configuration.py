@@ -149,9 +149,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                 self.change_upload_files_label("missing_file")
             else:
                 self.start_chat_button.disabled = True
-                self.document_uploader.perform_upload(
-                    event, self.did_finish_upload, self.corpus_name_input.value
-                )
+                self.document_uploader.perform_upload(event, self.did_finish_upload)
 
         elif self.corpus_or_upload == USE_CORPUS_LABEL:
             if (
