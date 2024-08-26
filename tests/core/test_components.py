@@ -3,7 +3,7 @@ import functools
 
 import pytest
 
-from ragna.core import Message
+from ragna.core import Message, RagnaException, SourceStorage
 
 
 def sync(async_test_fn):
@@ -81,3 +81,15 @@ class TestMessage:
         assert (await message.read()) == content
 
         assert message.content == content
+
+
+def test_method_not_implemented():
+    class TestSourceStorage(SourceStorage):
+        def store(self, **params):
+            pass
+
+        def retrieve(self, **params):
+            pass
+
+    with pytest.raises(RagnaException, match="not implemented"):
+        TestSourceStorage().list_corpuses()

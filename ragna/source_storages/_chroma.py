@@ -36,17 +36,17 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
-    def _get_collection(self, corpus_name: Optional[str]) -> chromadb.Collection:
-        if corpus_name is None:
-            corpus_name = self._embedding_id
-
+    def _get_collection(self, corpus_name: str) -> chromadb.Collection:
         return self._client.get_or_create_collection(
             corpus_name, embedding_function=self._embedding_function
         )
 
+    def list_corpuses(self) -> list[str]:
+        return [collection.name for collection in self._client.list_collections()]
+
     def store(
         self,
-        corpus_name: Optional[str],
+        corpus_name: str,
         documents: list[Document],
         *,
         chunk_size: int = 500,
@@ -123,7 +123,7 @@ class Chroma(VectorDatabaseSourceStorage):
 
     def retrieve(
         self,
-        corpus_name: Optional[str],
+        corpus_name: str,
         metadata_filter: MetadataFilter,
         prompt: str,
         *,

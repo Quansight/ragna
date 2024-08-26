@@ -52,10 +52,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     _VECTOR_COLUMN_NAME = "embedded_text"
 
-    def _get_table(self, corpus_name: Optional[str] = None) -> lancedb.table.Table:
-        if corpus_name is None:
-            corpus_name = self._embedding_id
-
+    def _get_table(self, corpus_name: str) -> lancedb.table.Table:
         if corpus_name in self._db.table_names():
             return self._db.open_table(corpus_name)
         else:
@@ -88,7 +85,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     def store(
         self,
-        corpus_name: Optional[str],
+        corpus_name: str,
         documents: list[Document],
         *,
         chunk_size: int = 500,
@@ -190,9 +187,12 @@ class LanceDB(VectorDatabaseSourceStorage):
             )
             return f"{key} {operator} {value!r}"
 
+    def list_corpuses(self) -> list[str]:
+        return list(self._db.table_names())
+
     def retrieve(
         self,
-        corpus_name: Optional[str],
+        corpus_name: str,
         metadata_filter: Optional[MetadataFilter],
         prompt: str,
         *,

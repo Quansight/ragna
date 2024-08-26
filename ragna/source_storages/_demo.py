@@ -3,6 +3,8 @@ import textwrap
 import uuid
 from typing import Any, Callable, Optional, cast
 
+from fastapi import status
+
 from ragna.core import (
     Document,
     MetadataFilter,
@@ -29,10 +31,14 @@ class RagnaDemoSourceStorage(SourceStorage):
         return "Ragna/DemoSourceStorage"
 
     def __init__(self) -> None:
-        self._storage: dict[Optional[str], list[dict[str, Any]]] = {None: []}
+        self._storage: dict[str, list[dict[str, Any]]] = {}
 
-    def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
-        self._storage[None].extend(
+    def list_corpuses(self) -> list[str]:
+        return list(self._storage.keys())
+
+    def store(self, corpus_name: str, documents: list[Document]) -> None:
+        corpus = self._storage.setdefault(corpus_name, [])
+        corpus.extend(
             [
                 dict(
                     document_id=str(document.id),
@@ -63,10 +69,10 @@ class RagnaDemoSourceStorage(SourceStorage):
     }
 
     def _apply_filter(
-        self, metadata_filter: Optional[MetadataFilter]
+        self, corpus: list[dict[str, Any]], metadata_filter: Optional[MetadataFilter]
     ) -> list[tuple[int, dict[str, Any]]]:
         if metadata_filter is None:
-            return list(enumerate(self._storage[None]))
+            return list(enumerate(corpus))
         elif metadata_filter.operator is MetadataOperator.RAW:
             raise RagnaException
         elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
@@ -74,7 +80,7 @@ class RagnaDemoSourceStorage(SourceStorage):
             rows_map = {}
             for child in metadata_filter.value:
                 idcs_group = set()
-                for idx, row in self._apply_filter(child):
+                for idx, row in self._apply_filter(corpus, child):
                     idcs_group.add(idx)
                     if idx not in rows_map:
                         rows_map[idx] = row
@@ -93,7 +99,7 @@ class RagnaDemoSourceStorage(SourceStorage):
             return [(idx, rows_map[idx]) for idx in sorted(idcs)]
         else:
             rows_with_idx = []
-            for idx, row in enumerate(self._storage[None]):
+            for idx, row in enumerate(corpus):
                 value = row.get(metadata_filter.key)
                 if value is None:
                     continue
@@ -106,8 +112,16 @@ class RagnaDemoSourceStorage(SourceStorage):
             return rows_with_idx
 
     def retrieve(
-        self, corpus_name: Optional[str], metadata_filter: MetadataFilter, prompt: str
+        self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
     ) -> list[Source]:
+        corpus = self._storage.get(corpus_name)
+        if corpus is None:
+            raise RagnaException(
+                "Corpus does not exist",
+                corpus_name=corpus_name,
+                http_status_code=status.HTTP_400_BAD_REQUEST,
+                http_detail=RagnaException.MESSAGE,
+            )
         return [
             Source(
                 id=row["__id__"],
@@ -117,5 +131,5 @@ class RagnaDemoSourceStorage(SourceStorage):
                 content=row["__content__"],
                 num_tokens=row["__num_tokens__"],
             )
-            for _, row in self._apply_filter(metadata_filter)
+            for _, row in self._apply_filter(corpus, metadata_filter)
         ]

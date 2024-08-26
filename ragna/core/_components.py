@@ -17,10 +17,11 @@ from typing import (
 
 import pydantic
 import pydantic.utils
+from fastapi import status
 
 from ._document import Document
 from ._metadata_filter import MetadataFilter
-from ._utils import RequirementsMixin, merge_models
+from ._utils import RagnaException, RequirementsMixin, merge_models
 
 
 class Component(RequirementsMixin):
@@ -130,7 +131,7 @@ class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod
-    def store(self, corpus_name: Optional[str], documents: list[Document]) -> None:
+    def store(self, corpus_name: str, documents: list[Document]) -> None:
         """Store content of documents.
 
         Args:
@@ -141,7 +142,7 @@ class SourceStorage(Component, abc.ABC):
 
     @abc.abstractmethod
     def retrieve(
-        self, corpus_name: Optional[str], metadata_filter: MetadataFilter, prompt: str
+        self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
     ) -> list[Source]:
         """Retrieve sources for a given prompt.
 
@@ -154,6 +155,19 @@ class SourceStorage(Component, abc.ABC):
             Matching sources for the given prompt ordered by relevance.
         """
         ...
+
+    def list_corpuses(self) -> list[str]:
+        """List available corpuses.
+
+        Returns:
+            List of available corpuses.
+        """
+        raise RagnaException(
+            "list_corpuses is not implemented",
+            source_storage=self.__class__.display_name(),
+            http_status_code=status.HTTP_400_BAD_REQUEST,
+            http_detail=RagnaException.MESSAGE,
+        )
 
 
 class MessageRole(str, enum.Enum):

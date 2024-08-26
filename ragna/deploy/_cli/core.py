@@ -1,4 +1,5 @@
 import json
+import signal
 import subprocess
 import sys
 import time
@@ -153,32 +154,40 @@ def ui(
             stdout=sys.stdout,
             stderr=sys.stderr,
         )
-    else:
-        process = None
 
-    try:
-        if process is not None:
-
-            @timeout_after(60)
-            def wait_for_api() -> None:
-                while not check_api_available():
-                    time.sleep(0.5)
-
-            try:
-                wait_for_api()
-            except TimeoutError:
-                rich.print(
-                    "Failed to start the API in 60 seconds. "
-                    "Please start it manually with [bold]ragna api[/bold]."
-                )
-                raise typer.Exit(1)
-
-        ui_app(config=config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
-    finally:
-        if process is not None:
-            process.kill()
+        def shutdown_api() -> None:
+            process.terminate()
             process.communicate()
 
+        @timeout_after(60)
+        def wait_for_api() -> None:
+            while not check_api_available():
+                time.sleep(0.5)
+
+        try:
+            wait_for_api()
+        except TimeoutError:
+            rich.print(
+                "Failed to start the API in 60 seconds. "
+                "Please start it manually with [bold]ragna api[/bold]."
+            )
+            shutdown_api()
+            raise typer.Exit(1)
+    else:
+        shutdown_api = lambda: None  # noqa: E731
+
+    # By default Python does not handle the SIGTERM signal. Meaning, by default it would
+    # terminate the running process, i.e. the UI server, but not would not trigger the
+    # finally branch below and leave the API server running in case we have started it
+    # in a subprocess here.
+    # Thus, we turn SIGTERM in a regular exit, which gracefully triggers the finally
+    # branch.
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
+
+    try:
+        ui_app(config=config, open_browser=open_browser).serve()  # type: ignore[no-untyped-call]
+    finally:
+        shutdown_api()
 
 @corpus_app.command(help="Ingest some documents into a given corpus.")
 def ingest(

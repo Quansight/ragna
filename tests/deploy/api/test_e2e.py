@@ -1,5 +1,6 @@
 import json
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -12,7 +13,7 @@ from tests.utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
-@pytest.mark.parametrize("corpus_name", ["test-corpus", None])
+@pytest.mark.parametrize("corpus_name", ["default", "test-corpus"])
 def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name):
     config = Config(local_root=tmp_local_root, assistants=[TestAssistant])
 
@@ -74,6 +75,9 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         assert not chat["prepared"]
         assert chat["messages"] == []
 
+        corpuses = client.get("/corpuses").raise_for_status().json()
+        assert corpuses == {source_storage: []}
+
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
@@ -85,6 +89,21 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
+
+        corpuses = client.get("/corpuses").raise_for_status().json()
+        assert corpuses == {source_storage: [corpus_name]}
+
+        corpuses = (
+            client.get("/corpuses", params={"source_storage": source_storage})
+            .raise_for_status()
+            .json()
+        )
+        assert corpuses == {source_storage: [corpus_name]}
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/corpuses", params={"source_storage": "unknown_source_storage"}
+            ).raise_for_status()
 
         prompt = "?"
         if stream_answer:

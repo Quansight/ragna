@@ -109,12 +109,14 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
         )
 
     source_storage = source_storage_cls()
-    source_storage.store("test-corpus", documents)
+    corpus_name = "default"
+
+    source_storage.store(corpus_name, documents)
 
     prompt = "What is the secret number?"
     num_tokens = 4096
     sources = source_storage.retrieve(
-        corpus_name="test-corpus",
+        corpus_name=corpus_name,
         metadata_filter=metadata_filter,
         prompt=prompt,
         num_tokens=num_tokens,
@@ -124,7 +126,7 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
     assert actual_idcs == expected_idcs
 
     # Should be able to call .store() multiple times
-    source_storage.store("test-corpus", documents)
+    source_storage.store(corpus_name, documents)
 
 
 @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
@@ -132,14 +134,17 @@ def test_corpus_names(tmp_local_root, source_storage_cls):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
 
+    secret_corpus_name = "secret_corpus"
     secret_path = document_root / "secret_doc"
+    secret = "42"
     with open(secret_path, "w") as file:
-        file.write("The secret number is 42!\n")
+        file.write(f"The secret is {secret}!\n")
     secret_document = LocalDocument.from_path(
         secret_path,
         handler=PlainTextDocumentHandler(),
     )
 
+    dummy_corpus_name = "dummy_corpus"
     dummy_path = document_root / "dummy_doc"
     with open(dummy_path, "w") as file:
         file.write("Dummy Doc!\n")
@@ -149,27 +154,31 @@ def test_corpus_names(tmp_local_root, source_storage_cls):
     )
 
     source_storage = source_storage_cls()
-    source_storage.store("test-corpus-secret", [secret_document])
 
-    source_storage = source_storage_cls()
-    source_storage.store("test-corpus-dummy", [dummy_document])
+    assert source_storage.list_corpuses() == []
+    source_storage.store(secret_corpus_name, [secret_document])
+    source_storage.store(dummy_corpus_name, [dummy_document])
+
+    assert set(source_storage.list_corpuses()) == {
+        dummy_corpus_name,
+        secret_corpus_name,
+    }
 
     prompt = "What is the secret number?"
     num_tokens = 4096
+
     secret_sources = source_storage.retrieve(
-        corpus_name="test-corpus-secret",
+        corpus_name=secret_corpus_name,
         prompt=prompt,
         metadata_filter=None,
         num_tokens=num_tokens,
     )
-    assert "The secret number is 42" in secret_sources[0].content
+    assert secret in secret_sources[0].content
 
-    prompt = "What is the secret number?"
-    num_tokens = 4096
-    secret_sources = source_storage.retrieve(
-        corpus_name="test-corpus-dummy",
+    dummy_sources = source_storage.retrieve(
+        corpus_name=dummy_corpus_name,
         prompt=prompt,
         metadata_filter=None,
         num_tokens=num_tokens,
     )
-    assert "The secret number is 42" not in secret_sources[0].content
+    assert secret not in dummy_sources[0].content
