@@ -267,7 +267,7 @@ def test_list_metadata(tmp_local_root, cls):
                 corpus_metadata[key].add(value)
 
         expected_metadata[corpus_name] = {
-            key: ({type(value) for value in values}.pop(), values)
+            key: ({type(value).__name__ for value in values}.pop(), values)
             for key, values in corpus_metadata.items()
         }
 

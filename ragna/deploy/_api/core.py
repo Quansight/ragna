@@ -177,7 +177,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         _: UserDependency,
         source_storage: Optional[str] = None,
         corpus_name: Optional[str] = None,
-    ) -> dict[str, dict[str, dict[str, tuple[type, list[Any]]]]]:
+    ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
         if source_storage is not None:
             component = components_map.get(source_storage)
             if component is None or not isinstance(component, SourceStorage):
