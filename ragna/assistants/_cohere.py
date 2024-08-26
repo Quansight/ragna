@@ -32,10 +32,12 @@ class CohereAssistant(HttpApiAssistant):
             prompt string
         """
         if isinstance(prompt, str):
-            return prompt
+            messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-            messages = [i["content"] for i in prompt if i["role"] == "user"][-1]
-            return messages
+            messages = prompt
+            
+        messages = [i["content"] for i in messages if i["role"] == "user"][-1]
+        return messages
 
     async def generate(
         self,

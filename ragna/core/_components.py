@@ -235,7 +235,7 @@ class Message:
 class Assistant(Component, abc.ABC):
     """Abstract base class for assistants used in [ragna.core.Chat][]"""
 
-    __ragna_protocol_methods__ = ["answer","generate"]
+    __ragna_protocol_methods__ = ["answer", "generate"]
 
     @abc.abstractmethod
     def answer(self, messages: list[Message]) -> Iterator[str]:
@@ -244,20 +244,6 @@ class Assistant(Component, abc.ABC):
         Args:
             messages: List of messages in the chat history. The last item is the current
                 user prompt and has the relevant sources attached to it.
-
-        Returns:
-            Answer.
-        """
-        ...
-
-    @abc.abstractmethod
-    def generate(self, prompt: str) -> str:
-        #TODO
-        """Answer a prompt given some sources.
-
-        Args:
-            prompt: Prompt to be answered.
-            sources: Sources to use when answering answer the prompt.
 
         Returns:
             Answer.

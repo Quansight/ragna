@@ -29,14 +29,15 @@ class GoogleAssistant(HttpApiAssistant):
         # need to verify against https://ai.google.dev/api/generate-content#chat_1
         role_mapping = {"user": "user", "assistant": "model"}
         if isinstance(prompt, str):
-            return [{"role": "user", "parts": [{"text": prompt}]}]
+            messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-            messages = [
-                {"parts": [{"text": i["content"]}], "role": role_mapping[i["role"]]}
-                for i in prompt
-                if i["role"] != "system"
-            ]
-            return messages
+            messages = prompt
+        messages = [
+            {"parts": [{"text": i["content"]}], "role": role_mapping[i["role"]]}
+            for i in messages
+            if i["role"] != "system"
+        ]
+        return messages
 
     async def generate(
         self, prompt: Union[str, list[Message]], *, max_new_tokens: int = 256

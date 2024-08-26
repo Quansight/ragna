@@ -30,22 +30,13 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         Returns:
             ordered list of dicts with 'content' and 'role' keys
         """
-        if isinstance(prompt,str):
-            messages = [
-                        {
-                            "role": "system",
-                            "content": system_prompt,
-                        },
-                        {
-                            "role": "user",
-                            "content": prompt,
-                        },
-                    ]
-            return messages
+        if isinstance(prompt, str):
+            messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-            system_message = [{"role":"system", "content":system_prompt}]
-            messages = [{"role":i["role"],"content":i["content"]} for i in prompt if i["role"] != "system"]
-            return system_message.extend(messages)
+            messages = prompt
+        system_message = [{"role":"system", "content":system_prompt}]
+        messages = [{"role":i["role"],"content":i["content"]} for i in prompt if i["role"] != "system"]
+        return system_message.extend(messages)
     
     async def generate(
         self, prompt: Union[str,list[Message]], system_prompt: str, *, max_new_tokens: int = 256

@@ -30,19 +30,16 @@ class Ai21LabsAssistant(HttpApiAssistant):
             ordered list of dicts with 'text' and 'role' keys
         """
         if isinstance(prompt, str):
-            return [
-                {
-                    "text": prompt,
-                    "role": "user",
-                }
-            ]
+            messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-            messages = [
-                {"text": i["content"], "role": i["role"]}
-                for i in prompt
-                if i["role"] != "system"
-            ]
-            return messages
+            messages = prompt
+            
+        messages = [
+            {"text": i["content"], "role": i["role"]}
+            for i in messages
+            if i["role"] != "system"
+        ]
+        return messages
 
     async def generate(
         self,

@@ -44,19 +44,16 @@ class AnthropicAssistant(HttpApiAssistant):
             ordered list of dicts with 'content' and 'role' keys
         """
         if isinstance(prompt, str):
-            return [
-                {
-                    "content": prompt,
-                    "role": "user",
-                }
-            ]
+             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-            messages = [
-                {"content": i["content"], "role": i["role"]}
-                for i in prompt
-                if i["role"] != "system"
-            ]
-            return messages
+             messages = prompt
+
+        messages = [
+            {"content": i["content"], "role": i["role"]}
+            for i in messages
+            if i["role"] != "system"
+        ]
+        return messages
 
     async def generate(
         self,
