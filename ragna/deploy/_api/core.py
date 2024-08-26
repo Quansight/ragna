@@ -1,4 +1,5 @@
 import contextlib
+import io
 import uuid
 from typing import Annotated, Any, AsyncIterator, Iterator, Optional, Type, Union, cast
 
@@ -14,7 +15,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 import ragna
@@ -24,6 +25,7 @@ from ragna._utils import handle_localhost_origins
 from ragna.core import (
     Assistant,
     Component,
+    Document,
     MetadataFilter,
     Rag,
     RagnaException,
@@ -260,10 +262,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         with get_session() as session:
             document, metadata = database.get_document(session, user=user, id=id)
             core_document = document.to_core(metadata)
-            content = core_document.read()
-            headers = {"Content-Disposition": "inline; filename=sample.pdf"}
+            headers = {"Content-Disposition": f"inline; filename={document.name}"}
+            media_type = Document.get_handler(document.name).mime_type()
 
-            return Response(content, media_type="application/pdf", headers=headers)
+            return StreamingResponse(
+                io.BytesIO(core_document.read()), media_type=media_type, headers=headers
+            )
 
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat

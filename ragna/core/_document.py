@@ -201,6 +201,14 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
         pass
 
     @abc.abstractmethod
+    def mime_type(cls) -> str:
+        """
+        Returns:
+            MIME type of the document handler.
+        """
+        pass
+
+    @abc.abstractmethod
     def extract_pages(self, document: Document) -> Iterator[Page]:
         """Extract pages from a document.
 
@@ -239,6 +247,10 @@ class PlainTextDocumentHandler(DocumentHandler):
     def supported_suffixes(cls) -> list[str]:
         return [".txt", ".md"]
 
+    @classmethod
+    def mime_type(cls) -> str:
+        return "text/plain"
+
     def extract_pages(self, document: Document) -> Iterator[Page]:
         yield Page(text=document.read().decode())
 
@@ -255,6 +267,10 @@ class PdfDocumentHandler(DocumentHandler):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [PackageRequirement("pymupdf>=1.23.6")]
+
+    @classmethod
+    def mime_type(cls) -> str:
+        return "application/pdf"
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
@@ -290,6 +306,10 @@ class DocxDocumentHandler(DocumentHandler):
         return [PackageRequirement("python-docx")]
 
     @classmethod
+    def mime_type(cls) -> str:
+        return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    @classmethod
     def supported_suffixes(cls) -> list[str]:
         return [".docx"]
 
@@ -315,6 +335,12 @@ class PptxDocumentHandler(DocumentHandler):
     @classmethod
     def requirements(cls) -> list[Requirement]:
         return [PackageRequirement("python-pptx")]
+
+    @classmethod
+    def mime_type(cls) -> str:
+        return (
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        )
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:

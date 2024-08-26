@@ -67,10 +67,17 @@ class ApiWrapper(param.Parameterized):
               fetch(
                 "{self.client.base_url}/documents/{document_id}/content",
                 {{ headers: {{"Authorization": "Bearer {self.auth_token}"}} }}
-              ).then((response) => response.blob())
-                .then((blob) => {{
-                  var _url = window.URL.createObjectURL(blob);
-                  console.log(_url);
+              ).then((response) => {{
+                  return response.blob().then((blob) => {{
+                      return {{
+                        blob: blob,
+                        headers: response.headers,
+                      }};
+                   }});
+              }}).then(({{ blob, headers }}) => {{
+                  var mimetype = headers.get("content-type"); 
+                  var file = new File([blob], "{document_id}", {{ type: mimetype }});
+                  var _url = window.URL.createObjectURL(file);
                   window.open(_url, "_blank").focus();
               }}).catch((err) => {{
                 console.log(err);
