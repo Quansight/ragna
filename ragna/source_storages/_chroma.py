@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Optional, cast
 
 import ragna
-from ragna.core import Document, MetadataFilter, MetadataOperator, Source
+from ragna.core import (
+    Document,
+    MetadataFilter,
+    MetadataOperator,
+    Source,
+)
 
+from ._utils import raise_no_corpuses_available, raise_non_existing_corpus
 from ._vector_database import VectorDatabaseSourceStorage
 
 if TYPE_CHECKING:
@@ -36,13 +43,59 @@ class Chroma(VectorDatabaseSourceStorage):
             )
         )
 
-    def _get_collection(self, corpus_name: str) -> chromadb.Collection:
-        return self._client.get_or_create_collection(
-            corpus_name, embedding_function=self._embedding_function
-        )
-
     def list_corpuses(self) -> list[str]:
         return [collection.name for collection in self._client.list_collections()]
+
+    def _get_collection(
+        self, corpus_name: str, *, create: bool = False
+    ) -> chromadb.Collection:
+        if create:
+            return self._client.get_or_create_collection(
+                corpus_name, embedding_function=self._embedding_function
+            )
+
+        collections = list(self._client.list_collections())
+        if not collections:
+            raise_no_corpuses_available(self)
+
+        try:
+            return next(
+                collection
+                for collection in collections
+                if collection.name == corpus_name
+            )
+        except StopIteration:
+            raise_non_existing_corpus(self, corpus_name)
+
+    def list_metadata(
+        self, corpus_name: Optional[str] = None
+    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+        if corpus_name is None:
+            corpus_names = self.list_corpuses()
+        else:
+            corpus_names = [corpus_name]
+
+        metadata = {}
+        for corpus_name in corpus_names:
+            collection = self._get_collection(corpus_name)
+
+            corpus_metadata = defaultdict(set)
+            for row in cast(
+                dict[str, list[Any]],
+                collection.get(include=["metadatas"]),  # type: ignore[list-item]
+            )["metadatas"]:
+                for key, value in row.items():
+                    if (key.startswith("__") and key.endswith("__")) or value is None:
+                        continue
+
+                    corpus_metadata[key].add(value)
+
+            metadata[corpus_name] = {
+                key: ({type(value) for value in values}.pop(), sorted(values))
+                for key, values in corpus_metadata.items()
+            }
+
+        return metadata
 
     def store(
         self,
@@ -52,7 +105,7 @@ class Chroma(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        collection = self._get_collection(corpus_name=corpus_name)
+        collection = self._get_collection(corpus_name=corpus_name, create=True)
 
         ids = []
         texts = []
@@ -70,8 +123,10 @@ class Chroma(VectorDatabaseSourceStorage):
                         "document_id": str(document.id),
                         "document_name": document.name,
                         **document.metadata,
-                        "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
-                        "num_tokens": chunk.num_tokens,
+                        "__page_numbers__": self._page_numbers_to_str(
+                            chunk.page_numbers
+                        ),
+                        "__num_tokens__": chunk.num_tokens,
                     }
                 )
 
@@ -124,7 +179,7 @@ class Chroma(VectorDatabaseSourceStorage):
     def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: MetadataFilter,
+        metadata_filter: Optional[MetadataFilter],
         prompt: str,
         *,
         chunk_size: int = 500,
@@ -177,9 +232,9 @@ class Chroma(VectorDatabaseSourceStorage):
                     id=result["ids"],
                     document_name=result["metadatas"]["document_name"],
                     document_id=result["metadatas"]["document_id"],
-                    location=result["metadatas"]["page_numbers"],
+                    location=result["metadatas"]["__page_numbers__"],
                     content=result["documents"],
-                    num_tokens=result["metadatas"]["num_tokens"],
+                    num_tokens=result["metadatas"]["__num_tokens__"],
                 )
                 for result in results
             ),

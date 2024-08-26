@@ -1,7 +1,18 @@
+import random
+import string
+from collections import defaultdict
+
 import pytest
 
-from ragna.core import LocalDocument, MetadataFilter, PlainTextDocumentHandler
-from ragna.source_storages import Chroma, LanceDB
+from ragna.core import (
+    LocalDocument,
+    MetadataFilter,
+    PlainTextDocumentHandler,
+    RagnaException,
+)
+from ragna.source_storages import Chroma, LanceDB, RagnaDemoSourceStorage
+
+SOURCE_STORAGES = [Chroma, LanceDB, RagnaDemoSourceStorage]
 
 METADATAS = {
     0: {"key": "value"},
@@ -182,3 +193,90 @@ def test_corpus_names(tmp_local_root, source_storage_cls):
         num_tokens=num_tokens,
     )
     assert secret not in dummy_sources[0].content
+
+
+@pytest.mark.parametrize("cls", SOURCE_STORAGES)
+def test_no_corpuses_error(tmp_local_root, cls):
+    source_storage = cls()
+
+    raises_error = pytest.raises(RagnaException, match="No corpuses available")
+
+    with raises_error:
+        source_storage.list_metadata(corpus_name="")
+
+    with raises_error:
+        source_storage.retrieve(corpus_name="", metadata_filter=None, prompt="")
+
+
+@pytest.mark.parametrize("cls", SOURCE_STORAGES)
+def test_non_existing_corpus_error(tmp_local_root, cls):
+    document_root = tmp_local_root / "documents"
+    document_root.mkdir()
+
+    document_path = document_root / "document.txt"
+    with open(document_path, "w") as file:
+        file.write("!")
+    document = LocalDocument.from_path(document_path)
+
+    source_storage = cls()
+    source_storage.store(corpus_name="default", documents=[document])
+
+    unknown_corpus_name = "unknown"
+    raises_error = pytest.raises(RagnaException, match="Corpus does not exist")
+
+    with raises_error:
+        source_storage.list_metadata(corpus_name=unknown_corpus_name)
+
+    with raises_error:
+        source_storage.retrieve(
+            corpus_name=unknown_corpus_name, metadata_filter=None, prompt=""
+        )
+
+
+@pytest.mark.parametrize("cls", SOURCE_STORAGES)
+def test_list_metadata(tmp_local_root, cls):
+    document_root = tmp_local_root / "documents"
+    document_root.mkdir()
+
+    documents = []
+    for idx in range(5):
+        path = (document_root / f"document{idx}").with_suffix(
+            random.choice([".txt", ".md"])
+        )
+        with open(path, "w") as file:
+            file.write(
+                "".join(random.choices(string.ascii_letters, k=random.randint(1, 10)))
+            )
+        documents.append(LocalDocument.from_path(path))
+
+    corpuses = {
+        "corpus0": documents[: len(documents) // 2],
+        "corpus1": documents[len(documents) // 2 :],
+    }
+
+    source_storage = cls()
+    expected_metadata = {}
+    for corpus_name, documents in corpuses.items():
+        source_storage.store(corpus_name, documents)
+
+        corpus_metadata = defaultdict(set)
+        for document in documents:
+            corpus_metadata["document_id"].add(str(document.id))
+            corpus_metadata["document_name"].add(document.name)
+            for key, value in document.metadata.items():
+                corpus_metadata[key].add(value)
+
+        expected_metadata[corpus_name] = {
+            key: ({type(value) for value in values}.pop(), values)
+            for key, values in corpus_metadata.items()
+        }
+
+    # We don't impose an order of the available values so we turn them into a set
+    actual_metadata = {
+        corpus_name: {
+            key: (type_, set(values)) for key, (type_, values) in metadata.items()
+        }
+        for corpus_name, metadata in source_storage.list_metadata().items()
+    }
+
+    assert actual_metadata == expected_metadata

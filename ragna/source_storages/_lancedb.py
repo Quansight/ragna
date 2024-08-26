@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Optional, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -15,6 +15,7 @@ from ragna.core import (
     Source,
 )
 
+from ._utils import raise_no_corpuses_available, raise_non_existing_corpus
 from ._vector_database import VectorDatabaseSourceStorage
 
 if TYPE_CHECKING:
@@ -50,31 +51,80 @@ class LanceDB(VectorDatabaseSourceStorage):
 
         self._db = lancedb.connect(ragna.local_root() / "lancedb")
 
-    _VECTOR_COLUMN_NAME = "embedded_text"
+    def list_corpuses(self) -> list[str]:
+        return list(self._db.table_names())
 
-    def _get_table(self, corpus_name: str) -> lancedb.table.Table:
-        if corpus_name in self._db.table_names():
-            return self._db.open_table(corpus_name)
-        else:
+    _VECTOR_COLUMN_NAME = "__embedded_text__"
+
+    def _get_table(
+        self, corpus_name: str, *, create: bool = False
+    ) -> lancedb.table.Table:
+        table_names = list(self._db.table_names())
+        no_corpuses = not table_names
+        non_existing_corpus = corpus_name not in table_names
+
+        if (no_corpuses or non_existing_corpus) and create:
             import pyarrow as pa
 
             return self._db.create_table(
                 name=corpus_name,
                 schema=pa.schema(
                     [
-                        pa.field("id", pa.string()),
+                        pa.field("__id__", pa.string()),
                         pa.field("document_id", pa.string()),
                         pa.field("document_name", pa.string()),
-                        pa.field("page_numbers", pa.string()),
-                        pa.field("text", pa.string()),
+                        pa.field("__page_numbers__", pa.string()),
+                        pa.field("__text__", pa.string()),
                         pa.field(
                             self._VECTOR_COLUMN_NAME,
                             pa.list_(pa.float32(), self._embedding_dimensions),
                         ),
-                        pa.field("num_tokens", pa.int32()),
+                        pa.field("__num_tokens__", pa.int32()),
                     ]
                 ),
             )
+        elif no_corpuses:
+            raise_no_corpuses_available(self)
+        elif non_existing_corpus:
+            raise_non_existing_corpus(self, corpus_name)
+        else:
+            return self._db.open_table(corpus_name)
+
+    def list_metadata(
+        self, corpus_name: Optional[str] = None
+    ) -> dict[str, dict[str, tuple[type, list[Any]]]]:
+        if corpus_name is None:
+            corpus_names = self.list_corpuses()
+        else:
+            corpus_names = [corpus_name]
+
+        metadata = {}
+        for corpus_name in corpus_names:
+            table = self._get_table(corpus_name)
+            corpus_metadata = (
+                table.to_arrow()
+                .select(
+                    [
+                        key
+                        for key in table.schema.names
+                        if not (key.startswith("__") and key.endswith("__"))
+                    ]
+                )
+                .to_pydict()
+            )
+            corpus_metadata = {
+                key: set(values) for key, values in corpus_metadata.items()
+            }
+
+            metadata[corpus_name] = {
+                key: (
+                    {type(value) for value in values}.pop(),
+                    sorted(values),
+                )
+                for key, values in corpus_metadata.items()
+            }
+
+        return metadata
 
     _PYTHON_TO_LANCE_TYPE_MAP = {
         bool: "boolean",
@@ -91,7 +141,7 @@ class LanceDB(VectorDatabaseSourceStorage):
         chunk_size: int = 500,
         chunk_overlap: int = 250,
     ) -> None:
-        table = self._get_table(corpus_name)
+        table = self._get_table(corpus_name, create=True)
 
         document_field_types = defaultdict(set)
         for document in documents:
@@ -130,13 +180,13 @@ class LanceDB(VectorDatabaseSourceStorage):
                     # overridden by concrete values if present
                     **default_metadata,
                     **document.metadata,
-                    "id": str(uuid.uuid4()),
+                    "__id__": str(uuid.uuid4()),
                     "document_id": str(document.id),
                     "document_name": str(document.name),
-                    "page_numbers": self._page_numbers_to_str(chunk.page_numbers),
-                    "text": chunk.text,
+                    "__page_numbers__": self._page_numbers_to_str(chunk.page_numbers),
+                    "__text__": chunk.text,
                     self._VECTOR_COLUMN_NAME: self._embedding_function([chunk.text])[0],
-                    "num_tokens": chunk.num_tokens,
+                    "__num_tokens__": chunk.num_tokens,
                 }
                 for document in documents
                 for chunk in self._chunk_pages(
@@ -187,9 +237,6 @@ class LanceDB(VectorDatabaseSourceStorage):
             )
             return f"{key} {operator} {value!r}"
 
-    def list_corpuses(self) -> list[str]:
-        return list(self._db.table_names())
-
     def retrieve(
         self,
         corpus_name: str,
@@ -221,15 +268,15 @@ class LanceDB(VectorDatabaseSourceStorage):
         return self._take_sources_up_to_max_tokens(
             (
                 Source(
-                    id=result["id"],
+                    id=result["__id__"],
                     document_id=result["document_id"],
                     document_name=result["document_name"],
                     # For some reason adding an empty string during store() results
                     # in this field being None. Thus, we need to parse it back here.
                     # TODO: See if there is a configuration option for this
-                    location=result["page_numbers"] or "",
-                    content=result["text"],
-                    num_tokens=result["num_tokens"],
+                    location=result["__page_numbers__"] or "",
+                    content=result["__text__"],
+                    num_tokens=result["__num_tokens__"],
                 )
                 for result in results.to_pylist()
             ),
