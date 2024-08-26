@@ -72,7 +72,7 @@ class FilterRow(pn.viewable.Viewer):
 
         self.value_select.disabled = False
         self.operator_select.disabled = False
-        self.param.value.objects = [""] + self.valid_key_value_pairs[self.key]
+        self.param.value.objects = [""] + self.valid_key_value_pairs[self.key][1]
 
     def is_empty(self):
         return self.key == "" and self.operator == "" and self.value == ""

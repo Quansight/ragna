@@ -85,6 +85,8 @@ class ModalConfiguration(pn.viewable.Viewer):
         objects=[USE_CORPUS_LABEL, USE_UPLOAD_LABEL], default=USE_CORPUS_LABEL
     )
 
+    error = param.Boolean(default=False)
+
     def __init__(
         self, api_wrapper, components, corpus_names, corpus_metadata, **params
     ):
@@ -124,6 +126,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.start_chat_button.on_click(self.did_click_on_start_chat_button)
 
         self.upload_files_label = pn.pane.HTML()
+
         self.change_upload_files_label()
 
         self.upload_row = pn.Row(
@@ -167,11 +170,15 @@ class ModalConfiguration(pn.viewable.Viewer):
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
-
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
                 documents=uploaded_documents,
+                corpus_name=(
+                    self.corpus_name_input.value
+                    if self.corpus_name_input.value
+                    else None
+                ),
                 source_storage=self.config.source_storage_name,
                 assistant=self.config.assistant_name,
                 params=self.config.to_params_dict(),
@@ -188,12 +195,15 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.start_chat_button.disabled = False
 
     def change_upload_files_label(self, mode="normal"):
+        self.error = False
         if mode == "upload_error":
             self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+            self.error = True
         elif mode == "missing_file":
             self.upload_files_label.object = (
                 "<span style='color:red;'><b>Upload files</b> (required)</span>"
             )
+            self.error = True
         else:
             self.upload_files_label.object = "<b>Upload files</b> (required)"
 
@@ -371,6 +381,7 @@ class ModalConfiguration(pn.viewable.Viewer):
     @pn.depends(
         "corpus_or_upload",
         "config.source_storage_name",
+        "error",
     )
     def corpus_or_upload_row(self):
         if self.corpus_or_upload == USE_CORPUS_LABEL:

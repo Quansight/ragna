@@ -58,7 +58,7 @@ class ApiWrapper(param.Parameterized):
 
     async def get_corpus_names(self):
         # TODO: replace with actual endpoint
-        # return (await self.client.get("/corpuses")).raise_for_status().json()
+        return (await self.client.get("/corpuses")).raise_for_status().json()
         return {
             "Chroma": ["corpus1", "corpus2"],
             "LanceDB": ["corpus1"],
@@ -66,11 +66,7 @@ class ApiWrapper(param.Parameterized):
 
     async def get_corpus_metadata(self, corpus_name=None):
         # TODO: replace with actual endpoint, and add corpus_name as query parameter
-        # return (
-        #    (await self.client.get(f"/corpuses/metadata"))
-        #    .raise_for_status()
-        #    .json()
-        # )
+        return (await self.client.get("/corpuses/metadata")).raise_for_status().json()
         metadata1 = {
             "document_name": ["doc1", "doc2", "doc3"],
             "size": [100, 200, 300],
@@ -115,13 +111,16 @@ class ApiWrapper(param.Parameterized):
         }
 
     async def start_and_prepare(
-        self, name, documents, source_storage, assistant, params
+        self, name, documents, corpus_name, source_storage, assistant, params
     ):
+        if corpus_name is None:
+            corpus_name = "default"
         response = await self.client.post(
             "/chats",
             json={
                 "name": name,
                 "input": documents,
+                "corpus_name": corpus_name,
                 "source_storage": source_storage,
                 "assistant": assistant,
                 "params": params,
