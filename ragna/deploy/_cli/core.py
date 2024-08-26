@@ -189,9 +189,15 @@ def ui(
     finally:
         shutdown_api()
 
+
 @corpus_app.command(help="Ingest some documents into a given corpus.")
 def ingest(
     documents: list[Path],
+    metadata_fields: Optional[Path] = typer.Option(
+        None,
+        help="JSON file that contains mappings from document name "
+        "to metadata fields associated with a document.",
+    ),
     corpus_name: Optional[str] = typer.Option(
         None, help="Name of the corpus to ingest the documents into."
     ),
@@ -220,6 +226,17 @@ def ingest(
         raise typer.BadParameter(
             f"Could not connect to the database: {config.api.database_url}"
         )
+
+    if metadata_fields:
+        try:
+            with open(metadata_fields, "r") as f:
+                metadata = json.load(f)
+        except Exception:
+            raise typer.BadParameter(
+                f"Could not read the metadata fields file: {metadata_fields}"
+            )
+    else:
+        metadata = {}
 
     if user is None:
         user = default_user()
@@ -279,7 +296,14 @@ def ingest(
 
                 for document in documents[batch_number : batch_number + BATCH_SIZE]:
                     try:
-                        doc_instance = document_factory(document)
+                        doc_instance = document_factory(
+                            document,
+                            metadata=(
+                                metadata[str(document)]
+                                if str(document) in metadata
+                                else None
+                            ),
+                        )
                         document_instances.append(doc_instance)
                         orm_documents.append(
                             orm.Document(
