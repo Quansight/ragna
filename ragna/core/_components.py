@@ -235,7 +235,7 @@ class Message:
 class Assistant(Component, abc.ABC):
     """Abstract base class for assistants used in [ragna.core.Chat][]"""
 
-    __ragna_protocol_methods__ = ["answer", "generate"]
+    __ragna_protocol_methods__ = ["answer"]
 
     @abc.abstractmethod
     def answer(self, messages: list[Message]) -> Iterator[str]:
