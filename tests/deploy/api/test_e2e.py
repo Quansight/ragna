@@ -78,6 +78,9 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         corpuses = client.get("/corpuses").raise_for_status().json()
         assert corpuses == {source_storage: []}
 
+        corpuses_metadata = client.get("/corpuses/metadata").raise_for_status().json()
+        assert corpuses_metadata == {source_storage: {}}
+
         assert client.get("/chats").raise_for_status().json() == [chat]
         assert client.get(f"/chats/{chat['id']}").raise_for_status().json() == chat
 
@@ -103,6 +106,33 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name)
         with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
             client.get(
                 "/corpuses", params={"source_storage": "unknown_source_storage"}
+            ).raise_for_status()
+
+        corpuses_metadata = client.get("/corpuses/metadata").raise_for_status().json()
+        assert corpus_name in corpuses_metadata[source_storage]
+        metadata_keys = corpuses_metadata[source_storage][corpus_name].keys()
+        assert list(metadata_keys) == ["document_id", "document_name", "path"]
+        for key in metadata_keys:
+            assert corpuses_metadata[source_storage][corpus_name][key][0] == "str"
+
+        corpuses_metadata = (
+            client.get(
+                "/corpuses/metadata",
+                params={"source_storage": source_storage, corpus_name: corpus_name},
+            )
+            .raise_for_status()
+            .json()
+        )
+        assert corpus_name in corpuses_metadata[source_storage]
+        metadata_keys = corpuses_metadata[source_storage][corpus_name].keys()
+        assert list(metadata_keys) == ["document_id", "document_name", "path"]
+        for key in metadata_keys:
+            assert corpuses_metadata[source_storage][corpus_name][key][0] == "str"
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/corpuses/metadata",
+                params={"source_storage": "unknown_source_storage"},
             ).raise_for_status()
 
         prompt = "?"
