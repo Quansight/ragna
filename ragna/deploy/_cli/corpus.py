@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from rich.console import Console
@@ -22,31 +22,37 @@ app = typer.Typer(
 @app.command(help="Ingest some documents into a given corpus.")
 def ingest(
     documents: list[Path],
-    metadata_fields: Optional[Path] = typer.Option(
-        None,
-        help="JSON file that contains mappings from document name "
-        "to metadata fields associated with a document.",
-    ),
-    corpus_name: Optional[str] = typer.Option(
-        None, help="Name of the corpus to ingest the documents into."
-    ),
+    metadata_fields: Annotated[
+        Optional[Path],
+        typer.Option(
+            None,
+            help="JSON file that contains mappings from document name "
+            "to metadata fields associated with a document.",
+        ),
+    ] = None,
+    corpus_name: Annotated[
+        Optional[str],
+        typer.Option(help="Name of the corpus to ingest the documents into."),
+    ] = None,
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
-    user: Optional[str] = typer.Option(
-        None, help="User to link the documents to in the ragna database."
-    ),
-    report_failures: bool = typer.Option(
-        False, help="Output to STDERR the documents that failed to be ingested."
-    ),
-    ignore_log: bool = typer.Option(
-        False, help="Ignore the log file and re-ingest all documents."
-    ),
+    user: Annotated[
+        Optional[str],
+        typer.Option(help="User to link the documents to in the ragna database."),
+    ] = None,
+    report_failures: Annotated[
+        bool,
+        typer.Option(help="Output to STDERR the documents that failed to be ingested."),
+    ] = False,
+    ignore_log: Annotated[
+        bool, typer.Option(help="Ignore the log file and re-ingest all documents.")
+    ] = False,
 ) -> None:
     try:
         document_factory = getattr(config.document, "from_path")
     except AttributeError:
         raise typer.BadParameter(
-            f"{config.document.__name__} does not support creating documents from a path. "
-            "Please implement a `from_path` method."
+            f"{config.document.__name__} does not support creating documents from a"
+            f"path. Please implement a `from_path` method."
         )
 
     try:
