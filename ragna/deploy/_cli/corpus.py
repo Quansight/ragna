@@ -19,21 +19,20 @@ app = typer.Typer(
 )
 
 
-@app.command(help="Ingest some documents into a given corpus.")
+@app.command(help="Ingest documents into a given corpus.")
 def ingest(
     documents: list[Path],
     metadata_fields: Annotated[
         Optional[Path],
         typer.Option(
-            None,
             help="JSON file that contains mappings from document name "
             "to metadata fields associated with a document.",
         ),
     ] = None,
     corpus_name: Annotated[
-        Optional[str],
+        str,
         typer.Option(help="Name of the corpus to ingest the documents into."),
-    ] = None,
+    ] = "default",
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     user: Annotated[
         Optional[str],
@@ -64,8 +63,8 @@ def ingest(
 
     if metadata_fields:
         try:
-            with open(metadata_fields, "r") as f:
-                metadata = json.load(f)
+            with open(metadata_fields) as file:
+                metadata = json.load(file)
         except Exception:
             raise typer.BadParameter(
                 f"Could not read the metadata fields file: {metadata_fields}"
@@ -84,7 +83,7 @@ def ingest(
     if not ignore_log:
         ingestion_log_file = Path.cwd() / ".ragna_ingestion_log.jsonl"
         if ingestion_log_file.exists():
-            with open(ingestion_log_file, "r") as stream:
+            with open(ingestion_log_file) as stream:
                 for line in stream:
                     entry = json.loads(line)
                     if entry["corpus_name"] == corpus_name and entry["user"] == user:
@@ -107,7 +106,7 @@ def ingest(
             BATCH_SIZE = 10
             number_of_batches = len(documents) // BATCH_SIZE
             source_storage_task = progress.add_task(
-                f"[green]Adding document embeddings to {source_storage.__name__}...",
+                f"[green]Adding document embeddings to {source_storage.display_name()}...",
                 total=number_of_batches,
             )
 
@@ -116,7 +115,7 @@ def ingest(
                 document_instances = []
                 orm_documents = []
 
-                if source_storage.__name__ in ingestion_log:
+                if source_storage.display_name() in ingestion_log:
                     batch_doc_set = set(
                         [
                             str(doc)
@@ -125,7 +124,9 @@ def ingest(
                             ]
                         ]
                     )
-                    if batch_doc_set.issubset(ingestion_log[source_storage.__name__]):
+                    if batch_doc_set.issubset(
+                        ingestion_log[source_storage.display_name()]
+                    ):
                         progress.advance(source_storage_task)
                         continue
 
@@ -177,7 +178,7 @@ def ingest(
                                     {
                                         "user": user,
                                         "corpus_name": corpus_name,
-                                        "source_storage": source_storage.__name__,
+                                        "source_storage": source_storage.display_name(),
                                         "document": str(document),
                                     }
                                 )
