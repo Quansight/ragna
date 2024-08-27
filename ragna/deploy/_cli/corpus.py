@@ -23,7 +23,7 @@ app = typer.Typer(
 
 
 @app.callback()
-def experimental_warning():
+def experimental_warning() -> None:
     lines = [
         (
             "[bold]ragna corpus[/bold] and all subcommands are in an experimental "
