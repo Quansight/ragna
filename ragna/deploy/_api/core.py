@@ -146,7 +146,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         )
 
     def _get_source_storage_components(
-        source_storage: Optional[str], components_map: dict[str, Component]
+        source_storage: Optional[str],
     ) -> list[SourceStorage]:
         if source_storage is not None:
             component = components_map.get(source_storage)
@@ -167,14 +167,11 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
 
     @app.get("/corpuses")
     async def get_corpuses(
-        _: UserDependency,
-        source_storage: Optional[str] = None,
+        _: UserDependency, source_storage: Optional[str] = None
     ) -> dict[str, list[str]]:
-        source_storages = _get_source_storage_components(source_storage, components_map)
-
         return {
             source_storage.display_name(): source_storage.list_corpuses()
-            for source_storage in source_storages
+            for source_storage in _get_source_storage_components(source_storage)
         }
 
     @app.get("/corpuses/metadata")
@@ -183,11 +180,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
         source_storage: Optional[str] = None,
         corpus_name: Optional[str] = None,
     ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
-        source_storages = _get_source_storage_components(source_storage, components_map)
-
         return {
             source_storage.display_name(): source_storage.list_metadata(corpus_name)
-            for source_storage in source_storages
+            for source_storage in _get_source_storage_components(source_storage)
         }
 
     make_session = database.get_sessionmaker(config.api.database_url)
