@@ -145,11 +145,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             ],
         )
 
-    @app.get("/corpuses")
-    async def get_corpuses(
-        _: UserDependency,
-        source_storage: Optional[str] = None,
-    ) -> dict[str, list[str]]:
+    def _get_source_storage_components(
+        source_storage: Optional[str],
+    ) -> list[SourceStorage]:
         if source_storage is not None:
             component = components_map.get(source_storage)
             if component is None or not isinstance(component, SourceStorage):
@@ -159,17 +157,32 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                     http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     http_detail=RagnaException.MESSAGE,
                 )
-            source_storages = [component]
+            return [component]
         else:
-            source_storages = [
+            return [
                 source_storage
                 for source_storage in components_map.values()
                 if isinstance(source_storage, SourceStorage)
             ]
 
+    @app.get("/corpuses")
+    async def get_corpuses(
+        _: UserDependency, source_storage: Optional[str] = None
+    ) -> dict[str, list[str]]:
         return {
             source_storage.display_name(): source_storage.list_corpuses()
-            for source_storage in source_storages
+            for source_storage in _get_source_storage_components(source_storage)
+        }
+
+    @app.get("/corpuses/metadata")
+    async def get_corpus_metadata(
+        _: UserDependency,
+        source_storage: Optional[str] = None,
+        corpus_name: Optional[str] = None,
+    ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
+        return {
+            source_storage.display_name(): source_storage.list_metadata(corpus_name)
+            for source_storage in _get_source_storage_components(source_storage)
         }
 
     @app.get("/corpuses/metadata")
