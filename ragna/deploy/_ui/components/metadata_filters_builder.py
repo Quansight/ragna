@@ -10,10 +10,12 @@ ALLOWED_OPERATORS = [
     if op not in EXCLUDED_OPERATORS
 ]
 
+DUNDER_METHODS = {f"__{op}__".lower(): op for op in ALLOWED_OPERATORS}
+
 
 class FilterRow(pn.viewable.Viewer):
     key = param.Selector(objects=[""], default="")
-    operator = param.Selector(objects=[""] + ALLOWED_OPERATORS, default="")
+    operator = param.Selector(objects=[""], default="")
     value = param.Selector(objects=[""], default="")
 
     def __init__(self, on_delete_callback, valid_key_value_pairs=None, **params):
@@ -72,7 +74,35 @@ class FilterRow(pn.viewable.Viewer):
 
         self.value_select.disabled = False
         self.operator_select.disabled = False
-        self.param.value.objects = [""] + self.valid_key_value_pairs[self.key][1]
+
+        # the keys are a tuple of (value_type, values)
+        value_type, values = self.valid_key_value_pairs[self.key]
+
+        try:
+            self.param.operator.objects = [""] + self.compute_valid_operator_options(
+                globals()["__builtins__"][value_type]
+            )
+        except AttributeError:
+            # just default to everything if we can't find the type, although this should never happen...
+            self.param.operator.objects = [""] + ALLOWED_OPERATORS
+
+        self.param.value.objects = [""] + values
+
+    def compute_valid_operator_options(self, type_instance):
+        operators = []
+        for dunder_method, operator in DUNDER_METHODS.items():
+            if dunder_method == "__in__" or dunder_method == "__not_in__":
+                if (
+                    hasattr(type_instance, "__contains__")
+                    or hasattr(type_instance, "__iter__")
+                    or hasattr(type_instance, "__getitem__")
+                ):
+                    operators.append(operator)
+            else:
+                if hasattr(type_instance, dunder_method):
+                    operators.append(operator)
+
+        return operators
 
     def is_empty(self):
         return self.key == "" and self.operator == "" and self.value == ""
@@ -238,7 +268,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             pn.Column(
                 self.render_filters_rows,
                 pn.Row(self.add_filter_row_button),
-                max_height=160,
+                max_height=125,
             ),
             sizing_mode="stretch_both",
             height_policy="max",

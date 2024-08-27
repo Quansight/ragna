@@ -100,11 +100,11 @@ def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> st
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
-CONFIG_MODAL_HEIGHT = 705
+CONFIG_MODAL_HEIGHT = 680
 CONFIG_MODAL_WIDTH = 800
 
-FILE_CONTAINER_HEIGHT = "160px"
-FILE_CONTAINER_HEIGHT_REDUCED = "90px"
+FILE_CONTAINER_HEIGHT = "140px"
+FILE_CONTAINER_HEIGHT_REDUCED = "75px"
 
 
 CSS_VARS = css(

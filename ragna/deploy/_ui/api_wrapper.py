@@ -57,34 +57,10 @@ class ApiWrapper(param.Parameterized):
         self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
     async def get_corpus_names(self):
-        # TODO: replace with actual endpoint
         return (await self.client.get("/corpuses")).raise_for_status().json()
-        return {
-            "Chroma": ["corpus1", "corpus2"],
-            "LanceDB": ["corpus1"],
-        }
 
-    async def get_corpus_metadata(self, corpus_name=None):
-        # TODO: replace with actual endpoint, and add corpus_name as query parameter
+    async def get_corpus_metadata(self):
         return (await self.client.get("/corpuses/metadata")).raise_for_status().json()
-        metadata1 = {
-            "document_name": ["doc1", "doc2", "doc3"],
-            "size": [100, 200, 300],
-            "is_pdf": ["True", "False", "True"],
-        }
-        metadata2 = {
-            "document_name": ["doc1", "doc2"],
-            "size": [100, 200],
-            "is_pdf": ["True", "False"],
-        }
-        source_storage1 = {
-            "corpus1": metadata1,
-            "corpus2": metadata2,
-        }
-        source_storage2 = {
-            "corpus1": metadata1,
-        }
-        return {"Chroma": source_storage1, "LanceDB": source_storage2}
 
     async def get_chats(self):
         json_data = (await self.client.get("/chats")).raise_for_status().json()

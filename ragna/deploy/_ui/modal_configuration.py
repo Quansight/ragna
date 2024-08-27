@@ -301,7 +301,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                             width_policy="max",
                             disabled=disabled_source_storage,
                         ),
-                        margin=(0, 20, 0, 0),
                         width_policy="max",
                     ),
                     pn.Column(
@@ -321,7 +320,6 @@ class ModalConfiguration(pn.viewable.Viewer):
                         ),
                         width_policy="max",
                         height_policy="max",
-                        margin=(0, 20, 0, 0),
                         styles={
                             "border-left": "1px solid var(--neutral-stroke-divider-rest)"
                         },
@@ -338,6 +336,11 @@ class ModalConfiguration(pn.viewable.Viewer):
                 button_type="light",
                 css_classes=["modal_configuration_toggle_button"],
             )
+
+        if card.collapsed:
+            toggle_button.name = toggle_button.name.replace("▼", "▶")
+        else:
+            toggle_button.name = toggle_button.name.replace("▶", "▼")
 
         def toggle_card(event):
             if event.old < event.new:
