@@ -164,21 +164,23 @@ class ModalConfiguration(pn.viewable.Viewer):
             self.start_chat_button.disabled = True
 
             await self.did_finish_upload(
-                self.metadata_filter_rows.construct_metadata_filters()
+                self.metadata_filter_rows.construct_metadata_filters(),
+                corpus_name=self.metadata_filter_rows.corpus_names_select.value,
             )
 
-    async def did_finish_upload(self, uploaded_documents):
+    async def did_finish_upload(self, uploaded_documents, corpus_name=None):
         # at this point, the UI has uploaded the files to the API.
         # We can now start the chat
+        if not corpus_name:
+            corpus_name = (
+                self.corpus_name_input.value if self.corpus_name_input.value else None
+            )
+
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
                 documents=uploaded_documents,
-                corpus_name=(
-                    self.corpus_name_input.value
-                    if self.corpus_name_input.value
-                    else None
-                ),
+                corpus_name=corpus_name,
                 source_storage=self.config.source_storage_name,
                 assistant=self.config.assistant_name,
                 params=self.config.to_params_dict(),

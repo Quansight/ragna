@@ -212,12 +212,9 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             if filter_row.construct_metadata_filter() is not None
         ]
 
-        combined_metadata_filters = MetadataFilter.and_(metadata_filters).to_primitive()
-
-        if not combined_metadata_filters:
+        if not metadata_filters:
             return None
-        else:
-            return combined_metadata_filters
+        return MetadataFilter.and_(metadata_filters).to_primitive()
 
     def validate(self):
         result = True
