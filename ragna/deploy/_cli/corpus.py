@@ -6,6 +6,7 @@ from typing import Annotated, Optional
 import rich
 import typer
 from rich.console import Console
+from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
 from ragna.core._utils import default_user
@@ -23,16 +24,20 @@ app = typer.Typer(
 
 @app.callback()
 def experimental_warning():
-    rich.print(":rotating_light:" * 3)
+    lines = [
+        (
+            "[bold]ragna corpus[/bold] and all subcommands are in an experimental "
+            "state and subject to change in the future."
+        ),
+        (
+            "If you have feedback or want to suggest a feature, "
+            "please open an issue at "
+            "https://github.com/Quansight/ragna/issues/new/choose."
+        ),
+    ]
     rich.print(
-        "[bold]ragna corpus[/bold] and all subcommands are in an experimental "
-        "state and subject to change in the future."
+        Panel("\n".join(lines), title=":rotating_light: Warning :rotating_light:")
     )
-    rich.print(
-        "If you have feedback or want to suggest a feature, "
-        "please open an issue at https://github.com/Quansight/ragna/issues/new/choose"
-    )
-    rich.print(":rotating_light:" * 3)
 
 
 @app.command(help="Ingest documents into a given corpus.")
