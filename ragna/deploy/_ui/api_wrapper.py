@@ -63,7 +63,7 @@ class ApiWrapper(param.Parameterized):
         return json_data
 
     def create_document_content_js(self, document_id, document_name, page_numbers):
-        anchor = page_numbers[0]
+        anchor = page_numbers[0] if page_numbers else ""
         return f"""
               fetch(
                 "{self.client.base_url}/documents/{document_id}/content",

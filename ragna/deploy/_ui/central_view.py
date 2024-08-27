@@ -243,7 +243,7 @@ class CentralView(pn.viewable.Viewer):
         source_infos = []
         for rank, source in enumerate(sources, 1):
             button = pn.widgets.Button(
-                name="Open File",
+                name="📁 Open File",
             )
             (
                 button.js_on_click(
@@ -259,13 +259,19 @@ class CentralView(pn.viewable.Viewer):
             if location:
                 location = f": page(s) {location}"
             source_infos.append(
-                pn.layout.Row(
+                (
                     f"<b>{rank}. {source['document_name']}</b> {location}",
+                    pn.Column(
+                        button,
+                        pn.pane.Markdown(
+                            source["content"], css_classes=["source-content"]
+                        ),
+                    ),
                 )
             )
-            source_infos.append(
-                button,
-            )
+            # source_infos.append(
+            #     button,
+            # )
 
         self.on_click_chat_info(
             event,
@@ -274,7 +280,11 @@ class CentralView(pn.viewable.Viewer):
                 pn.pane.Markdown(
                     "This response was generated using the following data from the uploaded files: <br />",
                 ),
-                *source_infos,
+                pn.layout.Accordion(
+                    *source_infos,
+                    header_background="transparent",
+                    css_classes=["source-accordion"],
+                ),
             ],
         )
 
