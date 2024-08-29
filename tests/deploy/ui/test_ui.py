@@ -8,7 +8,6 @@ from playwright.sync_api import Page, expect
 
 from ragna._utils import timeout_after
 from ragna.deploy import Config
-from ragna.deploy._ui.api_wrapper import ApiWrapper
 from tests.deploy.utils import TestAssistant
 from tests.utils import get_available_port
 
@@ -149,50 +148,3 @@ def test_start_chat(config, page: Page) -> None:
         chat_button = chat_box_row.get_by_role("button")
         expect(chat_button).to_be_visible()
         chat_button.click()
-
-
-async def test_api_wrapper(config, page: Page):
-    with Server(config):
-        api_url = config.api.url
-        api_wrapper = ApiWrapper(api_url=api_url)
-        await api_wrapper.auth(username="", password="")
-        auth_token = api_wrapper.auth_token
-        assert auth_token is not None
-        api_wrapper_components = await api_wrapper.get_components()
-        api_components = httpx.get(
-            f"{api_url}/components", headers={"Authorization": f"Bearer {auth_token}"}
-        )
-        assert api_wrapper_components == api_components.json()
-
-        document_root = config.local_root / "documents"
-        document_root.mkdir()
-        document_name = "test.txt"
-        document_path = document_root / document_name
-        with open(document_path, "w") as file:
-            file.write("!\n")
-
-        document_upload = (
-            httpx.post(
-                f"{api_url}/document",
-                json={"name": document_path.name},
-                headers={"Authorization": f"Bearer {auth_token}"},
-            )
-            .raise_for_status()
-            .json()
-        )
-        document = document_upload["document"]
-        assert document["name"] == document_path.name
-
-        parameters = document_upload["parameters"]
-        with open(document_path, "rb") as file:
-            httpx.request(
-                parameters["method"],
-                parameters["url"],
-                data=parameters["data"],
-                files={"file": file},
-            )
-        js_snippet = api_wrapper.create_document_content_js(
-            document["id"], document["name"], None
-        )
-        page.evaluate(js_snippet)
-        assert False
