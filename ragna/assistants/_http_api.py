@@ -7,7 +7,6 @@ from typing import Any, AsyncContextManager, AsyncIterator, Optional
 import httpx
 
 import ragna
-from ragna._compat import anext
 from ragna.core import (
     Assistant,
     EnvVarRequirement,
@@ -132,7 +131,7 @@ class HttpApiCaller:
             # and set up decoding.
             if n == 0:
                 return b""
-            return await anext(self._ait, b"")  # type: ignore[call-arg]
+            return await anext(self._ait, b"")
 
     @contextlib.asynccontextmanager
     async def _stream_json(

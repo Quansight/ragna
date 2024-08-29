@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import Column, ForeignKey, Table, types
@@ -30,6 +31,34 @@ class Json(types.TypeDecorator):
             return value
 
         return json.loads(value)
+
+
+class UtcDateTime(types.TypeDecorator):
+    """UTC timezone aware datetime type.
+
+    This is needed because sqlalchemy.types.DateTime(timezone=True) does not
+    consistently store the timezone.
+    """
+
+    impl = types.DateTime
+
+    cache_ok = True
+
+    def process_bind_param(  # type: ignore[override]
+        self, value: Optional[datetime], dialect: Dialect
+    ) -> Optional[datetime]:
+        if value is not None:
+            assert value.tzinfo == timezone.utc
+
+        return value
+
+    def process_result_value(
+        self, value: Optional[datetime], dialect: Dialect
+    ) -> Optional[datetime]:
+        if value is None:
+            return None
+
+        return value.replace(tzinfo=timezone.utc)
 
 
 class Base(DeclarativeBase):
@@ -152,4 +181,4 @@ class Message(Base):
         secondary=source_message_association_table,
         back_populates="messages",
     )
-    timestamp = Column(types.DateTime, nullable=False)
+    timestamp = Column(UtcDateTime, nullable=False)
