@@ -7,7 +7,6 @@ from typing import Any, AsyncContextManager, AsyncIterator, Optional
 import httpx
 
 import ragna
-from ragna._compat import anext
 from ragna.core import (
     Assistant,
     EnvVarRequirement,
