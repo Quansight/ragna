@@ -151,7 +151,7 @@ def test_start_chat(config, page: Page) -> None:
         chat_button.click()
 
 
-async def test_api_wrapper(config):
+async def test_api_wrapper(config, page: Page):
     with Server(config):
         api_url = config.api.url
         api_wrapper = ApiWrapper(api_url=api_url)
@@ -191,12 +191,8 @@ async def test_api_wrapper(config):
                 data=parameters["data"],
                 files={"file": file},
             )
-        doc_bytes = await api_wrapper.get_document_content(document["id"])
-        assert doc_bytes == b"!\n"
-        # with open(document_path, "rb") as file:
-        #     client.request(
-        #         parameters["method"],
-        #         parameters["url"],
-        #         data=parameters["data"],
-        #         files={"file": file},
-        #     )
+        js_snippet = api_wrapper.create_document_content_js(
+            document["id"], document["name"], None
+        )
+        page.evaluate(js_snippet)
+        assert False

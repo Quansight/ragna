@@ -101,8 +101,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             object=object,
             role=role,
             user=user,
-            # sources=sources,
-            # on_click_source_info_callback=on_click_source_info_callback,
             timestamp=timestamp,
             show_timestamp=show_timestamp,
             show_reaction_icons=False,
@@ -269,9 +267,6 @@ class CentralView(pn.viewable.Viewer):
                     ),
                 )
             )
-            # source_infos.append(
-            #     button,
-            # )
 
         self.on_click_chat_info(
             event,
