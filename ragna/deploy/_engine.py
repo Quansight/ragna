@@ -1,3 +1,4 @@
+import secrets
 import uuid
 from typing import Any, AsyncIterator, Optional, Type, cast
 
@@ -38,11 +39,42 @@ class Engine:
         with self._database.get_session() as session:
             return self._database.maybe_add_user(session, user=user)
 
-    def get_user(
-        self, name: Optional[str] = None, api_key: Optional[str] = None
-    ) -> Optional[schemas.User]:
+    def get_user_by_api_key(
+        self, api_key_value: str
+    ) -> tuple[Optional[schemas.User], bool]:
         with self._database.get_session() as session:
-            return self._database.get_user(session, name=name, api_key=api_key)
+            data = self._database.get_user_by_api_key(
+                session, api_key_value=api_key_value
+            )
+
+        if data is None:
+            return None, False
+
+        user, api_key = data
+        return user, api_key.expired
+
+    def create_api_key(
+        self, user: str, api_key_creation: schemas.ApiKeyCreation
+    ) -> schemas.ApiKey:
+        api_key = schemas.ApiKey(
+            name=api_key_creation.name,
+            expires_at=api_key_creation.expires_at,
+            obfuscated=False,
+            value=secrets.token_urlsafe(32)[:32],
+        )
+
+        with self._database.get_session() as session:
+            self._database.add_api_key(session, user=user, api_key=api_key)
+
+        return api_key
+
+    def list_api_keys(self, user: str) -> list[schemas.ApiKey]:
+        with self._database.get_session() as session:
+            return self._database.get_api_keys(session, user=user)
+
+    def delete_api_key(self, user: str, id: uuid.UUID) -> None:
+        with self._database.get_session() as session:
+            self._database.delete_api_key(session, user=user, id=id)
 
     def _get_component_json_schema(
         self,

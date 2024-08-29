@@ -1,6 +1,7 @@
 import contextlib
 import threading
 import time
+import uuid
 import webbrowser
 from typing import AsyncContextManager, AsyncIterator, Callable, Optional, cast
 
@@ -101,6 +102,20 @@ def make_app(
     @app.get("/user")
     async def user(user: UserDependency) -> schemas.User:
         return user
+
+    @app.get("/api-keys")
+    def list_api_keys(user: UserDependency) -> list[schemas.ApiKey]:
+        return engine.list_api_keys(user=user.name)
+
+    @app.post("/api-keys")
+    def create_api_key(
+        user: UserDependency, api_key_creation: schemas.ApiKeyCreation
+    ) -> schemas.ApiKey:
+        return engine.create_api_key(user=user.name, api_key_creation=api_key_creation)
+
+    @app.delete("/api-keys/{id}")
+    def delete_api_key(user: UserDependency, id: uuid.UUID) -> None:
+        return engine.delete_api_key(user=user.name, id=id)
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(

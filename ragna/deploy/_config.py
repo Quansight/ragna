@@ -109,6 +109,7 @@ class Config(BaseSettings):
     origins: list[str] = AfterConfigValidateDefault.make(
         lambda config: [f"http://{config.hostname}:{config.port}"]
     )
+    session_lifetime: int = 60 * 60 * 24
 
     database_url: str = AfterConfigValidateDefault.make(
         lambda config: f"sqlite:///{config.local_root}/ragna.db",

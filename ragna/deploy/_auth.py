@@ -54,7 +54,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
         elif request.url.path in {"/login", "/oauth-callback"}:
             return await self._login_dispatch(request, call_next)
         elif self._api and request.url.path.startswith("/api"):
-            return self._unauthorized()
+            return self._unauthorized("Missing authorization header")
         elif self._ui and request.url.path.startswith("/ui"):
             return redirect("/login")
         else:
@@ -68,17 +68,25 @@ class SessionMiddleware(BaseHTTPMiddleware):
     ) -> Response:
         scheme, api_key = get_authorization_scheme_param(authorization)
         if scheme.lower() != "bearer":
-            return self._unauthorized()
+            return self._unauthorized("Bearer authentication scheme required")
 
-        user = self._engine.get_user(api_key=api_key)
-        if user is None:
-            # Unknown API key
-            return self._unauthorized()
+        user, expired = self._engine.get_user_by_api_key(api_key)
+        if user is None or expired:
+            self._sessions.delete(api_key)
+            reason = "Invalid" if user is None else "Expired"
+            return self._unauthorized(f"{reason} API key")
 
         session = self._sessions.get(api_key)
         if session is None:
             # First time the API key is used
-            session = self._sessions[api_key] = Session(user=user)
+            session = Session(user=user)
+            # We are using the API key value instead of its ID as session key for two
+            # reasons:
+            # 1. Similar to its ID, the value is unique and thus can be safely used as
+            #    key.
+            # 2. If an API key was deleted, we lose its ID, but still need to be able to
+            #    remove its corresponding session.
+            self._sessions.set(api_key, session, expires_after=3600)
 
         request.state.session = session
         return await call_next(request)
@@ -137,9 +145,10 @@ class SessionMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         if request.url.path == "/logout":
-            del self._sessions[cookie]
+            self._sessions.delete(cookie)
             self._delete_cookie(response)
         else:
+            self._sessions.refresh(cookie, expires_after=self._config.session_lifetime)
             self._add_cookie(response, cookie)
 
         return response
@@ -151,14 +160,16 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
         if session is not None:
             cookie = str(uuid.uuid4())
-            self._sessions[cookie] = session
+            self._sessions.set(
+                cookie, session, expires_after=self._config.session_lifetime
+            )
             self._add_cookie(response, cookie=cookie)
 
         return response
 
-    def _unauthorized(self) -> Response:
+    def _unauthorized(self, message: str) -> Response:
         return Response(
-            content="Not authenticated",
+            content=message,
             status_code=status.HTTP_401_UNAUTHORIZED,
             headers={"WWW-Authenticate": "Bearer"},
         )
@@ -167,9 +178,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
         response.set_cookie(
             key=self._COOKIE_NAME,
             value=cookie,
-            # FIXME
-            max_age=3600,
-            # max_age=self._config.deploy.cookie_expires,
+            max_age=self._config.session_lifetime,
             httponly=True,
             samesite="lax",
         )
@@ -185,7 +194,11 @@ class SessionMiddleware(BaseHTTPMiddleware):
 async def _get_session(request: Request) -> Session:
     session = cast(Optional[Session], request.state.session)
     if session is None:
-        raise RagnaException("ADDME")
+        raise RagnaException(
+            "Not authenticated",
+            http_detail=RagnaException.EVENT,
+            http_status_code=status.HTTP_401_UNAUTHORIZED,
+        )
     return session
 
 

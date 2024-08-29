@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import abc
 import os
-from typing import Any, Generic, Optional, TypeVar
+import time
+from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
 
 import pydantic
 
@@ -28,37 +29,61 @@ class KeyValueStore(abc.ABC, RequirementsMixin, Generic[M]):
     def serialize(self, model: M) -> str:
         return SerializableModel.from_model(model).model_dump_json()
 
-    def deserialize(self, json_str: str) -> M:
-        return SerializableModel.model_validate_json(json_str).to_model()
+    def deserialize(self, data: Union[str, bytes]) -> M:
+        return SerializableModel.model_validate_json(data).to_model()
 
     @abc.abstractmethod
-    def __setitem__(self, key: str, model: M) -> None: ...
+    def set(
+        self, key: str, model: M, *, expires_after: Optional[int] = None
+    ) -> None: ...
 
     @abc.abstractmethod
-    def __getitem__(self, key: str) -> M: ...
+    def get(self, key: str) -> Optional[M]: ...
 
     @abc.abstractmethod
-    def __delitem__(self, key: str) -> None: ...
+    def delete(self, key: str) -> None: ...
 
-    def get(self, key: str, default: Optional[M] = None) -> Optional[M]:
-        try:
-            return self[key]
-        except KeyError:
-            return default
+    @abc.abstractmethod
+    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None: ...
 
 
 class InMemoryKeyValueStore(KeyValueStore[M]):
     def __init__(self) -> None:
-        self._store: dict[str, M] = {}
+        self._store: dict[str, tuple[M, Optional[float]]] = {}
+        self._timer: Callable[[], float] = time.monotonic
 
-    def __setitem__(self, key: str, model: M) -> None:
-        self._store[key] = model
+    def set(self, key: str, model: M, *, expires_after: Optional[int] = None) -> None:
+        if expires_after is not None:
+            expires_at = self._timer() + expires_after
+        else:
+            expires_at = None
+        self._store[key] = (model, expires_at)
 
-    def __getitem__(self, key: str) -> M:
-        return self._store[key]
+    def get(self, key: str) -> Optional[M]:
+        value = self._store.get(key)
+        if value is None:
+            return None
 
-    def __delitem__(self, key: str) -> None:
+        model, expires_at = value
+        if expires_at is not None and self._timer() >= expires_at:
+            self.delete(key)
+            return None
+
+        return model
+
+    def delete(self, key: str) -> None:
+        if key not in self._store:
+            return
+
         del self._store[key]
+
+    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None:
+        value = self._store.get(key)
+        if value is None:
+            return
+
+        model, _ = value
+        self.set(key, model, expires_after=expires_after)
 
 
 class RedisKeyValueStore(KeyValueStore[M]):
@@ -74,11 +99,20 @@ class RedisKeyValueStore(KeyValueStore[M]):
             port=int(os.environ.get("RAGNA_REDIS_PORT", 6379)),
         )
 
-    def __setitem__(self, key: str, model: M) -> None:
-        self._r[key] = self.serialize(model)
+    def set(self, key: str, model: M, *, expires_after: Optional[int] = None) -> None:
+        self._r.set(key, self.serialize(model), ex=expires_after)
 
-    def __getitem__(self, key: str) -> M:
-        return self.deserialize(self._r[key])
+    def get(self, key: str) -> Optional[M]:
+        value = cast(bytes, self._r.get(key))
+        if value is None:
+            return None
+        return self.deserialize(value)
 
-    def __delitem__(self, key: str) -> None:
-        del self._r[key]
+    def delete(self, key: str) -> None:
+        self._r.delete(key)
+
+    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None:
+        if expires_after is None:
+            self._r.persist(key)
+        else:
+            self._r.expire(key, expires_after)

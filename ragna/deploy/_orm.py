@@ -1,5 +1,6 @@
 import json
-from typing import Any
+from datetime import datetime, timezone
+from typing import Any, Optional
 
 from sqlalchemy import Column, ForeignKey, Table, types
 from sqlalchemy.engine import Dialect
@@ -30,19 +31,56 @@ class Json(types.TypeDecorator):
         return json.loads(value)
 
 
+class UtcAwareDateTime(types.TypeDecorator):
+    """UTC timezone aware datetime type.
+
+    This is needed because sqlalchemy.types.DateTime(timezone=True) does not
+    consistently store the timezone.
+
+    """
+
+    impl = types.DateTime
+
+    def process_bind_param(  # type: ignore[override]
+        self, value: Optional[datetime], dialect: Dialect
+    ) -> Optional[datetime]:
+        if value is not None:
+            assert value.tzinfo == timezone.utc
+
+        return value
+
+    def process_result_value(
+        self, value: Optional[datetime], dialect: Dialect
+    ) -> Optional[datetime]:
+        if value is None:
+            return None
+
+        return value.replace(tzinfo=timezone.utc)
+
+
 class Base(DeclarativeBase):
     pass
 
 
-# FIXME: Do we actually need this table? If we are sure that a user is unique and has to
-#  be authenticated from the API layer, it seems having an extra mapping here is not
-#  needed?
 class User(Base):
     __tablename__ = "users"
 
     id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
     name = Column(types.String, nullable=False, unique=True)
-    api_key = Column(types.String, nullable=False, unique=True)
+    api_keys = relationship("ApiKey", back_populates="user")
+
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+
+    id = Column(types.Uuid, primary_key=True)  # type: ignore[attr-defined]
+
+    user_id = Column(ForeignKey("users.id"))
+    user = relationship("User", back_populates="api_keys")
+
+    name = Column(types.String, nullable=False)
+    value = Column(types.String, nullable=False, unique=True)
+    expires_at = Column(UtcAwareDateTime, nullable=False)
 
 
 document_chat_association_table = Table(
@@ -135,4 +173,4 @@ class Message(Base):
         secondary=source_message_association_table,
         back_populates="messages",
     )
-    timestamp = Column(types.DateTime, nullable=False)
+    timestamp = Column(types.DateTime(timezone=True), nullable=False)

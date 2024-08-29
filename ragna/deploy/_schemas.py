@@ -1,10 +1,16 @@
 from __future__ import annotations
 
-import datetime
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    computed_field,
+    field_validator,
+)
 
 import ragna.core
 
@@ -12,6 +18,44 @@ import ragna.core
 class User(BaseModel):
     name: str
     data: dict[str, Any] = Field(default_factory=dict)
+
+
+class ApiKeyCreation(BaseModel):
+    name: str
+    expires_at: datetime
+
+
+class ApiKey(BaseModel):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    name: str
+    expires_at: datetime
+    obfuscated: bool = True
+    value: str
+
+    @field_validator("expires_at")
+    @classmethod
+    def _set_utc_timezone(cls, v: datetime) -> datetime:
+        if v.tzinfo is None:
+            return v.replace(tzinfo=timezone.utc)
+        else:
+            return v.astimezone(timezone.utc)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def expired(self) -> bool:
+        return datetime.now(timezone.utc) >= self.expires_at
+
+    @field_validator("value")
+    @classmethod
+    def _maybe_obfuscate(cls, v: str, info: ValidationInfo) -> str:
+        if not info.data["obfuscated"]:
+            return v
+
+        i = min(len(v) // 6, 3)
+        if i > 0:
+            return f"{v[:i]}***{v[-i:]}"
+        else:
+            return "***"
 
 
 class Components(BaseModel):
@@ -45,7 +89,7 @@ class Message(BaseModel):
     content: str
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
-    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ChatCreation(BaseModel):
