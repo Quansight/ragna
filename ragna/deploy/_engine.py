@@ -5,7 +5,6 @@ from fastapi import status as http_status_code
 
 import ragna
 from ragna import Rag, core
-from ragna._compat import aiter, anext
 from ragna._utils import make_directory
 from ragna.core import RagnaException
 from ragna.core._rag import SpecialChatParams

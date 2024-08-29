@@ -10,7 +10,6 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 
-from ragna._compat import anext
 from ragna.core._utils import default_user
 
 from . import _schemas as schemas

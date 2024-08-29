@@ -1,12 +1,22 @@
 from __future__ import annotations
 
-import datetime
 import uuid
-from typing import Any
+from datetime import datetime, timezone
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, Field
 
 import ragna.core
+
+
+def _set_utc_timezone(v: datetime) -> datetime:
+    if v.tzinfo is None:
+        return v.replace(tzinfo=timezone.utc)
+    else:
+        return v.astimezone(timezone.utc)
+
+
+UtcDateTime = Annotated[datetime, AfterValidator(_set_utc_timezone)]
 
 
 class Components(BaseModel):
@@ -40,7 +50,7 @@ class Message(BaseModel):
     content: str
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
-    timestamp: datetime.datetime = Field(default_factory=datetime.datetime.utcnow)
+    timestamp: UtcDateTime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ChatCreation(BaseModel):
