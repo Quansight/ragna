@@ -36,7 +36,6 @@ class UtcDateTime(types.TypeDecorator):
 
     This is needed because sqlalchemy.types.DateTime(timezone=True) does not
     consistently store the timezone.
-
     """
 
     impl = types.DateTime
