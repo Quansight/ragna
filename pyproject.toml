@@ -102,6 +102,7 @@ testpaths = [
 filterwarnings = [
     "error",
     "ignore::ResourceWarning",
+    "ignore:Type google._upb._message:DeprecationWarning",
     # https://github.com/lancedb/lancedb/issues/1296
     "ignore:Function 'semver.parse_version_info' is deprecated:DeprecationWarning"
 ]
