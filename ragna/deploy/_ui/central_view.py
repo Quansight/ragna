@@ -7,8 +7,6 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
-from ragna._compat import anext
-
 from . import styles as ui
 
 
