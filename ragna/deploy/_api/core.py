@@ -270,7 +270,9 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             return document
 
     @app.get("/documents/{id}/content")
-    async def get_document_content(user: UserDependency, id: uuid.UUID) -> bytes:
+    async def get_document_content(
+        user: UserDependency, id: uuid.UUID
+    ) -> StreamingResponse:
         with get_session() as session:
             document, metadata = database.get_document(session, user=user, id=id)
             core_document = document.to_core(metadata)
