@@ -2,12 +2,15 @@ import contextlib
 import threading
 import time
 import webbrowser
+from pathlib import Path
 from typing import AsyncContextManager, AsyncIterator, Callable, Optional, cast
 
 import httpx
+import panel.io.fastapi
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 import ragna
 from ragna.core import RagnaException
@@ -79,8 +82,14 @@ def make_app(
         app.include_router(make_api_router(engine), prefix="/api")
 
     if ui:
-        panel_app = make_ui_app(engine)
-        panel_app.serve_with_fastapi(app, endpoint="/ui")
+        ui_app = make_ui_app(engine)
+        panel.io.fastapi.add_applications({"/ui": ui_app.index_page}, server=app)
+        for dir in ["css", "imgs"]:
+            app.mount(
+                f"/{dir}",
+                StaticFiles(directory=str(Path(__file__).parent / "_ui" / dir)),
+                name=dir,
+            )
 
     @app.get("/", include_in_schema=False)
     async def base_redirect() -> Response:
