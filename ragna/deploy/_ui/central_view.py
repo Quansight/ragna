@@ -66,9 +66,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             value=self.content_pane.object, title="Copy"
         )
 
-        async def click_source_info_callback_wrapper(event):
-            return await on_click_source_info_callback(event, sources)
-
         # we make this available on the instance so that we can toggle the visibility
         self.assistant_toolbar = pn.Row(
             self.clipboard_button,
@@ -76,7 +73,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
                 name="Source Info",
                 icon="info-circle",
                 css_classes=["source-info-button"],
-                on_click=click_source_info_callback_wrapper,
+                on_click=lambda event: self.on_click_source_info_callback(
+                    event, self.sources
+                ),
             ),
             visible=assistant_toolbar_visible,
         )
@@ -99,6 +98,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             object=object,
             role=role,
             user=user,
+            sources=sources,
+            on_click_source_info_callback=on_click_source_info_callback,
             timestamp=timestamp,
             show_timestamp=show_timestamp,
             show_reaction_icons=False,
@@ -232,7 +233,7 @@ class CentralView(pn.viewable.Viewer):
             ],
         )
 
-    async def on_click_source_info_wrapper(self, event, sources):
+    def on_click_source_info_wrapper(self, event, sources):
         if self.on_click_chat_info is None:
             return
 
