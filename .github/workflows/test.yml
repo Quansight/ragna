@@ -40,12 +40,12 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-        python-version: ["3.9"]
+        python-version: ["3.10"]
         include:
           - os: ubuntu-latest
-            python-version: "3.10"
-          - os: ubuntu-latest
             python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
 
       fail-fast: false
 
@@ -91,22 +91,22 @@ jobs:
           - chromium
           - firefox
         python-version:
-          - "3.9"
           - "3.10"
-          - "3.11"
+          - "3.10"
+          - "3.12"
         exclude:
-          - python-version: "3.10"
-            os: windows-latest
           - python-version: "3.11"
             os: windows-latest
-          - python-version: "3.10"
+          - python-version: "3.12"
+            os: windows-latest
+          - python-version: "3.11"
             os: macos-latest
-          - python-version: "3.11"
+          - python-version: "3.12"
             os: macos-latest
         include:
           - browser: webkit
             os: macos-latest
-            python-version: "3.9"
+            python-version: "3.10"
 
       fail-fast: false
 

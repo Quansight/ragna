@@ -19,7 +19,6 @@ from pydantic import BaseModel
 
 import ragna
 import ragna.core
-from ragna._compat import aiter, anext
 from ragna._utils import handle_localhost_origins
 from ragna.core import (
     Assistant,

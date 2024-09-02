@@ -110,6 +110,6 @@ class ApiWrapper(param.Parameterized):
         return chat["id"]
 
     def improve_message(self, msg):
-        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f")
+        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
         msg["content"] = emoji.emojize(msg["content"], language="alias")
         return msg

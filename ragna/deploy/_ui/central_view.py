@@ -7,7 +7,6 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
-from ragna._compat import anext
 from ragna.core._metadata_filter import MetadataFilter
 
 from . import styles as ui

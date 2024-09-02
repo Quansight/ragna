@@ -15,11 +15,7 @@ import packaging.requirements
 import pydantic
 import pydantic_core
 
-from ragna._compat import importlib_metadata_package_distributions
-
-importlib_metadata_package_distributions = functools.cache(
-    importlib_metadata_package_distributions
-)
+packages_distributions = functools.cache(importlib.metadata.packages_distributions)
 
 
 class RagnaExceptionHttpDetail(enum.Enum):
@@ -98,8 +94,8 @@ class PackageRequirement(Requirement):
 
         for module_name in {
             module_name
-            for module_name, distribution_names in importlib_metadata_package_distributions().items()
-            if distribution.name in distribution_names  # type: ignore[attr-defined]
+            for module_name, distribution_names in packages_distributions().items()
+            if distribution.name in distribution_names
             and module_name not in self._exclude_modules
         }:
             try:
