@@ -77,7 +77,7 @@ class ApiWrapper(param.Parameterized):
                    }});
               }}).then(({{ blob, headers }}) => {{
                   var mimetype = headers.get("content-type"); 
-                  var file = new File([blob], "{document_id}", {{ type: mimetype }});
+                  var file = new File([blob], "{document_name}", {{ type: mimetype }});
                   var _url = window.URL.createObjectURL(file);
                   window.open(_url + "#{anchor}", "_blank").focus();
               }}).catch((err) => {{
