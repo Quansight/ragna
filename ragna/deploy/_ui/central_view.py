@@ -207,7 +207,7 @@ class CentralView(pn.viewable.Viewer):
 
             metadata_filters_readable = str(
                 MetadataFilter.from_primitive(self.current_chat["metadata"]["input"])
-            )
+            ).replace("\n", "<br>")
 
             details = f"<div class='details details_block' style='display:block;'>{metadata_filters_readable}</div><br />\n\n"
             grid_height = 1
