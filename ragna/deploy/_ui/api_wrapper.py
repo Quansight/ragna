@@ -89,8 +89,6 @@ class ApiWrapper(param.Parameterized):
     async def start_and_prepare(
         self, name, documents, corpus_name, source_storage, assistant, params
     ):
-        if corpus_name is None:
-            corpus_name = "default"
         response = await self.client.post(
             "/chats",
             json={

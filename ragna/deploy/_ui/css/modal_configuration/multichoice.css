@@ -1,0 +1,36 @@
+:host(.metadata-filter-value) {
+  max-width: 38%;
+  min-width: 38%;
+  height: 30px;
+}
+
+.choices__inner {
+  padding-top: 0px;
+}
+
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+.choices {
+  visibility: visible !important;
+}
+
+.choices__list {
+  height: 60px;
+}
+
+.choices__item {
+  font-size: 13px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.choices__item--selectable:not(.choices__item--choice) {
+  width: 25% !important;
+  background-color: #e9ecef !important;
+  color: black !important;
+}
