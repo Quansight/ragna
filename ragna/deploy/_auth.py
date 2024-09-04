@@ -1,7 +1,9 @@
 import abc
 import base64
+import contextlib
 import json
 import os
+import re
 import uuid
 from typing import Annotated, Awaitable, Callable, Optional, Union, cast
 
@@ -191,18 +193,19 @@ class SessionMiddleware(BaseHTTPMiddleware):
         )
 
 
-async def _get_session(request: Request) -> Session:
-    session = cast(Optional[Session], request.state.session)
-    if session is None:
-        raise RagnaException(
-            "Not authenticated",
-            http_detail=RagnaException.EVENT,
-            http_status_code=status.HTTP_401_UNAUTHORIZED,
-        )
-    return session
+class SessionAuth:  # (OAuth2)
+    async def __call__(self, request: Request) -> Session:
+        session = cast(Optional[Session], request.state.session)
+        if session is None:
+            raise RagnaException(
+                "Not authenticated",
+                http_detail=RagnaException.EVENT,
+                http_status_code=status.HTTP_401_UNAUTHORIZED,
+            )
+        return session
 
 
-SessionDependency = Annotated[Session, Depends(_get_session)]
+SessionDependency = Annotated[Session, Depends(SessionAuth())]
 
 
 async def _get_user(session: SessionDependency) -> schemas.User:
@@ -263,22 +266,26 @@ class Auth(abc.ABC):
     def login(self, request: Request) -> Union[schemas.User, Response]: ...
 
 
-class NoAuth(Auth):
+class _AutomaticLoginAuthBase(Auth):
+    def login_page(self, request: Request) -> Response:
+        # To invoke the Auth.login() method, the client either needs to
+        # - POST /login or
+        # - GET /oauth-callback
+        # Since we cannot instruct a browser to post when sending redirect response, we
+        # use the OAuth callback endpoint here, although this might have nothing to do
+        # with OAuth.
+        return redirect("/oauth-callback")
+
+
+class NoAuth(_AutomaticLoginAuthBase):
     """
     ADDME
     """
 
-    def login_page(self, request: Request) -> Response:
-        # To invoke the login() method below, the client either needs to
-        # - POST /login or
-        # - GET /oauth-callback
-        # Since we cannot instruct a browser to post when sending redirect response, we
-        # use the OAuth callback endpoint here, although this has nothing to do with
-        # OAuth.
-        return redirect("/oauth-callback")
-
     def login(self, request: Request) -> schemas.User:
-        return schemas.User(name=request.headers.get("X-User", default_user()))
+        return schemas.User(
+            name=request.headers.get("X-Forwarded-User", default_user())
+        )
 
 
 class DummyBasicAuth(Auth):
@@ -374,3 +381,29 @@ class GithubOAuth(Auth):
                 return HTMLResponse("Unauthorized!")
 
             return schemas.User(name=user_data["login"])
+
+
+class JupyterhubServerProxyAuth(_AutomaticLoginAuthBase):
+    _JUPYTERHUB_ENV_VAR_PATTERN = re.compile(r"JUPYTERHUB_(?P<key>.+)")
+
+    def __init__(self) -> None:
+        data = {}
+        for env_var, value in os.environ.items():
+            match = self._JUPYTERHUB_ENV_VAR_PATTERN.match(env_var)
+            if match is None:
+                continue
+
+            key = match["key"].lower()
+            with contextlib.suppress(json.JSONDecodeError):
+                value = json.loads(value)
+
+            data[key] = value
+
+        name = data.pop("user")
+        if name is None:
+            raise RagnaException
+
+        self._user = schemas.User(name=name, data=data)
+
+    def login(self, request: Request) -> schemas.User:
+        return self._user
