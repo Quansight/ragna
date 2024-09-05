@@ -4,13 +4,12 @@ from typing import (
     Any,
     AsyncContextManager,
     AsyncIterator,
-    MessageRole,
     Optional,
     Union,
     cast,
 )
 
-from ragna.core import Message, Source
+from ragna.core import Message, MessageRole, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
