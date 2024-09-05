@@ -82,31 +82,33 @@ jobs:
 
   pytest-ui:
     strategy:
+      # FIXME: the matrix is currently limited due to our UI tests currently only being
+      #  minimal smoke tests. No need to waste CI resources.
       matrix:
         os:
           - ubuntu-latest
-          - windows-latest
-          - macos-latest
+        #          - windows-latest
+        #          - macos-latest
         browser:
           - chromium
-          - firefox
+        #          - firefox
         python-version:
           - "3.10"
-          - "3.10"
-          - "3.12"
-        exclude:
-          - python-version: "3.11"
-            os: windows-latest
-          - python-version: "3.12"
-            os: windows-latest
-          - python-version: "3.11"
-            os: macos-latest
-          - python-version: "3.12"
-            os: macos-latest
-        include:
-          - browser: webkit
-            os: macos-latest
-            python-version: "3.10"
+      #          - "3.10"
+      #          - "3.12"
+      #        exclude:
+      #          - python-version: "3.11"
+      #            os: windows-latest
+      #          - python-version: "3.12"
+      #            os: windows-latest
+      #          - python-version: "3.11"
+      #            os: macos-latest
+      #          - python-version: "3.12"
+      #            os: macos-latest
+      #        include:
+      #          - browser: webkit
+      #            os: macos-latest
+      #            python-version: "3.10"
 
       fail-fast: false
 
