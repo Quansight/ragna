@@ -24,7 +24,6 @@ from ragna._utils import handle_localhost_origins
 from ragna.core import (
     Assistant,
     Component,
-    Document,
     MetadataFilter,
     Rag,
     RagnaException,
@@ -277,10 +276,11 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
             document, metadata = database.get_document(session, user=user, id=id)
             core_document = document.to_core(metadata)
             headers = {"Content-Disposition": f"inline; filename={document.name}"}
-            media_type = Document.get_handler(document.name).mime_type()
 
             return StreamingResponse(
-                io.BytesIO(core_document.read()), media_type=media_type, headers=headers
+                io.BytesIO(core_document.read()),
+                media_type=core_document.mime_type,
+                headers=headers,
             )
 
     def schema_to_core_chat(
