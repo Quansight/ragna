@@ -70,21 +70,58 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     }
 
     _stylesheets = [
-        """
-        :host {width: 100%; margin: 0px; padding: 0px;}
-        .fileUploadDropArea {margin-left: 10px; margin-right: 10px; border: 1px dashed var(--accent-color);
-                    border-radius: 5px; height:100%; display:flex; text-align: center; justify-content: center;
-                    align-items: center; flex-direction: column;}
-        .fileUploadDropArea span.bold {font-weight: bold;}
-        .fileUploadDropArea img {padding-bottom:5px;}
-        .fileUploadDropArea.draggedOver {border-width: 3px;}
-        .fileUpload {height: 100% !important; position: absolute; opacity: 0;}
-        .fileListContainer {display:flex; flex-direction: row; flex-wrap: wrap; height: 40px; overflow-y:scroll;
-                    overflow-x:hidden; margin-top: 10px; margin-bottom: 10px; padding-top:5px; padding-left:6px;
-                    padding-bottom:5px;}      
-        .chat_document_pill {background-color: rgb(241,241,241); margin-top:5px; margin-left: 5px; margin-right: 5px;
-                    padding: 5px 15px; border-radius: 10px; color: var(--accent-color); display: inline-table;}
-    """
+        ui.css(":host", {"width": "100%", "margin": "0px", "padding": "0px"}),
+        ui.css(
+            ".fileUploadDropArea",
+            {
+                "margin-left": "10px",
+                "margin-right": "10px",
+                "border": "1px dashed var(--accent-color)",
+                "border-radius": "5px",
+                "height": "100%",
+                "display": "flex",
+                "text-align": "center",
+                "justify-content": "center",
+                "align-items": "center",
+                "flex-direction": "column",
+            },
+        ),
+        ui.css([".fileUploadDropArea", "span.bold"], {"font-weight": "bold"}),
+        ui.css([".fileUploadDropArea", "img"], {"padding-bottom": "5px"}),
+        ui.css(".fileUploadDropArea.draggedOver", {"border-width": "3px"}),
+        ui.css(
+            ".fileUpload",
+            {"height": "100% !important", "position": "absolute", "opacity": "0"},
+        ),
+        ui.css(
+            ".fileListContainer",
+            {
+                "display": "flex",
+                "flex-direction": "row",
+                "flex-wrap": "wrap",
+                "height": "40px",
+                "overflow-y": "scroll",
+                "overflow-x": "hidden",
+                "margin-top": "10px",
+                "margin-bottom": "10px",
+                "padding-top": "5px",
+                "padding-left": "6px",
+                "padding-bottom": "5px",
+            },
+        ),
+        ui.css(
+            ".chat_document_pill",
+            {
+                "background-color": "rgb(241,241,241)",
+                "margin-top": "5px",
+                "margin-left": "5px",
+                "margin-right": "5px",
+                "padding": "5px 15px",
+                "border-radius": "10px",
+                "color": "var(--accent-color)",
+                "display": "inline-table",
+            },
+        ),
     ]
 
     _template = """
