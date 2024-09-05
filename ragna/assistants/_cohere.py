@@ -42,9 +42,9 @@ class CohereAssistant(HttpApiAssistant):
     async def generate(
         self,
         prompt: Union[str, list[Message]],
-        system_prompt: str,
         source_documents: list[dict[str, str]],
         *,
+        system_prompt: str = "You are a helpful assistant.",
         max_new_tokens: int = 256,
     ) -> AsyncIterator[str]:
         """
