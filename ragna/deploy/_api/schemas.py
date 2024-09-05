@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Annotated, Any, Union
+from typing import Annotated, Any, Optional, Union
 
 from pydantic import AfterValidator, BaseModel, Field
 
@@ -36,7 +36,10 @@ class Document(BaseModel):
             name=document.name,
         )
 
-    def to_core(self, metadata={}) -> ragna.core.Document:
+    def to_core(self, metadata: Optional[dict[str, Any]] = None) -> ragna.core.Document:
+        if metadata is None:
+            metadata = {}
+
         return ragna.core.LocalDocument(
             id=self.id,
             name=self.name,
