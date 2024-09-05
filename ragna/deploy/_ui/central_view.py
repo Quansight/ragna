@@ -239,13 +239,31 @@ class CentralView(pn.viewable.Viewer):
 
         source_infos = []
         for rank, source in enumerate(sources, 1):
+            button = pn.widgets.Button(
+                name="📁 Open File",
+            )
+            (
+                button.js_on_click(
+                    code=self.api_wrapper.create_document_content_js(
+                        source["document_id"],
+                        source["document_name"],
+                        source["location"],
+                    )
+                ),
+            )
+
             location = source["location"]
             if location:
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{rank}. {source['document']['name']}</b> {location}",
-                    pn.pane.Markdown(source["content"], css_classes=["source-content"]),
+                    f"<b>{rank}. {source['document_name']}</b> {location}",
+                    pn.Column(
+                        button,
+                        pn.pane.Markdown(
+                            source["content"], css_classes=["source-content"]
+                        ),
+                    ),
                 )
             )
 

@@ -24,6 +24,15 @@ class DocumentUploadParameters(BaseModel):
     data: dict
 
 
+_MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".txt": "text/plain",
+    ".md": "text/plain",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
+
+
 class Document(RequirementsMixin, abc.ABC):
     """Abstract base class for all documents."""
 
@@ -34,11 +43,13 @@ class Document(RequirementsMixin, abc.ABC):
         name: str,
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
+        mime_type: Optional[str] = None,
     ):
         self.id = id or uuid.uuid4()
         self.name = name
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
+        self.mime_type = mime_type or self.parse_mime_type(name)
 
     @staticmethod
     def supported_suffixes() -> set[str]:
@@ -61,6 +72,16 @@ class Document(RequirementsMixin, abc.ABC):
             raise RagnaException
 
         return handler
+
+    @staticmethod
+    def parse_mime_type(name: str) -> str:
+        """Parse file MIME-type from file name suffix.
+
+        Args:
+            name: Name of the document.
+        """
+
+        return _MIME_TYPES.get(Path(name).suffix, "application/octet-stream")
 
     @classmethod
     @abc.abstractmethod

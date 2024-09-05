@@ -1,4 +1,5 @@
 import contextlib
+import io
 import uuid
 from typing import Annotated, Any, AsyncIterator, Iterator, Optional, Type, Union, cast
 
@@ -255,6 +256,32 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                     await document_file.write(content)
 
             return document
+
+    @app.get("/documents")
+    async def get_documents(user: UserDependency) -> list[schemas.Document]:
+        with get_session() as session:
+            return database.get_documents(session, user=user)
+
+    @app.get("/documents/{id}")
+    async def get_document(user: UserDependency, id: uuid.UUID) -> schemas.Document:
+        with get_session() as session:
+            document, _ = database.get_document(session, user=user, id=id)
+            return document
+
+    @app.get("/documents/{id}/content")
+    async def get_document_content(
+        user: UserDependency, id: uuid.UUID
+    ) -> StreamingResponse:
+        with get_session() as session:
+            document, metadata = database.get_document(session, user=user, id=id)
+            core_document = document.to_core(metadata)
+            headers = {"Content-Disposition": f"inline; filename={document.name}"}
+
+            return StreamingResponse(
+                io.BytesIO(core_document.read()),
+                media_type=core_document.mime_type,
+                headers=headers,
+            )
 
     def schema_to_core_chat(
         session: database.Session, *, user: str, chat: schemas.Chat
