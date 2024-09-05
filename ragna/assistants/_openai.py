@@ -1,6 +1,14 @@
 import abc
 from functools import cached_property
-from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast, Union
+from typing import (
+    Any,
+    AsyncContextManager,
+    AsyncIterator,
+    MessageRole,
+    Optional,
+    Union,
+    cast,
+)
 
 from ragna.core import Message, Source
 
@@ -23,7 +31,9 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         )
         return instruction + "\n\n".join(source.content for source in sources)
 
-    def _render_prompt(self, prompt: Union[str,list[Message]], system_prompt: str) -> list[dict]:
+    def _render_prompt(
+        self, prompt: Union[str, list[Message]], system_prompt: str
+    ) -> list[dict]:
         """
         Ingests ragna messages-list or a single string prompt and converts to assistant-appropriate format.
 
@@ -34,14 +44,22 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-        system_message = [{"role":"system", "content":system_prompt}]
-        messages = [{"role":i["role"],"content":i["content"]} for i in prompt if i["role"] != "system"]
+        system_message = [{"role": "system", "content": system_prompt}]
+        messages = [
+            {"role": i["role"], "content": i["content"]}
+            for i in prompt
+            if i["role"] != "system"
+        ]
         return system_message.extend(messages)
-    
+
     async def generate(
-        self, prompt: Union[str,list[Message]], *, system_prompt: str = "You are a helpful assistant.", max_new_tokens: int = 256
+        self,
+        prompt: Union[str, list[Message]],
+        *,
+        system_prompt: str = "You are a helpful assistant.",
+        max_new_tokens: int = 256,
     ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
-            """
+        """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
 
@@ -77,8 +95,10 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
         system_prompt = self._make_system_content(sources)
 
-        yield self.generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
-    
+        yield self.generate(
+            prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
+        )
+
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:

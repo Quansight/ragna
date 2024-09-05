@@ -1,6 +1,6 @@
 from typing import AsyncIterator, Union
 
-from ragna.core import Message, Source
+from ragna.core import Message, MessageRole, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -59,7 +59,7 @@ class GoogleAssistant(HttpApiAssistant):
             params={"key": self._api_key},
             headers={"Content-Type": "application/json"},
             json={
-                "contents": _render_prompt(prompt),
+                "contents": self._render_prompt(prompt),
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
                     {
@@ -89,7 +89,7 @@ class GoogleAssistant(HttpApiAssistant):
     ) -> AsyncIterator[str]:
         prompt, sources = (message := messages[-1]).content, message.sources
         expanded_prompt = self._instructize_prompt(prompt, sources)
-        yield generate(prompt=expanded_prompt, max_new_tokens=max_new_tokens)
+        yield self.generate(prompt=expanded_prompt, max_new_tokens=max_new_tokens)
 
 
 class GeminiPro(GoogleAssistant):

@@ -1,6 +1,6 @@
 from typing import AsyncIterator, Union, cast
 
-from ragna.core import Message, RagnaException, Source
+from ragna.core import Message, MessageRole, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -35,7 +35,7 @@ class CohereAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-            
+
         messages = [i["content"] for i in messages if i["role"] == "user"][-1]
         return messages
 
@@ -74,12 +74,12 @@ class CohereAssistant(HttpApiAssistant):
             },
             json={
                 "preamble_override": system_prompt,
-                "message": _render_prompt(prompt),
+                "message": self._render_prompt(prompt),
                 "model": self._MODEL,
                 "stream": True,
                 "temperature": 0.0,
                 "max_tokens": max_new_tokens,
-                "documents": self._make_source_documents(sources),
+                "documents": source_documents,
             },
         ) as stream:
             async for event in stream:
@@ -100,7 +100,7 @@ class CohereAssistant(HttpApiAssistant):
         prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_preamble()
         source_documents = self._make_source_documents(sources)
-        yield generate(
+        yield self.generate(
             prompt=prompt,
             system_prompt=system_prompt,
             source_documents=source_documents,

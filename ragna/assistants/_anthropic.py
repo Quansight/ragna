@@ -1,6 +1,13 @@
 from typing import AsyncIterator, Union, cast
 
-from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
+from ragna.core import (
+    Message,
+    MessageRole,
+    PackageRequirement,
+    RagnaException,
+    Requirement,
+    Source,
+)
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -44,9 +51,9 @@ class AnthropicAssistant(HttpApiAssistant):
             ordered list of dicts with 'content' and 'role' keys
         """
         if isinstance(prompt, str):
-             messages = [Message(content=prompt, role=MessageRole.USER)]
+            messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
-             messages = prompt
+            messages = prompt
 
         messages = [
             {"content": i["content"], "role": i["role"]}
@@ -88,8 +95,8 @@ class AnthropicAssistant(HttpApiAssistant):
             },
             json={
                 "model": self._MODEL,
-                "system": system,
-                "messages": _render_prompt(prompt),
+                "system": system_prompt,
+                "messages": self._render_prompt(prompt),
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,

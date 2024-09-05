@@ -1,6 +1,6 @@
 from typing import AsyncIterator, Union, cast
 
-from ragna.core import Message, Source
+from ragna.core import Message, MessageRole, Source
 
 from ._http_api import HttpApiAssistant
 
@@ -33,7 +33,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-            
+
         messages = [
             {"text": i["content"], "role": i["role"]}
             for i in messages
@@ -76,7 +76,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "numResults": 1,
                 "temperature": 0.0,
                 "maxTokens": max_new_tokens,
-                "messages": _render_prompt(prompt),
+                "messages": self._render_prompt(prompt),
                 "system": system_prompt,
             },
         ) as stream:
@@ -88,7 +88,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
     ) -> AsyncIterator[str]:
         prompt, sources = (message := messages[-1]).content, message.sources
         system_prompt = self._make_system_content(sources)
-        yield generate(
+        yield self.generate(
             prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
         )
 
