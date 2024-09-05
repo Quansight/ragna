@@ -77,7 +77,7 @@ class AnthropicAssistant(HttpApiAssistant):
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
 
-        async for data in self._call_api(
+        async with self._call_api(
             "POST",
             "https://api.anthropic.com/v1/messages",
             headers={
@@ -94,16 +94,17 @@ class AnthropicAssistant(HttpApiAssistant):
                 "temperature": 0.0,
                 "stream": True,
             },
-        ):
-            # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
-            if "error" in data:
-                raise RagnaException(data["error"].pop("message"), **data["error"])
-            elif data["type"] == "message_stop":
-                break
-            elif data["type"] != "content_block_delta":
-                continue
+        ) as stream:
+            async for data in stream:
+                # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
+                if "error" in data:
+                    raise RagnaException(data["error"].pop("message"), **data["error"])
+                elif data["type"] == "message_stop":
+                    break
+                elif data["type"] != "content_block_delta":
+                    continue
 
-            yield cast(str, data["delta"].pop("text"))
+                yield cast(str, data["delta"].pop("text"))
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256

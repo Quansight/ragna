@@ -1,6 +1,6 @@
 import abc
 from functools import cached_property
-from typing import Any, AsyncIterator, Optional, cast, Union
+from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast, Union
 
 from ragna.core import Message, Source
 
@@ -40,7 +40,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     
     async def generate(
         self, prompt: Union[str,list[Message]], *, system_prompt: str = "You are a helpful assistant.", max_new_tokens: int = 256
-    ) -> AsyncIterator[dict[str, Any]]:
+    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
             """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -53,8 +53,8 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         Returns:
             yield call to self._call_api with formatted headers and json
         """
-        # See https://platform.openai.com/docs/api-reference/chat/create
-        # and https://platform.openai.com/docs/api-reference/chat/streaming
+        messages = self._render_prompt(prompt, system_prompt)
+
         headers = {
             "Content-Type": "application/json",
         }
@@ -62,16 +62,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             headers["Authorization"] = f"Bearer {self._api_key}"
 
         json_ = {
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
+            "messages": messages,
             "temperature": 0.0,
             "max_tokens": max_new_tokens,
             "stream": True,
@@ -80,26 +71,26 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             json_["model"] = self._MODEL
 
         yield self._call_api("POST", self._url, headers=headers, json=json_)
-    
-    async def _stream(
-        self, messages: list[Message], *, max_new_tokens: int
-    ) -> AsyncIterator[dict[str, Any]]:
-        # See https://platform.openai.com/docs/api-reference/chat/create
-        # and https://platform.openai.com/docs/api-reference/chat/streaming
-        prompt, sources = (message := messages[-1]).content, message.sources
+
+    def _call_openai_api(
+        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
+    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
         system_prompt = self._make_system_content(sources)
 
-        yield generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
-
+        yield self.generate(prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens)
+    
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        async for data in self._stream(messages, max_new_tokens=max_new_tokens):
-            choice = data["choices"][0]
-            if choice["finish_reason"] is not None:
-                break
-
-            yield cast(str, choice["delta"]["content"])
+        prompt, sources = (message := messages[-1]).content, message.sources
+        async with self._call_openai_api(
+            prompt, sources, max_new_tokens=max_new_tokens
+        ) as stream:
+            async for data in stream:
+                choice = data["choices"][0]
+                if choice["finish_reason"] is not None:
+                    break
+                yield cast(str, choice["delta"]["content"])
 
 
 class OpenaiAssistant(OpenaiLikeHttpApiAssistant):

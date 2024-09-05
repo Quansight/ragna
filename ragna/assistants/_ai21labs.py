@@ -64,7 +64,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
 
-        async for data in self._call_api(
+        async with self._call_api(
             "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
             headers={
@@ -79,8 +79,9 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "messages": _render_prompt(prompt),
                 "system": system_prompt,
             },
-        ):
-            yield cast(str, data["outputs"][0]["text"])
+        ) as stream:
+            async for data in stream:
+                yield cast(str, data["outputs"][0]["text"])
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256

@@ -53,7 +53,7 @@ class GoogleAssistant(HttpApiAssistant):
         Returns:
             async streamed inference response string chunks
         """
-        async for chunk in self._call_api(
+        async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
@@ -80,8 +80,9 @@ class GoogleAssistant(HttpApiAssistant):
                 },
             },
             parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
-        ):
-            yield chunk
+        ) as stream:
+            async for chunk in stream:
+                yield chunk
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
