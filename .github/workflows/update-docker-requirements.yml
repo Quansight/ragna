@@ -30,7 +30,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           optional-dependencies: "false"
 
       - name: Update docker requirements

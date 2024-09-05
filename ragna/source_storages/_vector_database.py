@@ -10,7 +10,6 @@ from typing import (
     cast,
 )
 
-from ragna._compat import itertools_pairwise
 from ragna.core import (
     PackageRequirement,
     Page,
@@ -106,7 +105,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
         ranges_str = []
         range_int = []
-        for current_page_number, next_page_number in itertools_pairwise(
+        for current_page_number, next_page_number in itertools.pairwise(
             itertools.chain(sorted(page_numbers), [None])
         ):
             current_page_number = cast(int, current_page_number)
