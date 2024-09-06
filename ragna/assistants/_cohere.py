@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Union, cast
+from typing import Any, AsyncIterator, Union, cast
 
 from ragna.core import Message, MessageRole, RagnaException, Source
 
@@ -36,8 +36,11 @@ class CohereAssistant(HttpApiAssistant):
         else:
             messages = prompt
 
-        messages = [i["content"] for i in messages if i["role"] == "user"][-1]
-        return messages
+        for message in reversed(messages):
+            if message.role is MessageRole.USER:
+                return message.content
+        else:
+            raise RagnaException
 
     async def generate(
         self,
@@ -46,7 +49,7 @@ class CohereAssistant(HttpApiAssistant):
         *,
         system_prompt: str = "You are a helpful assistant.",
         max_new_tokens: int = 256,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -82,30 +85,26 @@ class CohereAssistant(HttpApiAssistant):
                 "documents": source_documents,
             },
         ) as stream:
-            async for event in stream:
-                if event["event_type"] == "stream-end":
-                    if event["event_type"] == "COMPLETE":
-                        break
-
-                    raise RagnaException(event["error_message"])
-                if "text" in event:
-                    yield cast(str, event["text"])
+            async for data in stream:
+                yield data
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        # See https://docs.cohere.com/docs/cochat-beta
-        # See https://docs.cohere.com/reference/chat
-        # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        prompt, sources = (message := messages[-1]).content, message.sources
-        system_prompt = self._make_preamble()
-        source_documents = self._make_source_documents(sources)
-        yield self.generate(
-            prompt=prompt,
-            system_prompt=system_prompt,
-            source_documents=source_documents,
+        message = messages[-1]
+        async for data in self.generate(
+            prompt=message.content,
+            system_prompt=self._make_preamble(),
+            source_documents=self._make_source_documents(message.sources),
             max_new_tokens=max_new_tokens,
-        )
+        ):
+            if data["event_type"] == "stream-end":
+                if data["event_type"] == "COMPLETE":
+                    break
+
+                raise RagnaException(data["error_message"])
+            if "text" in data:
+                yield cast(str, data["text"])
 
 
 class Command(CohereAssistant):

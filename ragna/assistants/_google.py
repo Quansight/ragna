@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Union
+from typing import Any, AsyncIterator, Union
 
 from ragna.core import Message, MessageRole, Source
 
@@ -26,22 +26,19 @@ class GoogleAssistant(HttpApiAssistant):
         )
 
     def _render_prompt(self, prompt: Union[str, list[Message]]) -> list[dict]:
-        # need to verify against https://ai.google.dev/api/generate-content#chat_1
-        role_mapping = {"user": "user", "assistant": "model"}
         if isinstance(prompt, str):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-        messages = [
-            {"parts": [{"text": i["content"]}], "role": role_mapping[i["role"]]}
-            for i in messages
-            if i["role"] != "system"
+        return [
+            {"parts": [{"text": message.content}]}
+            for message in messages
+            if message.role is not MessageRole.SYSTEM
         ]
-        return messages
 
     async def generate(
         self, prompt: Union[str, list[Message]], *, max_new_tokens: int = 256
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -79,17 +76,20 @@ class GoogleAssistant(HttpApiAssistant):
                     "maxOutputTokens": max_new_tokens,
                 },
             },
-            parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
+            parse_kwargs=dict(item="item"),  # .candidates.item.content.parts.item.text
         ) as stream:
-            async for chunk in stream:
-                yield chunk
+            async for data in stream:
+                yield data
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        expanded_prompt = self._instructize_prompt(prompt, sources)
-        yield self.generate(prompt=expanded_prompt, max_new_tokens=max_new_tokens)
+        message = messages[-1]
+        async for data in self.generate(
+            self._instructize_prompt(message.content, message.sources),
+            max_new_tokens=max_new_tokens,
+        ):
+            yield data["candidates"][0]["content"]["parts"][0]["text"]
 
 
 class GeminiPro(GoogleAssistant):

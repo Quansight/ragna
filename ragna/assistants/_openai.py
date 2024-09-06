@@ -2,7 +2,6 @@ import abc
 from functools import cached_property
 from typing import (
     Any,
-    AsyncContextManager,
     AsyncIterator,
     Optional,
     Union,
@@ -43,13 +42,14 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-        system_message = [{"role": "system", "content": system_prompt}]
-        messages = [
-            {"role": i["role"], "content": i["content"]}
-            for i in prompt
-            if i["role"] != "system"
+        return [
+            {"role": "system", "content": system_prompt},
+            *(
+                {"role": message.role.value, "content": message.content}
+                for message in messages
+                if message.role is not MessageRole.SYSTEM
+            ),
         ]
-        return system_message.extend(messages)
 
     async def generate(
         self,
@@ -57,7 +57,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         *,
         system_prompt: str = "You are a helpful assistant.",
         max_new_tokens: int = 256,
-    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -70,8 +70,6 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         Returns:
             yield call to self._call_api with formatted headers and json
         """
-        messages = self._render_prompt(prompt, system_prompt)
-
         headers = {
             "Content-Type": "application/json",
         }
@@ -79,7 +77,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
             headers["Authorization"] = f"Bearer {self._api_key}"
 
         json_ = {
-            "messages": messages,
+            "messages": self._render_prompt(prompt, system_prompt),
             "temperature": 0.0,
             "max_tokens": max_new_tokens,
             "stream": True,
@@ -87,29 +85,25 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        yield self._call_api("POST", self._url, headers=headers, json=json_)
-
-    def _call_openai_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int = 256
-    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
-        system_prompt = self._make_system_content(sources)
-
-        yield self.generate(
-            prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
-        )
+        async with self._call_api(
+            "POST", self._url, headers=headers, json=json_
+        ) as stream:
+            async for data in stream:
+                yield data
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        async with self._call_openai_api(
-            prompt, sources, max_new_tokens=max_new_tokens
-        ) as stream:
-            async for data in stream:
-                choice = data["choices"][0]
-                if choice["finish_reason"] is not None:
-                    break
-                yield cast(str, choice["delta"]["content"])
+        message = messages[-1]
+        async for data in self.generate(
+            [message],
+            system_prompt=self._make_system_content(message.sources),
+            max_new_tokens=max_new_tokens,
+        ):
+            choice = data["choices"][0]
+            if choice["finish_reason"] is not None:
+                break
+            yield cast(str, choice["delta"]["content"])
 
 
 class OpenaiAssistant(OpenaiLikeHttpApiAssistant):

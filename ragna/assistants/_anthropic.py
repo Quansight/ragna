@@ -1,13 +1,6 @@
-from typing import AsyncIterator, Union, cast
+from typing import Any, AsyncIterator, Union, cast
 
-from ragna.core import (
-    Message,
-    MessageRole,
-    PackageRequirement,
-    RagnaException,
-    Requirement,
-    Source,
-)
+from ragna.core import Message, MessageRole, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
@@ -16,10 +9,6 @@ class AnthropicAssistant(HttpApiAssistant):
     _API_KEY_ENV_VAR = "ANTHROPIC_API_KEY"
     _STREAMING_PROTOCOL = HttpStreamingProtocol.SSE
     _MODEL: str
-
-    @classmethod
-    def _extra_requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("httpx_sse")]
 
     @classmethod
     def display_name(cls) -> str:
@@ -54,13 +43,11 @@ class AnthropicAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-
-        messages = [
-            {"content": i["content"], "role": i["role"]}
-            for i in messages
-            if i["role"] != "system"
+        return [
+            {"role": message.role.value, "content": message.content}
+            for message in messages
+            if message.role is not MessageRole.SYSTEM
         ]
-        return messages
 
     async def generate(
         self,
@@ -68,7 +55,7 @@ class AnthropicAssistant(HttpApiAssistant):
         *,
         system_prompt: str = "You are a helpful assistant.",
         max_new_tokens: int = 256,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -103,24 +90,26 @@ class AnthropicAssistant(HttpApiAssistant):
             },
         ) as stream:
             async for data in stream:
-                # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
-                if "error" in data:
-                    raise RagnaException(data["error"].pop("message"), **data["error"])
-                elif data["type"] == "message_stop":
-                    break
-                elif data["type"] != "content_block_delta":
-                    continue
-
-                yield cast(str, data["delta"].pop("text"))
+                yield data
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        system_prompt = self._instructize_system_prompt(sources)
-        yield self.generate(
-            prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
-        )
+        message = messages[-1]
+        async for data in self.generate(
+            [message],
+            system_prompt=self._instructize_system_prompt(message.sources),
+            max_new_tokens=max_new_tokens,
+        ):
+            # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
+            if "error" in data:
+                raise RagnaException(data["error"].pop("message"), **data["error"])
+            elif data["type"] == "message_stop":
+                break
+            elif data["type"] != "content_block_delta":
+                continue
+
+            yield cast(str, data["delta"].pop("text"))
 
 
 class ClaudeOpus(AnthropicAssistant):

@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Union, cast
+from typing import Any, AsyncIterator, Union, cast
 
 from ragna.core import Message, MessageRole, Source
 
@@ -33,13 +33,11 @@ class Ai21LabsAssistant(HttpApiAssistant):
             messages = [Message(content=prompt, role=MessageRole.USER)]
         else:
             messages = prompt
-
-        messages = [
-            {"text": i["content"], "role": i["role"]}
-            for i in messages
-            if i["role"] != "system"
+        return [
+            {"role": message.role.value, "content": message.content}
+            for message in messages
+            if message.role is not MessageRole.SYSTEM
         ]
-        return messages
 
     async def generate(
         self,
@@ -47,7 +45,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         *,
         system_prompt: str = "You are a helpful assistant.",
         max_new_tokens: int = 256,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[dict[str, Any]]:
         """
         Primary method for calling assistant inference, either as a one-off request from anywhere in ragna, or as part of self.answer()
         This method should be called for tasks like pre-processing, agentic tasks, or any other user-defined calls.
@@ -81,16 +79,18 @@ class Ai21LabsAssistant(HttpApiAssistant):
             },
         ) as stream:
             async for data in stream:
-                yield cast(str, data["outputs"][0]["text"])
+                yield data
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        system_prompt = self._make_system_content(sources)
-        yield self.generate(
-            prompt=prompt, system_prompt=system_prompt, max_new_tokens=max_new_tokens
-        )
+        message = messages[-1]
+        async for data in self.generate(
+            [message],
+            system_prompt=self._make_system_content(message.sources),
+            max_new_tokens=max_new_tokens,
+        ):
+            yield cast(str, data["outputs"][0]["text"])
 
 
 # The Jurassic2Mid assistant receives a 500 internal service error from the remote
