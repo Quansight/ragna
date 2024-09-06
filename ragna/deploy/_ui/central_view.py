@@ -7,6 +7,8 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
+from ragna.core._metadata_filter import MetadataFilter
+
 from . import styles as ui
 
 
@@ -184,20 +186,49 @@ class CentralView(pn.viewable.Viewer):
         if self.on_click_chat_info is None:
             return
 
-        pills = "".join(
-            [
-                f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                for d in self.current_chat["metadata"]["documents"]
-            ]
-        )
+        # see _api/schemas.py for `input` type definitions
+        if isinstance(self.current_chat["metadata"]["input"], list):
+            # `Document`s provided as list
+            title = "Uploaded Files"
 
-        grid_height = len(self.current_chat["metadata"]["documents"]) // 3
+            pills = "".join(
+                [
+                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                    for d in self.current_chat["metadata"]["input"]
+                ]
+            )
+
+            details = f"<div class='details'>{pills}</div><br />\n\n"
+            grid_height = len(self.current_chat["metadata"]["input"]) // 3
+
+        elif isinstance(self.current_chat["metadata"]["input"], dict):
+            # `MetadataFilter`s provided as dict
+            title = "Metadata Filters"
+
+            metadata_filters_readable = str(
+                MetadataFilter.from_primitive(self.current_chat["metadata"]["input"])
+            ).replace("\n", "<br>")
+
+            details = f"<div class='details details_block' style='display:block;'>{metadata_filters_readable}</div><br />\n\n"
+            grid_height = 1
+
+        elif self.current_chat["metadata"]["input"] is None:
+            title = ""
+
+            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
+            grid_height = 1
+
+        else:
+            title = ""
+
+            details = "<div class='details'>Unable to infer the `input` type.<br /> Defaulting to using the whole corpus.</div><br />\n\n"
+            grid_height = 1
 
         markdown = "\n".join(
             [
                 "To change configurations, start a new chat.\n",
-                "**Uploaded Files**",
-                f"<div class='pills_list'>{pills}</div><br />\n\n",
+                f"**{title}**",
+                details,
                 "----",
                 "**Source Storage**",
                 f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
@@ -223,11 +254,15 @@ class CentralView(pn.viewable.Viewer):
                     # The CSS rule below relies on a variable value, so we can't move it into modifers
                     stylesheets=[
                         ui.css(
-                            ":host(.chat_info_markdown) .pills_list",
+                            ":host(.chat_info_markdown) .details",
                             {
                                 "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
                             },
-                        )
+                        ),
+                        ui.css(
+                            ":host(.chat_info_markdown) .details_block",
+                            {"display": "block"},
+                        ),
                     ],
                 ),
             ],
@@ -244,7 +279,7 @@ class CentralView(pn.viewable.Viewer):
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{rank}. {source['document']['name']}</b> {location}",
+                    f"<b>{rank}. {source['document_name']}</b> {location}",
                     pn.pane.Markdown(source["content"], css_classes=["source-content"]),
                 )
             )

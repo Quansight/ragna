@@ -5,12 +5,16 @@ import param
 from panel.reactive import ReactiveHTML
 from panel.widgets import Widget
 
+from .. import styles as ui
+
 
 class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
     allowed_documents = param.List(default=[])
     allowed_documents_str = param.String(default="")
 
     file_list = param.List(default=[])
+
+    height_upload_container = param.String(default=ui.FILE_CONTAINER_HEIGHT)
 
     custom_js = param.String(default="")
     uploaded_documents_json = param.String(default="")
@@ -56,7 +60,7 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         self.custom_js = (
             final_callback_js
             + random_id
-            + f"""upload( self.get_upload_files(),  '{self.token}', '{self.informations_endpoint}', final_callback) """
+            + f"""upload( self.get_upload_files(), '{self.token}', '{self.informations_endpoint}', final_callback) """
         )
 
     _child_config = {
@@ -65,73 +69,67 @@ class FileUploader(ReactiveHTML, Widget):  # type: ignore[misc]
         "allowed_documents_str": "template",
     }
 
+    _stylesheets = [
+        ui.css(":host", {"width": "100%", "margin": "0px", "padding": "0px"}),
+        ui.css(
+            ".fileUploadDropArea",
+            {
+                "margin-left": "10px",
+                "margin-right": "10px",
+                "border": "1px dashed var(--accent-color)",
+                "border-radius": "5px",
+                "height": "100%",
+                "display": "flex",
+                "text-align": "center",
+                "justify-content": "center",
+                "align-items": "center",
+                "flex-direction": "column",
+            },
+        ),
+        ui.css([".fileUploadDropArea", "span.bold"], {"font-weight": "bold"}),
+        ui.css([".fileUploadDropArea", "img"], {"padding-bottom": "5px"}),
+        ui.css(".fileUploadDropArea.draggedOver", {"border-width": "3px"}),
+        ui.css(
+            ".fileUpload",
+            {"height": "100% !important", "position": "absolute", "opacity": "0"},
+        ),
+        ui.css(
+            ".fileListContainer",
+            {
+                "display": "flex",
+                "flex-direction": "row",
+                "flex-wrap": "wrap",
+                "height": "40px",
+                "overflow-y": "scroll",
+                "overflow-x": "hidden",
+                "margin-top": "10px",
+                "margin-bottom": "10px",
+                "padding-top": "5px",
+                "padding-left": "6px",
+                "padding-bottom": "5px",
+            },
+        ),
+        ui.css(
+            ".chat_document_pill",
+            {
+                "background-color": "rgb(241,241,241)",
+                "margin-top": "5px",
+                "margin-left": "5px",
+                "margin-right": "5px",
+                "padding": "5px 15px",
+                "border-radius": "10px",
+                "color": "var(--accent-color)",
+                "display": "inline-table",
+            },
+        ),
+    ]
+
     _template = """
+            <!-- fileUploadContainer can't be added to _stylesheets as it needs to be dynamically linked -->
             <style>
-                :host {
-                    width: 100%;
-                    margin: 0px;
-                    padding: 0px;
-                }
-
                 .fileUploadContainer {
-                    height: 130px;
-                }
-
-                .fileUploadDropArea {
-                    margin-left: 10px;
-                    margin-right: 10px;
-                    border: 1px dashed var(--accent-color);
-                    border-radius: 5px;
-                    height:100%;
-                    display:flex;
-                    text-align: center;
-                    justify-content: center;
-                    align-items: center;
-                    flex-direction: column;
-                }
-
-                .fileUploadDropArea span.bold {
-                    font-weight: bold;
-                }
-
-                .fileUploadDropArea img {
-                    padding-bottom:5px;
-                }
-
-                .fileUploadDropArea.draggedOver {
-                    border-width: 3px;
-                }
-
-                .fileUploadDropArea.uploaded {
-                    height: calc(100% - 40px);
-                }
-                
-                .fileUpload {
-                    height: 100% !important;
-                    position: absolute;
-                    opacity: 0;
-                }
-
-                .fileListContainer {
-                    display:flex;
-                    flex-direction: row;
-                    height: 44px;
-                    overflow:scroll;
-                    padding-top:14px;
-                    padding-left:6px;
-                }
-                
-                .chat_document_pill {
-                    background-color: rgb(241,241,241);
-                    margin-top:0px; 
-                    margin-left: 5px;   
-                    margin-right: 5px;
-                    padding: 5px 15px;
-                    border-radius: 10px;
-                    color: var(--accent-color);
-                    display: inline-table;
-                    }
-                
+                    height: ${height_upload_container};
+                }                
             </style>
             <script>
                 var basePath = window.location.pathname

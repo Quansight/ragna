@@ -28,7 +28,7 @@ div#content {
 /* Fix the size of the modal */
 #pn-Modal {
   --dialog-width: 800px !important;
-  --dialog-height: 500px !important;
+  --dialog-height: 700px !important;
 }
 
 /* Hide the default close button of the modal */

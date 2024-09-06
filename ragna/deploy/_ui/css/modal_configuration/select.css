@@ -1,0 +1,16 @@
+:host(.metadata-filter-key),
+:host(.metadata-filter-value) {
+  max-width: 38%;
+  min-width: 38%;
+  height: 30px;
+}
+
+:host(.metadata-filter-operator) {
+  max-width: 12%;
+  min-width: 12%;
+  height: 30px;
+}
+
+:host(.metadata-filter-row-error) select.bk-input {
+  border: 2px red solid !important;
+}

@@ -4,7 +4,7 @@
 }
 
 :host(.modal_configuration_int_slider) {
-  margin-top: 20px;
+  margin-top: 0px;
 }
 
 :host(.modal_configuration_int_slider) .bk-slider-title {

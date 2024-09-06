@@ -18,6 +18,10 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.api_wrapper = api_wrapper
         self.template = template
 
+        self.components = None
+        self.corpus_metadata = None
+        self.corpus_names = None
+
         self.modal = None
         self.central_view = CentralView(api_wrapper=self.api_wrapper)
         self.central_view.on_click_chat_info = (
@@ -26,7 +30,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
         self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
         self.left_sidebar.on_click_chat = self.on_click_chat
-        self.left_sidebar.on_click_new_chat = lambda event: self.open_modal()
+        self.left_sidebar.on_click_new_chat = self.open_modal
 
         self.right_sidebar = RightSidebar()
 
@@ -38,6 +42,9 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
     async def refresh_data(self):
         self.chats = await self.api_wrapper.get_chats()
+        self.components = await self.api_wrapper.get_components()
+        self.corpus_metadata = await self.api_wrapper.get_corpus_metadata()
+        self.corpus_names = await self.api_wrapper.get_corpus_names()
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
@@ -57,10 +64,19 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
                     self.central_view.set_current_chat(c)
                     break
 
-    # Modal and callbacks
-    def open_modal(self):
+    async def open_modal(self, event):
+        if (
+            self.components is None
+            or self.corpus_metadata is None
+            or self.corpus_names is None
+        ):
+            await self.refresh_data()
+
         self.modal = ModalConfiguration(
             api_wrapper=self.api_wrapper,
+            components=self.components,
+            corpus_metadata=self.corpus_metadata,
+            corpus_names=self.corpus_names,
             new_chat_ready_callback=self.open_new_chat,
             cancel_button_callback=self.on_click_cancel_button,
         )

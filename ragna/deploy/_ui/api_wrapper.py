@@ -56,6 +56,12 @@ class ApiWrapper(param.Parameterized):
     def update_auth_header(self):
         self.client.headers["Authorization"] = f"Bearer {self.auth_token}"
 
+    async def get_corpus_names(self):
+        return (await self.client.get("/corpuses")).raise_for_status().json()
+
+    async def get_corpus_metadata(self):
+        return (await self.client.get("/corpuses/metadata")).raise_for_status().json()
+
     async def get_chats(self):
         json_data = (await self.client.get("/chats")).raise_for_status().json()
         for chat in json_data:
@@ -81,13 +87,14 @@ class ApiWrapper(param.Parameterized):
         }
 
     async def start_and_prepare(
-        self, name, documents, source_storage, assistant, params
+        self, name, documents, corpus_name, source_storage, assistant, params
     ):
         response = await self.client.post(
             "/chats",
             json={
                 "name": name,
                 "input": documents,
+                "corpus_name": corpus_name,
                 "source_storage": source_storage,
                 "assistant": assistant,
                 "params": params,
