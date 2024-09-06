@@ -50,6 +50,7 @@ class GoogleAssistant(HttpApiAssistant):
         Returns:
             async streamed inference response string chunks
         """
+        # See https://ai.google.dev/api/generate-content#v1beta.models.streamGenerateContent
         async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
@@ -76,7 +77,7 @@ class GoogleAssistant(HttpApiAssistant):
                     "maxOutputTokens": max_new_tokens,
                 },
             },
-            parse_kwargs=dict(item="item"),  # .candidates.item.content.parts.item.text
+            parse_kwargs=dict(item="item"),
         ) as stream:
             async for data in stream:
                 yield data

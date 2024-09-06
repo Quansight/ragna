@@ -1,12 +1,6 @@
 import abc
 from functools import cached_property
-from typing import (
-    Any,
-    AsyncIterator,
-    Optional,
-    Union,
-    cast,
-)
+from typing import Any, AsyncIterator, Optional, Union, cast
 
 from ragna.core import Message, MessageRole, Source
 

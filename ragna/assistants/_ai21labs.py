@@ -34,7 +34,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         else:
             messages = prompt
         return [
-            {"role": message.role.value, "content": message.content}
+            {"text": message.content, "role": message.role.value}
             for message in messages
             if message.role is not MessageRole.SYSTEM
         ]

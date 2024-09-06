@@ -94,15 +94,15 @@ class HttpStreamingAssistant(HttpApiAssistant):
             content=messages[-1].content,
             parse_kwargs=parse_kwargs,
         ) as stream:
-            async for chunk in stream:
-                yield chunk
+            async for data in stream:
+                yield data
 
     async def answer(self, messages):
-        async for chunk in self.generate(messages):
-            if chunk.get("break"):
+        async for data in self.generate(messages):
+            if data.get("break"):
                 break
 
-            yield chunk
+            yield data
 
 
 @skip_on_windows
