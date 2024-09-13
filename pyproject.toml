@@ -15,9 +15,9 @@ authors = [
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 requires-python = ">=3.10"
 dependencies = [
@@ -27,9 +27,7 @@ dependencies = [
     "fastapi",
     "httpx",
     "packaging",
-    # FIXME: pin them to released versions
-    "bokeh-fastapi",
-    "panel",
+    "panel[fastapi]==1.5.0",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",
