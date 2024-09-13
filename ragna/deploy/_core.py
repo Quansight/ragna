@@ -83,7 +83,7 @@ def make_app(
 
     if ui:
         ui_app = make_ui_app(engine)
-        panel.io.fastapi.add_applications({"/ui": ui_app.index_page}, server=app)
+        panel.io.fastapi.add_applications({"/ui": ui_app.index_page}, app=app)
         for dir in ["css", "imgs"]:
             app.mount(
                 f"/{dir}",
