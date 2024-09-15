@@ -97,6 +97,8 @@ class HttpApiCaller:
 
             yield stream()
 
+        assert False
+
     @contextlib.asynccontextmanager
     async def _stream_jsonl(
         self,
@@ -114,6 +116,8 @@ class HttpApiCaller:
                     yield json.loads(chunk)
 
             yield stream()
+
+        assert False
 
     # ijson does not support reading from an (async) iterator, but only from file-like
     # objects, i.e. https://docs.python.org/3/tutorial/inputoutput.html#methods-of-file-objects.
@@ -157,6 +161,8 @@ class HttpApiCaller:
                     yield chunk
 
             yield stream()
+
+        assert False
 
     async def _assert_api_call_is_success(self, response: httpx.Response) -> None:
         if response.is_success:
