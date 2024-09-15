@@ -14,14 +14,14 @@ class CohereAssistant(HttpApiAssistant):
     def display_name(cls) -> str:
         return f"Cohere/{cls._MODEL}"
 
-    def _make_preamble(self) -> str:
+    def _make_rag_preamble(self) -> str:
         return (
             "You are a helpful assistant that answers user questions given the included context. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
             "Only use the included documents below to generate the answer."
         )
 
-    def _make_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
+    def _make_rag_source_documents(self, sources: list[Source]) -> list[dict[str, str]]:
         return [{"title": source.id, "snippet": source.content} for source in sources]
 
     def _render_prompt(self, prompt: Union[str, list[Message]]) -> str:
@@ -94,8 +94,8 @@ class CohereAssistant(HttpApiAssistant):
         message = messages[-1]
         async for data in self.generate(
             prompt=message.content,
-            system_prompt=self._make_preamble(),
-            source_documents=self._make_source_documents(message.sources),
+            system_prompt=self._make_rag_preamble(),
+            source_documents=self._make_rag_source_documents(message.sources),
             max_new_tokens=max_new_tokens,
         ):
             if data["event_type"] == "stream-end":

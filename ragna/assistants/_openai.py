@@ -14,7 +14,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     @abc.abstractmethod
     def _url(self) -> str: ...
 
-    def _make_system_content(self, sources: list[Source]) -> str:
+    def _make_rag_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
         instruction = (
             "You are an helpful assistants that answers user questions given the context below. "
@@ -91,7 +91,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         message = messages[-1]
         async for data in self.generate(
             [message],
-            system_prompt=self._make_system_content(message.sources),
+            system_prompt=self._make_rag_system_content(message.sources),
             max_new_tokens=max_new_tokens,
         ):
             choice = data["choices"][0]

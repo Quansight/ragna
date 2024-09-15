@@ -31,7 +31,7 @@ class GoogleAssistant(HttpApiAssistant):
         else:
             messages = prompt
         return [
-            {"parts": [{"text": message.content}]}
+            {"parts": [{"text": message.content, "role": message.role.value}]}
             for message in messages
             if message.role is not MessageRole.SYSTEM
         ]

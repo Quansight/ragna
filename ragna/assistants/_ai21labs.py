@@ -14,7 +14,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
     def display_name(cls) -> str:
         return f"AI21Labs/jurassic-2-{cls._MODEL_TYPE}"
 
-    def _make_system_content(self, sources: list[Source]) -> str:
+    def _make_rag_system_content(self, sources: list[Source]) -> str:
         instruction = (
             "You are a helpful assistant that answers user questions given the context below. "
             "If you don't know the answer, just say so. Don't try to make up an answer. "
@@ -87,7 +87,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         message = messages[-1]
         async for data in self.generate(
             [message],
-            system_prompt=self._make_system_content(message.sources),
+            system_prompt=self._make_rag_system_content(message.sources),
             max_new_tokens=max_new_tokens,
         ):
             yield cast(str, data["outputs"][0]["text"])

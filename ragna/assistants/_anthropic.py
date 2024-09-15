@@ -14,7 +14,7 @@ class AnthropicAssistant(HttpApiAssistant):
     def display_name(cls) -> str:
         return f"Anthropic/{cls._MODEL}"
 
-    def _instructize_system_prompt(self, sources: list[Source]) -> str:
+    def _make_rag_system_prompt(self, sources: list[Source]) -> str:
         # See https://docs.anthropic.com/claude/docs/system-prompts
         # See https://docs.anthropic.com/claude/docs/long-context-window-tips#tips-for-document-qa
         instruction = (
@@ -98,7 +98,7 @@ class AnthropicAssistant(HttpApiAssistant):
         message = messages[-1]
         async for data in self.generate(
             [message],
-            system_prompt=self._instructize_system_prompt(message.sources),
+            system_prompt=self._make_rag_system_prompt(message.sources),
             max_new_tokens=max_new_tokens,
         ):
             # See https://docs.anthropic.com/claude/reference/messages-streaming#raw-http-stream-response
