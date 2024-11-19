@@ -124,6 +124,23 @@ def add_chat(session: Session, *, user: str, chat: schemas.Chat) -> None:
     session.commit()
 
 
+def _orm_to_schema_identifier(chat: orm.Chat) -> schemas.ChatIdentifier:
+    return schemas.ChatIdentifier(id=chat.id, name=chat.name)
+
+
+def get_chat_identifiers(
+    session: Session, *, user: str
+) -> list[schemas.ChatIdentifier]:
+    return [
+        _orm_to_schema_identifier(chat)
+        for chat in session.execute(
+            select(orm.Chat).where(orm.Chat.user_id == _get_user_id(session, user))
+        )
+        .scalars()
+        .all()
+    ]
+
+
 def _orm_to_schema_chat(chat: orm.Chat) -> schemas.Chat:
     documents = [
         schemas.Document(id=document.id, name=document.name)

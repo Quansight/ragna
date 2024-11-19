@@ -116,3 +116,8 @@ class Chat(BaseModel):
     metadata: ChatMetadata
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False
+
+
+class ChatIdentifier(BaseModel):
+    id: uuid.UUID
+    name: str
