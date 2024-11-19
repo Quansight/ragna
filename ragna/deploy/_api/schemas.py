@@ -28,12 +28,14 @@ class Components(BaseModel):
 class Document(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
+    metadata: dict
 
     @classmethod
     def from_core(cls, document: ragna.core.Document) -> Document:
         return cls(
             id=document.id,
             name=document.name,
+            metadata=document.metadata,
         )
 
     def to_core(self) -> ragna.core.Document:
@@ -103,16 +105,20 @@ class Message(BaseModel):
         )
 
 
-class ChatMetadata(BaseModel):
+class ChatCreationData(BaseModel):
     name: str
+    document_ids: list[uuid.UUID]
     source_storage: str
     assistant: str
     params: dict
-    documents: list[Document]
 
 
 class Chat(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    metadata: ChatMetadata
+    name: str
+    documents: list[Document]
+    source_storage: str
+    assistant: str
+    params: dict
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False

@@ -221,7 +221,7 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
                         session,
                         user=user,
                         id=document.id,
-                    )[1],
+                    ).metadata,
                 )
                 for document in chat.metadata.documents
             ],
@@ -240,10 +240,12 @@ def app(*, config: Config, ignore_unavailable_components: bool) -> FastAPI:
     @app.post("/chats")
     async def create_chat(
         user: UserDependency,
-        chat_metadata: schemas.ChatMetadata,
+        chat_creation_data: schemas.ChatCreationData,
     ) -> schemas.Chat:
         with get_session() as session:
             chat = schemas.Chat(metadata=chat_metadata)
+            # get documents from DB
+            database.get_document()
 
             # Although we don't need the actual ragna.core.Chat object here,
             # we use it to validate the documents and metadata.
