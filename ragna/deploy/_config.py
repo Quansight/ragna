@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
+from typing import Annotated, Any, Callable, Type, Union
 
 import tomlkit
 import tomlkit.container
@@ -20,31 +20,24 @@ from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
 from ._authentication import Authentication
 
-T = TypeVar("T")
+
+class DependentDefaultValue:
+    def __init__(self, resolve: Callable[[Config], Any]):
+        self.resolve = resolve
 
 
-class AfterConfigValidateDefault(Generic[T]):
-    """This class exists for a specific use case:
+_RESERVED_PARAMS = ["default", "default_factory", "validate_default"]
 
-    - We have values for which we need the validated config to compute the default,
-      e.g. the API default origins can only be computed after we know the UI hostname
-      and port.
-    - We want to use the plain annotations rather than allowing a sentinel type, e.g.
-      `str` vs. `Optional[str]`.
-    """
 
-    def __init__(self, make_default: Callable[[Config], T]) -> None:
-        self.make_default = make_default
-
-    @classmethod
-    def make(cls, make_default: Callable[[Config], T]) -> Any:
-        """Creates a default sentinel that is resolved after the config is validated.
-
-        Args:
-            make_default: Callable that takes the validated config and returns the
-                resolved value.
-        """
-        return Field(default=cls(make_default), validate_default=False)
+def DependentDefaultField(resolve: Callable[[Config], Any], **kwargs: Any) -> Any:
+    if any(param in kwargs for param in _RESERVED_PARAMS):
+        reserved_params = ", ".join(repr(param) for param in _RESERVED_PARAMS)
+        raise Exception(
+            f"The parameters {reserved_params} are reserved " f"and cannot be passed."
+        )
+    return Field(
+        default=DependentDefaultValue(resolve), validate_default=False, **kwargs
+    )
 
 
 class Config(BaseSettings):
@@ -75,6 +68,14 @@ class Config(BaseSettings):
         #  4. Default
         return env_settings, init_settings
 
+    @model_validator(mode="after")
+    def _resolve_dependent_default_values(self) -> Config:
+        for name, info in self.model_fields.items():
+            value = getattr(self, name)
+            if isinstance(value, DependentDefaultValue):
+                setattr(self, name, value.resolve(self))
+        return self
+
     local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
         default_factory=ragna.local_root
     )
@@ -94,24 +95,13 @@ class Config(BaseSettings):
     hostname: str = "127.0.0.1"
     port: int = 31476
     root_path: str = ""
-    origins: list[str] = AfterConfigValidateDefault.make(
+    origins: list[str] = DependentDefaultField(
         lambda config: [f"http://{config.hostname}:{config.port}"]
     )
 
-    database_url: str = AfterConfigValidateDefault.make(
+    database_url: str = DependentDefaultField(
         lambda config: f"sqlite:///{config.local_root}/ragna.db",
     )
-
-    @model_validator(mode="after")
-    def _validate_model(self) -> Config:
-        self._resolve_default_sentinels(self)
-        return self
-
-    def _resolve_default_sentinels(self, config: Config) -> None:
-        for name, info in self.model_fields.items():
-            value = getattr(self, name)
-            if isinstance(value, AfterConfigValidateDefault):
-                setattr(self, name, value.make_default(config))
 
     @property
     def _url(self) -> str:
