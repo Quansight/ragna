@@ -27,7 +27,7 @@ dependencies = [
     "fastapi",
     "httpx",
     "packaging",
-    "panel[fastapi]==1.5.0",
+    "panel[fastapi]==1.5.2",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",
