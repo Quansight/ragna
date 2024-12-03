@@ -368,11 +368,7 @@ class CentralView(pn.viewable.Viewer):
         )
 
         chat_documents_pills = []
-        if (
-            self.current_chat is not None
-            and "metadata" in self.current_chat
-            and "documents" in self.current_chat
-        ):
+        if self.current_chat is not None:
             doc_names = [d["name"] for d in self.current_chat["documents"]]
 
             # FIXME: Instead of setting a hard limit of 20 documents here, this should
