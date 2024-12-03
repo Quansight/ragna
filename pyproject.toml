@@ -22,12 +22,15 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "aiofiles",
+    # Remove this and instead depend on panel[fastapi]
+    # after https://github.com/holoviz/panel/pull/7495 is released
+    "bokeh_fastapi==0.1.1",
     "emoji",
     "eval_type_backport; python_version<'3.10'",
     "fastapi",
     "httpx",
     "packaging",
-    "panel[fastapi]==1.5.0",
+    "panel==1.5.4",
     "pydantic>=2",
     "pydantic-core",
     "pydantic-settings>=2",
