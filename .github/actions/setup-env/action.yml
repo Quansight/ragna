@@ -57,10 +57,6 @@ runs:
       shell: bash -el {0}
       run: playwright install
 
-    - name: Install dev dependencies
-      shell: bash -el {0}
-      run: pip install --pre panel[fastapi]
-
     - name: Install ragna
       shell: bash -el {0}
       run: |
