@@ -89,6 +89,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.document_uploader = pn.widgets.FileDropper(
             multiple=True,
+            accepted_filetypes=['.docx', '.md', '.pdf', '.pptx', '.txt'],
             css_classes=["file-dropper"],
             )
 
