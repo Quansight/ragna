@@ -50,6 +50,7 @@ css_modifiers = {
         pn.layout.Card,
         pn.Row,
         pn.widgets.Button,
+        pn.widgets.FileDropper,
     ],
 }
 

@@ -87,8 +87,10 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
         )
-        # FIXME: accept
-        self.document_uploader = pn.widgets.FileInput(multiple=True)
+        self.document_uploader = pn.widgets.FileDropper(
+            multiple=True,
+            css_classes=["file-dropper"],
+            )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
         self.cancel_button = pn.widgets.Button(
