@@ -1,5 +1,0 @@
-:host(.file-dropper) .filepond--root{
-  height: 80px;
-  border: var(--accent-color) dashed 2px;
-  border-radius: 10px;
-}

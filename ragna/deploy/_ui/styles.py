@@ -51,6 +51,7 @@ css_modifiers = {
         pn.Row,
         pn.widgets.Button,
         pn.widgets.FileDropper,
+        pn.widgets.FileInput,
     ],
 }
 

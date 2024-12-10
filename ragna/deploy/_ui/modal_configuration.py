@@ -87,10 +87,10 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
         )
-        self.document_uploader = pn.widgets.FileDropper(
+        self.document_uploader = pn.widgets.FileInput(
             multiple=True,
-            accepted_filetypes=['.docx', '.md', '.pdf', '.pptx', '.txt'],
-            css_classes=["file-dropper"],
+            accept='.docx,.md,.pdf,.pptx,.txt',
+            css_classes=["file-input"],
             )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
