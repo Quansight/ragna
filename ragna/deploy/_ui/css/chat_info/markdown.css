@@ -24,3 +24,11 @@
 :host(.chat_info_markdown) ul {
   list-style-type: none;
 }
+
+:host(.chat_info_markdown) .details_block pre {
+  width: calc(100% - 10px) ;
+  overflow-x: scroll;
+  padding-right:10px;
+  margin-right:10px;
+
+}
