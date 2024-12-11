@@ -4,12 +4,3 @@
   flex-direction: column;
   justify-content: space-between;
 }
-
-.form-control {
-  background-color: gold;
-  margin: 10px;
-}
-
-fieldset {
-  border: 1px solid #000;
-}
