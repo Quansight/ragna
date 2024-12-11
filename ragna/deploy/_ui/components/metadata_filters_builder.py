@@ -11,7 +11,7 @@ ALLOWED_OPERATORS = [
 ]
 
 NO_CORPUS_KEY = "No corpuses available"
-NO_FILTER_KEY = "Empty Filter"
+NO_FILTER_KEY = ""
 
 
 class FilterRow(pn.viewable.Viewer):
@@ -146,8 +146,6 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
         self.corpus_metadata = corpus_metadata
 
-        self.filter_rows = self.create_filter_row()
-
         self.add_filter_row_button = pn.widgets.ButtonIcon(
             icon="circle-plus", width=25, height=25
         )
@@ -174,10 +172,6 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         self.filter_rows = self.filter_rows + self.create_filter_row()
 
     def delete_filter_row(self, event):
-        if len(self.filter_rows) == 1:
-            self.reset_filter_rows()
-            return
-
         filter_row_to_remove = None
         for filter_row in self.filter_rows:
             if event.obj == filter_row.delete_button:
