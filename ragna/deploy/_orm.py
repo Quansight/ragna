@@ -36,10 +36,11 @@ class UtcAwareDateTime(types.TypeDecorator):
 
     This is needed because sqlalchemy.types.DateTime(timezone=True) does not
     consistently store the timezone.
-
     """
 
     impl = types.DateTime
+
+    cache_ok = True
 
     def process_bind_param(  # type: ignore[override]
         self, value: Optional[datetime], dialect: Dialect
@@ -173,4 +174,5 @@ class Message(Base):
         secondary=source_message_association_table,
         back_populates="messages",
     )
-    timestamp = Column(types.DateTime(timezone=True), nullable=False)
+
+    timestamp = Column(UtcAwareDateTime, nullable=False)

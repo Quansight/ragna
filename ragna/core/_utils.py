@@ -7,17 +7,13 @@ import importlib
 import importlib.metadata
 import os
 from collections import defaultdict
-from typing import Any, Collection, Optional, Type, Union, cast
+from typing import Any, Callable, Collection, Optional, Type, Union, cast
 
 import packaging.requirements
 import pydantic
 import pydantic_core
 
-from ragna._compat import importlib_metadata_package_distributions
-
-importlib_metadata_package_distributions = functools.cache(
-    importlib_metadata_package_distributions
-)
+packages_distributions = functools.cache(importlib.metadata.packages_distributions)
 
 
 class RagnaExceptionHttpDetail(enum.Enum):
@@ -96,8 +92,8 @@ class PackageRequirement(Requirement):
 
         for module_name in {
             module_name
-            for module_name, distribution_names in importlib_metadata_package_distributions().items()
-            if distribution.name in distribution_names  # type: ignore[attr-defined]
+            for module_name, distribution_names in packages_distributions().items()
+            if distribution.name in distribution_names
             and module_name not in self._exclude_modules
         }:
             try:
@@ -130,14 +126,14 @@ def merge_models(
 ) -> Type[pydantic.BaseModel]:
     raw_field_definitions = defaultdict(list)
     for model_cls in models:
-        for name, field in model_cls.model_fields.items():
+        for name, field in model_cls.__pydantic_fields__.items():
             type_ = field.annotation
 
             default: Any
             if field.is_required():
                 default = ...
             elif field.default is pydantic_core.PydanticUndefined:
-                default = field.default_factory()  # type: ignore[misc]
+                default = cast(Callable[[], Any], field.default_factory)()
             else:
                 default = field.default
 

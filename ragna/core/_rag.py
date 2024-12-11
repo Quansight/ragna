@@ -364,7 +364,7 @@ class Chat:
                 formatted_error = f"- {param}"
                 if annotation:
                     annotation_ = cast(
-                        type, model_cls.model_fields[param].annotation
+                        type, model_cls.__pydantic_fields__[param].annotation
                     ).__name__
                     formatted_error += f": {annotation_}"
 

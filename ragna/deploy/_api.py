@@ -5,8 +5,6 @@ import pydantic
 from fastapi import APIRouter, Body, UploadFile
 from fastapi.responses import StreamingResponse
 
-from ragna._compat import anext
-
 from . import _schemas as schemas
 from ._auth import UserDependency
 from ._engine import Engine

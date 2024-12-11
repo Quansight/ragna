@@ -8,7 +8,6 @@ import httpx
 import pytest
 
 from ragna import assistants
-from ragna._compat import anext
 from ragna._utils import BackgroundSubprocess
 from ragna.assistants._http_api import HttpApiAssistant, HttpStreamingProtocol
 from ragna.core import Message, RagnaException

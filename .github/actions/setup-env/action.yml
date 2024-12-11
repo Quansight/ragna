@@ -3,7 +3,7 @@ description: "Setup development environment"
 
 inputs:
   python-version:
-    default: "3.9"
+    default: "3.10"
     description: "Python version to install."
   optional-dependencies:
     default: "true"
@@ -16,7 +16,6 @@ runs:
     - name: Setup mambaforge and development environment
       uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
         miniforge-version: latest
         activate-environment: ragna-deploy-dev
 
@@ -56,13 +55,6 @@ runs:
     - name: Install playwright
       shell: bash -el {0}
       run: playwright install
-
-    - name: Install dev dependencies
-      shell: bash -el {0}
-      run: |
-        pip install \
-          git+https://github.com/bokeh/bokeh-fastapi.git@main \
-          git+https://github.com/holoviz/panel@7377c9e99bef0d32cbc65e94e908e365211f4421
 
     - name: Install ragna
       shell: bash -el {0}

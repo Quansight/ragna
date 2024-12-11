@@ -3,7 +3,6 @@ from __future__ import annotations
 import itertools
 from pathlib import Path
 from typing import (
-    TYPE_CHECKING,
     Annotated,
     Any,
     Callable,
@@ -27,9 +26,8 @@ import ragna
 from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
-if TYPE_CHECKING:
-    from ._auth import Auth
-    from ._key_value_store import KeyValueStore
+from ._auth import Auth
+from ._key_value_store import KeyValueStore
 
 T = TypeVar("T")
 

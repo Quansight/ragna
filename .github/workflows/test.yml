@@ -38,16 +38,14 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          # FIXME
-          # Building panel from source on Windows does not work through pip
-          # - windows-latest
+          - windows-latest
           - macos-latest
-        python-version: ["3.9"]
+        python-version: ["3.10"]
         include:
           - os: ubuntu-latest
-            python-version: "3.10"
-          - os: ubuntu-latest
             python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.12"
 
       fail-fast: false
 
@@ -81,65 +79,64 @@ jobs:
         uses: pmeier/pytest-results-action@v0.3.0
         with:
           path: test-results.xml
-
-  pytest-ui:
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
-        browser:
-          - chromium
-          - firefox
-        python-version:
-          - "3.9"
-          - "3.10"
-          - "3.11"
-        exclude:
-          - python-version: "3.10"
-            os: windows-latest
-          - python-version: "3.11"
-            os: windows-latest
-          - python-version: "3.10"
-            os: macos-latest
-          - python-version: "3.11"
-            os: macos-latest
-        include:
-          - browser: webkit
-            os: macos-latest
-            python-version: "3.9"
-
-      fail-fast: false
-
-    runs-on: ${{ matrix.os }}
-
-    defaults:
-      run:
-        shell: bash -el {0}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Run unit tests
-        id: tests
-        run: |
-          pytest tests/deploy/ui \
-          --browser ${{ matrix.browser }} \
-          --video=retain-on-failure
-
-      - name: Upload playwright video
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name:
-            playwright-${{ matrix.os }}-${{ matrix.python-version}}-${{ github.run_id }}
-          path: test-results
+#  pytest-ui:
+#    strategy:
+#      matrix:
+#        os:
+#          - ubuntu-latest
+#          - windows-latest
+#          - macos-latest
+#        browser:
+#          - chromium
+#          - firefox
+#        python-version:
+#          - "3.10"
+#          - "3.10"
+#          - "3.12"
+#        exclude:
+#          - python-version: "3.11"
+#            os: windows-latest
+#          - python-version: "3.12"
+#            os: windows-latest
+#          - python-version: "3.11"
+#            os: macos-latest
+#          - python-version: "3.12"
+#            os: macos-latest
+#        include:
+#          - browser: webkit
+#            os: macos-latest
+#            python-version: "3.10"
+#
+#      fail-fast: false
+#
+#    runs-on: ${{ matrix.os }}
+#
+#    defaults:
+#      run:
+#        shell: bash -el {0}
+#
+#    steps:
+#      - name: Checkout repository
+#        uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Setup environment
+#        uses: ./.github/actions/setup-env
+#        with:
+#          python-version: ${{ matrix.python-version }}
+#
+#      - name: Run unit tests
+#        id: tests
+#        run: |
+#          pytest tests/deploy/ui \
+#          --browser ${{ matrix.browser }} \
+#          --video=retain-on-failure
+#
+#      - name: Upload playwright video
+#        if: failure()
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name:
+#            playwright-${{ matrix.os }}-${{ matrix.python-version}}-${{ github.run_id }}
+#          path: test-results

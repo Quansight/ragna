@@ -6,7 +6,6 @@ from fastapi import status as http_status_code
 
 import ragna
 from ragna import core
-from ragna._compat import aiter, anext
 from ragna._utils import make_directory
 from ragna.core import Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
@@ -83,7 +82,7 @@ class Engine:
         json_schema = component._protocol_model().model_json_schema()
         # FIXME: there is likely a better way to exclude certain fields builtin in
         #  pydantic
-        for special_param in SpecialChatParams.model_fields:
+        for special_param in SpecialChatParams.__pydantic_fields__:
             if (
                 "properties" in json_schema
                 and special_param in json_schema["properties"]

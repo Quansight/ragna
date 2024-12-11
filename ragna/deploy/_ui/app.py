@@ -1,12 +1,6 @@
-from pathlib import Path
-from typing import cast
-
 import panel as pn
 import param
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
-from ragna.deploy._auth import SessionMiddleware
 from ragna.deploy._engine import Engine
 
 from . import js
@@ -83,63 +77,6 @@ class App(param.Parameterized):
 
     def health_page(self):
         return pn.pane.HTML("<h1>Ok</h1>")
-
-    def add_panel_app(self, server, panel_app_fn, endpoint):
-        # FIXME: this code will ultimately be distributed as part of panel
-        from functools import partial
-
-        import panel as pn
-        from bokeh.application import Application
-        from bokeh.application.handlers.function import FunctionHandler
-        from bokeh_fastapi import BokehFastAPI
-        from bokeh_fastapi.handler import WSHandler
-        from fastapi.responses import FileResponse
-        from panel.io.document import extra_socket_handlers
-        from panel.io.resources import COMPONENT_PATH
-        from panel.io.server import ComponentResourceHandler
-        from panel.io.state import set_curdoc
-
-        def dispatch_fastapi(conn, events=None, msg=None):
-            if msg is None:
-                msg = conn.protocol.create("PATCH-DOC", events)
-            return [conn._socket.send_message(msg)]
-
-        extra_socket_handlers[WSHandler] = dispatch_fastapi
-
-        def panel_app(doc):
-            doc.on_event("document_ready", partial(pn.state._schedule_on_load, doc))
-
-            with set_curdoc(doc):
-                panel_app = panel_app_fn()
-                panel_app.server_doc(doc)
-
-        handler = FunctionHandler(panel_app)
-        application = Application(handler)
-
-        BokehFastAPI({endpoint: application}, server=server)
-
-        @server.get(
-            f"/{COMPONENT_PATH.rstrip('/')}" + "/{path:path}", include_in_schema=False
-        )
-        def get_component_resource(path: str):
-            # ComponentResourceHandler.parse_url_path only ever accesses
-            # self._resource_attrs, which fortunately is a class attribute. Thus, we can
-            # get away with using the method without actually instantiating the class
-            self_ = cast(ComponentResourceHandler, ComponentResourceHandler)
-            resolved_path = ComponentResourceHandler.parse_url_path(self_, path)
-            return FileResponse(resolved_path)
-
-    def serve_with_fastapi(self, app: FastAPI, endpoint: str):
-        self.add_panel_app(app, self.index_page, endpoint)
-
-        for dir in ["css", "imgs"]:
-            app.mount(
-                f"/{dir}",
-                StaticFiles(directory=str(Path(__file__).parent / dir)),
-                name=dir,
-            )
-
-        pn.config.cookie_secret = SessionMiddleware.PANEL_COOKIE_SECRET
 
 
 def app(engine: Engine) -> App:

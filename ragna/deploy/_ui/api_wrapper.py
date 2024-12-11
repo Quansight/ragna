@@ -30,8 +30,8 @@ class ApiWrapper(param.Parameterized):
         ):
             yield self.improve_message(message.model_dump(mode="json"))
 
-    async def get_components(self):
-        return self._engine.get_components().model_dump(mode="json")
+    def get_components(self):
+        return self._engine.get_components()
 
     async def start_and_prepare(
         self, name, documents, source_storage, assistant, params
@@ -50,6 +50,6 @@ class ApiWrapper(param.Parameterized):
         return str(chat.id)
 
     def improve_message(self, msg):
-        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%f")
+        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
         msg["content"] = emoji.emojize(msg["content"], language="alias")
         return msg

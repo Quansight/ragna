@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import Any
+from typing import Annotated, Any
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     Field,
     ValidationInfo,
@@ -40,7 +41,7 @@ class ApiKey(BaseModel):
         else:
             return v.astimezone(timezone.utc)
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field  # type: ignore[misc]
     @property
     def expired(self) -> bool:
         return datetime.now(timezone.utc) >= self.expires_at
@@ -56,6 +57,16 @@ class ApiKey(BaseModel):
             return f"{v[:i]}***{v[-i:]}"
         else:
             return "***"
+
+
+def _set_utc_timezone(v: datetime) -> datetime:
+    if v.tzinfo is None:
+        return v.replace(tzinfo=timezone.utc)
+    else:
+        return v.astimezone(timezone.utc)
+
+
+UtcDateTime = Annotated[datetime, AfterValidator(_set_utc_timezone)]
 
 
 class Components(BaseModel):
@@ -89,7 +100,7 @@ class Message(BaseModel):
     content: str
     role: ragna.core.MessageRole
     sources: list[Source] = Field(default_factory=list)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: UtcDateTime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ChatCreation(BaseModel):

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import base64
 import contextlib
@@ -5,7 +7,7 @@ import json
 import os
 import re
 import uuid
-from typing import Annotated, Awaitable, Callable, Optional, Union, cast
+from typing import TYPE_CHECKING, Annotated, Awaitable, Callable, Optional, Union, cast
 
 import httpx
 import pydantic
@@ -20,10 +22,12 @@ from ragna.core import RagnaException
 
 from . import _schemas as schemas
 from . import _templates as templates
-from ._config import Config
-from ._engine import Engine
-from ._key_value_store import KeyValueStore
 from ._utils import redirect
+
+if TYPE_CHECKING:
+    from ._config import Config
+    from ._engine import Engine
+    from ._key_value_store import KeyValueStore
 
 
 class Session(pydantic.BaseModel):
@@ -193,19 +197,18 @@ class SessionMiddleware(BaseHTTPMiddleware):
         )
 
 
-class SessionAuth:  # (OAuth2)
-    async def __call__(self, request: Request) -> Session:
-        session = cast(Optional[Session], request.state.session)
-        if session is None:
-            raise RagnaException(
-                "Not authenticated",
-                http_detail=RagnaException.EVENT,
-                http_status_code=status.HTTP_401_UNAUTHORIZED,
-            )
-        return session
+async def _get_session(request: Request) -> Session:
+    session = cast(Optional[Session], request.state.session)
+    if session is None:
+        raise RagnaException(
+            "Not authenticated",
+            http_detail=RagnaException.EVENT,
+            http_status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    return session
 
 
-SessionDependency = Annotated[Session, Depends(SessionAuth())]
+SessionDependency = Annotated[Session, Depends(_get_session)]
 
 
 async def _get_user(session: SessionDependency) -> schemas.User:
