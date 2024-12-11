@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import io
 import json
@@ -10,14 +9,7 @@ import typer.rich_utils
 
 from ragna.deploy import Config
 from ragna.deploy._api import app as api_app
-
-# This is currently needed when using top-level async code in the galleries. It has to
-# be placed before the ragna.deploy._cli import as this ultimately import panel, which
-# uses async functionality that is no longer possible.
-# See https://github.com/smarie/mkdocs-gallery/issues/93
-asyncio.get_event_loop_policy()._local._set_called = False
-
-from ragna.deploy._cli import app as cli_app  # noqa: E402
+from ragna.deploy._cli import app as cli_app
 
 
 def main():

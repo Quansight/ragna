@@ -26,5 +26,5 @@ dependencies:
       - mkdocstrings[python]
       - mkdocs-gen-files
       - material-plausible-plugin
-      - mkdocs-gallery >=0.10
+      - mkdocs-gallery >=0.10.3
       - mdx_truly_sane_lists
