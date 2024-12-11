@@ -87,8 +87,11 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
         )
-        # FIXME: accept
-        self.document_uploader = pn.widgets.FileInput(multiple=True)
+        self.document_uploader = pn.widgets.FileInput(
+            multiple=True,
+            css_classes=["file-input"],
+            accept=",".join(self.api_wrapper.get_components().documents),
+        )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
         self.cancel_button = pn.widgets.Button(
@@ -182,19 +185,19 @@ class ModalConfiguration(pn.viewable.Viewer):
         # prevents re-rendering the section
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = await self.api_wrapper.get_components()
+            components = self.api_wrapper.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
-            config.allowed_documents = components["documents"]
+            config.allowed_documents = components.documents
 
-            assistants = [component["title"] for component in components["assistants"]]
+            assistants = [assistant["title"] for assistant in components.assistants]
 
             config.param.assistant_name.objects = assistants
             config.assistant_name = assistants[0]
 
             source_storages = [
-                component["title"] for component in components["source_storages"]
+                source_storage["title"] for source_storage in components.source_storages
             ]
             config.param.source_storage_name.objects = source_storages
             config.source_storage_name = source_storages[0]
@@ -202,7 +205,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             # Now that the config object is set, we can assign it to the param.
             # This will trigger the update of the advanced_config_ui section
             self.config = config
-            self.document_uploader.allowed_documents = config.allowed_documents
 
         return pn.Row(
             pn.Column(
