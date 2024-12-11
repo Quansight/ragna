@@ -9,7 +9,7 @@ from .api_wrapper import ApiWrapper
 from .main_page import MainPage
 
 pn.extension(
-    'filedropper',
+    "filedropper",
     loading_spinner="dots",
     loading_color=ui.MAIN_COLOR,
     layout_compatibility="error",

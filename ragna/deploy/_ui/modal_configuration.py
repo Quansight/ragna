@@ -89,9 +89,9 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.document_uploader = pn.widgets.FileInput(
             multiple=True,
-            accept='.docx,.md,.pdf,.pptx,.txt',
+            accept=".docx,.md,.pdf,.pptx,.txt",
             css_classes=["file-input"],
-            )
+        )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
         self.cancel_button = pn.widgets.Button(
