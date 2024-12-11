@@ -109,6 +109,7 @@ class FilterRow(pn.viewable.Viewer):
                 self.operator_select,
                 self.multi_value_select,
                 self.delete_button,
+                css_classes=["metadata-filter-row"],
             )
         else:
             return pn.Row(
@@ -116,6 +117,7 @@ class FilterRow(pn.viewable.Viewer):
                 self.operator_select,
                 self.value_select,
                 self.delete_button,
+                css_classes=["metadata-filter-row"],
             )
 
     def __panel__(self):

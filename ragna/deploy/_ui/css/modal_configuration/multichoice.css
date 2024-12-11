@@ -2,6 +2,7 @@
   max-width: 38%;
   min-width: 38%;
   height: 30px;
+  overflow: visible;
 }
 
 .choices__inner {

@@ -1,3 +1,8 @@
 :host(.modal_configuration_upload_row) {
   margin-bottom: 20px;
 }
+
+:host(.metadata-filter-row) {
+  background-color: lightsalmon;
+  overflow: visible;
+}
