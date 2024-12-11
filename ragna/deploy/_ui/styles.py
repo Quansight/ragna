@@ -37,10 +37,10 @@ css_modifiers = {
     "central_view": [pn.Column, pn.Row, pn.pane.HTML],
     "chat_interface": [
         pn.widgets.TextInput,
-        pn.layout.Card,
         pn.pane.Markdown,
         pn.widgets.button.Button,
         pn.Column,
+        pn.chat.ChatInterface,
     ],
     "right_sidebar": [pn.widgets.Button, pn.Column, pn.pane.Markdown],
     "left_sidebar": [pn.widgets.Button, pn.pane.HTML, pn.Column],
@@ -50,6 +50,7 @@ css_modifiers = {
         pn.layout.Card,
         pn.Row,
         pn.widgets.Button,
+        pn.widgets.FileInput,
     ],
 }
 
