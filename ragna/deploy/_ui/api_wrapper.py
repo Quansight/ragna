@@ -30,8 +30,8 @@ class ApiWrapper(param.Parameterized):
         ):
             yield self.improve_message(message.model_dump(mode="json"))
 
-    async def get_components(self):
-        return self._engine.get_components().model_dump(mode="json")
+    def get_components(self):
+        return self._engine.get_components()
 
     async def start_and_prepare(
         self, name, documents, source_storage, assistant, params
