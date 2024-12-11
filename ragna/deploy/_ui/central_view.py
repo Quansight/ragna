@@ -205,10 +205,16 @@ class CentralView(pn.viewable.Viewer):
             # `MetadataFilter`s provided as dict
             title = "Metadata Filters"
 
-            metadata_filters_readable = str(
-                MetadataFilter.from_primitive(self.current_chat["metadata"]["input"])
-            ).replace("\n", "<br>").replace(" ", "&nbsp;")
-            
+            metadata_filters_readable = (
+                str(
+                    MetadataFilter.from_primitive(
+                        self.current_chat["metadata"]["input"]
+                    )
+                )
+                .replace("\n", "<br>")
+                .replace(" ", "&nbsp;")
+            )
+
             details = f"<div class='details details_block' style='display:block;'><pre>{metadata_filters_readable}</pre></div><br />\n\n"
             grid_height = 1
 
