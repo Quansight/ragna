@@ -89,7 +89,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
         ):
             tokens, page_numbers = zip(*window)
             yield Chunk(
-                text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
+                text=self._tokenizer.decode(tokens),
                 page_numbers=list(filter(lambda n: n is not None, page_numbers))
                 or None,
                 num_tokens=len(tokens),

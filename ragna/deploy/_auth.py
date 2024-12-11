@@ -10,6 +10,7 @@ import uuid
 from typing import TYPE_CHECKING, Annotated, Awaitable, Callable, Optional, Union, cast
 
 import httpx
+import panel as pn
 import pydantic
 from fastapi import Depends, FastAPI, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -38,6 +39,11 @@ CallNext = Callable[[Request], Awaitable[Response]]
 
 
 class SessionMiddleware(BaseHTTPMiddleware):
+    # panel uses cookies to transfer user information (see _cookie_dispatch() below) and
+    # signs them for security. However, since this happens after our authentication
+    # check, we can use an arbitrary, hardcoded value here.
+    _PANEL_COOKIE_SECRET = "ragna"
+
     def __init__(
         self, app: FastAPI, *, config: Config, engine: Engine, api: bool, ui: bool
     ) -> None:
@@ -47,6 +53,9 @@ class SessionMiddleware(BaseHTTPMiddleware):
         self._api = api
         self._ui = ui
         self._sessions: KeyValueStore[Session] = config.key_value_store()
+
+        if ui:
+            pn.config.cookie_secret = self._PANEL_COOKIE_SECRET  # type: ignore[misc]
 
     _COOKIE_NAME = "ragna"
 
@@ -97,11 +106,6 @@ class SessionMiddleware(BaseHTTPMiddleware):
         request.state.session = session
         return await call_next(request)
 
-    # panel uses cookies to transfer user information (see _cookie_dispatch() below) and
-    # signs them for security. However, since this happens after our authentication
-    # check, we can use an arbitrary, hardcoded value here.
-    PANEL_COOKIE_SECRET = "ragna"
-
     async def _cookie_dispatch(
         self, request: Request, call_next: CallNext, *, cookie: str
     ) -> Response:
@@ -128,7 +132,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
                 (
                     f"{key}=".encode()
                     + create_signed_value(
-                        self.PANEL_COOKIE_SECRET, key, value, version=1
+                        self._PANEL_COOKIE_SECRET, key, value, version=1
                     )
                 )
                 for key, value in extra_cookies.items()
