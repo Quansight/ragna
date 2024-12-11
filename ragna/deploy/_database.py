@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Collection, Optional
+from typing import Any, Collection, Optional, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
@@ -11,6 +11,14 @@ from ragna.core import RagnaException
 
 from . import _orm as orm
 from . import _schemas as schemas
+
+
+class UnknownUser(Exception):
+    def __init__(
+        self, name: Optional[str] = None, api_key: Optional[str] = None
+    ) -> None:
+        self.name = name
+        self.api_key = api_key
 
 
 class Database:
@@ -28,19 +36,87 @@ class Database:
         self._to_orm = SchemaToOrmConverter()
         self._to_schema = OrmToSchemaConverter()
 
-    def _get_user(self, session: Session, *, username: str) -> orm.User:
-        user: Optional[orm.User] = session.execute(
-            select(orm.User).where(orm.User.name == username)
-        ).scalar_one_or_none()
+    def _get_orm_user_by_name(self, session: Session, *, name: str) -> orm.User:
+        user = cast(
+            Optional[orm.User],
+            session.execute(
+                select(orm.User).where(orm.User.name == name)
+            ).scalar_one_or_none(),
+        )
 
         if user is None:
-            # Add a new user if the current username is not registered yet. Since this
-            # is behind the authentication layer, we don't need any extra security here.
-            user = orm.User(id=uuid.uuid4(), name=username)
-            session.add(user)
-            session.commit()
+            raise UnknownUser(name)
 
         return user
+
+    def maybe_add_user(self, session: Session, *, user: schemas.User) -> None:
+        try:
+            self._get_orm_user_by_name(session, name=user.name)
+        except UnknownUser:
+            orm_user = orm.User(id=uuid.uuid4(), name=user.name)
+            session.add(orm_user)
+            session.commit()
+
+    def add_api_key(
+        self, session: Session, *, user: str, api_key: schemas.ApiKey
+    ) -> None:
+        user_id = self._get_orm_user_by_name(session, name=user).id
+        orm_api_key = orm.ApiKey(
+            id=uuid.uuid4(),
+            user_id=user_id,
+            name=api_key.name,
+            value=api_key.value,
+            expires_at=api_key.expires_at,
+        )
+        session.add(orm_api_key)
+        session.commit()
+
+    def get_api_keys(self, session: Session, *, user: str) -> list[schemas.ApiKey]:
+        return [
+            self._to_schema.api_key(api_key)
+            for api_key in session.execute(
+                select(orm.ApiKey).where(
+                    orm.ApiKey.user_id
+                    == self._get_orm_user_by_name(session, name=user).id
+                )
+            )
+            .scalars()
+            .all()
+        ]
+
+    def delete_api_key(self, session: Session, *, user: str, id: uuid.UUID) -> None:
+        orm_api_key = session.execute(
+            select(orm.ApiKey).where(
+                (orm.ApiKey.id == id)
+                & (
+                    orm.ApiKey.user_id
+                    == self._get_orm_user_by_name(session, name=user).id
+                )
+            )
+        ).scalar_one_or_none()
+
+        if orm_api_key is None:
+            raise RagnaException
+
+        session.delete(orm_api_key)  # type: ignore[no-untyped-call]
+        session.commit()
+
+    def get_user_by_api_key(
+        self, session: Session, api_key_value: str
+    ) -> Optional[tuple[schemas.User, schemas.ApiKey]]:
+        orm_api_key = session.execute(
+            select(orm.ApiKey)  # type: ignore[attr-defined]
+            .options(joinedload(orm.ApiKey.user))
+            .where(orm.ApiKey.value == api_key_value)
+        ).scalar_one_or_none()
+
+        if orm_api_key is None:
+            return None
+
+        return (
+            self._to_schema.user(orm_api_key.user),
+            self._to_schema.api_key(orm_api_key),
+        )
 
     def add_documents(
         self,
@@ -49,7 +125,7 @@ class Database:
         user: str,
         documents: list[schemas.Document],
     ) -> None:
-        user_id = self._get_user(session, username=user).id
+        user_id = self._get_orm_user_by_name(session, name=user).id
         session.add_all(
             [self._to_orm.document(document, user_id=user_id) for document in documents]
         )
@@ -82,7 +158,7 @@ class Database:
 
     def add_chat(self, session: Session, *, user: str, chat: schemas.Chat) -> None:
         orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_user(session, username=user).id
+            chat, user_id=self._get_orm_user_by_name(session, name=user).id
         )
         # We need to merge and not add here, because the documents are already in the DB
         session.merge(orm_chat)
@@ -102,7 +178,8 @@ class Database:
             self._to_schema.chat(chat)
             for chat in session.execute(
                 self._select_chat(eager=True).where(
-                    orm.Chat.user_id == self._get_user(session, username=user).id
+                    orm.Chat.user_id
+                    == self._get_orm_user_by_name(session, name=user).id
                 )
             )
             .scalars()
@@ -117,7 +194,10 @@ class Database:
             session.execute(
                 self._select_chat(eager=eager).where(
                     (orm.Chat.id == id)
-                    & (orm.Chat.user_id == self._get_user(session, username=user).id)
+                    & (
+                        orm.Chat.user_id
+                        == self._get_orm_user_by_name(session, name=user).id
+                    )
                 )
             )
             .unique()
@@ -134,7 +214,7 @@ class Database:
 
     def update_chat(self, session: Session, user: str, chat: schemas.Chat) -> None:
         orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_user(session, username=user).id
+            chat, user_id=self._get_orm_user_by_name(session, name=user).id
         )
         session.merge(orm_chat)
         session.commit()
@@ -199,6 +279,18 @@ class SchemaToOrmConverter:
 
 
 class OrmToSchemaConverter:
+    def user(self, user: orm.User) -> schemas.User:
+        return schemas.User(name=user.name)
+
+    def api_key(self, api_key: orm.ApiKey) -> schemas.ApiKey:
+        return schemas.ApiKey(
+            id=api_key.id,
+            name=api_key.name,
+            expires_at=api_key.expires_at,
+            obfuscated=True,
+            value=api_key.value,
+        )
+
     def document(self, document: orm.Document) -> schemas.Document:
         return schemas.Document(
             id=document.id, name=document.name, metadata=document.metadata_

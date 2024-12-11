@@ -2,9 +2,9 @@ import uuid
 from datetime import datetime
 
 import emoji
+import panel as pn
 import param
 
-from ragna.core._utils import default_user
 from ragna.deploy import _schemas as schemas
 from ragna.deploy._engine import Engine
 
@@ -12,7 +12,7 @@ from ragna.deploy._engine import Engine
 class ApiWrapper(param.Parameterized):
     def __init__(self, engine: Engine):
         super().__init__()
-        self._user = default_user()
+        self._user = pn.state.user
         self._engine = engine
 
     async def get_chats(self):

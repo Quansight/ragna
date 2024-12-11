@@ -1,6 +1,7 @@
 import contextlib
 import threading
 import time
+import uuid
 import webbrowser
 from pathlib import Path
 from typing import AsyncContextManager, AsyncIterator, Callable, Optional, cast
@@ -15,7 +16,9 @@ from fastapi.staticfiles import StaticFiles
 import ragna
 from ragna.core import RagnaException
 
+from . import _schemas as schemas
 from ._api import make_router as make_api_router
+from ._auth import UserDependency
 from ._config import Config
 from ._engine import Engine
 from ._ui import app as make_ui_app
@@ -78,6 +81,8 @@ def make_app(
         ignore_unavailable_components=ignore_unavailable_components,
     )
 
+    config.auth._add_to_app(app, config=config, engine=engine, api=api, ui=ui)
+
     if api:
         app.include_router(make_api_router(engine), prefix="/api")
 
@@ -102,6 +107,24 @@ def make_app(
     @app.get("/version")
     async def version() -> str:
         return ragna.__version__
+
+    @app.get("/user")
+    async def user(user: UserDependency) -> schemas.User:
+        return user
+
+    @app.get("/api-keys")
+    def list_api_keys(user: UserDependency) -> list[schemas.ApiKey]:
+        return engine.list_api_keys(user=user.name)
+
+    @app.post("/api-keys")
+    def create_api_key(
+        user: UserDependency, api_key_creation: schemas.ApiKeyCreation
+    ) -> schemas.ApiKey:
+        return engine.create_api_key(user=user.name, api_key_creation=api_key_creation)
+
+    @app.delete("/api-keys/{id}")
+    def delete_api_key(user: UserDependency, id: uuid.UUID) -> None:
+        return engine.delete_api_key(user=user.name, id=id)
 
     @app.exception_handler(RagnaException)
     async def ragna_exception_handler(

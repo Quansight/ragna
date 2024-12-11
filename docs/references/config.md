@@ -69,9 +69,9 @@ is equivalent to `RAGNA_API_ORIGINS='["http://localhost:31477"]'`.
 
 Local root directory Ragna uses for storing files. See [ragna.local_root][].
 
-### `authentication`
+### `auth`
 
-[ragna.deploy.Authentication][] class to use for authenticating users.
+[ragna.deploy.Auth][] class to use for authenticating users.
 
 ### `document`
 
@@ -85,48 +85,26 @@ Local root directory Ragna uses for storing files. See [ragna.local_root][].
 
 [ragna.core.Assistant][]s to be available for the user to use.
 
-### `api`
-
-#### `hostname`
+### `hostname`
 
 Hostname the REST API will be bound to.
 
-#### `port`
+### `port`
 
 Port the REST API will be bound to.
 
-#### `root_path`
+### `root_path`
 
 A path prefix handled by a proxy that is not seen by the REST API, but is seen by
 external clients.
 
-#### `url`
-
-URL of the REST API to be accessed by the web UI. Make sure to include the
-[`root_path`](#root_path) if set.
-
-#### `origins`
+### `origins`
 
 [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) origins that are allowed
-to connect to the REST API. The URL of the web UI is required for it to function.
+to connect to the REST API.
 
-#### `database_url`
+### `database_url`
 
 URL of a SQL database that will be used to store the Ragna state. See
 [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls)
 on how to format the URL.
-
-### `ui`
-
-#### `hostname`
-
-Hostname the web UI will be bound to.
-
-#### `port`
-
-Port the web UI will be bound to.
-
-#### `origins`
-
-[CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) origins that are allowed
-to connect to the web UI.

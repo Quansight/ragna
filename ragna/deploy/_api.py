@@ -2,34 +2,23 @@ import uuid
 from typing import Annotated, AsyncIterator
 
 import pydantic
-from fastapi import (
-    APIRouter,
-    Body,
-    Depends,
-    UploadFile,
-)
+from fastapi import APIRouter, Body, UploadFile
 from fastapi.responses import StreamingResponse
 
-from ragna.core._utils import default_user
-
 from . import _schemas as schemas
+from ._auth import UserDependency
 from ._engine import Engine
 
 
 def make_router(engine: Engine) -> APIRouter:
     router = APIRouter(tags=["API"])
 
-    def get_user() -> str:
-        return default_user()
-
-    UserDependency = Annotated[str, Depends(get_user)]
-
     @router.post("/documents")
     def register_documents(
         user: UserDependency, document_registrations: list[schemas.DocumentRegistration]
     ) -> list[schemas.Document]:
         return engine.register_documents(
-            user=user, document_registrations=document_registrations
+            user=user.name, document_registrations=document_registrations
         )
 
     @router.put("/documents")
@@ -44,7 +33,7 @@ def make_router(engine: Engine) -> APIRouter:
             return content_stream()
 
         await engine.store_documents(
-            user=user,
+            user=user.name,
             ids_and_streams=[
                 (uuid.UUID(document.filename), make_content_stream(document))
                 for document in documents
@@ -60,19 +49,19 @@ def make_router(engine: Engine) -> APIRouter:
         user: UserDependency,
         chat_creation: schemas.ChatCreation,
     ) -> schemas.Chat:
-        return engine.create_chat(user=user, chat_creation=chat_creation)
+        return engine.create_chat(user=user.name, chat_creation=chat_creation)
 
     @router.get("/chats")
     async def get_chats(user: UserDependency) -> list[schemas.Chat]:
-        return engine.get_chats(user=user)
+        return engine.get_chats(user=user.name)
 
     @router.get("/chats/{id}")
     async def get_chat(user: UserDependency, id: uuid.UUID) -> schemas.Chat:
-        return engine.get_chat(user=user, id=id)
+        return engine.get_chat(user=user.name, id=id)
 
     @router.post("/chats/{id}/prepare")
     async def prepare_chat(user: UserDependency, id: uuid.UUID) -> schemas.Message:
-        return await engine.prepare_chat(user=user, id=id)
+        return await engine.prepare_chat(user=user.name, id=id)
 
     @router.post("/chats/{id}/answer")
     async def answer(
@@ -81,7 +70,7 @@ def make_router(engine: Engine) -> APIRouter:
         prompt: Annotated[str, Body(..., embed=True)],
         stream: Annotated[bool, Body(..., embed=True)] = False,
     ) -> schemas.Message:
-        message_stream = engine.answer_stream(user=user, chat_id=id, prompt=prompt)
+        message_stream = engine.answer_stream(user=user.name, chat_id=id, prompt=prompt)
         answer = await anext(message_stream)
 
         if not stream:
@@ -106,6 +95,6 @@ def make_router(engine: Engine) -> APIRouter:
 
     @router.delete("/chats/{id}")
     async def delete_chat(user: UserDependency, id: uuid.UUID) -> None:
-        engine.delete_chat(user=user, id=id)
+        engine.delete_chat(user=user.name, id=id)
 
     return router

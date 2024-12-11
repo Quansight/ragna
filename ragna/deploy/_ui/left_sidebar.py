@@ -14,6 +14,7 @@ class LeftSidebar(pn.viewable.Viewer):
     def __init__(self, api_wrapper, **params):
         super().__init__(**params)
 
+        self.api_wrapper = api_wrapper
         self.on_click_chat = None
         self.on_click_new_chat = None
 
@@ -104,6 +105,7 @@ class LeftSidebar(pn.viewable.Viewer):
             + self.chat_buttons
             + [
                 pn.layout.VSpacer(),
+                pn.pane.HTML(f"user: {self.api_wrapper._user}"),
                 pn.pane.HTML(f"version: {ragna_version}"),
                 # self.footer()
             ]

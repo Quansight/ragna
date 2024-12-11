@@ -1,4 +1,4 @@
-name: ragna-deploy-dev
+name: ragna-dev
 channels:
   - conda-forge
 dependencies:
@@ -15,6 +15,7 @@ dependencies:
       - pytest-asyncio
       - pytest-playwright
       - mypy ==1.10.0
+      - types-redis
       - pre-commit
       - types-aiofiles
       - sqlalchemy-stubs

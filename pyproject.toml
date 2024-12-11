@@ -172,9 +172,12 @@ disable_error_code = [
 ]
 
 [[tool.mypy.overrides]]
-# It is a fundamental feature of the components to request more parameters than the base
-# class. Thus, we just silence mypy here.
+# 1. We automatically handle user-defined sync and async methods
+# 2. It is a fundamental feature of the RAG components to request more parameters than
+#    the base class.
+# Thus, we just silence mypy where it would complain about the points above.
 module = [
+    "ragna.deploy._auth",
     "ragna.source_storages.*",
     "ragna.assistants.*"
 ]

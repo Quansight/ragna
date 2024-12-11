@@ -1,10 +1,9 @@
 import json
 
 import pytest
-from fastapi.testclient import TestClient
 
 from ragna.deploy import Config
-from tests.deploy.utils import TestAssistant, authenticate_with_api, make_api_app
+from tests.deploy.utils import TestAssistant, make_api_client
 from tests.utils import skip_on_windows
 
 
@@ -20,11 +19,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with TestClient(
-        make_api_app(config=config, ignore_unavailable_components=False)
-    ) as client:
-        authenticate_with_api(client)
-
+    with make_api_client(config=config, ignore_unavailable_components=False) as client:
         assert client.get("/api/chats").raise_for_status().json() == []
 
         documents = (
