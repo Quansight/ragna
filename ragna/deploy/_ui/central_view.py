@@ -299,15 +299,12 @@ class CentralView(pn.viewable.Viewer):
             message.clipboard_button.value = message.content_pane.object
             message.assistant_toolbar.visible = True
 
-        except Exception as exc:
-            import traceback
-
+        except Exception:
             yield RagnaChatMessage(
-                # (
-                #     "Sorry, something went wrong. "
-                #     "If this problem persists, please contact your administrator."
-                # ),
-                "".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+                (
+                    "Sorry, something went wrong. "
+                    "If this problem persists, please contact your administrator."
+                ),
                 role="system",
                 user=self.get_user_from_role("system"),
             )
