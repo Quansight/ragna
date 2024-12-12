@@ -42,11 +42,11 @@ runs:
 
     - name: Update conda environment if necessary
       if: steps.cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: bash -elo pipefail {0}
       run: |
         sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
         cat environment-dev.yml
-        mamba env update --quiet --file environment-dev.yml
+        conda env update --quiet --file environment-dev.yml
         git checkout -- environment-dev.yml
 
     #    - name: Install playwright
