@@ -28,7 +28,7 @@ runs:
       shell: bash
       run: |
         DATE=$(date +'%Y%m%d')
-        echo "date=${DATE}" | tee --append "${GITHUB_OUTPUT}"
+        echo "date=${DATE}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Restore conda environment
       id: cache
