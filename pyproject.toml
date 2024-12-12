@@ -57,7 +57,7 @@ all = [
     "ijson",
     "lancedb>=0.2",
     "pyarrow",
-    "pymupdf>=1.23.6",
+    "pymupdf>=1.23.6,<=1.24.10",
     "python-docx",
     "python-pptx",
     "tiktoken",
