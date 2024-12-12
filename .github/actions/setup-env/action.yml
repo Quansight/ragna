@@ -17,7 +17,7 @@ runs:
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-version: latest
-        activate-environment: ragna-deploy-dev
+        activate-environment: ragna-dev
 
     - name: Display conda info
       shell: bash -el {0}
