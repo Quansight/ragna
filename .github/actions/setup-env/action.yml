@@ -40,8 +40,6 @@ runs:
           env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
           }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml',
           'pyproject.toml') }}
-        restore-keys: |
-          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
 
     - name: Update conda environment if necessary
       if: steps.cache.outputs.cache-hit != 'true'
