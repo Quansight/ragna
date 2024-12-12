@@ -73,6 +73,10 @@ Local root directory Ragna uses for storing files. See [ragna.local_root][].
 
 [ragna.deploy.Auth][] class to use for authenticating users.
 
+### `key_value_store`
+
+[ragna.deploy.KeyValueStore][] class to use for temporary storage.
+
 ### `document`
 
 [ragna.core.Document][] class to use to upload and read documents.
@@ -102,6 +106,10 @@ external clients.
 
 [CORS](https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS) origins that are allowed
 to connect to the REST API.
+
+### `session_lifetime`
+
+Number of seconds of inactivity after a user has to login again.
 
 ### `database_url`
 

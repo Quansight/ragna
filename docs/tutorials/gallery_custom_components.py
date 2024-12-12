@@ -189,7 +189,7 @@ config = Config(
 ragna_deploy = ragna_docs.RagnaDeploy(config)
 
 client, document = ragna_deploy.get_http_client(
-    authenticate=True, upload_document=True
+    authenticate=True, upload_sample_document=True
 )
 
 # %%
@@ -205,7 +205,7 @@ import json
 response = client.post(
     "/api/chats",
     json={
-        "name": "Tutorial REST API",
+        "name": "Tutorial Custom Components",
         "document_ids": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": TutorialAssistant.display_name(),
@@ -322,7 +322,7 @@ config = Config(
 ragna_deploy = ragna_docs.RagnaDeploy(config)
 
 client, document = ragna_deploy.get_http_client(
-    authenticate=True, upload_document=True
+    authenticate=True, upload_sample_document=True
 )
 
 # %%
@@ -332,7 +332,7 @@ client, document = ragna_deploy.get_http_client(
 response = client.post(
     "/api/chats",
     json={
-        "name": "Tutorial REST API",
+        "name": "Tutorial Elaborate Custom Components",
         "document_ids": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": ElaborateTutorialAssistant.display_name(),
@@ -343,6 +343,7 @@ response = client.post(
     },
 ).raise_for_status()
 chat = response.json()
+print(json.dumps(chat, indent=2))
 
 # %%
 

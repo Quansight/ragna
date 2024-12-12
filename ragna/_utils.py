@@ -175,14 +175,16 @@ class BackgroundSubprocess:
         *cmd: str,
         stdout: Any = sys.stdout,
         stderr: Any = sys.stdout,
-        text: bool = True,
         startup_fn: Optional[Callable[[], bool]] = None,
         startup_timeout: float = 10,
         terminate_timeout: float = 10,
+        text: bool = True,
         **subprocess_kwargs: Any,
     ) -> None:
+        self._terminate_timeout = terminate_timeout
+
         self._process = subprocess.Popen(
-            cmd, stdout=stdout, stderr=stderr, **subprocess_kwargs
+            cmd, stdout=stdout, stderr=stderr, text=text, **subprocess_kwargs
         )
         try:
             if startup_fn:
@@ -197,11 +199,9 @@ class BackgroundSubprocess:
             self.terminate()
             raise
 
-        self._terminate_timeout = terminate_timeout
-
-    def terminate(self) -> tuple[str, str]:
+    def terminate(self) -> tuple[str | bytes, str | bytes]:
         @timeout_after(self._terminate_timeout)
-        def terminate() -> tuple[str, str]:
+        def terminate() -> tuple[str | bytes, str | bytes]:
             self._process.terminate()
             return self._process.communicate()
 

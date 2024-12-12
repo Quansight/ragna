@@ -14,7 +14,7 @@ This tutorial walks you through basic steps of using Ragna's REST API.
 # Ragnas REST API is normally started from a terminal with
 #
 # ```bash
-# $ ragna api
+# $ ragna deploy
 # ```
 #
 # For this tutorial we use our helper that does the equivalent just from Python.
@@ -99,8 +99,8 @@ with open(document_path, "w") as file:
 # %%
 # The upload process in Ragna consists of two parts:
 #
-# 1. Announce the file to be uploaded. Under the hood this registers the document
-#    in Ragna's database and returns the document ID, which is needed for the upload.
+# 1. Register the document in Ragna's database. This returns the document ID, which is
+#    needed for the upload.
 
 response = client.post(
     "/api/documents", json=[{"name": document_path.name}]
@@ -109,7 +109,7 @@ documents = response.json()
 print(json.dumps(documents, indent=2))
 
 # %%
-# 2. Perform the actual upload with the information from step 1. through a
+# 2. Perform the upload through a
 # [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/)
 # with the following parameters:
 #
@@ -154,8 +154,8 @@ chat = response.json()
 print(json.dumps(chat, indent=2))
 
 # %%
-# As can be seen by the `"prepared"` field in the `chat` JSON object we still need to
-# prepare it.
+# As can be seen by the `"prepared": false` value in the `chat` JSON object we still
+# need to prepare it.
 
 client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
 

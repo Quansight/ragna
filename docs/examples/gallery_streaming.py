@@ -110,7 +110,7 @@ config = Config(assistants=[DemoStreamingAssistant])
 ragna_deploy = ragna_docs.RagnaDeploy(config)
 
 client, document = ragna_deploy.get_http_client(
-    authenticate=True, upload_document=True
+    authenticate=True, upload_sample_document=True
 )
 
 # %%

@@ -113,12 +113,12 @@ class RagnaDeploy:
         self,
         *,
         authenticate: bool = False,
-        upload_document: bool = False,
+        upload_sample_document: bool = False,
     ) -> tuple[httpx.Client, Optional[dict[str, Any]]]:
-        if upload_document and not authenticate:
+        if upload_sample_document and not authenticate:
             raise RagnaException(
                 "Cannot upload a document without authenticating first. "
-                "Set authenticate=True when using upload_document=True."
+                "Set authenticate=True when using upload_sample_document=True."
             )
 
         client = httpx.Client(base_url=self.config._url)
@@ -126,7 +126,7 @@ class RagnaDeploy:
         if authenticate:
             client.get("/login", follow_redirects=True)
 
-        if upload_document:
+        if upload_sample_document:
             name, content = "ragna.txt", SAMPLE_CONTENT
 
             response = client.post(
