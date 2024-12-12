@@ -67,13 +67,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Debug 1
+        if: always()
         run: which pytest
 
       - name: Debug 2
+        if: always()
         run: pytest --version
 
       - name: Debug 3
+        if: always()
         run: pytest --help
+
+      - name: Debug 4
+        if: always()
+        run: ragna --help
 
       - name: Run unit tests
         id: tests
