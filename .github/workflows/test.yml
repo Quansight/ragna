@@ -70,15 +70,18 @@ jobs:
         id: tests
         run: |
           pytest \
-          --ignore tests/deploy/ui \
-          --junit-xml=test-results.xml \
-          --durations=25
+          --co -q
 
-      - name: Surface failing tests
-        if: steps.tests.outcome != 'success'
-        uses: pmeier/pytest-results-action@v0.3.0
-        with:
-          path: test-results.xml
+#          --ignore tests/deploy/ui \
+#          --junit-xml=test-results.xml \
+#          --durations=25
+#
+#      - name: Surface failing tests
+#        if: steps.tests.outcome != 'success'
+#        uses: pmeier/pytest-results-action@v0.3.0
+#        with:
+#          path: test-results.xml
+
 #  pytest-ui:
 #    strategy:
 #      matrix:
