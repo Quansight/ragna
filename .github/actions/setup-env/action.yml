@@ -47,7 +47,7 @@ runs:
       run: |
         sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
         cat environment-dev.yml
-        mamba env update --file environment-dev.yml
+        mamba env update --quiet --file environment-dev.yml
         git checkout -- environment-dev.yml
 
     #    - name: Install playwright
@@ -63,7 +63,7 @@ runs:
         else
           PROJECT_PATH='.'
         fi
-        pip install --verbose --editable "${PROJECT_PATH}"
+        pip install --verbose --progress-bar=off --editable "${PROJECT_PATH}"
 
     - name: Display development environment
       shell: bash -el {0}
