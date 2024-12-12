@@ -20,7 +20,7 @@ runs:
         activate-environment: ragna-dev
 
     - name: Display conda info
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: conda info
 
     - name: Set cache date
@@ -55,7 +55,7 @@ runs:
     #      run: playwright install
 
     - name: Install ragna
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: |
         if [[ ${{ inputs.optional-dependencies }} == true ]]
         then
@@ -66,5 +66,5 @@ runs:
         pip install --verbose --progress-bar=off --editable "${PROJECT_PATH}"
 
     - name: Display development environment
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: conda list
