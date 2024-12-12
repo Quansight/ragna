@@ -54,7 +54,10 @@ runs:
 
     - name: Install playwright
       shell: bash -el {0}
-      run: playwright install
+      run: |
+        ls -la "${CONDA_PREFIX}/bin"
+        python -m playwright --help
+        playwright install
 
     - name: Install ragna
       shell: bash -el {0}
