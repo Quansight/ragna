@@ -66,6 +66,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Debug 1
+        run: which pytest
+
+      - name: Debug 2
+        run: pytest --version
+
+      - name: Debug 3
+        run: pytest --help
+
       - name: Run unit tests
         id: tests
         run: |
