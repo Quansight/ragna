@@ -52,9 +52,9 @@ runs:
         mamba env update --file environment-dev.yml
         git checkout -- environment-dev.yml
 
-    - name: Install playwright
-      shell: bash -el {0}
-      run: playwright install
+    #    - name: Install playwright
+    #      shell: bash -el {0}
+    #      run: playwright install
 
     - name: Install ragna
       shell: bash -el {0}

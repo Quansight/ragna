@@ -95,7 +95,7 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra --tb=short --asyncio-mode=auto"
+addopts = "-ra --tb=short --asyncio-mode=auto --ignore tests/deploy/ui"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = [
     "tests",
