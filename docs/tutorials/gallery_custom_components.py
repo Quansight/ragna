@@ -186,9 +186,11 @@ config = Config(
     assistants=[TutorialAssistant],
 )
 
-rest_api = ragna_docs.RestApi()
+ragna_deploy = ragna_docs.RagnaDeploy(config)
 
-client, document = rest_api.start(config, authenticate=True, upload_document=True)
+client, document = ragna_deploy.get_http_client(
+    authenticate=True, upload_sample_document=True
+)
 
 # %%
 # To select our custom components, we pass their display names to the chat creation.
@@ -201,10 +203,10 @@ client, document = rest_api.start(config, authenticate=True, upload_document=Tru
 import json
 
 response = client.post(
-    "/chats",
+    "/api/chats",
     json={
-        "name": "Tutorial REST API",
-        "documents": [document],
+        "name": "Tutorial Custom Components",
+        "document_ids": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": TutorialAssistant.display_name(),
         "params": {},
@@ -212,10 +214,10 @@ response = client.post(
 ).raise_for_status()
 chat = response.json()
 
-client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
 
 response = client.post(
-    f"/chats/{chat['id']}/answer",
+    f"/api/chats/{chat['id']}/answer",
     json={"prompt": "What is Ragna?"},
 ).raise_for_status()
 answer = response.json()
@@ -225,7 +227,7 @@ print(json.dumps(answer, indent=2))
 # Let's stop the REST API and have a look at what would have printed in the terminal if
 # we had started it with the `ragna api` command.
 
-rest_api.stop()
+ragna_deploy.terminate()
 
 # %%
 # ### Web UI
@@ -263,9 +265,7 @@ class ElaborateTutorialAssistant(Assistant):
         my_optional_parameter: str = "foo",
     ) -> Iterator[str]:
         print(f"Running {type(self).__name__}().answer()")
-        yield (
-            f"I was given {my_required_parameter=} and {my_optional_parameter=}."
-        )
+        yield f"I was given {my_required_parameter=} and {my_optional_parameter=}."
 
 
 # %%
@@ -319,19 +319,21 @@ config = Config(
     assistants=[ElaborateTutorialAssistant],
 )
 
-rest_api = ragna_docs.RestApi()
+ragna_deploy = ragna_docs.RagnaDeploy(config)
 
-client, document = rest_api.start(config, authenticate=True, upload_document=True)
+client, document = ragna_deploy.get_http_client(
+    authenticate=True, upload_sample_document=True
+)
 
 # %%
 # To pass custom parameters, define them in the `params` mapping when creating a new
 # chat.
 
 response = client.post(
-    "/chats",
+    "/api/chats",
     json={
-        "name": "Tutorial REST API",
-        "documents": [document],
+        "name": "Tutorial Elaborate Custom Components",
+        "document_ids": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": ElaborateTutorialAssistant.display_name(),
         "params": {
@@ -341,13 +343,14 @@ response = client.post(
     },
 ).raise_for_status()
 chat = response.json()
+print(json.dumps(chat, indent=2))
 
 # %%
 
-client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
 
 response = client.post(
-    f"/chats/{chat['id']}/answer",
+    f"/api/chats/{chat['id']}/answer",
     json={"prompt": "What is Ragna?"},
 ).raise_for_status()
 answer = response.json()
@@ -357,7 +360,7 @@ print(json.dumps(answer, indent=2))
 # Let's stop the REST API and have a look at what would have printed in the terminal if
 # we had started it with the `ragna api` command.
 
-rest_api.stop()
+ragna_deploy.terminate()
 
 # %%
 # ### Web UI

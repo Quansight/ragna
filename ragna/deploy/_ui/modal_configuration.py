@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from typing import AsyncIterator
 
 import panel as pn
 import param
 
+from ragna.deploy import _schemas as schemas
+
 from . import js
 from . import styles as ui
-from .components.file_uploader import FileUploader
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -82,15 +84,13 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.api_wrapper = api_wrapper
 
-        upload_endpoints = self.api_wrapper.upload_endpoints()
-
         self.chat_name_input = pn.widgets.TextInput.from_param(
             self.param.chat_name,
         )
-        self.document_uploader = FileUploader(
-            [],  # the allowed documents are set in the model_section function
-            self.api_wrapper.auth_token,
-            upload_endpoints["informations_endpoint"],
+        self.document_uploader = pn.widgets.FileInput(
+            multiple=True,
+            css_classes=["file-input"],
+            accept=",".join(self.api_wrapper.get_components().documents),
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
@@ -115,12 +115,38 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
-    def did_click_on_start_chat_button(self, event):
-        if not self.document_uploader.can_proceed_to_upload():
+    async def did_click_on_start_chat_button(self, event):
+        if not self.document_uploader.value:
             self.change_upload_files_label("missing_file")
         else:
             self.start_chat_button.disabled = True
-            self.document_uploader.perform_upload(event, self.did_finish_upload)
+            documents = self.api_wrapper._engine.register_documents(
+                user=self.api_wrapper._user,
+                document_registrations=[
+                    schemas.DocumentRegistration(name=name)
+                    for name in self.document_uploader.filename
+                ],
+            )
+
+            if self.api_wrapper._engine.supports_store_documents:
+
+                def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
+                    async def content_stream() -> AsyncIterator[bytes]:
+                        yield data
+
+                    return content_stream()
+
+                await self.api_wrapper._engine.store_documents(
+                    user=self.api_wrapper._user,
+                    ids_and_streams=[
+                        (document.id, make_content_stream(data))
+                        for document, data in zip(
+                            documents, self.document_uploader.value
+                        )
+                    ],
+                )
+
+            await self.did_finish_upload(documents)
 
     async def did_finish_upload(self, uploaded_documents):
         # at this point, the UI has uploaded the files to the API.
@@ -159,19 +185,19 @@ class ModalConfiguration(pn.viewable.Viewer):
         # prevents re-rendering the section
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = await self.api_wrapper.get_components()
+            components = self.api_wrapper.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
-            config.allowed_documents = components["documents"]
+            config.allowed_documents = components.documents
 
-            assistants = [component["title"] for component in components["assistants"]]
+            assistants = [assistant["title"] for assistant in components.assistants]
 
             config.param.assistant_name.objects = assistants
             config.assistant_name = assistants[0]
 
             source_storages = [
-                component["title"] for component in components["source_storages"]
+                source_storage["title"] for source_storage in components.source_storages
             ]
             config.param.source_storage_name.objects = source_storages
             config.source_storage_name = source_storages[0]
@@ -179,7 +205,6 @@ class ModalConfiguration(pn.viewable.Viewer):
             # Now that the config object is set, we can assign it to the param.
             # This will trigger the update of the advanced_config_ui section
             self.config = config
-            self.document_uploader.allowed_documents = config.allowed_documents
 
         return pn.Row(
             pn.Column(

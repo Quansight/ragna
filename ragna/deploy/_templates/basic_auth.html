@@ -1,0 +1,33 @@
+{% extends "base.html" %} {% block content %}
+<div class="basic-auth">
+    <div><h1>Log in</h1></div>
+    {% if fail_reason %}
+    <div style="color: green"> {{ fail_reason }} </div>
+    {% endif %}
+    <form action="/login" method="post" id="basic-auth-form">
+        <fieldset>
+            <legend>Username</legend>
+            <input
+              type="text"
+              class="form-control"
+              name="username"
+              autocomplete="username"
+              {% if username %}
+              value="{{ username }}"
+              {% endif %}
+            />
+        </fieldset>
+      <fieldset>
+        <legend>Password</legend>
+        <input
+          type="password"
+          class="form-control"
+          name="password"
+        />
+      </fieldset>
+    </form>
+    <div>
+      <button type="submit" form="basic-auth-form" class="btn btn-primary">Log In</button>
+    </div>
+</div>
+{% endblock %}

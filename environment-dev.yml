@@ -15,6 +15,7 @@ dependencies:
       - pytest-asyncio
       - pytest-playwright
       - mypy ==1.10.0
+      - types-redis
       - pre-commit
       - types-aiofiles
       - sqlalchemy-stubs

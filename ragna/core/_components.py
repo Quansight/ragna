@@ -4,6 +4,8 @@ import abc
 import enum
 import functools
 import inspect
+import uuid
+from datetime import datetime, timezone
 from typing import (
     AsyncIterable,
     AsyncIterator,
@@ -182,6 +184,8 @@ class Message:
         *,
         role: MessageRole = MessageRole.SYSTEM,
         sources: Optional[list[Source]] = None,
+        id: Optional[uuid.UUID] = None,
+        timestamp: Optional[datetime] = None,
     ) -> None:
         if isinstance(content, str):
             self._content: str = content
@@ -190,6 +194,14 @@ class Message:
 
         self.role = role
         self.sources = sources or []
+
+        if id is None:
+            id = uuid.uuid4()
+        self.id = id
+
+        if timestamp is None:
+            timestamp = datetime.now(timezone.utc)
+        self.timestamp = timestamp
 
     async def __aiter__(self) -> AsyncIterator[str]:
         if hasattr(self, "_content"):

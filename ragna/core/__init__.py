@@ -4,7 +4,6 @@ __all__ = [
     "Component",
     "Document",
     "DocumentHandler",
-    "DocumentUploadParameters",
     "DocxDocumentHandler",
     "PptxDocumentHandler",
     "EnvVarRequirement",
@@ -34,7 +33,6 @@ from ._utils import (
 from ._document import (
     Document,
     DocumentHandler,
-    DocumentUploadParameters,
     DocxDocumentHandler,
     LocalDocument,
     Page,

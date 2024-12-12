@@ -7,14 +7,14 @@ import fastapi.openapi.utils
 import mkdocs_gen_files
 import typer.rich_utils
 
+from ragna._cli import app as cli_app  # noqa: E402
 from ragna.deploy import Config
-from ragna.deploy._api import app as api_app
-from ragna.deploy._cli import app as cli_app
+from ragna.deploy._core import make_app as make_deploy_app
 
 
 def main():
     cli_reference()
-    api_reference()
+    deploy_reference()
     config_reference()
 
 
@@ -43,8 +43,14 @@ def cli_reference():
             file.write(get_doc(command.name or command.callback.__name__))
 
 
-def api_reference():
-    app = api_app(config=Config(), ignore_unavailable_components=False)
+def deploy_reference():
+    app = make_deploy_app(
+        config=Config(),
+        api=True,
+        ui=True,
+        ignore_unavailable_components=False,
+        open_browser=False,
+    )
     openapi_json = fastapi.openapi.utils.get_openapi(
         title=app.title,
         version=app.version,
