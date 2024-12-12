@@ -13,7 +13,7 @@ runs:
   using: composite
 
   steps:
-    - name: Setup mambaforge and development environment
+    - name: Setup miniforge and empty development environment
       uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-version: latest
@@ -28,8 +28,7 @@ runs:
       shell: bash
       run: |
         DATE=$(date +'%Y%m%d')
-        echo $DATE
-        echo "DATE=$DATE" >> $GITHUB_OUTPUT
+        echo "date=${DATE}" | tee --append "${GITHUB_OUTPUT}"
 
     - name: Restore conda environment
       id: cache
