@@ -40,8 +40,16 @@ def make_app(
 
         @contextlib.asynccontextmanager
         async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+            try:
+                browser = webbrowser.get()
+            except webbrowser.Error as error:
+                print(str(error))
+                yield
+                return
+
             def target() -> None:
-                client = httpx.Client(base_url=config._url)
+                url = f"http://{config.hostname}:{config.port}"
+                client = httpx.Client(base_url=url)
 
                 def server_available() -> bool:
                     try:
@@ -52,7 +60,7 @@ def make_app(
                 while not server_available():
                     time.sleep(0.1)
 
-                webbrowser.open(config._url)
+                browser.open(url)
 
             # We are starting the browser on a thread, because the server can only
             # become available _after_ the yield below. By setting daemon=True, the
