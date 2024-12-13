@@ -404,3 +404,17 @@ class JupyterhubServerProxyAuth(_AutomaticLoginAuthBase):
 
     def login(self, request: Request) -> schemas.User:
         return self._user
+
+
+class JhubAppsAuth(_AutomaticLoginAuthBase):
+    async def login(self, request: Request) -> schemas.User:
+        assert "jhub_apps_access_token" in request.cookies
+        async with httpx.AsyncClient(
+            base_url=f"https://{request.url.netloc}",
+            cookies=request.cookies,
+        ) as client:
+            response = await client.get("/services/japps/user")
+            assert response.is_success
+
+            user_data = response.json()
+            return schemas.User(name=user_data.pop("name"), data=user_data)
