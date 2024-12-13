@@ -153,7 +153,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             show_timestamp=False,
         )
 
-    def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
+    def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
         message = super()._build_message(*args, **kwargs)
         if message is None:
             return None
@@ -187,30 +187,24 @@ class CentralView(pn.viewable.Viewer):
             return
 
         # see _api/schemas.py for `input` type definitions
-        if isinstance(self.current_chat["metadata"]["input"], list):
-            # `Document`s provided as list
+        if self.current_chat["documents"] is not None:
             title = "Uploaded Files"
 
             pills = "".join(
                 [
                     f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                    for d in self.current_chat["metadata"]["input"]
+                    for d in self.current_chat["documents"]
                 ]
             )
 
             details = f"<div class='details'>{pills}</div><br />\n\n"
-            grid_height = len(self.current_chat["metadata"]["input"]) // 3
+            grid_height = len(self.current_chat["documents"]) // 3
 
-        elif isinstance(self.current_chat["metadata"]["input"], dict):
-            # `MetadataFilter`s provided as dict
-            title = "Metadata Filters"
+        elif self.current_chat["metadata_filter"] is not None:
+            title = "Metadata Filter"
 
             metadata_filters_readable = (
-                str(
-                    MetadataFilter.from_primitive(
-                        self.current_chat["metadata"]["input"]
-                    )
-                )
+                str(MetadataFilter.from_primitive(self.current_chat["metadata_filter"]))
                 .replace("\n", "<br>")
                 .replace(" ", "&nbsp;")
             )
@@ -218,16 +212,10 @@ class CentralView(pn.viewable.Viewer):
             details = f"<div class='details details_block' style='display:block;'><pre>{metadata_filters_readable}</pre></div><br />\n\n"
             grid_height = 1
 
-        elif self.current_chat["metadata"]["input"] is None:
-            title = ""
-
-            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
-            grid_height = 1
-
         else:
             title = ""
 
-            details = "<div class='details'>Unable to infer the `input` type.<br /> Defaulting to using the whole corpus.</div><br />\n\n"
+            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
             grid_height = 1
 
         markdown = "\n".join(
@@ -237,14 +225,14 @@ class CentralView(pn.viewable.Viewer):
                 details,
                 "----",
                 "**Source Storage**",
-                f"""<span>{self.current_chat['metadata']['source_storage']}</span>\n""",
+                f"""<span>{self.current_chat['source_storage']}</span>\n""",
                 "----",
                 "**Assistant**",
-                f"""<span>{self.current_chat['metadata']['assistant']}</span>\n""",
+                f"""<span>{self.current_chat['assistant']}</span>\n""",
                 "**Advanced configuration**",
                 *[
                     f"- **{key.replace('_', ' ').title()}**: {value}"
-                    for key, value in self.current_chat["metadata"]["params"].items()
+                    for key, value in self.current_chat["params"].items()
                 ],
             ]
         )
@@ -314,7 +302,7 @@ class CentralView(pn.viewable.Viewer):
         elif role == "user":
             return cast(str, self.user)
         elif role == "assistant":
-            return cast(str, self.current_chat["metadata"]["assistant"])
+            return cast(str, self.current_chat["assistant"])
         else:
             raise RuntimeError
 
@@ -340,7 +328,15 @@ class CentralView(pn.viewable.Viewer):
             message.clipboard_button.value = message.content_pane.object
             message.assistant_toolbar.visible = True
 
-        except Exception:
+        except Exception as error:
+            import traceback
+
+            print(
+                "".join(
+                    traceback.format_exception(type(error), error, error.__traceback__)
+                )
+            )
+
             yield RagnaChatMessage(
                 (
                     "Sorry, something went wrong. "
@@ -397,7 +393,7 @@ class CentralView(pn.viewable.Viewer):
 
         current_chat_name = ""
         if self.current_chat is not None:
-            current_chat_name = self.current_chat["metadata"]["name"]
+            current_chat_name = self.current_chat["name"]
 
         chat_name_header = pn.pane.HTML(
             f"<p>{current_chat_name}</p>",
@@ -406,12 +402,8 @@ class CentralView(pn.viewable.Viewer):
         )
 
         chat_documents_pills = []
-        if (
-            self.current_chat is not None
-            and "metadata" in self.current_chat
-            and "documents" in self.current_chat["metadata"]
-        ):
-            doc_names = [d["name"] for d in self.current_chat["metadata"]["documents"]]
+        if self.current_chat is not None and self.current_chat["documents"] is not None:
+            doc_names = [d["name"] for d in self.current_chat["documents"]]
 
             # FIXME: Instead of setting a hard limit of 20 documents here, this should
             #  scale automatically with the width of page
@@ -424,7 +416,9 @@ class CentralView(pn.viewable.Viewer):
 
                 chat_documents_pills.append(pill)
 
-        self.chat_info_button.name = f"{self.current_chat['metadata']['assistant']} | {self.current_chat['metadata']['source_storage']}"
+        self.chat_info_button.name = (
+            f"{self.current_chat['assistant']} | {self.current_chat['source_storage']}"
+        )
 
         return pn.Row(
             chat_name_header,

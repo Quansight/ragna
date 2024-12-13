@@ -1,63 +1,76 @@
 import datetime
 import json
-import os
 
 import httpx
 
 from ragna.core import MetadataFilter
-from ragna.core._utils import default_user
 
 
 def main():
-    client = httpx.Client(base_url="http://127.0.0.1:31476")
-    client.get("/").raise_for_status()
+    client = httpx.Client(base_url="http://127.0.0.1:31476", timeout=None)
+    client.get("/health").raise_for_status()
 
     ## authentication
 
-    username = default_user()
-    token = (
+    # This only works if Ragna was deployed with ragna.core.NoAuth
+    # If that is not the case, login in whatever way is required, grab the API token and
+    # use the following instead
+    # client.headers["Authorization"] = f"Bearer {api_token}"
+
+    client.get("/login", follow_redirects=True).raise_for_status()
+
+    ## documents
+
+    documents = (
         client.post(
-            "/token",
-            data={
-                "username": username,
-                "password": os.environ.get(
-                    "RAGNA_DEMO_AUTHENTICATION_PASSWORD", username
-                ),
-            },
+            "/api/documents", json=[{"name": f"document{i}.txt"} for i in range(5)]
         )
         .raise_for_status()
         .json()
     )
-    client.headers["Authorization"] = f"Bearer {token}"
 
-    ## documents
+    print(json.dumps(documents, indent=2))
 
-    documents = []
-    for i in range(5):
-        name = f"document{i}.txt"
-        document_upload = (
-            client.post("/document", json={"name": name}).raise_for_status().json()
-        )
-        parameters = document_upload["parameters"]
-        client.request(
-            parameters["method"],
-            parameters["url"],
-            data=parameters["data"],
-            files={"file": f"Content of {name}".encode()},
-        ).raise_for_status()
-        documents.append(document_upload["document"])
+    client.put(
+        "/api/documents",
+        files=[
+            ("documents", (document["id"], f"Content of {document['name']}".encode()))
+            for document in documents
+        ],
+    ).raise_for_status()
 
     ## chat 1
 
     chat = (
         client.post(
-            "/chats",
+            "/api/chats",
             json={
-                "name": "Test chat",
-                "input": None,
+                "name": f"Chat {datetime.datetime.now():%x %X}",
+                "input": [document["id"] for document in documents],
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
-                "params": {},
+            },
+        )
+        .raise_for_status()
+        .json()
+    )
+
+    client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
+    for _ in range(3):
+        client.post(
+            f"/api/chats/{chat['id']}/answer",
+            json={"prompt": "What is Ragna? Please, I need to know!"},
+        ).raise_for_status()
+
+    ## chat 2
+
+    chat = (
+        client.post(
+            "/api/chats",
+            json={
+                "name": "Test chat",
+                "source_storage": "Ragna/DemoSourceStorage",
+                "assistant": "Ragna/DemoAssistant",
             },
         )
         .raise_for_status()
@@ -65,38 +78,15 @@ def main():
     )
 
     client.post(
-        f"/chats/{chat['id']}/answer",
+        f"/api/chats/{chat['id']}/answer",
         json={"prompt": "Hello!"},
     ).raise_for_status()
 
-    ## chat 2
+    # ## chat 3
 
     chat = (
         client.post(
-            "/chats",
-            json={
-                "name": f"Chat {datetime.datetime.now():%x %X}",
-                "input": documents[:2],
-                "source_storage": "Ragna/DemoSourceStorage",
-                "assistant": "Ragna/DemoAssistant",
-                "params": {},
-            },
-        )
-        .raise_for_status()
-        .json()
-    )
-    client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
-    for _ in range(3):
-        client.post(
-            f"/chats/{chat['id']}/answer",
-            json={"prompt": "What is Ragna? Please, I need to know!"},
-        ).raise_for_status()
-
-    ## chat 3
-
-    chat = (
-        client.post(
-            "/chats",
+            "/api/chats",
             json={
                 "name": (
                     "Really long chat name that likely needs to be truncated somehow. "
@@ -105,27 +95,28 @@ def main():
                 "input": MetadataFilter.or_(
                     [
                         MetadataFilter.eq("document_id", document["id"])
-                        for document in documents[2:]
+                        for document in documents[:2]
                     ]
                 ).to_primitive(),
                 "source_storage": "Ragna/DemoSourceStorage",
                 "assistant": "Ragna/DemoAssistant",
-                "params": {},
             },
         )
         .raise_for_status()
         .json()
     )
+
     client.post(
-        f"/chats/{chat['id']}/answer",
+        f"/api/chats/{chat['id']}/answer",
         json={"prompt": "Hello!"},
     ).raise_for_status()
+
     client.post(
-        f"/chats/{chat['id']}/answer",
+        f"/api/chats/{chat['id']}/answer",
         json={"prompt": "Ok, in that case show me some pretty markdown!"},
     ).raise_for_status()
 
-    chats = client.get("/chats").raise_for_status().json()
+    chats = client.get("/api/chats").raise_for_status().json()
     print(json.dumps(chats))
 
 

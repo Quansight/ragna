@@ -13,15 +13,14 @@ runs:
   using: composite
 
   steps:
-    - name: Setup mambaforge and development environment
+    - name: Setup miniforge and empty development environment
       uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
         miniforge-version: latest
         activate-environment: ragna-dev
 
     - name: Display conda info
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: conda info
 
     - name: Set cache date
@@ -29,8 +28,7 @@ runs:
       shell: bash
       run: |
         DATE=$(date +'%Y%m%d')
-        echo $DATE
-        echo "DATE=$DATE" >> $GITHUB_OUTPUT
+        echo "date=${DATE}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Restore conda environment
       id: cache
@@ -41,24 +39,22 @@ runs:
           env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version
           }}|${{steps.cache-key.outputs.date }}-${{ hashFiles('environment-dev.yml',
           'pyproject.toml') }}
-        restore-keys: |
-          env-${{ runner.os }}-${{ runner.arch }}-${{ inputs.python-version }}
 
     - name: Update conda environment if necessary
       if: steps.cache.outputs.cache-hit != 'true'
-      shell: bash
+      shell: bash -elo pipefail {0}
       run: |
         sed -i'' -e 's/python *= *[0-9.]\+/python =${{ inputs.python-version }}/g' environment-dev.yml
         cat environment-dev.yml
-        mamba env update --file environment-dev.yml
+        conda env update --quiet --file environment-dev.yml
         git checkout -- environment-dev.yml
 
-    - name: Install playwright
-      shell: bash -el {0}
-      run: playwright install
+    #    - name: Install playwright
+    #      shell: bash -el {0}
+    #      run: playwright install
 
     - name: Install ragna
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: |
         if [[ ${{ inputs.optional-dependencies }} == true ]]
         then
@@ -66,8 +62,8 @@ runs:
         else
           PROJECT_PATH='.'
         fi
-        pip install --editable "${PROJECT_PATH}"
+        pip install --verbose --progress-bar=off --editable "${PROJECT_PATH}"
 
     - name: Display development environment
-      shell: bash -el {0}
+      shell: bash -elo pipefail {0}
       run: conda list
