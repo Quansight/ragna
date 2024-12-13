@@ -4,13 +4,21 @@ __all__ = [
     "DummyBasicAuth",
     "GithubOAuth",
     "InMemoryKeyValueStore",
+    "JhubAppsAuth",
     "JupyterhubServerProxyAuth",
     "KeyValueStore",
     "NoAuth",
     "RedisKeyValueStore",
 ]
 
-from ._auth import Auth, DummyBasicAuth, GithubOAuth, JupyterhubServerProxyAuth, NoAuth
+from ._auth import (
+    Auth,
+    DummyBasicAuth,
+    GithubOAuth,
+    JhubAppsAuth,
+    JupyterhubServerProxyAuth,
+    NoAuth,
+)
 from ._config import Config
 from ._key_value_store import InMemoryKeyValueStore, KeyValueStore, RedisKeyValueStore
 
