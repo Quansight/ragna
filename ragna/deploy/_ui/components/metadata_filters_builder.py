@@ -151,8 +151,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         )
         self.add_filter_row_button.on_click(self.add_filter_row)
 
-        self.corpus_names_select.param.watch(self.reset_filter_rows, "value")
-
+        
     def create_filter_row(self):
         return [
             FilterRow(
@@ -164,9 +163,6 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
                 on_delete_callback=self.delete_filter_row,
             )
         ]
-
-    def reset_filter_rows(self, event=None):
-        self.filter_rows = self.create_filter_row()
 
     def add_filter_row(self, event):
         self.filter_rows = self.filter_rows + self.create_filter_row()
@@ -188,7 +184,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             *self.filter_rows,
             css_classes=["metadata-filter-row-collection"],
         )
-
+    
     def construct_metadata_filters(self):
         metadata_filters = [
             filter_row.construct_metadata_filter()
@@ -201,6 +197,16 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         return MetadataFilter.and_(metadata_filters).to_primitive()
 
     def __panel__(self):
+
+
+        if len(self.corpus_names) == 0:
+            return pn.Column(
+                pn.pane.HTML("<b>No corpus available for selected source storage</b>"),
+                sizing_mode="stretch_both",
+                height_policy="max",
+            )
+
+
         return pn.Column(
             self.corpus_names_select,
             pn.pane.HTML("<b>Metadata Filters</b>"),
