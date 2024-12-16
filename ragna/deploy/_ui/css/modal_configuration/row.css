@@ -3,6 +3,5 @@
 }
 
 :host(.metadata-filter-row) {
-  background-color: lightsalmon;
   overflow: visible;
 }
