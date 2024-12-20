@@ -46,7 +46,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             # to manage and mostly not even used by the vector DB. Chroma provides a
             # wrapper around a compiled embedding function that has only minimal
             # requirements. We use this as base for all of our Vector DBs.
-            PackageRequirement("chromadb>=0.4.13"),
+            PackageRequirement("chromadb<=0.5.11,>=0.4.13"),
             PackageRequirement("tiktoken"),
         ]
 
@@ -81,7 +81,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
         ):
             tokens, page_numbers = zip(*window)
             yield Chunk(
-                text=self._tokenizer.decode(tokens),  # type: ignore[arg-type]
+                text=self._tokenizer.decode(tokens),
                 page_numbers=list(filter(lambda n: n is not None, page_numbers))
                 or None,
                 num_tokens=len(tokens),

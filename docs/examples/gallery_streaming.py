@@ -3,6 +3,34 @@
 
 Ragna supports streaming responses from the assistant. This example showcases how this
 is performed using the Python and REST API.
+
+!!! tip
+
+    Of the assistants that Ragna has built in, the following ones support streaming:
+
+    - [Anthropic](https://www.anthropic.com/)
+      - [ragna.assistants.ClaudeOpus][]
+      - [ragna.assistants.ClaudeSonnet][]
+      - [ragna.assistants.ClaudeHaiku][]
+    - [Cohere](https://cohere.com/)
+      - [ragna.assistants.Command][]
+      - [ragna.assistants.CommandLight][]
+    - [Google](https://ai.google.dev/)
+      - [ragna.assistants.GeminiPro][]
+      - [ragna.assistants.GeminiUltra][]
+    - [OpenAI](https://openai.com/)
+      - [ragna.assistants.Gpt35Turbo16k][]
+      - [ragna.assistants.Gpt4][]
+    - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
+      - [ragna.assistants.LlamafileAssistant][]
+    - [Ollama](https://ollama.com/)
+      - [ragna.assistants.OllamaGemma2B][]
+      - [ragna.assistants.OllamaLlama2][]
+      - [ragna.assistants.OllamaLlava][]
+      - [ragna.assistants.OllamaMistral][]
+      - [ragna.assistants.OllamaMixtral][]
+      - [ragna.assistants.OllamaOrcaMini][]
+      - [ragna.assistants.OllamaPhi2][]
 """
 
 # %%
@@ -11,34 +39,6 @@ is performed using the Python and REST API.
 # To be able to stream a message from an assistant, it needs to support streaming. For
 # this example, we subclass the [ragna.assistants.RagnaDemoAssistant][], split its
 # message on whitespace, and return the individual chunks.
-#
-# !!! tip
-#
-#     Of the assistants that Ragna has built in, the following ones support streaming:
-#
-#     - [Anthropic](https://www.anthropic.com/)
-#       - [ragna.assistants.ClaudeOpus][]
-#       - [ragna.assistants.ClaudeSonnet][]
-#       - [ragna.assistants.ClaudeHaiku][]
-#     - [Cohere](https://cohere.com/)
-#       - [ragna.assistants.Command][]
-#       - [ragna.assistants.CommandLight][]
-#     - [Google](https://ai.google.dev/)
-#       - [ragna.assistants.GeminiPro][]
-#       - [ragna.assistants.GeminiUltra][]
-#     - [OpenAI](https://openai.com/)
-#       - [ragna.assistants.Gpt35Turbo16k][]
-#       - [ragna.assistants.Gpt4][]
-#     - [llamafile](https://github.com/Mozilla-Ocho/llamafile)
-#       - [ragna.assistants.LlamafileAssistant][]
-#     - [Ollama](https://ollama.com/)
-#       - [ragna.assistants.OllamaGemma2B][]
-#       - [ragna.assistants.OllamaLlama2][]
-#       - [ragna.assistants.OllamaLlava][]
-#       - [ragna.assistants.OllamaMistral][]
-#       - [ragna.assistants.OllamaMixtral][]
-#       - [ragna.assistants.OllamaOrcaMini][]
-#       - [ragna.assistants.OllamaPhi2][]
 
 from ragna import assistants
 
@@ -76,6 +76,7 @@ chat = Rag().chat(
 _ = await chat.prepare()
 
 # %%
+# Set the `stream=True` flag when calling [ragna.core.Chat.answer][]
 
 message = await chat.answer("What is Ragna?", stream=True)
 
@@ -107,29 +108,30 @@ from ragna.deploy import Config
 
 config = Config(assistants=[DemoStreamingAssistant])
 
-rest_api = ragna_docs.RestApi()
+ragna_deploy = ragna_docs.RagnaDeploy(config)
 
-client, document = rest_api.start(config, authenticate=True, upload_document=True)
+client, document = ragna_deploy.get_http_client(
+    authenticate=True, upload_sample_document=True
+)
 
 # %%
 # Start and prepare the chat
 
 chat = (
     client.post(
-        "/chats",
+        "/api/chats",
         json={
             "name": "Tutorial REST API",
-            "input": [document],
+            "input": [document["id"]],
             "source_storage": source_storages.RagnaDemoSourceStorage.display_name(),
             "assistant": DemoStreamingAssistant.display_name(),
-            "params": {},
         },
     )
     .raise_for_status()
     .json()
 )
 
-client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
 
 # %%
 # Streaming the response is performed with [JSONL](https://jsonlines.org/). Each line
@@ -140,7 +142,7 @@ import json
 
 with client.stream(
     "POST",
-    f"/chats/{chat['id']}/answer",
+    f"/api/chats/{chat['id']}/answer",
     json={"prompt": "What is Ragna?", "stream": True},
 ) as response:
     chunks = [json.loads(data) for data in response.iter_lines()]
@@ -163,7 +165,8 @@ print(json.dumps(chunks[1], indent=2))
 print("".join(chunk["content"] for chunk in chunks))
 
 # %%
-# Before we close the example, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it with the `ragna api` command.
+# Before we close the example, let's terminate the REST API and have a look at what
+# would have printed in the terminal if we had started it with the `ragna deploy`
+# command.
 
-rest_api.stop()
+ragna_deploy.terminate()

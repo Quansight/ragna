@@ -3,12 +3,12 @@ from __future__ import annotations
 import collections.abc
 import contextlib
 import datetime
-import inspect
 import itertools
 import uuid
 from collections import defaultdict
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     AsyncIterator,
     Awaitable,
@@ -17,7 +17,6 @@ from typing import (
     Generic,
     Iterator,
     Optional,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -25,15 +24,20 @@ from typing import (
 
 import pydantic
 import pydantic_core
-from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
+from fastapi import status
+
+from ragna._utils import as_async_iterator, as_awaitable, default_user
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
 from ._metadata_filter import MetadataFilter
-from ._utils import RagnaException, default_user, merge_models
+from ._utils import RagnaException, merge_models
+
+if TYPE_CHECKING:
+    from ragna.deploy import Config
 
 T = TypeVar("T")
-C = TypeVar("C", bound=Component)
+C = TypeVar("C", bound=Component, covariant=True)
 
 
 class Rag(Generic[C]):
@@ -48,13 +52,49 @@ class Rag(Generic[C]):
         ```
     """
 
-    def __init__(self) -> None:
-        self._components: dict[Type[C], C] = {}
+    def __init__(
+        self,
+        *,
+        config: Optional[Config] = None,
+        ignore_unavailable_components: bool = False,
+    ) -> None:
+        self._components: dict[type[C], C] = {}
+        self._display_name_map: dict[str, type[C]] = {}
+
+        if config is not None:
+            self._preload_components(
+                config=config,
+                ignore_unavailable_components=ignore_unavailable_components,
+            )
+
+    def _preload_components(
+        self, *, config: Config, ignore_unavailable_components: bool
+    ) -> None:
+        for components in [config.source_storages, config.assistants]:
+            components = cast(list[type[Component]], components)
+            at_least_one = False
+            for component in components:
+                loaded_component = self._load_component(
+                    component,  #  type: ignore[arg-type]
+                    ignore_unavailable=ignore_unavailable_components,
+                )
+                if loaded_component is None:
+                    print(
+                        f"Ignoring {component.display_name()}, because it is not available."
+                    )
+                else:
+                    at_least_one = True
+
+            if not at_least_one:
+                raise RagnaException(
+                    "No component available",
+                    components=[component.display_name() for component in components],
+                )
 
     def _load_component(
-        self, component: Union[Type[C], C], *, ignore_unavailable: bool = False
+        self, component: Union[C, type[C], str], *, ignore_unavailable: bool = False
     ) -> Optional[C]:
-        cls: Type[C]
+        cls: type[C]
         instance: Optional[C]
 
         if isinstance(component, Component):
@@ -62,6 +102,19 @@ class Rag(Generic[C]):
             cls = type(instance)
         elif isinstance(component, type) and issubclass(component, Component):
             cls = component
+            instance = None
+        elif isinstance(component, str):
+            try:
+                cls = self._display_name_map[component]
+            except KeyError:
+                raise RagnaException(
+                    "Unknown component",
+                    display_name=component,
+                    help="Did you forget to create the Rag() instance with a config?",
+                    http_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    http_detail=f"Unknown component '{component}'",
+                ) from None
+
             instance = None
         else:
             raise RagnaException
@@ -78,6 +131,7 @@ class Rag(Generic[C]):
                 instance = cls()
 
             self._components[cls] = instance
+            self._display_name_map[cls.display_name()] = cls
 
         return self._components[cls]
 
@@ -92,8 +146,8 @@ class Rag(Generic[C]):
             Collection[Union[Document, str, Path]],
         ] = None,
         *,
-        source_storage: Union[Type[SourceStorage], SourceStorage],
-        assistant: Union[Type[Assistant], Assistant],
+        source_storage: Union[SourceStorage, type[SourceStorage], str],
+        assistant: Union[Assistant, type[Assistant], str],
         corpus_name: str = "default",
         **params: Any,
     ) -> Chat:
@@ -116,8 +170,8 @@ class Rag(Generic[C]):
         return Chat(
             self,
             input=input,
-            source_storage=source_storage,
-            assistant=assistant,
+            source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
+            assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
             corpus_name=corpus_name,
             **params,
         )
@@ -183,20 +237,16 @@ class Chat:
             Collection[Union[Document, str, Path]],
         ] = None,
         *,
-        source_storage: Union[Type[SourceStorage], SourceStorage],
-        assistant: Union[Type[Assistant], Assistant],
+        source_storage: SourceStorage,
+        assistant: Assistant,
         corpus_name: str = "default",
         **params: Any,
     ) -> None:
         self._rag = rag
 
         self.documents, self.metadata_filter, self._prepared = self._parse_input(input)
-
-        self.source_storage = cast(
-            SourceStorage, self._rag._load_component(source_storage)
-        )
-        self.assistant = cast(Assistant, self._rag._load_component(assistant))
-
+        self.source_storage = source_storage
+        self.assistant = assistant
         self.corpus_name = corpus_name
 
         special_params = SpecialChatParams().model_dump()
@@ -224,7 +274,9 @@ class Chat:
         if self._prepared:
             return welcome
 
-        await self._run(self.source_storage.store, self.corpus_name, self.documents)
+        await self._as_awaitable(
+            self.source_storage.store, self.corpus_name, self.documents
+        )
         self._prepared = True
 
         self._messages.append(welcome)
@@ -244,11 +296,11 @@ class Chat:
             raise RagnaException(
                 "Chat is not prepared",
                 chat=self,
-                http_status_code=400,
+                http_status_code=status.HTTP_400_BAD_REQUEST,
                 http_detail=RagnaException.EVENT,
             )
 
-        sources = await self._run(
+        sources = await self._as_awaitable(
             self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
         )
         if not sources:
@@ -263,13 +315,19 @@ class Chat:
             if suggestion is not None:
                 event = f"{event} {suggestion}"
 
-            raise RagnaException(event, http_detail=RagnaException.EVENT)
+            raise RagnaException(
+                event,
+                http_status_code=status.HTTP_400_BAD_REQUEST,
+                http_detail=RagnaException.EVENT,
+            )
 
         question = Message(content=prompt, role=MessageRole.USER, sources=sources)
         self._messages.append(question)
 
         answer = Message(
-            content=self._run_gen(self.assistant.answer, self._messages.copy()),
+            content=self._as_async_iterator(
+                self.assistant.answer, self._messages.copy()
+            ),
             role=MessageRole.ASSISTANT,
             sources=sources,
         )
@@ -294,22 +352,17 @@ class Chat:
         if isinstance(input, MetadataFilter) or input is None:
             return None, input, True
 
-        if not isinstance(input, collections.abc.Collection):
+        if isinstance(input, str) or not isinstance(input, collections.abc.Collection):
             input = [input]
 
-        documents = []
-        for document in input:
-            if not isinstance(document, Document):
-                document = LocalDocument.from_path(document)
-
-            if not document.is_readable():
-                raise RagnaException(
-                    "Document not readable",
-                    document=document,
-                    http_status_code=404,
-                )
-
-            documents.append(document)
+        documents = [
+            (
+                document
+                if isinstance(document, Document)
+                else LocalDocument.from_path(document)
+            )
+            for document in input
+        ]
 
         metadata_filter = MetadataFilter.or_(
             [
@@ -380,7 +433,7 @@ class Chat:
                 formatted_error = f"- {param}"
                 if annotation:
                     annotation_ = cast(
-                        type, model_cls.model_fields[param].annotation
+                        type, model_cls.__pydantic_fields__[param].annotation
                     ).__name__
                     formatted_error += f": {annotation_}"
 
@@ -436,40 +489,23 @@ class Chat:
 
             raise RagnaException("\n".join(parts))
 
-    async def _run(
+    def _as_awaitable(
         self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
-    ) -> T:
-        kwargs = self._unpacked_params[fn]
-        if inspect.iscoroutinefunction(fn):
-            fn = cast(Callable[..., Awaitable[T]], fn)
-            coro = fn(*args, **kwargs)
-        else:
-            fn = cast(Callable[..., T], fn)
-            coro = run_in_threadpool(fn, *args, **kwargs)
+    ) -> Awaitable[T]:
+        return as_awaitable(fn, *args, **self._unpacked_params[fn])
 
-        return await coro
-
-    async def _run_gen(
+    def _as_async_iterator(
         self,
         fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
         *args: Any,
     ) -> AsyncIterator[T]:
-        kwargs = self._unpacked_params[fn]
-        if inspect.isasyncgenfunction(fn):
-            fn = cast(Callable[..., AsyncIterator[T]], fn)
-            async_gen = fn(*args, **kwargs)
-        else:
-            fn = cast(Callable[..., Iterator[T]], fn)
-            async_gen = iterate_in_threadpool(fn(*args, **kwargs))
-
-        async for item in async_gen:
-            yield item
+        return as_async_iterator(fn, *args, **self._unpacked_params[fn])
 
     async def __aenter__(self) -> Chat:
         await self.prepare()
         return self
 
     async def __aexit__(
-        self, exc_type: Type[Exception], exc: Exception, traceback: str
+        self, exc_type: type[Exception], exc: Exception, traceback: str
     ) -> None:
         pass

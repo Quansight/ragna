@@ -2,17 +2,16 @@ import asyncio
 import itertools
 import json
 import os
-import time
 from pathlib import Path
 
 import httpx
 import pytest
 
 from ragna import assistants
-from ragna._utils import timeout_after
+from ragna._utils import BackgroundSubprocess
 from ragna.assistants._http_api import HttpApiAssistant, HttpStreamingProtocol
 from ragna.core import Message, RagnaException
-from tests.utils import background_subprocess, get_available_port, skip_on_windows
+from tests.utils import get_available_port, skip_on_windows
 
 HTTP_API_ASSISTANTS = [
     assistant
@@ -43,26 +42,19 @@ def streaming_server():
     port = get_available_port()
     base_url = f"http://localhost:{port}"
 
-    with background_subprocess(
+    def check_fn():
+        try:
+            return httpx.get(f"{base_url}/health").is_success
+        except httpx.ConnectError:
+            return False
+
+    with BackgroundSubprocess(
         "uvicorn",
         f"--app-dir={Path(__file__).parent}",
         f"--port={port}",
         "streaming_server:app",
+        startup_fn=check_fn,
     ):
-
-        def up():
-            try:
-                return httpx.get(f"{base_url}/health").is_success
-            except httpx.ConnectError:
-                return False
-
-        @timeout_after(10, message="Failed to start streaming server")
-        def wait():
-            while not up():
-                time.sleep(0.2)
-
-        wait()
-
         yield base_url
 
 

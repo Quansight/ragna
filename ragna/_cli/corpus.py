@@ -9,8 +9,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
-from ragna.core._utils import default_user
-from ragna.deploy._api import database, orm
+from ragna._utils import default_user
+from ragna.deploy._database import Database
+from ragna.deploy._engine import CoreToSchemaConverter
 
 from .config import ConfigOption
 
@@ -75,12 +76,8 @@ def ingest(
             f"path. Please implement a `from_path` method."
         )
 
-    try:
-        make_session = database.get_sessionmaker(config.api.database_url)
-    except Exception:
-        raise typer.BadParameter(
-            f"Could not connect to the database: {config.api.database_url}"
-        )
+    database = Database(config.database_url)
+    core_to_schema_document = CoreToSchemaConverter().document
 
     if metadata_fields:
         try:
@@ -95,8 +92,6 @@ def ingest(
 
     if user is None:
         user = default_user()
-    with make_session() as session:  # type: ignore[attr-defined]
-        user_id = database._get_user_id(session, user)
 
     # Log (JSONL) for recording which files previously added to vector database.
     # Each entry has keys for 'user', 'corpus_name', 'source_storage' and 'document'.
@@ -123,7 +118,7 @@ def ingest(
             total=len(config.source_storages),
         )
 
-        for source_storage in config.source_storages:
+        for source_storage in [cls() for cls in config.source_storages]:
             BATCH_SIZE = 10
             number_of_batches = len(documents) // BATCH_SIZE
             source_storage_task = progress.add_task(
@@ -132,9 +127,9 @@ def ingest(
             )
 
             for batch_number in range(0, len(documents), BATCH_SIZE):
+                print(batch_number)
                 documents_not_ingested = []
                 document_instances = []
-                orm_documents = []
 
                 if source_storage.display_name() in ingestion_log:
                     batch_doc_set = set(
@@ -153,41 +148,38 @@ def ingest(
 
                 for document in documents[batch_number : batch_number + BATCH_SIZE]:
                     try:
-                        doc_instance = document_factory(
-                            document,
-                            metadata=(
-                                metadata[str(document)]
-                                if str(document) in metadata
-                                else None
-                            ),
-                        )
-                        document_instances.append(doc_instance)
-                        orm_documents.append(
-                            orm.Document(
-                                id=doc_instance.id,
-                                user_id=user_id,
-                                name=doc_instance.name,
-                                metadata_=doc_instance.metadata,
+                        document_instances.append(
+                            document_factory(
+                                document,
+                                metadata=(
+                                    metadata[str(document)]
+                                    if str(document) in metadata
+                                    else None
+                                ),
                             )
                         )
                     except Exception:
                         documents_not_ingested.append(document)
 
-                if not orm_documents:
+                if not document_instances:
                     continue
 
-                try:
-                    session = make_session()
-                    session.add_all(orm_documents)
-                    source_storage().store(corpus_name, document_instances)
-                    session.commit()
-                except Exception:
-                    documents_not_ingested.extend(
-                        documents[batch_number : batch_number + BATCH_SIZE]
-                    )
-                    session.rollback()
-                finally:
-                    session.close()
+                with database.get_session() as session:
+                    try:
+                        database.add_documents(
+                            session,
+                            user=user,
+                            documents=[
+                                core_to_schema_document(d) for d in document_instances
+                            ],
+                        )
+                        source_storage.store(corpus_name, document_instances)
+                    except Exception as exc:
+                        print(exc)
+                        session.rollback()
+                        documents_not_ingested.extend(
+                            documents[batch_number : batch_number + BATCH_SIZE]
+                        )
 
                 if not ignore_log:
                     with open(ingestion_log_file, "a") as stream:
@@ -208,7 +200,7 @@ def ingest(
 
                 if report_failures:
                     Console(file=sys.stderr).print(
-                        f"{source_storage.__name__} failed to embed:\n{documents_not_ingested}",
+                        f"{source_storage.display_name()} failed to embed:\n{documents_not_ingested}",
                     )
 
                 progress.advance(source_storage_task)

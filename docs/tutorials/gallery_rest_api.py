@@ -3,9 +3,9 @@
 
 Ragna was designed to help you quickly build custom RAG powered web
 applications. For this you can leverage the built-in
-[REST API](../../references/rest-api.md).
+[REST API](../../references/deploy.md).
 
-This tutorial walks you through basic steps of using Ragnas REST API.
+This tutorial walks you through basic steps of using Ragna's REST API.
 """
 
 # %%
@@ -14,7 +14,7 @@ This tutorial walks you through basic steps of using Ragnas REST API.
 # Ragnas REST API is normally started from a terminal with
 #
 # ```bash
-# $ ragna api
+# $ ragna deploy
 # ```
 #
 # For this tutorial we use our helper that does the equivalent just from Python.
@@ -39,42 +39,39 @@ from ragna.deploy import Config
 
 config = Config()
 
-rest_api = ragna_docs.RestApi()
-_ = rest_api.start(config)
+ragna_deploy = ragna_docs.RagnaDeploy(config=config)
 
 # %%
 # Let's make sure the REST API is started correctly and can be reached.
 
 import httpx
 
-client = httpx.Client(base_url=config.api.url)
-client.get("/").raise_for_status()
+client = httpx.Client(base_url=f"http://{config.hostname}:{config.port}")
+client.get("/health").raise_for_status()
 
 
 # %%
 # ## Step 2: Authentication
 #
-# In order to use Ragnas REST API, we need to authenticate first. To forge an API token
-# we send a request to the `/token` endpoint. This is processed by the
-# [`Authentication`][ragna.deploy.Authentication], which can be overridden through the
-# config. For this tutorial, we use the default
-# [ragna.deploy.RagnaDemoAuthentication][], which requires a matching username and
-# password.
+# In order to use Ragna's REST API, we need to authenticate first. This is handled by
+# the [ragna.deploy.Auth][] class, which can be overridden through the config. By
+# default, [ragna.deploy.NoAuth][] is used. By hitting the `/login` endpoint, we get a
+# session cookie, which is later used to authorize our requests.
 
-username = password = "Ragna"
-
-response = client.post(
-    "/token",
-    data={"username": username, "password": password},
-).raise_for_status()
-token = response.json()
+client.get("/login", follow_redirects=True)
+dict(client.cookies)
 
 # %%
-# We set the API token on our HTTP client so we don't have to manually supply it for
-# each request below.
-
-client.headers["Authorization"] = f"Bearer {token}"
-
+# !!! note
+#
+#     In a regular deployment, you'll have login through your browser and create an API
+#     key in your profile page. The API key is used as
+#     [bearer token](https://swagger.io/docs/specification/authentication/bearer-authentication/)
+#     and can be set with
+#
+#     ```python
+#     httpx.Client(..., headers={"Authorization": f"Bearer {RAGNA_API_KEY}"})
+#     ```
 
 # %%
 # ## Step 3: Uploading documents
@@ -84,7 +81,7 @@ client.headers["Authorization"] = f"Bearer {token}"
 
 import json
 
-response = client.get("/components").raise_for_status()
+response = client.get("/api/components").raise_for_status()
 print(json.dumps(response.json(), indent=2))
 
 # %%
@@ -102,38 +99,28 @@ with open(document_path, "w") as file:
 # %%
 # The upload process in Ragna consists of two parts:
 #
-# 1. Announce the file to be uploaded. Under the hood this pre-registers the document
-#    in Ragnas database and returns information about how the upload is to be performed.
-#    This is handled by the [ragna.core.Document][] class. By default,
-#    [ragna.core.LocalDocument][] is used, which uploads the files to the local file
-#    system.
-# 2. Perform the actual upload with the information from step 1.
+# 1. Register the document in Ragna's database. This returns the document ID, which is
+#    needed for the upload.
 
 response = client.post(
-    "/document", json={"name": document_path.name}
+    "/api/documents", json=[{"name": document_path.name}]
 ).raise_for_status()
-document_upload = response.json()
-print(json.dumps(response.json(), indent=2))
+documents = response.json()
+print(json.dumps(documents, indent=2))
 
 # %%
-# The returned JSON contains two parts: the document object that we are later going to
-# use to create a chat as well as the upload parameters.
-# !!! note
+# 2. Perform the upload through a
+# [multipart request](https://swagger.io/docs/specification/describing-request-body/multipart-requests/)
+# with the following parameters:
 #
-#     The `"token"` in the response is *not* the Ragna REST API token, but rather a
-#     separate one to perform the document upload.
-#
-# We perform the actual upload with the latter now.
+# - The field is `documents` for all entries
+# - The field name is the ID of the document returned by step 1.
+# - The field value is the binary content of the document.
 
-document = document_upload["document"]
-
-parameters = document_upload["parameters"]
-client.request(
-    parameters["method"],
-    parameters["url"],
-    data=parameters["data"],
-    files={"file": open(document_path, "rb")},
-).raise_for_status()
+client.put(
+    "/api/documents",
+    files=[("documents", (documents[0]["id"], open(document_path, "rb")))],
+)
 
 # %%
 # ## Step 4: Select a source storage and assistant
@@ -155,29 +142,28 @@ print(f"{source_storage=}, {assistant=}")
 # be used, we can create a new chat.
 
 response = client.post(
-    "/chats",
+    "/api/chats",
     json={
         "name": "Tutorial REST API",
-        "input": [document],
+        "input": [document["id"] for document in documents],
         "source_storage": source_storage,
         "assistant": assistant,
-        "params": {},
     },
 ).raise_for_status()
 chat = response.json()
 print(json.dumps(chat, indent=2))
 
 # %%
-# As can be seen by the `"prepared"` field in the `chat` JSON object we still need to
-# prepare it.
+# As can be seen by the `"prepared": false` value in the `chat` JSON object we still
+# need to prepare it.
 
-client.post(f"/chats/{chat['id']}/prepare").raise_for_status()
+client.post(f"/api/chats/{chat['id']}/prepare").raise_for_status()
 
 # %%
 # Finally, we can get answers to our questions.
 
 response = client.post(
-    f"/chats/{chat['id']}/answer",
+    f"/api/chats/{chat['id']}/answer",
     json={"prompt": "What is Ragna?"},
 ).raise_for_status()
 answer = response.json()
@@ -188,7 +174,8 @@ print(json.dumps(answer, indent=2))
 print(answer["content"])
 
 # %%
-# Before we close the tutorial, let's stop the REST API and have a look at what would
-# have printed in the terminal if we had started it with the `ragna api` command.
+# Before we close the tutorial, let's terminate the REST API and have a look at what
+# would have printed in the terminal if we had started it with the `ragna deploy`
+# command.
 
-rest_api.stop()
+ragna_deploy.terminate()

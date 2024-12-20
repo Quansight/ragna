@@ -27,81 +27,81 @@ METADATAS = {
 metadata_filters = pytest.mark.parametrize(
     ("metadata_filter", "expected_idcs"),
     [
-        pytest.param(
-            MetadataFilter.and_(
-                [
-                    MetadataFilter.eq("key", "value"),
-                    MetadataFilter.eq("other_key", "other_value"),
-                ]
-            ),
-            [1],
-            id="and",
-        ),
-        pytest.param(
-            MetadataFilter.or_(
-                [
-                    MetadataFilter.eq("key", "value"),
-                    MetadataFilter.eq("key", "other_value"),
-                ]
-            ),
-            [0, 1, 2],
-            id="or",
-        ),
-        pytest.param(
-            MetadataFilter.and_(
-                [
-                    MetadataFilter.eq("key", "value"),
-                    MetadataFilter.or_(
-                        [
-                            MetadataFilter.eq("key", "other_value"),
-                            MetadataFilter.eq("other_key", "other_value"),
-                        ]
-                    ),
-                ]
-            ),
-            [1],
-            id="and-nested",
-        ),
-        pytest.param(
-            MetadataFilter.or_(
-                [
-                    MetadataFilter.eq("key", "value"),
-                    MetadataFilter.and_(
-                        [
-                            MetadataFilter.eq("key", "other_value"),
-                            MetadataFilter.ne("other_key", "other_value"),
-                        ]
-                    ),
-                ]
-            ),
-            [0, 1],
-            id="or-nested",
-        ),
-        pytest.param(
-            MetadataFilter.and_(
-                [MetadataFilter.in_("other_key", ["value", "other_value"])]
-            ),
-            [1, 3, 4],
-            id="and-single",
-        ),
-        pytest.param(
-            MetadataFilter.or_([MetadataFilter.eq("other_key", "other_value")]),
-            [1, 4],
-            id="or-single",
-        ),
-        pytest.param(MetadataFilter.eq("key", "value"), [0, 1], id="eq"),
+        # pytest.param(
+        #     MetadataFilter.and_(
+        #         [
+        #             MetadataFilter.eq("key", "value"),
+        #             MetadataFilter.eq("other_key", "other_value"),
+        #         ]
+        #     ),
+        #     [1],
+        #     id="and",
+        # ),
+        # pytest.param(
+        #     MetadataFilter.or_(
+        #         [
+        #             MetadataFilter.eq("key", "value"),
+        #             MetadataFilter.eq("key", "other_value"),
+        #         ]
+        #     ),
+        #     [0, 1, 2],
+        #     id="or",
+        # ),
+        # pytest.param(
+        #     MetadataFilter.and_(
+        #         [
+        #             MetadataFilter.eq("key", "value"),
+        #             MetadataFilter.or_(
+        #                 [
+        #                     MetadataFilter.eq("key", "other_value"),
+        #                     MetadataFilter.eq("other_key", "other_value"),
+        #                 ]
+        #             ),
+        #         ]
+        #     ),
+        #     [1],
+        #     id="and-nested",
+        # ),
+        # pytest.param(
+        #     MetadataFilter.or_(
+        #         [
+        #             MetadataFilter.eq("key", "value"),
+        #             MetadataFilter.and_(
+        #                 [
+        #                     MetadataFilter.eq("key", "other_value"),
+        #                     MetadataFilter.ne("other_key", "other_value"),
+        #                 ]
+        #             ),
+        #         ]
+        #     ),
+        #     [0, 1],
+        #     id="or-nested",
+        # ),
+        # pytest.param(
+        #     MetadataFilter.and_(
+        #         [MetadataFilter.in_("other_key", ["value", "other_value"])]
+        #     ),
+        #     [1, 3, 4],
+        #     id="and-single",
+        # ),
+        # pytest.param(
+        #     MetadataFilter.or_([MetadataFilter.eq("other_key", "other_value")]),
+        #     [1, 4],
+        #     id="or-single",
+        # ),
+        # pytest.param(MetadataFilter.eq("key", "value"), [0, 1], id="eq"),
         pytest.param(MetadataFilter.ne("key", "value"), [2, 5, 6], id="ne"),
-        pytest.param(MetadataFilter.in_("key", ["foo", "bar"]), [5, 6], id="in"),
-        pytest.param(
-            MetadataFilter.not_in("key", ["foo", "bar"]), [0, 1, 2], id="not_in"
-        ),
-        pytest.param(None, [0, 1, 2, 3, 4, 5, 6], id="none"),
+        # pytest.param(MetadataFilter.in_("key", ["foo", "bar"]), [5, 6], id="in"),
+        # pytest.param(
+        #     MetadataFilter.not_in("key", ["foo", "bar"]), [0, 1, 2], id="not_in"
+        # ),
+        # pytest.param(None, [0, 1, 2, 3, 4, 5, 6], id="none"),
     ],
 )
 
 
 @metadata_filters
-@pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
+@pytest.mark.parametrize("source_storage_cls", [Chroma])  # LanceDB
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()

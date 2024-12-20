@@ -1,11 +1,31 @@
+from __future__ import annotations
+
+import contextlib
 import functools
+import getpass
 import inspect
 import os
+import shlex
+import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
-from urllib.parse import SplitResult, urlsplit, urlunsplit
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterator,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+)
+
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
+
+T = TypeVar("T")
 
 _LOCAL_ROOT = (
     Path(os.environ.get("RAGNA_LOCAL_ROOT", "~/.cache/ragna")).expanduser().resolve()
@@ -28,7 +48,7 @@ def local_root(path: Optional[Union[str, Path]] = None) -> Path:
         path: If passed, this is set as new local root directory.
 
     Returns:
-        Ragnas local root directory.
+        Ragna's local root directory.
     """
     global _LOCAL_ROOT
     if path is not None:
@@ -57,37 +77,6 @@ def fix_module(globals: dict[str, Any]) -> None:
             continue
 
         obj.__module__ = globals["__package__"]
-
-
-def _replace_hostname(split_result: SplitResult, hostname: str) -> SplitResult:
-    # This is a separate function, since hostname is not an element of the SplitResult
-    # namedtuple, but only a property. Thus, we need to replace the netloc item, from
-    # which the hostname is generated.
-    if split_result.port is None:
-        netloc = hostname
-    else:
-        netloc = f"{hostname}:{split_result.port}"
-    return split_result._replace(netloc=netloc)
-
-
-def handle_localhost_origins(origins: list[str]) -> list[str]:
-    # Since localhost is an alias for 127.0.0.1, we allow both so users and developers
-    # don't need to worry about it.
-    localhost_origins = {
-        components.hostname: components
-        for url in origins
-        if (components := urlsplit(url)).hostname in {"127.0.0.1", "localhost"}
-    }
-    if "127.0.0.1" in localhost_origins:
-        origins.append(
-            urlunsplit(_replace_hostname(localhost_origins["127.0.0.1"], "localhost"))
-        )
-    elif "localhost" in localhost_origins:
-        origins.append(
-            urlunsplit(_replace_hostname(localhost_origins["localhost"], "127.0.0.1"))
-        )
-
-    return origins
 
 
 def timeout_after(
@@ -142,3 +131,88 @@ def is_debugging() -> bool:
             if any(part.startswith(name) for part in parts):
                 return True
     return False
+
+
+def as_awaitable(
+    fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any, **kwargs: Any
+) -> Awaitable[T]:
+    if inspect.iscoroutinefunction(fn):
+        fn = cast(Callable[..., Awaitable[T]], fn)
+        awaitable = fn(*args, **kwargs)
+    else:
+        fn = cast(Callable[..., T], fn)
+        awaitable = run_in_threadpool(fn, *args, **kwargs)
+
+    return awaitable
+
+
+def as_async_iterator(
+    fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+    *args: Any,
+    **kwargs: Any,
+) -> AsyncIterator[T]:
+    if inspect.isasyncgenfunction(fn):
+        fn = cast(Callable[..., AsyncIterator[T]], fn)
+        async_iterator = fn(*args, **kwargs)
+    else:
+        fn = cast(Callable[..., Iterator[T]], fn)
+        async_iterator = iterate_in_threadpool(fn(*args, **kwargs))
+
+    return async_iterator
+
+
+def default_user() -> str:
+    with contextlib.suppress(Exception):
+        return getpass.getuser()
+    with contextlib.suppress(Exception):
+        return os.getlogin()
+    return "Bodil"
+
+
+class BackgroundSubprocess:
+    def __init__(
+        self,
+        *cmd: str,
+        stdout: Any = sys.stdout,
+        stderr: Any = sys.stdout,
+        startup_fn: Optional[Callable[[], bool]] = None,
+        startup_timeout: float = 10,
+        terminate_timeout: float = 10,
+        text: bool = True,
+        **subprocess_kwargs: Any,
+    ) -> None:
+        self._terminate_timeout = terminate_timeout
+
+        self._process = subprocess.Popen(
+            cmd, stdout=stdout, stderr=stderr, text=text, **subprocess_kwargs
+        )
+        try:
+            if startup_fn:
+
+                @timeout_after(startup_timeout, message=shlex.join(cmd))
+                def wait() -> None:
+                    while not startup_fn():
+                        time.sleep(0.2)
+
+                wait()
+        except Exception:
+            self.terminate()
+            raise
+
+    def terminate(self) -> tuple[str | bytes, str | bytes]:
+        @timeout_after(self._terminate_timeout)
+        def terminate() -> tuple[str | bytes, str | bytes]:
+            self._process.terminate()
+            return self._process.communicate()
+
+        try:
+            return terminate()  # type: ignore[no-any-return]
+        except TimeoutError:
+            self._process.kill()
+            return self._process.communicate()
+
+    def __enter__(self) -> BackgroundSubprocess:
+        return self
+
+    def __exit__(self, *exc_info: Any) -> None:
+        self.terminate()
