@@ -41,7 +41,7 @@ charset-normalizer==3.4.0
     # via requests
 chroma-hnswlib==0.7.6
     # via chromadb
-chromadb==0.5.23
+chromadb==0.5.11
     # via Ragna (pyproject.toml)
 click==8.1.7
     # via
