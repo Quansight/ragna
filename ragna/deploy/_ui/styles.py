@@ -34,14 +34,13 @@ css_modifiers = {
         pn.pane.Markdown,
     ],
     "chat_info": [pn.pane.Markdown, pn.widgets.Button],
-    "auth": [pn.widgets.TextInput, pn.pane.HTML, pn.widgets.Button, pn.Column],
     "central_view": [pn.Column, pn.Row, pn.pane.HTML],
     "chat_interface": [
         pn.widgets.TextInput,
-        pn.layout.Card,
         pn.pane.Markdown,
         pn.widgets.button.Button,
         pn.Column,
+        pn.chat.ChatInterface,
     ],
     "right_sidebar": [pn.widgets.Button, pn.Column, pn.pane.Markdown],
     "left_sidebar": [pn.widgets.Button, pn.pane.HTML, pn.Column],
@@ -55,6 +54,7 @@ css_modifiers = {
         pn.widgets.ButtonIcon,
         pn.widgets.Select,
         pn.widgets.MultiChoice,
+        pn.widgets.FileInput,
     ],
 }
 

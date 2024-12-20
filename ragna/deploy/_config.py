@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, Any, Callable, Generic, Type, TypeVar, Union
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Generic,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import tomlkit
 import tomlkit.container
 import tomlkit.items
-from pydantic import (
-    AfterValidator,
-    Field,
-    ImportString,
-    model_validator,
-)
+from pydantic import AfterValidator, Field, ImportString, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -23,7 +26,8 @@ import ragna
 from ragna._utils import make_directory
 from ragna.core import Assistant, Document, RagnaException, SourceStorage
 
-from ._authentication import Authentication
+from ._auth import Auth
+from ._key_value_store import KeyValueStore
 
 T = TypeVar("T")
 
@@ -52,7 +56,11 @@ class AfterConfigValidateDefault(Generic[T]):
         return Field(default=cls(make_default), validate_default=False)
 
 
-class ConfigBase(BaseSettings):
+class Config(BaseSettings):
+    """Ragna configuration"""
+
+    model_config = SettingsConfigDict(env_prefix="ragna_")
+
     @classmethod
     def settings_customise_sources(
         cls,
@@ -76,13 +84,49 @@ class ConfigBase(BaseSettings):
         #  4. Default
         return env_settings, init_settings
 
+    local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
+        default_factory=ragna.local_root
+    )
+
+    auth: ImportString[type[Auth]] = "ragna.deploy.NoAuth"  # type: ignore[assignment]
+    key_value_store: ImportString[type[KeyValueStore]] = (
+        "ragna.deploy.InMemoryKeyValueStore"  # type: ignore[assignment]
+    )
+
+    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
+    source_storages: list[ImportString[type[SourceStorage]]] = [
+        "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
+    ]
+    assistants: list[ImportString[type[Assistant]]] = [
+        "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
+    ]
+
+    hostname: str = "127.0.0.1"
+    port: int = 31476
+    root_path: str = ""
+    origins: list[str] = AfterConfigValidateDefault.make(
+        lambda config: [f"http://{config.hostname}:{config.port}"]
+    )
+    session_lifetime: int = 60 * 60 * 24
+
+    database_url: str = AfterConfigValidateDefault.make(
+        lambda config: f"sqlite:///{config.local_root}/ragna.db",
+    )
+
+    @model_validator(mode="after")
+    def _validate_model(self) -> Config:
+        self._resolve_default_sentinels(self)
+        return self
+
     def _resolve_default_sentinels(self, config: Config) -> None:
         for name, info in self.model_fields.items():
             value = getattr(self, name)
-            if isinstance(value, ConfigBase):
-                value._resolve_default_sentinels(config)
-            elif isinstance(value, AfterConfigValidateDefault):
+            if isinstance(value, AfterConfigValidateDefault):
                 setattr(self, name, value.make_default(config))
+
+    @property
+    def _url(self) -> str:
+        return f"http://{self.hostname}:{self.port}{self.root_path}"
 
     def __str__(self) -> str:
         toml = tomlkit.item(self.model_dump(mode="json"))
@@ -101,63 +145,6 @@ class ConfigBase(BaseSettings):
             (value for _, value in container.body), container.value.values()
         ):
             self._set_multiline_array(child)
-
-
-def make_default_origins(config: Config) -> list[str]:
-    return [f"http://{config.ui.hostname}:{config.ui.port}"]
-
-
-class ApiConfig(ConfigBase):
-    model_config = SettingsConfigDict(env_prefix="ragna_api_")
-
-    hostname: str = "127.0.0.1"
-    port: int = 31476
-    root_path: str = ""
-    url: str = AfterConfigValidateDefault.make(
-        lambda config: f"http://{config.api.hostname}:{config.api.port}{config.api.root_path}",
-    )
-    database_url: str = AfterConfigValidateDefault.make(
-        lambda config: f"sqlite:///{config.local_root}/ragna.db",
-    )
-    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
-
-
-class UiConfig(ConfigBase):
-    model_config = SettingsConfigDict(env_prefix="ragna_ui_")
-
-    hostname: str = "127.0.0.1"
-    port: int = 31477
-    origins: list[str] = AfterConfigValidateDefault.make(make_default_origins)
-
-
-class Config(ConfigBase):
-    """Ragna configuration"""
-
-    model_config = SettingsConfigDict(env_prefix="ragna_")
-
-    local_root: Annotated[Path, AfterValidator(make_directory)] = Field(
-        default_factory=ragna.local_root
-    )
-
-    authentication: ImportString[type[Authentication]] = (
-        "ragna.deploy.RagnaDemoAuthentication"  # type: ignore[assignment]
-    )
-
-    document: ImportString[type[Document]] = "ragna.core.LocalDocument"  # type: ignore[assignment]
-    source_storages: list[ImportString[type[SourceStorage]]] = [
-        "ragna.source_storages.RagnaDemoSourceStorage"  # type: ignore[list-item]
-    ]
-    assistants: list[ImportString[type[Assistant]]] = [
-        "ragna.assistants.RagnaDemoAssistant"  # type: ignore[list-item]
-    ]
-
-    api: ApiConfig = Field(default_factory=ApiConfig)
-    ui: UiConfig = Field(default_factory=UiConfig)
-
-    @model_validator(mode="after")
-    def _validate_model(self) -> Config:
-        self._resolve_default_sentinels(self)
-        return self
 
     @classmethod
     def from_file(cls, path: Union[str, Path]) -> Config:
