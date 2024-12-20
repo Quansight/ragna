@@ -11,7 +11,7 @@ ALLOWED_OPERATORS = [
 ]
 
 NO_CORPUS_KEY = "No corpuses available"
-NO_FILTER_KEY = "Empty Filter"
+NO_FILTER_KEY = ""
 
 
 class FilterRow(pn.viewable.Viewer):
@@ -146,14 +146,10 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
         self.corpus_metadata = corpus_metadata
 
-        self.filter_rows = self.create_filter_row()
-
         self.add_filter_row_button = pn.widgets.ButtonIcon(
             icon="circle-plus", width=25, height=25
         )
         self.add_filter_row_button.on_click(self.add_filter_row)
-
-        self.corpus_names_select.param.watch(self.reset_filter_rows, "value")
 
     def create_filter_row(self):
         return [
@@ -167,17 +163,10 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
             )
         ]
 
-    def reset_filter_rows(self, event=None):
-        self.filter_rows = self.create_filter_row()
-
     def add_filter_row(self, event):
         self.filter_rows = self.filter_rows + self.create_filter_row()
 
     def delete_filter_row(self, event):
-        if len(self.filter_rows) == 1:
-            self.reset_filter_rows()
-            return
-
         filter_row_to_remove = None
         for filter_row in self.filter_rows:
             if event.obj == filter_row.delete_button:
@@ -207,6 +196,13 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
         return MetadataFilter.and_(metadata_filters).to_primitive()
 
     def __panel__(self):
+        if len(self.corpus_names) == 0:
+            return pn.Column(
+                pn.pane.HTML("<b>No corpus available for selected source storage</b>"),
+                sizing_mode="stretch_both",
+                height_policy="max",
+            )
+
         return pn.Column(
             self.corpus_names_select,
             pn.pane.HTML("<b>Metadata Filters</b>"),

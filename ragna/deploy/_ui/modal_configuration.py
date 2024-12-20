@@ -464,7 +464,12 @@ class ModalConfiguration(pn.viewable.Viewer):
                 corpus_names=corpus_names, corpus_metadata=corpus_metadata
             )
 
-            data = pn.Column(self.metadata_filter_rows_title, self.metadata_filter_rows)
+            if len(corpus_names) > 0:
+                data = pn.Column(
+                    self.metadata_filter_rows_title, self.metadata_filter_rows
+                )
+            else:
+                data = pn.Column(self.metadata_filter_rows)
 
             self.error = False
             return data
