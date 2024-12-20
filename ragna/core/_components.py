@@ -7,6 +7,7 @@ import inspect
 import uuid
 from datetime import datetime, timezone
 from typing import (
+    Any,
     AsyncIterable,
     AsyncIterator,
     Iterator,
@@ -18,9 +19,11 @@ from typing import (
 
 import pydantic
 import pydantic.utils
+from fastapi import status
 
 from ._document import Document
-from ._utils import RequirementsMixin, merge_models
+from ._metadata_filter import MetadataFilter
+from ._utils import RagnaException, RequirementsMixin, merge_models
 
 
 class Component(RequirementsMixin):
@@ -77,6 +80,7 @@ class Component(RequirementsMixin):
             annotations = get_type_hints(method)
             # Skip over the protocol parameters in order for the model below to only
             # comprise concrete parameters.
+
             for _ in range(num_protocol_params):
                 next(params)
 
@@ -114,39 +118,76 @@ class Source(pydantic.BaseModel):
         num_tokens: Number of tokens of the content.
     """
 
-    model_config = pydantic.ConfigDict(arbitrary_types_allowed=True)
-
     id: str
-    document: Document
+    document_id: uuid.UUID
+    document_name: str
     location: str
     content: str
     num_tokens: int
+
+    def __hash__(self) -> int:
+        return hash(self.id)
 
 
 class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod
-    def store(self, documents: list[Document]) -> None:
+    def store(self, corpus_name: str, documents: list[Document]) -> None:
         """Store content of documents.
 
         Args:
+            corpus_name: Name of the corpus to store the documents in.
             documents: Documents to store.
         """
         ...
 
     @abc.abstractmethod
-    def retrieve(self, documents: list[Document], prompt: str) -> list[Source]:
+    def retrieve(
+        self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
+    ) -> list[Source]:
         """Retrieve sources for a given prompt.
 
         Args:
-            documents: Documents to retrieve sources from.
+            corpus_name: Name of the corpus to retrieve sources from.
+            metadata_filter: Filter to select available sources.
             prompt: Prompt to retrieve sources for.
 
         Returns:
             Matching sources for the given prompt ordered by relevance.
         """
         ...
+
+    def list_corpuses(self) -> list[str]:
+        """List available corpuses.
+
+        Returns:
+            List of available corpuses.
+        """
+        raise RagnaException(
+            "list_corpuses is not implemented",
+            source_storage=self.__class__.display_name(),
+            http_status_code=status.HTTP_400_BAD_REQUEST,
+            http_detail=RagnaException.MESSAGE,
+        )
+
+    def list_metadata(
+        self, corpus_name: Optional[str] = None
+    ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
+        """List available metadata for corpuses.
+
+        Args:
+            corpus_name: Only return metadata for this corpus.
+
+        Returns:
+            List of available metadata.
+        """
+        raise RagnaException(
+            "list_metadata is not implemented",
+            source_storage=self.__class__.display_name(),
+            http_status_code=status.HTTP_400_BAD_REQUEST,
+            http_detail=RagnaException.MESSAGE,
+        )
 
 
 class MessageRole(str, enum.Enum):

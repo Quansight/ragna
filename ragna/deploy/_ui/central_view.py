@@ -7,6 +7,8 @@ import panel as pn
 import param
 from panel.reactive import ReactiveHTML
 
+from ragna.core._metadata_filter import MetadataFilter
+
 from . import styles as ui
 
 
@@ -184,20 +186,43 @@ class CentralView(pn.viewable.Viewer):
         if self.on_click_chat_info is None:
             return
 
-        pills = "".join(
-            [
-                f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                for d in self.current_chat["documents"]
-            ]
-        )
+        # see _api/schemas.py for `input` type definitions
+        if self.current_chat["documents"] is not None:
+            title = "Uploaded Files"
 
-        grid_height = len(self.current_chat["documents"]) // 3
+            pills = "".join(
+                [
+                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                    for d in self.current_chat["documents"]
+                ]
+            )
+
+            details = f"<div class='details'>{pills}</div><br />\n\n"
+            grid_height = len(self.current_chat["documents"]) // 3
+
+        elif self.current_chat["metadata_filter"] is not None:
+            title = "Metadata Filter"
+
+            metadata_filters_readable = (
+                str(MetadataFilter.from_primitive(self.current_chat["metadata_filter"]))
+                .replace("\n", "<br>")
+                .replace(" ", "&nbsp;")
+            )
+
+            details = f"<div class='details details_block' style='display:block;'><pre>{metadata_filters_readable}</pre></div><br />\n\n"
+            grid_height = 1
+
+        else:
+            title = ""
+
+            details = "<div class='details'>No metadata filters applied.<br /> Using the whole corpus.</div><br />\n\n"
+            grid_height = 1
 
         markdown = "\n".join(
             [
                 "To change configurations, start a new chat.\n",
-                "**Uploaded Files**",
-                f"<div class='pills_list'>{pills}</div><br />\n\n",
+                f"**{title}**",
+                details,
                 "----",
                 "**Source Storage**",
                 f"""<span>{self.current_chat['source_storage']}</span>\n""",
@@ -223,11 +248,15 @@ class CentralView(pn.viewable.Viewer):
                     # The CSS rule below relies on a variable value, so we can't move it into modifers
                     stylesheets=[
                         ui.css(
-                            ":host(.chat_info_markdown) .pills_list",
+                            ":host(.chat_info_markdown) .details",
                             {
                                 "grid-template": f"repeat({grid_height}, 1fr) / repeat(3, 1fr)",
                             },
-                        )
+                        ),
+                        ui.css(
+                            ":host(.chat_info_markdown) .details_block",
+                            {"display": "block"},
+                        ),
                     ],
                 ),
             ],
@@ -244,7 +273,7 @@ class CentralView(pn.viewable.Viewer):
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{rank}. {source['document']['name']}</b> {location}",
+                    f"<b>{rank}. {source['document_name']}</b> {location}",
                     pn.pane.Markdown(source["content"], css_classes=["source-content"]),
                 )
             )
@@ -299,7 +328,15 @@ class CentralView(pn.viewable.Viewer):
             message.clipboard_button.value = message.content_pane.object
             message.assistant_toolbar.visible = True
 
-        except Exception:
+        except Exception as error:
+            import traceback
+
+            print(
+                "".join(
+                    traceback.format_exception(type(error), error, error.__traceback__)
+                )
+            )
+
             yield RagnaChatMessage(
                 (
                     "Sorry, something went wrong. "
@@ -365,7 +402,7 @@ class CentralView(pn.viewable.Viewer):
         )
 
         chat_documents_pills = []
-        if self.current_chat is not None:
+        if self.current_chat is not None and self.current_chat["documents"] is not None:
             doc_names = [d["name"] for d in self.current_chat["documents"]]
 
             # FIXME: Instead of setting a hard limit of 20 documents here, this should

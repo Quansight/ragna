@@ -1,12 +1,12 @@
 import secrets
 import uuid
-from typing import Any, AsyncIterator, Optional, Type, cast
+from typing import Any, AsyncIterator, Optional, cast
 
 from fastapi import status as http_status_code
 
 import ragna
 from ragna import core
-from ragna._utils import make_directory
+from ragna._utils import as_awaitable, make_directory
 from ragna.core import Rag, RagnaException
 from ragna.core._rag import SpecialChatParams
 
@@ -77,7 +77,7 @@ class Engine:
 
     def _get_component_json_schema(
         self,
-        component: Type[core.Component],
+        component: core.Component,
     ) -> dict[str, dict[str, Any]]:
         json_schema = component._protocol_model().model_json_schema()
         # FIXME: there is likely a better way to exclude certain fields builtin in
@@ -97,15 +97,58 @@ class Engine:
             documents=sorted(self._config.document.supported_suffixes()),
             source_storages=[
                 self._get_component_json_schema(source_storage)
-                for source_storage in self._rag._components.keys()
-                if issubclass(source_storage, core.SourceStorage)
+                for source_storage in self._rag._components.values()
+                if isinstance(source_storage, core.SourceStorage)
             ],
             assistants=[
                 self._get_component_json_schema(assistant)
-                for assistant in self._rag._components.keys()
-                if issubclass(assistant, core.Assistant)
+                for assistant in self._rag._components.values()
+                if isinstance(assistant, core.Assistant)
             ],
         )
+
+    def _get_source_storage_components(
+        self,
+        source_storage: str | None,
+    ) -> list[core.SourceStorage]:
+        if source_storage is not None:
+            component = self._rag._load_component(source_storage)
+            if not isinstance(component, core.SourceStorage):
+                raise RagnaException(
+                    "Unknown source storage",
+                    display_name=source_storage,
+                    http_status_code=http_status_code.HTTP_422_UNPROCESSABLE_ENTITY,
+                    http_detail=RagnaException.MESSAGE,
+                )
+            return [component]
+        else:
+            return [
+                source_storage
+                for source_storage in self._rag._components.values()
+                if isinstance(source_storage, core.SourceStorage)
+            ]
+
+    async def get_corpuses(
+        self, source_storage: str | None = None
+    ) -> dict[str, list[str]]:
+        return {
+            source_storage.display_name(): await as_awaitable(
+                source_storage.list_corpuses
+            )
+            for source_storage in self._get_source_storage_components(source_storage)
+        }
+
+    async def get_corpus_metadata(
+        self,
+        source_storage: str | None = None,
+        corpus_name: str | None = None,
+    ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
+        return {
+            source_storage.display_name(): await as_awaitable(
+                source_storage.list_metadata, corpus_name
+            )
+            for source_storage in self._get_source_storage_components(source_storage)
+        }
 
     def register_documents(
         self, *, user: str, document_registrations: list[schemas.DocumentRegistration]
@@ -128,6 +171,7 @@ class Engine:
         self,
         *,
         user: str,
+        # FIXME: make this a dictionary input
         ids_and_streams: list[tuple[uuid.UUID, AsyncIterator[bytes]]],
     ) -> None:
         if not self.supports_store_documents:
@@ -136,28 +180,40 @@ class Engine:
                 http_status_code=http_status_code.HTTP_400_BAD_REQUEST,
             )
 
-        ids, streams = zip(*ids_and_streams)
+        streams = dict(ids_and_streams)
 
         with self._database.get_session() as session:
-            documents = self._database.get_documents(session, user=user, ids=ids)
+            documents = self._database.get_documents(
+                session, user=user, ids=streams.keys()
+            )
 
-        for document, stream in zip(documents, streams):
+        for document in documents:
             core_document = cast(
                 ragna.core.LocalDocument, self._to_core.document(document)
             )
-            await core_document._write(stream)
+            await core_document._write(streams[document.id])
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
     ) -> schemas.Chat:
-        params = chat_creation.model_dump()
-        document_ids = params.pop("document_ids")
-        with self._database.get_session() as session:
-            documents = self._database.get_documents(
-                session, user=user, ids=document_ids
-            )
+        kwargs = chat_creation.model_dump()
+        input = kwargs.pop("input")
+        if input is None or isinstance(input, core.MetadataFilter):
+            metadata_filter = input
+            documents = None
+            prepared = True
+        else:
+            metadata_filter = None
+            with self._database.get_session() as session:
+                documents = self._database.get_documents(session, user=user, ids=input)
+            prepared = False
 
-        chat = schemas.Chat(documents=documents, **params)
+        chat = schemas.Chat(
+            metadata_filter=metadata_filter,
+            documents=documents,
+            prepared=prepared,
+            **kwargs,
+        )
 
         # Although we don't need the actual core.Chat here, this performs the input
         # validation.
@@ -229,7 +285,8 @@ class SchemaToCoreConverter:
     def source(self, source: schemas.Source) -> core.Source:
         return core.Source(
             id=source.id,
-            document=self.document(source.document),
+            document_id=source.document_id,
+            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -243,13 +300,20 @@ class SchemaToCoreConverter:
         )
 
     def chat(self, chat: schemas.Chat, *, user: str) -> core.Chat:
+        input: None | core.MetadataFilter | list[core.Document]
+        if chat.documents is None:
+            input = chat.metadata_filter
+        else:
+            input = [self.document(document) for document in chat.documents]
+
         core_chat = self._rag.chat(
             user=user,
             chat_id=chat.id,
             chat_name=chat.name,
-            documents=[self.document(document) for document in chat.documents],
+            input=input,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
+            corpus_name=chat.corpus_name,
             **chat.params,
         )
         core_chat._messages = [self.message(message) for message in chat.messages]
@@ -269,7 +333,8 @@ class CoreToSchemaConverter:
     def source(self, source: core.Source) -> schemas.Source:
         return schemas.Source(
             id=source.id,
-            document=self.document(source.document),
+            document_id=source.document_id,
+            document_name=source.document_name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -291,10 +356,19 @@ class CoreToSchemaConverter:
     def chat(self, chat: core.Chat) -> schemas.Chat:
         params = chat.params.copy()
         del params["user"]
+
+        if chat.documents is not None:
+            metadata_filter = None
+            documents = [self.document(document) for document in chat.documents]
+        else:
+            metadata_filter = chat.metadata_filter
+            documents = None
+
         return schemas.Chat(
             id=params.pop("chat_id"),
             name=params.pop("chat_name"),
-            documents=[self.document(document) for document in chat.documents],
+            metadata_filter=metadata_filter,
+            documents=documents,
             source_storage=chat.source_storage.display_name(),
             assistant=chat.assistant.display_name(),
             params=params,

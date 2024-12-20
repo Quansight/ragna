@@ -42,7 +42,7 @@ class RagnaDemoAssistant(Assistant):
         prompt, sources = (message := messages[-1]).content, message.sources
         sources_display = []
         for source in sources:
-            source_display = f"- {source.document.name}"
+            source_display = f"- {source.document_name}"
             if source.location:
                 source_display += f", {source.location}"
             source_display += f": {textwrap.shorten(source.content, width=100)}"

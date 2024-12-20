@@ -1,18 +1,20 @@
 from __future__ import annotations
 
+import collections.abc
 import contextlib
 import datetime
 import itertools
 import uuid
 from collections import defaultdict
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
     AsyncIterator,
     Awaitable,
     Callable,
+    Collection,
     Generic,
-    Iterable,
     Iterator,
     Optional,
     TypeVar,
@@ -28,6 +30,7 @@ from ragna._utils import as_async_iterator, as_awaitable, default_user
 
 from ._components import Assistant, Component, Message, MessageRole, SourceStorage
 from ._document import Document, LocalDocument
+from ._metadata_filter import MetadataFilter
 from ._utils import RagnaException, merge_models
 
 if TYPE_CHECKING:
@@ -134,26 +137,42 @@ class Rag(Generic[C]):
 
     def chat(
         self,
+        input: Union[
+            None,
+            MetadataFilter,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ] = None,
         *,
-        documents: Iterable[Any],
         source_storage: Union[SourceStorage, type[SourceStorage], str],
         assistant: Union[Assistant, type[Assistant], str],
+        corpus_name: str = "default",
         **params: Any,
     ) -> Chat:
         """Create a new [ragna.core.Chat][].
 
         Args:
-            documents: Documents to use. If any item is not a [ragna.core.Document][],
-                [ragna.core.LocalDocument.from_path][] is invoked on it.
-            source_storage: Source storage to use.
+            input: Subject of the chat. Available options:
+
+                - `None`: Use the full corpus of documents specified by `corpus_name`.
+                -  [ragna.core.MetadataFilter][]: Use the given subset of the corpus of
+                   documents specified by `corpus_name`.
+                - Single document or a collection of documents to use. If any item is
+                  not a [ragna.core.Document][], it is assumed to be a path and
+                  [ragna.core.LocalDocument.from_path][] is invoked on it.
+                source_storage: Source storage to use.
             assistant: Assistant to use.
+            corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
         return Chat(
             self,
-            documents=documents,
+            input=input,
             source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
             assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
+            corpus_name=corpus_name,
             **params,
         )
 
@@ -192,27 +211,43 @@ class Chat:
 
     Args:
         rag: The RAG workflow this chat is associated with.
-        documents: Documents to use. If any item is not a [ragna.core.Document][],
-            [ragna.core.LocalDocument.from_path][] is invoked on it.
+        input: Subject of the chat. Available options:
+
+            - `None`: Use the full corpus of documents specified by `corpus_name`.
+            -  [ragna.core.MetadataFilter][]: Use the given subset of the corpus of
+               documents specified by `corpus_name`.
+            - Single document or a collection of documents to use. If any item is
+              not a [ragna.core.Document][], it is assumed to be a path and
+              [ragna.core.LocalDocument.from_path][] is invoked on it.
         source_storage: Source storage to use.
         assistant: Assistant to use.
+        corpus_name: Corpus of documents to use.
         **params: Additional parameters passed to the source storage and assistant.
     """
 
     def __init__(
         self,
         rag: Rag,
+        input: Union[
+            None,
+            MetadataFilter,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ] = None,
         *,
-        documents: Iterable[Any],
         source_storage: SourceStorage,
         assistant: Assistant,
+        corpus_name: str = "default",
         **params: Any,
     ) -> None:
         self._rag = rag
 
-        self.documents = self._parse_documents(documents)
+        self.documents, self.metadata_filter, self._prepared = self._parse_input(input)
         self.source_storage = source_storage
         self.assistant = assistant
+        self.corpus_name = corpus_name
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -220,7 +255,6 @@ class Chat:
         self.params = params
         self._unpacked_params = self._unpack_chat_params(params)
 
-        self._prepared = False
         self._messages: list[Message] = []
 
     async def prepare(self) -> Message:
@@ -231,26 +265,20 @@ class Chat:
 
         Returns:
             Welcome message.
-
-        Raises:
-            ragna.core.RagnaException: If chat is already
-                [`prepare`][ragna.core.Chat.prepare]d.
         """
-        if self._prepared:
-            raise RagnaException(
-                "Chat is already prepared",
-                chat=self,
-                http_status_code=status.HTTP_400_BAD_REQUEST,
-                detail=RagnaException.EVENT,
-            )
-
-        await self._as_awaitable(self.source_storage.store, self.documents)
-        self._prepared = True
-
         welcome = Message(
             content="How can I help you with the documents?",
             role=MessageRole.SYSTEM,
         )
+
+        if self._prepared:
+            return welcome
+
+        await self._as_awaitable(
+            self.source_storage.store, self.corpus_name, self.documents
+        )
+        self._prepared = True
+
         self._messages.append(welcome)
         return welcome
 
@@ -269,12 +297,29 @@ class Chat:
                 "Chat is not prepared",
                 chat=self,
                 http_status_code=status.HTTP_400_BAD_REQUEST,
-                detail=RagnaException.EVENT,
+                http_detail=RagnaException.EVENT,
             )
 
         sources = await self._as_awaitable(
-            self.source_storage.retrieve, self.documents, prompt
+            self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
         )
+        if not sources:
+            event = "Unable to retrieve any sources."
+            if not self.documents and self.metadata_filter is None:
+                suggestion = "Did you forget to pass document(s) to the chat?"
+            elif self.metadata_filter:
+                suggestion = "Is your metadata_filter too strict?"
+            else:
+                suggestion = None
+
+            if suggestion is not None:
+                event = f"{event} {suggestion}"
+
+            raise RagnaException(
+                event,
+                http_status_code=status.HTTP_400_BAD_REQUEST,
+                http_detail=RagnaException.EVENT,
+            )
 
         question = Message(content=prompt, role=MessageRole.USER, sources=sources)
         self._messages.append(question)
@@ -293,15 +338,39 @@ class Chat:
 
         return answer
 
-    def _parse_documents(self, documents: Iterable[Any]) -> list[Document]:
-        return [
+    def _parse_input(
+        self,
+        input: Union[
+            MetadataFilter,
+            None,
+            Document,
+            str,
+            Path,
+            Collection[Union[Document, str, Path]],
+        ],
+    ) -> tuple[Optional[list[Document]], Optional[MetadataFilter], bool]:
+        if isinstance(input, MetadataFilter) or input is None:
+            return None, input, True
+
+        if isinstance(input, str) or not isinstance(input, collections.abc.Collection):
+            input = [input]
+
+        documents = [
             (
                 document
                 if isinstance(document, Document)
                 else LocalDocument.from_path(document)
             )
-            for document in documents
+            for document in input
         ]
+
+        metadata_filter = MetadataFilter.or_(
+            [
+                MetadataFilter.eq("document_id", str(document.id))
+                for document in documents
+            ]
+        )
+        return documents, metadata_filter, False
 
     def _unpack_chat_params(
         self, params: dict[str, Any]

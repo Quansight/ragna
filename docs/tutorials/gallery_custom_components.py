@@ -30,20 +30,23 @@ to incorporate custom components. This tutorial covers how to do that.
 
 import uuid
 
-from ragna.core import Document, Source, SourceStorage, Message
+from ragna.core import Document, Source, SourceStorage, Message, MetadataFilter
 
 
 class TutorialSourceStorage(SourceStorage):
     def __init__(self):
         self._storage: dict[uuid.UUID, list[Source]] = {}
 
-    def store(self, documents: list[Document], *, chat_id: uuid.UUID) -> None:
+    def store(
+        self, corpus_name: str, documents: list[Document], *, chat_id: uuid.UUID
+    ) -> None:
         print(f"Running {type(self).__name__}().store()")
 
         self._storage[chat_id] = [
             Source(
                 id=str(uuid.uuid4()),
-                document=document,
+                document_id=document.id,
+                document_name=document.name,
                 location="N/A",
                 content=(content := next(document.extract_pages()).text[:100]),
                 num_tokens=len(content.split()),
@@ -52,7 +55,12 @@ class TutorialSourceStorage(SourceStorage):
         ]
 
     def retrieve(
-        self, documents: list[Document], prompt: str, *, chat_id: uuid.UUID
+        self,
+        corpus_name: str,
+        metadata_filter: MetadataFilter,
+        prompt: str,
+        *,
+        chat_id: uuid.UUID,
     ) -> list[Source]:
         print(f"Running {type(self).__name__}().retrieve()")
         return self._storage[chat_id]
@@ -121,7 +129,7 @@ with open(document_path, "w") as file:
 from ragna import Rag
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=TutorialAssistant,
 )
@@ -206,7 +214,7 @@ response = client.post(
     "/api/chats",
     json={
         "name": "Tutorial Custom Components",
-        "document_ids": [document["id"]],
+        "input": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": TutorialAssistant.display_name(),
         "params": {},
@@ -275,7 +283,7 @@ class ElaborateTutorialAssistant(Assistant):
 # creating a chat.
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=ElaborateTutorialAssistant,
     my_required_parameter=3,
@@ -291,7 +299,7 @@ print(await chat.answer("Hello!"))
 
 try:
     Rag().chat(
-        documents=[document_path],
+        input=[document_path],
         source_storage=TutorialSourceStorage,
         assistant=ElaborateTutorialAssistant,
     )
@@ -302,7 +310,7 @@ except Exception as exc:
 
 try:
     Rag().chat(
-        documents=[document_path],
+        input=[document_path],
         source_storage=TutorialSourceStorage,
         assistant=ElaborateTutorialAssistant,
         my_required_parameter="bar",
@@ -333,7 +341,7 @@ response = client.post(
     "/api/chats",
     json={
         "name": "Tutorial Elaborate Custom Components",
-        "document_ids": [document["id"]],
+        "input": [document["id"]],
         "source_storage": TutorialSourceStorage.display_name(),
         "assistant": ElaborateTutorialAssistant.display_name(),
         "params": {
@@ -407,7 +415,7 @@ class AsyncAssistant(Assistant):
 
 
 chat = Rag().chat(
-    documents=[document_path],
+    input=[document_path],
     source_storage=TutorialSourceStorage,
     assistant=AsyncAssistant,
 )

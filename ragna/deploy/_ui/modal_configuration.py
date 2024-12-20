@@ -8,6 +8,10 @@ from ragna.deploy import _schemas as schemas
 
 from . import js
 from . import styles as ui
+from .components.metadata_filters_builder import NO_CORPUS_KEY, MetadataFiltersBuilder
+
+USE_CORPUS_LABEL = "Use existing corpus"
+USE_UPLOAD_LABEL = "Upload new documents"
 
 
 def get_default_chat_name(timezone_offset=None):
@@ -79,13 +83,24 @@ class ModalConfiguration(pn.viewable.Viewer):
 
     advanced_config_collapsed = param.Boolean(default=True)
 
-    def __init__(self, api_wrapper, **params):
+    corpus_or_upload = param.Selector(
+        objects=[USE_CORPUS_LABEL, USE_UPLOAD_LABEL], default=USE_CORPUS_LABEL
+    )
+
+    error = param.Boolean(default=False)
+
+    def __init__(
+        self, api_wrapper, components, corpus_names, corpus_metadata, **params
+    ):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
         self.api_wrapper = api_wrapper
 
+        self.corpus_names = corpus_names
+        self.corpus_metadata = corpus_metadata
+
         self.chat_name_input = pn.widgets.TextInput.from_param(
-            self.param.chat_name,
+            self.param.chat_name, name=""
         )
         self.document_uploader = pn.widgets.FileInput(
             multiple=True,
@@ -99,13 +114,19 @@ class ModalConfiguration(pn.viewable.Viewer):
         )
         self.cancel_button.on_click(self.cancel_button_callback)
 
+        self.corpus_name_input = pn.widgets.TextInput(
+            name="",
+            value="default",
+            placeholder="Enter name of corpus to upload data to (optional)",
+            width=335,
+        )
+
         self.start_chat_button = pn.widgets.Button(
             name="Start Conversation", button_type="primary", min_width=375
         )
         self.start_chat_button.on_click(self.did_click_on_start_chat_button)
 
         self.upload_files_label = pn.pane.HTML()
-        self.change_upload_files_label()
 
         self.upload_row = pn.Row(
             self.document_uploader,
@@ -115,10 +136,27 @@ class ModalConfiguration(pn.viewable.Viewer):
 
         self.got_timezone = False
 
+        self.corpus_or_upload_radiobutton = pn.widgets.RadioButtonGroup.from_param(
+            self.param.corpus_or_upload,
+            button_style="outline",
+            button_type="primary",
+        )
+
+        self.metadata_filter_rows_title = pn.pane.HTML(
+            "<b>Available Corpuses</b> (required)"
+        )
+        self.metadata_filter_rows = None
+
+        self.change_upload_files_label()
+
+        self.create_config(components)
+
     async def did_click_on_start_chat_button(self, event):
-        if not self.document_uploader.value:
-            self.change_upload_files_label("missing_file")
-        else:
+        if self.corpus_or_upload == USE_UPLOAD_LABEL:
+            if not self.document_uploader.value:
+                self.change_upload_files_label("missing_file")
+                return
+
             self.start_chat_button.disabled = True
             documents = self.api_wrapper._engine.register_documents(
                 user=self.api_wrapper._user,
@@ -146,16 +184,33 @@ class ModalConfiguration(pn.viewable.Viewer):
                     ],
                 )
 
-            await self.did_finish_upload(documents)
+            input = [str(document.id) for document in documents]
+            corpus_name = self.corpus_name_input.value
 
-    async def did_finish_upload(self, uploaded_documents):
-        # at this point, the UI has uploaded the files to the API.
-        # We can now start the chat
+        else:  # self.corpus_or_upload == USE_CORPUS_LABEL:
+            if not self.metadata_filter_rows:
+                return
+
+            if self.metadata_filter_rows.corpus_names_select.value == NO_CORPUS_KEY:
+                self.change_upload_files_label("no_corpus_available")
+                return
+
+            self.start_chat_button.disabled = True
+
+            input = self.metadata_filter_rows.construct_metadata_filters()
+            corpus_name = self.metadata_filter_rows.corpus_names_select.value
+
+        await self.did_finish_upload(input, corpus_name)
+
+    async def did_finish_upload(self, input, corpus_name=None):
+        if corpus_name is None:
+            corpus_name = self.corpus_name_input.value
 
         try:
             new_chat_id = await self.api_wrapper.start_and_prepare(
                 name=self.chat_name,
-                documents=uploaded_documents,
+                input=input,
+                corpus_name=corpus_name,
                 source_storage=self.config.source_storage_name,
                 assistant=self.config.assistant_name,
                 params=self.config.to_params_dict(),
@@ -166,23 +221,32 @@ class ModalConfiguration(pn.viewable.Viewer):
             if self.new_chat_ready_callback is not None:
                 await self.new_chat_ready_callback(new_chat_id)
 
-        except Exception:
+        except Exception as exc:
+            import traceback
+
+            print(
+                "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+            )
             self.change_upload_files_label("upload_error")
             self.document_uploader.loading = False
             self.start_chat_button.disabled = False
 
     def change_upload_files_label(self, mode="normal"):
+        self.error = False
         if mode == "upload_error":
             self.upload_files_label.object = "<b>Upload files</b> (required)<span style='color:red;padding-left:100px;'><b>An error occured. Please try again or contact your administrator.</b></span>"
+            self.error = True
         elif mode == "missing_file":
             self.upload_files_label.object = (
                 "<span style='color:red;'><b>Upload files</b> (required)</span>"
             )
+            self.error = True
+        elif mode == "no_corpus_available":
+            self.error = True
         else:
             self.upload_files_label.object = "<b>Upload files</b> (required)"
 
-    async def model_section(self):
-        # prevents re-rendering the section
+    def create_config(self, components):
         if self.config is None:
             # Retrieve the components from the API and build a config object
             components = self.api_wrapper.get_components()
@@ -206,6 +270,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             # This will trigger the update of the advanced_config_ui section
             self.config = config
 
+    def model_section(self):
         return pn.Row(
             pn.Column(
                 pn.pane.HTML("<b>Assistants</b>"),
@@ -223,11 +288,28 @@ class ModalConfiguration(pn.viewable.Viewer):
             ),
         )
 
-    @pn.depends("config", "config.assistant_name", "config.source_storage_name")
-    def advanced_config_ui(self):
-        if self.config is None:
-            return
+    def make_corpus_card(self):
+        disabled_assistant = self.config.is_assistant_disabled()
 
+        assistant_css_classes = [
+            "modal_configuration_int_slider",
+            *(["disabled"] if disabled_assistant else []),
+        ]
+        return pn.Card(
+            pn.widgets.IntSlider.from_param(
+                self.config.param.max_new_tokens,
+                bar_color=ui.MAIN_COLOR,
+                css_classes=assistant_css_classes,
+                disabled=disabled_assistant,
+                margin=(0, 0, 0, 11),
+            ),
+            collapsed=self.advanced_config_collapsed,
+            collapsible=True,
+            hide_header=True,
+            css_classes=["modal_configuration_advanced_card"],
+        )
+
+    def make_documents_card(self):
         disabled_assistant = self.config.is_assistant_disabled()
         disabled_source_storage = self.config.is_source_storage_disabled()
 
@@ -240,16 +322,9 @@ class ModalConfiguration(pn.viewable.Viewer):
             "modal_configuration_int_slider",
             *(["disabled"] if disabled_assistant else []),
         ]
-
-        card = pn.Card(
+        return pn.Card(
             pn.Row(
                 pn.Column(
-                    pn.pane.HTML(
-                        """<h2> Retrieval Method</h2>
-                            <span>Adjusting these settings requires re-embedding the documents, which may take some time.
-                            </span><br />
-                                         """
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.chunk_size,
                         name="Chunk Size",
@@ -266,16 +341,9 @@ class ModalConfiguration(pn.viewable.Viewer):
                         width_policy="max",
                         disabled=disabled_source_storage,
                     ),
-                    margin=(0, 20, 0, 0),
                     width_policy="max",
                 ),
                 pn.Column(
-                    pn.pane.HTML(
-                        """<h2> Model Configuration</h2>
-                            <span>Changing these parameters alters the output. This might affect accuracy and efficiency.
-                            </span><br />
-                                         """
-                    ),
                     pn.widgets.IntSlider.from_param(
                         self.config.param.max_context_tokens,
                         bar_color=ui.MAIN_COLOR,
@@ -292,18 +360,38 @@ class ModalConfiguration(pn.viewable.Viewer):
                     ),
                     width_policy="max",
                     height_policy="max",
-                    margin=(0, 20, 0, 0),
                     styles={
                         "border-left": "1px solid var(--neutral-stroke-divider-rest)"
                     },
                 ),
-                height=250,
+                width=ui.CONFIG_MODAL_WIDTH,
             ),
             collapsed=self.advanced_config_collapsed,
             collapsible=True,
             hide_header=True,
             css_classes=["modal_configuration_advanced_card"],
         )
+
+    def advanced_config(self, is_corpus=False):
+        card = self.make_corpus_card() if is_corpus else self.make_documents_card()
+
+        if is_corpus:
+            toggle_button = pn.widgets.Button(
+                name="Advanced Configuration of Assistants   ▶",
+                button_type="light",
+                css_classes=["modal_configuration_toggle_button"],
+            )
+        else:
+            toggle_button = pn.widgets.Button(
+                name="Advanced Configuration of Assistants and Source Storages   ▶",
+                button_type="light",
+                css_classes=["modal_configuration_toggle_button"],
+            )
+
+        if card.collapsed:
+            toggle_button.name = toggle_button.name.replace("▼", "▶")
+        else:
+            toggle_button.name = toggle_button.name.replace("▶", "▼")
 
         def toggle_card(event):
             if event.old < event.new:
@@ -321,42 +409,98 @@ class ModalConfiguration(pn.viewable.Viewer):
             else:
                 toggle_button.name = toggle_button.name.replace("▶", "▼")
 
-        toggle_button = pn.widgets.Button(
-            name="Advanced Configurations   ▶",
-            button_type="light",
-            css_classes=["modal_configuration_toggle_button"],
-        )
-
         toggle_button.on_click(toggle_card)
 
-        toggle_button.js_on_click(
-            args={"card": card},
-            code=js.JS_TOGGLE_CARD,
-        )
-
         return pn.Column(toggle_button, card)
+
+    @pn.depends(
+        "corpus_or_upload",
+        "config",
+        "config.assistant_name",
+        "config.source_storage_name",
+    )
+    def corpus_or_upload_config(self):
+        if self.corpus_or_upload == USE_CORPUS_LABEL:
+            return self.advanced_config(is_corpus=True)
+        else:
+            return self.advanced_config(is_corpus=False)
+
+    @pn.depends("advanced_config_collapsed", watch=True)
+    def shrink_upload_container_height(self):
+        if self.advanced_config_collapsed:
+            self.document_uploader.height_upload_container = ui.FILE_CONTAINER_HEIGHT
+        else:
+            self.document_uploader.height_upload_container = (
+                ui.FILE_CONTAINER_HEIGHT_REDUCED
+            )
+
+    @pn.depends("error", watch=True)
+    def add_error_message(self):
+        if self.error:
+            text = "<b>Available Corpuses</b> (required)<span style='color:red;padding-left:100px;'><b>There are no available corpuses to chat with.</b></span>"
+            self.metadata_filter_rows_title.object = text
+        else:
+            self.metadata_filter_rows_title.object = (
+                "<b>Available Corpuses</b> (required)"
+            )
+
+    @pn.depends(
+        "corpus_or_upload",
+        "config.source_storage_name",
+    )
+    def corpus_or_upload_row(self):
+        if self.corpus_or_upload == USE_CORPUS_LABEL:
+            if self.config.source_storage_name in self.corpus_names:
+                corpus_names = self.corpus_names[self.config.source_storage_name]
+            else:
+                corpus_names = []
+
+            if self.config.source_storage_name in self.corpus_metadata:
+                corpus_metadata = self.corpus_metadata[self.config.source_storage_name]
+            else:
+                corpus_metadata = {}
+
+            self.metadata_filter_rows = MetadataFiltersBuilder(
+                corpus_names=corpus_names, corpus_metadata=corpus_metadata
+            )
+
+            if len(corpus_names) > 0:
+                data = pn.Column(
+                    self.metadata_filter_rows_title, self.metadata_filter_rows
+                )
+            else:
+                data = pn.Column(self.metadata_filter_rows)
+
+            self.error = False
+            return data
+
+        else:
+            return pn.Column(
+                pn.pane.HTML("<b>Corpus Name</b>"),
+                self.corpus_name_input,
+                self.upload_files_label,
+                self.upload_row,
+            )
 
     def __panel__(self):
         return pn.Column(
             pn.pane.HTML(
-                f"""<h2>Start a new chat</h2>
-                         Let's set up the configurations for your new chat !<br />
-                         <script>{js.reset_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_MIN_HEIGHT)}</script>
+                f"""<h2 style="margin-bottom: 5px;">Start a new chat</h2>
+                         <script>{js.set_modal_size(ui.CONFIG_MODAL_WIDTH, ui.CONFIG_MODAL_HEIGHT)}</script>
                          """,
             ),
+            self.corpus_or_upload_radiobutton,
             ui.divider(),
             pn.pane.HTML("<b>Chat name</b>"),
             self.chat_name_input,
             ui.divider(),
             self.model_section,
             ui.divider(),
-            self.advanced_config_ui,
+            self.corpus_or_upload_config,
             ui.divider(),
-            self.upload_files_label,
-            self.upload_row,
+            self.corpus_or_upload_row,
             pn.Row(self.cancel_button, self.start_chat_button),
-            min_height=ui.CONFIG_MODAL_MIN_HEIGHT,
+            min_height=ui.CONFIG_MODAL_HEIGHT,
             min_width=ui.CONFIG_MODAL_WIDTH,
-            sizing_mode="stretch_both",
-            height_policy="max",
+            styles={"overflow-y": "hidden"},
         )

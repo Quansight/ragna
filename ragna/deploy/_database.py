@@ -7,7 +7,7 @@ from urllib.parse import urlsplit
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, joinedload, sessionmaker
 
-from ragna.core import RagnaException
+from ragna.core import MetadataFilter, RagnaException
 
 from . import _orm as orm
 from . import _schemas as schemas
@@ -157,18 +157,59 @@ class Database:
         ]
 
     def add_chat(self, session: Session, *, user: str, chat: schemas.Chat) -> None:
-        orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_orm_user_by_name(session, name=user).id
+        user_id = self._get_orm_user_by_name(session, name=user).id
+
+        if chat.metadata_filter is not None:
+            metadata_filter = orm.MetadataFilter(
+                id=uuid.uuid4(),
+                user_id=user_id,
+                data=chat.metadata_filter.to_primitive(),
+            )
+            session.add(metadata_filter)
+            session.commit()
+            session.refresh(metadata_filter)
+        else:
+            metadata_filter = None
+
+        if chat.documents is not None:
+            document_ids = {document.id for document in chat.documents}
+            documents = (
+                session.execute(
+                    select(orm.Document).where(orm.Document.id.in_(document_ids))
+                )
+                .scalars()
+                .all()
+            )
+            if len(documents) != len(document_ids):
+                raise RagnaException(
+                    str(set(document_ids) - {document.id for document in documents})
+                )
+        else:
+            documents = []
+
+        session.add(
+            orm.Chat(
+                id=chat.id,
+                user_id=user_id,
+                name=chat.name,
+                metadata_filter=metadata_filter,
+                documents=documents,
+                source_storage=chat.source_storage,
+                assistant=chat.assistant,
+                corpus_name=chat.corpus_name,
+                params=chat.params,
+                prepared=chat.prepared,
+            )
         )
-        # We need to merge and not add here, because the documents are already in the DB
-        session.merge(orm_chat)
         session.commit()
 
     def _select_chat(self, *, eager: bool = False) -> Any:
         selector = select(orm.Chat)
         if eager:
             selector = selector.options(  # type: ignore[attr-defined]
-                joinedload(orm.Chat.messages).joinedload(orm.Message.sources),
+                joinedload(orm.Chat.messages)
+                .joinedload(orm.Message.sources)
+                .joinedload(orm.Source.document),
                 joinedload(orm.Chat.documents),
             )
         return selector
@@ -213,8 +254,21 @@ class Database:
         )
 
     def update_chat(self, session: Session, user: str, chat: schemas.Chat) -> None:
+        user_id = self._get_orm_user_by_name(session, name=user).id
+
+        # We need to load the metadata filter here, because it only has an ID inside the
+        # DB and thus cannot be retrieved by the converter
+        if chat.metadata_filter is not None:
+            clause = select(orm.MetadataFilter).where(
+                (orm.MetadataFilter.user_id == user_id)
+                & (orm.MetadataFilter.chat_id == chat.id)
+            )
+            orm_metadata_filter = session.execute(clause).scalar_one()
+        else:
+            orm_metadata_filter = None
+
         orm_chat = self._to_orm.chat(
-            chat, user_id=self._get_orm_user_by_name(session, name=user).id
+            chat, user_id=user_id, orm_metadata_filter=orm_metadata_filter
         )
         session.merge(orm_chat)
         session.commit()
@@ -239,7 +293,7 @@ class SchemaToOrmConverter:
     def source(self, source: schemas.Source) -> orm.Source:
         return orm.Source(
             id=source.id,
-            document_id=source.document.id,
+            document_id=source.document_id,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -260,14 +314,21 @@ class SchemaToOrmConverter:
         chat: schemas.Chat,
         *,
         user_id: uuid.UUID,
+        orm_metadata_filter: orm.MetadataFilter | None,
     ) -> orm.Chat:
+        if chat.documents is not None:
+            documents = [
+                self.document(document, user_id=user_id) for document in chat.documents
+            ]
+        else:
+            documents = []
+
         return orm.Chat(
             id=chat.id,
             user_id=user_id,
             name=chat.name,
-            documents=[
-                self.document(document, user_id=user_id) for document in chat.documents
-            ],
+            documents=documents,
+            metadata_filter=orm_metadata_filter,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
             params=chat.params,
@@ -299,7 +360,8 @@ class OrmToSchemaConverter:
     def source(self, source: orm.Source) -> schemas.Source:
         return schemas.Source(
             id=source.id,
-            document=self.document(source.document),
+            document_id=(document := self.document(source.document)).id,
+            document_name=document.name,
             location=source.location,
             content=source.content,
             num_tokens=source.num_tokens,
@@ -315,12 +377,24 @@ class OrmToSchemaConverter:
         )
 
     def chat(self, chat: orm.Chat) -> schemas.Chat:
+        if chat.metadata_filter is not None:
+            metadata_filter = MetadataFilter.from_primitive(chat.metadata_filter.data)
+            documents = None
+        elif chat.documents:
+            metadata_filter = None
+            documents = [self.document(document) for document in chat.documents]
+        else:
+            metadata_filter = None
+            documents = None
+
         return schemas.Chat(
             id=chat.id,
             name=chat.name,
-            documents=[self.document(document) for document in chat.documents],
+            metadata_filter=metadata_filter,
+            documents=documents,
             source_storage=chat.source_storage,
             assistant=chat.assistant,
+            corpus_name=chat.corpus_name,
             params=chat.params,
             messages=[self.message(message) for message in chat.messages],
             prepared=chat.prepared,

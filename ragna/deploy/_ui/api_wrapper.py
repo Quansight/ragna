@@ -15,6 +15,12 @@ class ApiWrapper(param.Parameterized):
         self._user = pn.state.user
         self._engine = engine
 
+    async def get_corpus_names(self):
+        return await self._engine.get_corpuses()
+
+    async def get_corpus_metadata(self):
+        return await self._engine.get_corpus_metadata()
+
     async def get_chats(self):
         json_data = [
             chat.model_dump(mode="json")
@@ -34,15 +40,16 @@ class ApiWrapper(param.Parameterized):
         return self._engine.get_components()
 
     async def start_and_prepare(
-        self, name, documents, source_storage, assistant, params
+        self, name, input, corpus_name, source_storage, assistant, params
     ):
         chat = self._engine.create_chat(
             user=self._user,
             chat_creation=schemas.ChatCreation(
                 name=name,
-                document_ids=[document.id for document in documents],
+                input=input,
                 source_storage=source_storage,
                 assistant=assistant,
+                corpus_name=corpus_name,
                 params=params,
             ),
         )

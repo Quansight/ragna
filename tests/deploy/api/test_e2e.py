@@ -1,5 +1,6 @@
 import json
 
+import httpx
 import pytest
 
 from ragna.deploy import Config
@@ -10,7 +11,8 @@ from tests.utils import skip_on_windows
 @skip_on_windows
 @pytest.mark.parametrize("multiple_answer_chunks", [True, False])
 @pytest.mark.parametrize("stream_answer", [True, False])
-def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
+@pytest.mark.parametrize("corpus_name", ["default", "test-corpus"])
+def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer, corpus_name):
     config = Config(local_root=tmp_local_root, assistants=[TestAssistant])
 
     document_root = config.local_root / "documents"
@@ -53,19 +55,28 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
 
         chat_creation = {
             "name": "test-chat",
-            "document_ids": [document["id"]],
+            "input": [document["id"]],
             "source_storage": source_storage,
             "assistant": assistant,
+            "corpus_name": corpus_name,
             "params": {"multiple_answer_chunks": multiple_answer_chunks},
         }
         chat = client.post("/api/chats", json=chat_creation).raise_for_status().json()
         for field in ["name", "source_storage", "assistant", "params"]:
             assert chat[field] == chat_creation[field]
         assert [document["id"] for document in chat["documents"]] == chat_creation[
-            "document_ids"
+            "input"
         ]
         assert not chat["prepared"]
         assert chat["messages"] == []
+
+        corpuses = client.get("/api/corpuses").raise_for_status().json()
+        assert corpuses == {source_storage: []}
+
+        corpuses_metadata = (
+            client.get("/api/corpuses/metadata").raise_for_status().json()
+        )
+        assert corpuses_metadata == {source_storage: {}}
 
         assert client.get("/api/chats").raise_for_status().json() == [chat]
         assert client.get(f"/api/chats/{chat['id']}").raise_for_status().json() == chat
@@ -80,6 +91,50 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
         assert chat["prepared"]
         assert len(chat["messages"]) == 1
         assert chat["messages"][-1] == message
+
+        corpuses = client.get("/api/corpuses").raise_for_status().json()
+        assert corpuses == {source_storage: [corpus_name]}
+
+        corpuses = (
+            client.get("/api/corpuses", params={"source_storage": source_storage})
+            .raise_for_status()
+            .json()
+        )
+        assert corpuses == {source_storage: [corpus_name]}
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/api/corpuses", params={"source_storage": "unknown_source_storage"}
+            ).raise_for_status()
+
+        corpuses_metadata = (
+            client.get("/api/corpuses/metadata").raise_for_status().json()
+        )
+        assert corpus_name in corpuses_metadata[source_storage]
+        metadata_keys = corpuses_metadata[source_storage][corpus_name].keys()
+        assert list(metadata_keys) == ["document_id", "document_name", "path"]
+        for key in metadata_keys:
+            assert corpuses_metadata[source_storage][corpus_name][key][0] == "str"
+
+        corpuses_metadata = (
+            client.get(
+                "/api/corpuses/metadata",
+                params={"source_storage": source_storage, corpus_name: corpus_name},
+            )
+            .raise_for_status()
+            .json()
+        )
+        assert corpus_name in corpuses_metadata[source_storage]
+        metadata_keys = corpuses_metadata[source_storage][corpus_name].keys()
+        assert list(metadata_keys) == ["document_id", "document_name", "path"]
+        for key in metadata_keys:
+            assert corpuses_metadata[source_storage][corpus_name][key][0] == "str"
+
+        with pytest.raises(httpx.HTTPStatusError, match="422 Unprocessable Entity"):
+            client.get(
+                "/api/corpuses/metadata",
+                params={"source_storage": "unknown_source_storage"},
+            ).raise_for_status()
 
         prompt = "?"
         if stream_answer:
@@ -100,7 +155,7 @@ def test_e2e(tmp_local_root, multiple_answer_chunks, stream_answer):
             )
 
         assert message["role"] == "assistant"
-        assert {source["document"]["name"] for source in message["sources"]} == {
+        assert {source["document_name"] for source in message["sources"]} == {
             document_path.name
         }
 

@@ -145,7 +145,7 @@ response = client.post(
     "/api/chats",
     json={
         "name": "Tutorial REST API",
-        "document_ids": [document["id"] for document in documents],
+        "input": [document["id"] for document in documents],
         "source_storage": source_storage,
         "assistant": assistant,
     },

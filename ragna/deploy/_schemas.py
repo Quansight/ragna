@@ -89,7 +89,8 @@ class Document(BaseModel):
 class Source(BaseModel):
     # See orm.Source on why this is not a UUID
     id: str
-    document: Document
+    document_id: uuid.UUID
+    document_name: str
     location: str
     content: str
     num_tokens: int
@@ -105,18 +106,21 @@ class Message(BaseModel):
 
 class ChatCreation(BaseModel):
     name: str
-    document_ids: list[uuid.UUID]
+    input: None | ragna.core.MetadataFilter | list[uuid.UUID] = None
     source_storage: str
     assistant: str
+    corpus_name: str = "default"
     params: dict[str, Any] = Field(default_factory=dict)
 
 
 class Chat(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
-    documents: list[Document]
+    metadata_filter: ragna.core.MetadataFilter | None
+    documents: list[Document] | None
     source_storage: str
     assistant: str
+    corpus_name: str = "default"
     params: dict[str, Any]
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False

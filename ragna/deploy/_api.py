@@ -1,5 +1,5 @@
 import uuid
-from typing import Annotated, AsyncIterator
+from typing import Annotated, Any, AsyncIterator
 
 import pydantic
 from fastapi import APIRouter, Body, UploadFile
@@ -11,7 +11,7 @@ from ._engine import Engine
 
 
 def make_router(engine: Engine) -> APIRouter:
-    router = APIRouter(tags=["API"])
+    router = APIRouter(tags=["API"])  # , dependencies=[UserDependency]
 
     @router.post("/documents")
     def register_documents(
@@ -41,8 +41,22 @@ def make_router(engine: Engine) -> APIRouter:
         )
 
     @router.get("/components")
-    def get_components(_: UserDependency) -> schemas.Components:
+    def get_components() -> schemas.Components:
         return engine.get_components()
+
+    @router.get("/corpuses")
+    async def get_corpuses(source_storage: str | None = None) -> dict[str, list[str]]:
+        return await engine.get_corpuses(source_storage)
+
+    @router.get("/corpuses/metadata")
+    async def get_corpus_metadata(
+        _: UserDependency,
+        source_storage: str | None = None,
+        corpus_name: str | None = None,
+    ) -> dict[str, dict[str, dict[str, tuple[str, list[Any]]]]]:
+        return await engine.get_corpus_metadata(
+            source_storage=source_storage, corpus_name=corpus_name
+        )
 
     @router.post("/chats")
     async def create_chat(

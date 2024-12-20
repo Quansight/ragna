@@ -9,6 +9,7 @@ import ragna
 from ragna.deploy._core import make_app
 
 from .config import ConfigOption, check_config, init_config
+from .corpus import app as corpus_app
 
 app = typer.Typer(
     name="Ragna",
@@ -17,6 +18,7 @@ app = typer.Typer(
     add_completion=False,
     pretty_exceptions_enable=False,
 )
+app.add_typer(corpus_app)
 
 
 def version_callback(value: bool) -> None:

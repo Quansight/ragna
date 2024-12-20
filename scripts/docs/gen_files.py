@@ -47,7 +47,7 @@ def deploy_reference():
     app = make_deploy_app(
         config=Config(),
         api=True,
-        ui=True,
+        ui=False,
         ignore_unavailable_components=False,
         open_browser=False,
     )

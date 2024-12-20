@@ -1,22 +1,10 @@
 import dataclasses
+import hashlib
 import itertools
 from collections import deque
-from typing import (
-    Deque,
-    Iterable,
-    Iterator,
-    Optional,
-    TypeVar,
-    cast,
-)
+from typing import Deque, Iterable, Iterator, Optional, TypeVar, cast
 
-from ragna.core import (
-    PackageRequirement,
-    Page,
-    Requirement,
-    Source,
-    SourceStorage,
-)
+from ragna.core import PackageRequirement, Page, Requirement, Source, SourceStorage
 
 T = TypeVar("T")
 
@@ -58,19 +46,23 @@ class VectorDatabaseSourceStorage(SourceStorage):
             # to manage and mostly not even used by the vector DB. Chroma provides a
             # wrapper around a compiled embedding function that has only minimal
             # requirements. We use this as base for all of our Vector DBs.
-            PackageRequirement("chromadb>=0.4.13"),
+            PackageRequirement("chromadb<=0.5.11,>=0.4.13"),
             PackageRequirement("tiktoken"),
         ]
 
     def __init__(self) -> None:
-        import chromadb.api
+        import chromadb.api.types
         import chromadb.utils.embedding_functions
         import tiktoken
 
         self._embedding_function = cast(
             chromadb.api.types.EmbeddingFunction,
-            chromadb.utils.embedding_functions.DefaultEmbeddingFunction(),
+            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),  # type: ignore[attr-defined]
         )
+        self._embedding_name = self._embedding_function.MODEL_NAME  # type: ignore[attr-defined]
+        self._embedding_id = hashlib.md5(
+            self._embedding_name.encode(), usedforsecurity=False
+        ).hexdigest()
         # https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2#all-minilm-l6-v2
         self._embedding_dimensions = 384
         self._tokenizer = tiktoken.get_encoding("cl100k_base")

@@ -49,7 +49,11 @@ css_modifiers = {
         pn.widgets.IntSlider,
         pn.layout.Card,
         pn.Row,
+        pn.Column,
         pn.widgets.Button,
+        pn.widgets.ButtonIcon,
+        pn.widgets.Select,
+        pn.widgets.MultiChoice,
         pn.widgets.FileInput,
     ],
 }
@@ -97,10 +101,11 @@ def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> st
 
 MAIN_COLOR = "#DF5538"  # "rgba(223, 85, 56, 1)"
 
-# set modal height
-CONFIG_MODAL_MIN_HEIGHT = 610
-CONFIG_MODAL_MAX_HEIGHT = 850
+CONFIG_MODAL_HEIGHT = 680
 CONFIG_MODAL_WIDTH = 800
+
+FILE_CONTAINER_HEIGHT = "140px"
+FILE_CONTAINER_HEIGHT_REDUCED = "75px"
 
 
 CSS_VARS = css(

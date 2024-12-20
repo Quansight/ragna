@@ -72,9 +72,11 @@ def test_unknown_component(tmp_local_root):
             "/api/chats",
             json={
                 "name": "test-chat",
-                "document_ids": [document["id"]],
+                "input": [document["id"]],
                 "source_storage": "unknown_source_storage",
                 "assistant": "unknown_assistant",
+                "corpus_name": "test-corpus",
+                "params": {},
             },
         )
 
