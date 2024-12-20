@@ -51,7 +51,7 @@ Repository = "https://github.com/Quansight/ragna"
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
-    "chromadb>=0.4.13",
+    "chromadb<=0.5.11,>=0.4.13",
     "httpx_sse",
     "ijson",
     "lancedb>=0.2",
