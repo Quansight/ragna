@@ -55,7 +55,7 @@ class FilterRow(pn.viewable.Viewer):
             self.param.multi_value,
             name="",
             css_classes=["metadata-filter-value"],
-            min_height=60,
+            option_limit=3,
             delete_button=False,
         )
 
@@ -94,11 +94,19 @@ class FilterRow(pn.viewable.Viewer):
     def construct_metadata_filter(self):
         if self.key_select.value == NO_FILTER_KEY:
             return None
-        return MetadataFilter(
-            MetadataOperator[self.operator_select.value],
-            self.key_select.value,
-            self.value_select.value,
-        )
+
+        if self.operator_select.value in ["IN", "NOT_IN"]:
+            return MetadataFilter(
+                MetadataOperator[self.operator_select.value],
+                self.key_select.value,
+                self.multi_value_select.value,
+            )
+        else:
+            return MetadataFilter(
+                MetadataOperator[self.operator_select.value],
+                self.key_select.value,
+                self.value_select.value,
+            )
 
     @param.depends("operator")
     def display(self):
@@ -109,6 +117,7 @@ class FilterRow(pn.viewable.Viewer):
                 self.operator_select,
                 self.multi_value_select,
                 self.delete_button,
+                css_classes=["metadata-filter-row"],
             )
         else:
             return pn.Row(
@@ -116,6 +125,7 @@ class FilterRow(pn.viewable.Viewer):
                 self.operator_select,
                 self.value_select,
                 self.delete_button,
+                css_classes=["metadata-filter-row"],
             )
 
     def __panel__(self):
@@ -193,6 +203,7 @@ class MetadataFiltersBuilder(pn.viewable.Viewer):
 
         if not metadata_filters:
             return None
+
         return MetadataFilter.and_(metadata_filters).to_primitive()
 
     def __panel__(self):
