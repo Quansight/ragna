@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import uuid
 from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Optional, cast
@@ -43,7 +44,14 @@ class QdrantDB(VectorDatabaseSourceStorage):
 
         from qdrant_client import QdrantClient
 
-        self._client = QdrantClient(path=ragna.local_root() / "qdrant")
+        url = os.getenv("QDRANT_URL")
+        api_key = os.getenv("QDRANT_API_KEY")
+        path = path = ragna.local_root() / "qdrant"
+
+        # Cannot pass both url and path
+        self._client = (
+            QdrantClient(url=url, api_key=api_key) if url else QdrantClient(path=path)
+        )
 
     def list_corpuses(self) -> list[str]:
         return [c.name for c in self._client.get_collections().collections]
@@ -216,7 +224,11 @@ class QdrantDB(VectorDatabaseSourceStorage):
 
         query_vector = self._embedding_function([prompt])[0]
 
-        search_filter = self._translate_metadata_filter(metadata_filter)
+        search_filter = (
+            self._translate_metadata_filter(metadata_filter)
+            if metadata_filter
+            else None
+        )
         if isinstance(search_filter, models.FieldCondition):
             search_filter = models.Filter(must=[search_filter])
 
