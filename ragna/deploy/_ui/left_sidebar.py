@@ -105,7 +105,7 @@ class LeftSidebar(pn.viewable.Viewer):
             + self.chat_buttons
             + [
                 pn.layout.VSpacer(),
-                pn.pane.HTML(f"user: {self.api_wrapper._user}"),
+                pn.pane.HTML(f"user: {pn.state.user}"),
                 pn.pane.HTML(f"version: {ragna_version}"),
                 # self.footer()
             ]

@@ -159,7 +159,7 @@ class ModalConfiguration(pn.viewable.Viewer):
 
             self.start_chat_button.disabled = True
             documents = self.api_wrapper._engine.register_documents(
-                user=self.api_wrapper._user,
+                user=pn.state.user,
                 document_registrations=[
                     schemas.DocumentRegistration(name=name)
                     for name in self.document_uploader.filename
@@ -175,7 +175,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                     return content_stream()
 
                 await self.api_wrapper._engine.store_documents(
-                    user=self.api_wrapper._user,
+                    user=pn.state.user,
                     ids_and_streams=[
                         (document.id, make_content_stream(data))
                         for document, data in zip(
