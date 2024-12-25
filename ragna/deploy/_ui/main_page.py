@@ -31,7 +31,9 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             lambda event, title, content: self.show_right_sidebar(title, content)
         )
 
-        self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
+        self.left_sidebar = LeftSidebar(
+            api_wrapper=self.api_wrapper, engine=self._engine
+        )
         self.left_sidebar.on_click_chat = self.on_click_chat
         self.left_sidebar.on_click_new_chat = self.open_modal
 
