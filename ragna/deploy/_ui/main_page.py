@@ -77,6 +77,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
         self.modal = ModalConfiguration(
             api_wrapper=self.api_wrapper,
+            engine=self._engine,
             components=self.components,
             corpus_metadata=self.corpus_metadata,
             corpus_names=self.corpus_names,

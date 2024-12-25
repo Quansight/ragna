@@ -90,11 +90,12 @@ class ModalConfiguration(pn.viewable.Viewer):
     error = param.Boolean(default=False)
 
     def __init__(
-        self, api_wrapper, components, corpus_names, corpus_metadata, **params
+        self, api_wrapper, engine, components, corpus_names, corpus_metadata, **params
     ):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
         self.api_wrapper = api_wrapper
+        self._engine = engine
 
         self.corpus_names = corpus_names
         self.corpus_metadata = corpus_metadata
