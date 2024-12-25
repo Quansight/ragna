@@ -71,7 +71,9 @@ class App(param.Parameterized):
         api_wrapper = ApiWrapper(self._engine)
 
         template = self.get_template()
-        main_page = MainPage(api_wrapper=api_wrapper, template=template)
+        main_page = MainPage(
+            api_wrapper=api_wrapper, engine=self._engine, template=template
+        )
         template.main.append(main_page)
         return template
 

@@ -13,9 +13,10 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
     chats = param.List(default=None)
 
-    def __init__(self, api_wrapper, template):
+    def __init__(self, api_wrapper, engine, template):
         super().__init__()
         self.api_wrapper = api_wrapper
+        self._engine = engine
         self.template = template
 
         self.components = None
@@ -23,7 +24,9 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.corpus_names = None
 
         self.modal = None
-        self.central_view = CentralView(api_wrapper=self.api_wrapper)
+        self.central_view = CentralView(
+            api_wrapper=self.api_wrapper, engine=self._engine
+        )
         self.central_view.on_click_chat_info = (
             lambda event, title, content: self.show_right_sidebar(title, content)
         )

@@ -167,12 +167,13 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, api_wrapper, engine, **params):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
         self.user = ""
         self.api_wrapper = api_wrapper
+        self._engine = engine
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
             name="",
