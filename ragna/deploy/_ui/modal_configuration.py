@@ -106,7 +106,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.document_uploader = pn.widgets.FileInput(
             multiple=True,
             css_classes=["file-input"],
-            accept=",".join(self.api_wrapper.get_components().documents),
+            accept=",".join(self._engine.get_components().documents),
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
@@ -159,7 +159,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                 return
 
             self.start_chat_button.disabled = True
-            documents = self.api_wrapper._engine.register_documents(
+            documents = self._engine.register_documents(
                 user=pn.state.user,
                 document_registrations=[
                     schemas.DocumentRegistration(name=name)
@@ -167,7 +167,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                 ],
             )
 
-            if self.api_wrapper._engine.supports_store_documents:
+            if self._engine.supports_store_documents:
 
                 def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
                     async def content_stream() -> AsyncIterator[bytes]:
@@ -175,7 +175,7 @@ class ModalConfiguration(pn.viewable.Viewer):
 
                     return content_stream()
 
-                await self.api_wrapper._engine.store_documents(
+                await self._engine.store_documents(
                     user=pn.state.user,
                     ids_and_streams=[
                         (document.id, make_content_stream(data))
@@ -208,7 +208,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             corpus_name = self.corpus_name_input.value
 
         try:
-            new_chat_id = await self.api_wrapper.start_and_prepare(
+            new_chat_id = await self._engine.start_and_prepare(
                 name=self.chat_name,
                 input=input,
                 corpus_name=corpus_name,
@@ -250,7 +250,7 @@ class ModalConfiguration(pn.viewable.Viewer):
     def create_config(self, components):
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = self.api_wrapper.get_components()
+            components = self._engine.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
