@@ -13,9 +13,8 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
     chats = param.List(default=None)
 
-    def __init__(self, api_wrapper, engine, template):
+    def __init__(self, engine, template):
         super().__init__()
-        self.api_wrapper = api_wrapper
         self._engine = engine
         self.template = template
 
@@ -24,16 +23,12 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.corpus_names = None
 
         self.modal = None
-        self.central_view = CentralView(
-            api_wrapper=self.api_wrapper, engine=self._engine
-        )
+        self.central_view = CentralView(engine=self._engine)
         self.central_view.on_click_chat_info = (
             lambda event, title, content: self.show_right_sidebar(title, content)
         )
 
-        self.left_sidebar = LeftSidebar(
-            api_wrapper=self.api_wrapper, engine=self._engine
-        )
+        self.left_sidebar = LeftSidebar(engine=self._engine)
         self.left_sidebar.on_click_chat = self.on_click_chat
         self.left_sidebar.on_click_new_chat = self.open_modal
 
@@ -78,7 +73,6 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             await self.refresh_data()
 
         self.modal = ModalConfiguration(
-            api_wrapper=self.api_wrapper,
             engine=self._engine,
             components=self.components,
             corpus_metadata=self.corpus_metadata,
