@@ -311,7 +311,9 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer_stream = self.api_wrapper.answer(self.current_chat["id"], content)
+            answer_stream = self._engine.answer_improved(
+                self.current_chat["id"], content
+            )
             answer = await anext(answer_stream)
 
             message = RagnaChatMessage(

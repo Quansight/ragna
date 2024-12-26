@@ -282,6 +282,12 @@ class Engine:
                 session, chat=self._to_schema.chat(core_chat), user=user
             )
 
+    async def answer_improved(self, chat_id, prompt):
+        async for message in self.answer_stream(
+            user=self._user, chat_id=uuid.UUID(chat_id), prompt=prompt
+        ):
+            yield self._improve_message(message.model_dump(mode="json"))
+
     def delete_chat(self, *, user: str, id: uuid.UUID) -> None:
         with self._database.get_session() as session:
             self._database.delete_chat(session, user=user, id=id)
