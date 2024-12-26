@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Any, AsyncIterator, Optional, cast
 
+import panel as pn
 from emoji import emojize
 from fastapi import status as http_status_code
 
@@ -238,7 +239,7 @@ class Engine:
     # The interface they provide is open for discussion
     async def get_improved_chats(self):
         json_data = [
-            chat.model_dump(mode="json") for chat in self.get_chats(user=self._user)
+            chat.model_dump(mode="json") for chat in self.get_chats(user=pn.state.user)
         ]
         for chat in json_data:
             chat["messages"] = [self._improve_message(msg) for msg in chat["messages"]]
@@ -284,7 +285,7 @@ class Engine:
 
     async def answer_improved(self, chat_id, prompt):
         async for message in self.answer_stream(
-            user=self._user, chat_id=uuid.UUID(chat_id), prompt=prompt
+            user=pn.state.user, chat_id=uuid.UUID(chat_id), prompt=prompt
         ):
             yield self._improve_message(message.model_dump(mode="json"))
 
@@ -403,7 +404,7 @@ class CoreToSchemaConverter:
         self, name, input, corpus_name, source_storage, assistant, params
     ):
         chat = self.create_chat(
-            user=self._user,
+            user=pn.state.user,
             chat_creation=schemas.ChatCreation(
                 name=name,
                 input=input,
@@ -413,5 +414,5 @@ class CoreToSchemaConverter:
                 params=params,
             ),
         )
-        await self._engine.prepare_chat(user=self._user, id=chat.id)
+        await self._engine.prepare_chat(user=pn.state.user, id=chat.id)
         return str(chat.id)
