@@ -46,10 +46,10 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         )
 
     async def refresh_data(self):
-        self.chats = await self.api_wrapper.get_chats()
-        self.components = self.api_wrapper.get_components()
-        self.corpus_metadata = await self.api_wrapper.get_corpus_metadata()
-        self.corpus_names = await self.api_wrapper.get_corpus_names()
+        self.chats = await self._engine.get_improved_chats()
+        self.components = self._engine.get_components()
+        self.corpus_metadata = await self._engine.get_corpus_metadata()
+        self.corpus_names = await self._engine.get_corpuses()
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
