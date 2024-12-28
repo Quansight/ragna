@@ -162,18 +162,11 @@ class QdrantDB(VectorDatabaseSourceStorage):
         elif operator == MetadataOperator.GE:
             return models.FieldCondition(key=key, range=models.Range(gte=value))
         elif operator == MetadataOperator.IN:
-            return models.Filter(
-                should=[
-                    models.FieldCondition(key=key, match=models.MatchValue(value=item))
-                    for item in value
-                ]
-            )
-        elif operator == MetadataOperator.NOT_IN:
-            return models.Filter(
-                must_not=[
-                    models.FieldCondition(key=key, match=models.MatchValue(value=item))
-                    for item in value
-                ]
+            return models.FieldCondition(key=key, match=models.MatchAny(any=value))
+        elif operator in {MetadataOperator.NE, MetadataOperator.NOT_IN}:
+            except_value = [value] if operator == MetadataOperator.NE else value
+            return models.FieldCondition(
+                key=key, match=models.MatchExcept(**{"except": except_value})
             )
         else:
             raise ValueError(f"Unsupported operator: {operator}")
