@@ -171,7 +171,6 @@ class CentralView(pn.viewable.Viewer):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
-        self.user = ""
         self._engine = engine
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
