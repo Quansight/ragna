@@ -10,6 +10,7 @@ from panel.reactive import ReactiveHTML
 from ragna.core._metadata_filter import MetadataFilter
 
 from . import styles as ui
+from .util import answer_improved
 
 
 class CopyToClipboardButton(ReactiveHTML):
@@ -309,8 +310,10 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer_stream = self._engine.answer_improved(
-                self.current_chat["id"], content
+            answer_stream = answer_improved(
+                self._engine,
+                self.current_chat["id"],
+                content,
             )
             answer = await anext(answer_stream)
 

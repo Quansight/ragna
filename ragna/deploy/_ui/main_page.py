@@ -7,6 +7,7 @@ from .central_view import CentralView
 from .left_sidebar import LeftSidebar
 from .modal_configuration import ModalConfiguration
 from .right_sidebar import RightSidebar
+from .util import get_improved_chats
 
 
 class MainPage(pn.viewable.Viewer, param.Parameterized):
@@ -41,7 +42,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         )
 
     async def refresh_data(self):
-        self.chats = await self._engine.get_improved_chats()
+        self.chats = await get_improved_chats(self._engine)
         self.components = self._engine.get_components()
         self.corpus_metadata = await self._engine.get_corpus_metadata()
         self.corpus_names = await self._engine.get_corpuses()

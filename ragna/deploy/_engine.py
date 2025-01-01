@@ -1,10 +1,8 @@
 import secrets
 import uuid
-from datetime import datetime
 from typing import Any, AsyncIterator, Optional, cast
 
 import panel as pn
-from emoji import emojize
 from fastapi import status as http_status_code
 
 import ragna
@@ -235,21 +233,6 @@ class Engine:
         with self._database.get_session() as session:
             return self._database.get_chat(session, user=user, id=id)
 
-    # This and `improve_message` were copied from the old [`ApiWrapper`](https://github.com/Quansight/ragna/issues/521).
-    # The interface they provide is open for discussion
-    async def get_improved_chats(self):
-        json_data = [
-            chat.model_dump(mode="json") for chat in self.get_chats(user=pn.state.user)
-        ]
-        for chat in json_data:
-            chat["messages"] = [self._improve_message(msg) for msg in chat["messages"]]
-        return json_data
-
-    def _improve_message(self, msg):
-        msg["timestamp"] = datetime.strptime(msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ")
-        msg["content"] = emojize(msg["content"], language="alias")
-        return msg
-
     async def prepare_chat(self, *, user: str, id: uuid.UUID) -> schemas.Message:
         core_chat = self._to_core.chat(self.get_chat(user=user, id=id), user=user)
         core_message = await core_chat.prepare()
@@ -282,12 +265,6 @@ class Engine:
             self._database.update_chat(
                 session, chat=self._to_schema.chat(core_chat), user=user
             )
-
-    async def answer_improved(self, chat_id, prompt):
-        async for message in self.answer_stream(
-            user=pn.state.user, chat_id=uuid.UUID(chat_id), prompt=prompt
-        ):
-            yield self._improve_message(message.model_dump(mode="json"))
 
     def delete_chat(self, *, user: str, id: uuid.UUID) -> None:
         with self._database.get_session() as session:
