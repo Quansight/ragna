@@ -11,10 +11,10 @@ class LeftSidebar(pn.viewable.Viewer):
     current_chat_id = param.String(default=None)
     refresh_counter = param.Integer(default=0)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, engine, **params):
         super().__init__(**params)
 
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.on_click_chat = None
         self.on_click_new_chat = None
 
@@ -105,7 +105,7 @@ class LeftSidebar(pn.viewable.Viewer):
             + self.chat_buttons
             + [
                 pn.layout.VSpacer(),
-                pn.pane.HTML(f"user: {self.api_wrapper._user}"),
+                pn.pane.HTML(f"user: {pn.state.user}"),
                 pn.pane.HTML(f"version: {ragna_version}"),
                 # self.footer()
             ]

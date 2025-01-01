@@ -7,15 +7,16 @@ from .central_view import CentralView
 from .left_sidebar import LeftSidebar
 from .modal_configuration import ModalConfiguration
 from .right_sidebar import RightSidebar
+from .util import get_improved_chats
 
 
 class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
     chats = param.List(default=None)
 
-    def __init__(self, api_wrapper, template):
+    def __init__(self, engine, template):
         super().__init__()
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.template = template
 
         self.components = None
@@ -23,12 +24,12 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.corpus_names = None
 
         self.modal = None
-        self.central_view = CentralView(api_wrapper=self.api_wrapper)
+        self.central_view = CentralView(engine=self._engine)
         self.central_view.on_click_chat_info = (
             lambda event, title, content: self.show_right_sidebar(title, content)
         )
 
-        self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
+        self.left_sidebar = LeftSidebar(engine=self._engine)
         self.left_sidebar.on_click_chat = self.on_click_chat
         self.left_sidebar.on_click_new_chat = self.open_modal
 
@@ -41,10 +42,10 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         )
 
     async def refresh_data(self):
-        self.chats = await self.api_wrapper.get_chats()
-        self.components = self.api_wrapper.get_components()
-        self.corpus_metadata = await self.api_wrapper.get_corpus_metadata()
-        self.corpus_names = await self.api_wrapper.get_corpus_names()
+        self.chats = await get_improved_chats(self._engine)
+        self.components = self._engine.get_components()
+        self.corpus_metadata = await self._engine.get_corpus_metadata()
+        self.corpus_names = await self._engine.get_corpuses()
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
@@ -73,7 +74,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             await self.refresh_data()
 
         self.modal = ModalConfiguration(
-            api_wrapper=self.api_wrapper,
+            engine=self._engine,
             components=self.components,
             corpus_metadata=self.corpus_metadata,
             corpus_names=self.corpus_names,

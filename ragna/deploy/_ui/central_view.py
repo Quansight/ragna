@@ -10,6 +10,7 @@ from panel.reactive import ReactiveHTML
 from ragna.core._metadata_filter import MetadataFilter
 
 from . import styles as ui
+from .util import answer_improved
 
 
 class CopyToClipboardButton(ReactiveHTML):
@@ -167,12 +168,11 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=dict, default=None)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, engine, **params):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
-        self.user = ""
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
             name="",
@@ -310,7 +310,11 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer_stream = self.api_wrapper.answer(self.current_chat["id"], content)
+            answer_stream = answer_improved(
+                self._engine,
+                self.current_chat["id"],
+                content,
+            )
             answer = await anext(answer_stream)
 
             message = RagnaChatMessage(

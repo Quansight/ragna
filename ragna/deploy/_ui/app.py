@@ -5,7 +5,6 @@ from ragna.deploy._engine import Engine
 
 from . import js
 from . import styles as ui
-from .api_wrapper import ApiWrapper
 from .main_page import MainPage
 
 pn.extension(
@@ -68,10 +67,8 @@ class App(param.Parameterized):
         return template
 
     def index_page(self):
-        api_wrapper = ApiWrapper(self._engine)
-
         template = self.get_template()
-        main_page = MainPage(api_wrapper=api_wrapper, template=template)
+        main_page = MainPage(engine=self._engine, template=template)
         template.main.append(main_page)
         return template
 
