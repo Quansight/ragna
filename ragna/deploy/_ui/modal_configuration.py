@@ -205,14 +205,19 @@ class ModalConfiguration(pn.viewable.Viewer):
             corpus_name = self.corpus_name_input.value
 
         try:
-            new_chat_id = await self._engine.start_and_prepare(
-                name=self.chat_name,
-                input=input,
-                corpus_name=corpus_name,
-                source_storage=self.config.source_storage_name,
-                assistant=self.config.assistant_name,
-                params=self.config.to_params_dict(),
+            chat = self.create_chat(
+                user=pn.state.user,
+                chat_creation=schemas.ChatCreation(
+                    name=self._engine.chat_name,
+                    input=input,
+                    corpus_name=corpus_name,
+                    source_storage=self._engine.config.source_storage_name,
+                    assistant=self._engine.config.assistant_name,
+                    params=self._engine.config.to_params_dict(),
+                ),
             )
+            await self._engine.prepare_chat(user=pn.state.user, id=chat.id)
+            new_chat_id = str(chat.id)
 
             self.start_chat_button.disabled = False
 

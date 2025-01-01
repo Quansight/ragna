@@ -2,7 +2,6 @@ import secrets
 import uuid
 from typing import Any, AsyncIterator, Optional, cast
 
-import panel as pn
 from fastapi import status as http_status_code
 
 import ragna
@@ -376,20 +375,3 @@ class CoreToSchemaConverter:
             messages=[self.message(message) for message in chat._messages],
             prepared=chat._prepared,
         )
-
-    async def start_and_prepare(
-        self, name, input, corpus_name, source_storage, assistant, params
-    ):
-        chat = self.create_chat(
-            user=pn.state.user,
-            chat_creation=schemas.ChatCreation(
-                name=name,
-                input=input,
-                source_storage=source_storage,
-                assistant=assistant,
-                corpus_name=corpus_name,
-                params=params,
-            ),
-        )
-        await self._engine.prepare_chat(user=pn.state.user, id=chat.id)
-        return str(chat.id)
