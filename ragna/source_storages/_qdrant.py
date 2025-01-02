@@ -151,6 +151,7 @@ class QdrantDB(VectorDatabaseSourceStorage):
     def _build_condition(self, operator, key, value):
         from qdrant_client import models
 
+        # See https://qdrant.tech/documentation/concepts/filtering/#range
         if operator == MetadataOperator.EQ:
             return models.FieldCondition(key=key, match=models.MatchValue(value=value))
         elif operator == MetadataOperator.LT:
