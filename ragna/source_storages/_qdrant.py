@@ -46,7 +46,7 @@ class QdrantDB(VectorDatabaseSourceStorage):
 
         url = os.getenv("QDRANT_URL")
         api_key = os.getenv("QDRANT_API_KEY")
-        path = path = ragna.local_root() / "qdrant"
+        path = ragna.local_root() / "qdrant"
 
         # Cannot pass both url and path
         self._client = (
