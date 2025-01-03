@@ -22,8 +22,15 @@ if TYPE_CHECKING:
     from qdrant_client import models
 
 
-class QdrantDB(VectorDatabaseSourceStorage):
+class Qdrant(VectorDatabaseSourceStorage):
     """[Qdrant vector database](https://qdrant.tech/)
+
+    Use the `QDRANT_URL` and `QDRANT_API_KEY` env variables to configure connection to a qdrant server.
+
+    Eg:
+    > export QDRANT_URL="https://xyz-example.eu-central.aws.cloud.qdrant.io:6333"
+
+    > export QDRANT_API_KEY="<your-api-key-here>"
 
     !!! info "Required packages"
 

@@ -10,9 +10,9 @@ from ragna.core import (
     PlainTextDocumentHandler,
     RagnaException,
 )
-from ragna.source_storages import Chroma, LanceDB, QdrantDB, RagnaDemoSourceStorage
+from ragna.source_storages import Chroma, LanceDB, Qdrant, RagnaDemoSourceStorage
 
-SOURCE_STORAGES = [Chroma, LanceDB, QdrantDB, RagnaDemoSourceStorage]
+SOURCE_STORAGES = [Chroma, LanceDB, Qdrant, RagnaDemoSourceStorage]
 
 METADATAS = {
     0: {"key": "value"},
