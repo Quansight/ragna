@@ -59,6 +59,7 @@ all = [
     "pymupdf<=1.24.10,>=1.23.6",
     "python-docx",
     "python-pptx",
+    "qdrant-client>=1.12.1",
     "tiktoken",
 ]
 
