@@ -208,7 +208,7 @@ class ModalConfiguration(pn.viewable.Viewer):
             chat = self.create_chat(
                 user=pn.state.user,
                 chat_creation=schemas.ChatCreation(
-                    name=self._engine.chat_name,
+                    name=self.chat_name,
                     input=input,
                     corpus_name=corpus_name,
                     source_storage=self._engine.config.source_storage_name,
