@@ -162,7 +162,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
         # We only ever hit this function for user inputs, since we control the
         # generation of the system and assistant messages manually. Thus, we can
         # unconditionally create a user message here.
-        return RagnaChatMessage(message.object, role="user", user=self.user)
+        return RagnaChatMessage(message.object, role="user", user=pn.state.user)
 
 
 class CentralView(pn.viewable.Viewer):
@@ -300,7 +300,7 @@ class CentralView(pn.viewable.Viewer):
         if role == "system":
             return "Ragna"
         elif role == "user":
-            return cast(str, self.user)
+            return cast(str, pn.state.user)
         elif role == "assistant":
             return cast(str, self.current_chat["assistant"])
         else:
@@ -368,7 +368,7 @@ class CentralView(pn.viewable.Viewer):
                 for message in self.current_chat["messages"]
             ],
             callback=self.chat_callback,
-            user=self.user,
+            user=pn.state.user,
             get_user_from_role=self.get_user_from_role,
             show_rerun=False,
             show_undo=False,
