@@ -103,21 +103,21 @@ metadata_filters = pytest.mark.parametrize(
 
 
 @pytest.fixture
-def _xfail_chroma_ne_nin(request):
+def _patch_chroma_ne_nin(request):
     fixture_values = frozenset(request.node.callspec._idlist)
 
-    xfail_filters = {
-        frozenset(("Chroma", "ne")),
-        frozenset(("Chroma", "not_in")),
+    patch_filters = {
+        frozenset(("Chroma", "ne")): [2, 3, 4, 5, 6],
+        frozenset(("Chroma", "not_in")): [0, 1, 2, 3, 4],
     }
 
-    if fixture_values in xfail_filters:
-        request.node.add_marker(pytest.mark.xfail())
+    if fixture_values in patch_filters.keys():
+        request.node.callspec.params["expected_idcs"] = patch_filters[fixture_values]
 
 
 @metadata_filters
 @pytest.mark.parametrize("source_storage_cls", [Chroma])  # LanceDB
-@pytest.mark.usefixtures("_xfail_chroma_ne_nin")
+@pytest.mark.usefixtures("_patch_chroma_ne_nin")
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
