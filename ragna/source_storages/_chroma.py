@@ -54,10 +54,9 @@ class Chroma(VectorDatabaseSourceStorage):
             raise_no_corpuses_available(self)
 
         try:
-            return next(
-                collection
-                for collection in collections
-                if collection.name == corpus_name
+            return self._client.get_collection(
+                name=next(name for name in collections if name == corpus_name),
+                embedding_function=self._embedding_function,
             )
         except StopIteration:
             raise_non_existing_corpus(self, corpus_name)
