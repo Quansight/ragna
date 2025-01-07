@@ -39,7 +39,7 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def list_corpuses(self) -> list[str]:
-        return [collection.name for collection in self._client.list_collections()]
+        return self._client.list_collections()
 
     def _get_collection(
         self, corpus_name: str, *, create: bool = False
