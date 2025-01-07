@@ -69,7 +69,9 @@ metadata_filters = pytest.mark.parametrize(
                     MetadataFilter.and_(
                         [
                             MetadataFilter.eq("key", "other_value"),
-                            MetadataFilter.ne("other_key", "other_value"),
+                            MetadataFilter.in_(
+                                "other_key", ["some_value", "other_value"]
+                            ),
                         ]
                     ),
                 ]
@@ -105,7 +107,6 @@ def _xfail_chroma_ne_nin(request):
     fixture_values = frozenset(request.node.callspec._idlist)
 
     xfail_filters = {
-        frozenset(("Chroma", "or-nested")),
         frozenset(("Chroma", "ne")),
         frozenset(("Chroma", "not_in")),
     }
