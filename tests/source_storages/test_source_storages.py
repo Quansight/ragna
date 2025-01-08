@@ -116,7 +116,7 @@ def _patch_chroma_ne_nin(request):
 
 
 @metadata_filters
-@pytest.mark.parametrize("source_storage_cls", [Chroma])  # LanceDB
+@pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
 @pytest.mark.usefixtures("_patch_chroma_ne_nin")
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
     document_root = tmp_local_root / "documents"
