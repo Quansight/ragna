@@ -152,6 +152,19 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
     source_storage.store(corpus_name, documents)
 
 
+@pytest.mark.parametrize(
+    "metadata_filter,expected_idcs",
+    [
+        pytest.param(MetadataFilter.ne("key", "value"), [2, 3, 4, 5, 6], id="ne"),
+        pytest.param(
+            MetadataFilter.not_in("key", ["foo", "bar"]), [0, 1, 2, 3, 4], id="not_in"
+        ),
+    ],
+)
+def test_smoke_chroma_ne_nin(tmp_local_root, metadata_filter, expected_idcs):
+    test_smoke(tmp_local_root, Chroma, metadata_filter, expected_idcs)
+
+
 @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
 def test_corpus_names(tmp_local_root, source_storage_cls):
     document_root = tmp_local_root / "documents"
