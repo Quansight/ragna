@@ -25,12 +25,15 @@ if TYPE_CHECKING:
 class Qdrant(VectorDatabaseSourceStorage):
     """[Qdrant vector database](https://qdrant.tech/)
 
-    Use the `QDRANT_URL` and `QDRANT_API_KEY` env variables to configure connection to a qdrant server.
+    !!! info
 
-    Eg:
-    > export QDRANT_URL="https://xyz-example.eu-central.aws.cloud.qdrant.io:6333"
+        To connect to a Qdrant server instead of using a local database, use the
+        `QDRANT_URL` and `QDRANT_API_KEY` environment variables. For example
 
-    > export QDRANT_API_KEY="<your-api-key-here>"
+        ```shell
+        $ export QDRANT_URL="https://xyz-example.eu-central.aws.cloud.qdrant.io:6333"
+        $ export QDRANT_API_KEY="<your-api-key-here>"
+        ```
 
     !!! info "Required packages"
 
