@@ -153,7 +153,7 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
 
 
 @pytest.mark.parametrize(
-    "metadata_filter,expected_idcs",
+    ("metadata_filter", "expected_idcs"),
     [
         pytest.param(MetadataFilter.ne("key", "value"), [2, 3, 4, 5, 6], id="ne"),
         pytest.param(
@@ -161,7 +161,10 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
         ),
     ],
 )
-def test_smoke_chroma_ne_nin(tmp_local_root, metadata_filter, expected_idcs):
+def test_chroma_ne_nin_non_existing_keys(
+    tmp_local_root, metadata_filter, expected_idcs
+):
+    # See https://github.com/Quansight/ragna/issues/523 for details
     test_smoke(tmp_local_root, Chroma, metadata_filter, expected_idcs)
 
 

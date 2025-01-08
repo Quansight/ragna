@@ -39,7 +39,7 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def list_corpuses(self) -> list[str]:
-        return self._client.list_collections()
+        return [str(c) for c in self._client.list_collections()]
 
     def _get_collection(
         self, corpus_name: str, *, create: bool = False
@@ -49,13 +49,13 @@ class Chroma(VectorDatabaseSourceStorage):
                 corpus_name, embedding_function=self._embedding_function
             )
 
-        collections = list(self._client.list_collections())
-        if not collections:
+        corpuses = self.list_corpuses()
+        if not corpuses:
             raise_no_corpuses_available(self)
 
         try:
             return self._client.get_collection(
-                name=next(name for name in collections if name == corpus_name),
+                name=next(name for name in corpuses if name == corpus_name),
                 embedding_function=self._embedding_function,
             )
         except StopIteration:
