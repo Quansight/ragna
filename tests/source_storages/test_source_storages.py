@@ -10,9 +10,9 @@ from ragna.core import (
     PlainTextDocumentHandler,
     RagnaException,
 )
-from ragna.source_storages import Chroma, LanceDB, RagnaDemoSourceStorage
+from ragna.source_storages import Chroma, LanceDB, Qdrant, RagnaDemoSourceStorage
 
-SOURCE_STORAGES = [Chroma, LanceDB, RagnaDemoSourceStorage]
+SOURCE_STORAGES = [Chroma, LanceDB, Qdrant, RagnaDemoSourceStorage]
 
 METADATAS = {
     0: {"key": "value"},
@@ -101,7 +101,9 @@ metadata_filters = pytest.mark.parametrize(
 
 
 @metadata_filters
-@pytest.mark.parametrize("source_storage_cls", [Chroma])  # LanceDB
+@pytest.mark.parametrize(
+    "source_storage_cls", set(SOURCE_STORAGES) - {RagnaDemoSourceStorage}
+)
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
