@@ -101,7 +101,9 @@ metadata_filters = pytest.mark.parametrize(
 
 
 @metadata_filters
-@pytest.mark.parametrize("source_storage_cls", [Chroma])  # LanceDB
+@pytest.mark.parametrize(
+    "source_storage_cls", set(SOURCE_STORAGES) - {RagnaDemoSourceStorage}
+)
 def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
