@@ -3,7 +3,8 @@ authentication = "ragna.deploy.RagnaDemoAuthentication"
 document = "ragna.core.LocalDocument"
 source_storages = [
     "ragna.source_storages.Chroma",
-    "ragna.source_storages.LanceDB"
+    "ragna.source_storages.LanceDB",
+    "ragna.source_storages.QdrantDB",
 ]
 assistants = [
     "ragna.assistants.ClaudeHaiku",
