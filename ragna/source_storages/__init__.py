@@ -7,6 +7,7 @@ __all__ = [
 from ._chroma import Chroma
 from ._demo import RagnaDemoSourceStorage
 from ._lancedb import LanceDB
+from ._qdrant import Qdrant
 
 # isort: split
 
