@@ -27,7 +27,7 @@ class LanceDB(VectorDatabaseSourceStorage):
 
     !!! info "Required packages"
 
-        - `chromadb>=0.4.13`
+        - `chromadb>=0.6.0`
         - `lancedb>=0.2`
         - `pyarrow`
     """

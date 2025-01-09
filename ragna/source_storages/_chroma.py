@@ -19,7 +19,7 @@ class Chroma(VectorDatabaseSourceStorage):
 
     !!! info "Required packages"
 
-        - `chromadb>=0.4.13`
+        - `chromadb>=0.6.0`
 
     !!! warning
 
