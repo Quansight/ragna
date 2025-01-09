@@ -91,6 +91,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         if corpus_name is None:
             corpus_names = self.list_corpuses()
         else:
+            self._ensure_table(corpus_name)
             corpus_names = [corpus_name]
 
         metadata = {}
