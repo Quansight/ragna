@@ -11,7 +11,6 @@ from ragna.core._metadata_filter import MetadataFilter
 from ragna.deploy._schemas import Chat
 
 from . import styles as ui
-from .util import answer_improved
 
 
 class CopyToClipboardButton(ReactiveHTML):
@@ -311,25 +310,25 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer_stream = answer_improved(
-                self._engine,
-                str(self.current_chat.id),
-                content,
+            answer_stream = self._engine.answer_stream(
+                user=pn.state.user,
+                chat_id=self.current_chat.id,
+                prompt=content,
             )
             answer = await anext(answer_stream)
 
             message = RagnaChatMessage(
-                answer["content"],
+                answer.content,
                 role="assistant",
                 user=self.get_user_from_role("assistant"),
-                sources=answer["sources"],
+                sources=answer.sources,
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
                 assistant_toolbar_visible=False,
             )
             yield message
 
             async for chunk in answer_stream:
-                message.content_pane.object += chunk["content"]
+                message.content_pane.object += chunk.content
             message.clipboard_button.value = message.content_pane.object
             message.assistant_toolbar.visible = True
 
