@@ -24,16 +24,15 @@ class Chroma(VectorDatabaseSourceStorage):
     !!! warning
 
         The `NE` and `NOT_IN` metadata filter operators behave differently in Chroma
-        than they do in most other source storages. With most other source storages,
+        than the other builtin source storages. With most other source storages,
         given a key-value pair `(key, value)`, the operators `NE` and `NOT_IN` return
-        only the key-value pairs with a key `key` and a value not equal to or not in,
-        respectively, `value`. To contrast, the `NE` and `NOT_IN` metadata filter
-        operators in ChromaDB return everything described in the preceding sentence,
-        together with all key-value pairs `(other_key, other_value)` where `key` is
-        not equal to `other_key`.
+        only the source's metadata pairs with a key `key` and a value not equal to or
+        not in, respectively, `value`. To contrast, the `NE` and `NOT_IN` metadata filter
+        operators in `ChromaDB` return everything described in the preceding sentence,
+        together with all sources that do not have the metadata key `key`.
 
-        For more information, see the notes for v0.5.12 in the
-        [ChromaDB migration guide](https://docs.trychroma.com/production/administration/migration).
+        For more information, see the notes for `v0.5.12` in the
+        [`ChromaDB` migration guide](https://docs.trychroma.com/production/administration/migration).
     """
 
     # Note that this class has no extra requirements, since the chromadb package is
