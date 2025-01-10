@@ -51,9 +51,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.left_sidebar.chats = self.chats
 
         if len(self.chats) > 0:
-            chat_id_exist = (
-                len([c.id for c in self.chats if c.id == self.current_chat_id]) > 0
-            )
+            chat_id_exist = any(c.id == self.current_chat_id for c in self.chats)
 
             if self.current_chat_id is None or not chat_id_exist:
                 self.current_chat_id = str(self.chats[0].id)
