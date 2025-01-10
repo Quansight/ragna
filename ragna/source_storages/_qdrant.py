@@ -54,16 +54,11 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         from qdrant_client import QdrantClient
 
-        url = os.getenv("QDRANT_URL")
-        api_key = os.getenv("QDRANT_API_KEY")
-        path = ragna.local_root() / "qdrant"
-
-        # Cannot pass both url and path
-        self._client = (
-            QdrantClient(url=url, api_key=api_key)
-            if url
-            else QdrantClient(path=str(path))
-        )
+        if (url := os.environ.get("QDRANT_URL")) is not None:
+            kwargs = dict(url=url, api_key=os.environ.get("QDRANT_API_KEY"))
+        else:
+            kwargs = dict(path=str(ragna.local_root() / "qdrant"))
+        self._client = QdrantClient(**kwargs)  # type: ignore[arg-type]
 
     def list_corpuses(self) -> list[str]:
         return [c.name for c in self._client.get_collections().collections]
