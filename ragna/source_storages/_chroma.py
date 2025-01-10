@@ -26,7 +26,7 @@ class Chroma(VectorDatabaseSourceStorage):
         The `NE` and `NOT_IN` metadata filter operators behave differently in Chroma
         than the other builtin source storages. With most other source storages,
         given a key-value pair `(key, value)`, the operators `NE` and `NOT_IN` return
-        only the source's metadata pairs with a key `key` and a value not equal to or
+        only the sources with a metadata key `key` and a value not equal to or
         not in, respectively, `value`. To contrast, the `NE` and `NOT_IN` metadata filter
         operators in `ChromaDB` return everything described in the preceding sentence,
         together with all sources that do not have the metadata key `key`.
