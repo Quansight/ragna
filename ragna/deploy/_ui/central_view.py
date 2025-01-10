@@ -8,6 +8,7 @@ import param
 from panel.reactive import ReactiveHTML
 
 from ragna.core._metadata_filter import MetadataFilter
+from ragna.deploy._schemas import Chat
 
 from . import styles as ui
 from .util import answer_improved
@@ -166,7 +167,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 
 
 class CentralView(pn.viewable.Viewer):
-    current_chat = param.ClassSelector(class_=dict, default=None)
+    current_chat = param.ClassSelector(class_=Chat, default=None)
 
     def __init__(self, engine, **params):
         super().__init__(**params)
@@ -187,24 +188,24 @@ class CentralView(pn.viewable.Viewer):
             return
 
         # see _api/schemas.py for `input` type definitions
-        if self.current_chat["documents"] is not None:
+        if self.current_chat.documents is not None:
             title = "Uploaded Files"
 
             pills = "".join(
                 [
                     f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                    for d in self.current_chat["documents"]
+                    for d in self.current_chat.documents
                 ]
             )
 
             details = f"<div class='details'>{pills}</div><br />\n\n"
-            grid_height = len(self.current_chat["documents"]) // 3
+            grid_height = len(self.current_chat.documents) // 3
 
-        elif self.current_chat["metadata_filter"] is not None:
+        elif self.current_chat.metadata_filter is not None:
             title = "Metadata Filter"
 
             metadata_filters_readable = (
-                str(MetadataFilter.from_primitive(self.current_chat["metadata_filter"]))
+                str(MetadataFilter.from_primitive(self.current_chat.metadata_filter))
                 .replace("\n", "<br>")
                 .replace(" ", "&nbsp;")
             )
@@ -225,14 +226,14 @@ class CentralView(pn.viewable.Viewer):
                 details,
                 "----",
                 "**Source Storage**",
-                f"""<span>{self.current_chat['source_storage']}</span>\n""",
+                f"""<span>{self.current_chat.source_storage}</span>\n""",
                 "----",
                 "**Assistant**",
-                f"""<span>{self.current_chat['assistant']}</span>\n""",
+                f"""<span>{self.current_chat.assistant}</span>\n""",
                 "**Advanced configuration**",
                 *[
                     f"- **{key.replace('_', ' ').title()}**: {value}"
-                    for key, value in self.current_chat["params"].items()
+                    for key, value in self.current_chat.params.items()
                 ],
             ]
         )
@@ -302,7 +303,7 @@ class CentralView(pn.viewable.Viewer):
         elif role == "user":
             return cast(str, pn.state.user)
         elif role == "assistant":
-            return cast(str, self.current_chat["assistant"])
+            return cast(str, self.current_chat.assistant)
         else:
             raise RuntimeError
 
@@ -312,7 +313,7 @@ class CentralView(pn.viewable.Viewer):
         try:
             answer_stream = answer_improved(
                 self._engine,
-                self.current_chat["id"],
+                str(self.current_chat.id),
                 content,
             )
             answer = await anext(answer_stream)
@@ -358,14 +359,14 @@ class CentralView(pn.viewable.Viewer):
         return RagnaChatInterface(
             *[
                 RagnaChatMessage(
-                    message["content"],
-                    role=message["role"],
-                    user=self.get_user_from_role(message["role"]),
-                    sources=message["sources"],
-                    timestamp=message["timestamp"],
+                    message.content,
+                    role=message.role,
+                    user=self.get_user_from_role(message.role),
+                    sources=message.sources,
+                    timestamp=message.timestamp,
                     on_click_source_info_callback=self.on_click_source_info_wrapper,
                 )
-                for message in self.current_chat["messages"]
+                for message in self.current_chat.messages
             ],
             callback=self.chat_callback,
             user=pn.state.user,
@@ -397,7 +398,7 @@ class CentralView(pn.viewable.Viewer):
 
         current_chat_name = ""
         if self.current_chat is not None:
-            current_chat_name = self.current_chat["name"]
+            current_chat_name = self.current_chat.name
 
         chat_name_header = pn.pane.HTML(
             f"<p>{current_chat_name}</p>",
@@ -406,8 +407,8 @@ class CentralView(pn.viewable.Viewer):
         )
 
         chat_documents_pills = []
-        if self.current_chat is not None and self.current_chat["documents"] is not None:
-            doc_names = [d["name"] for d in self.current_chat["documents"]]
+        if self.current_chat is not None and self.current_chat.documents is not None:
+            doc_names = [d.name for d in self.current_chat.documents]
 
             # FIXME: Instead of setting a hard limit of 20 documents here, this should
             #  scale automatically with the width of page
@@ -421,7 +422,7 @@ class CentralView(pn.viewable.Viewer):
                 chat_documents_pills.append(pill)
 
         self.chat_info_button.name = (
-            f"{self.current_chat['assistant']} | {self.current_chat['source_storage']}"
+            f"{self.current_chat.assistant} | {self.current_chat.source_storage}"
         )
 
         return pn.Row(

@@ -63,9 +63,10 @@ class LeftSidebar(pn.viewable.Viewer):
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
         epoch = datetime(1970, 1, 1)
+        # breakpoint()
         self.chats.sort(
             key=lambda chat: (
-                epoch if not chat["messages"] else chat["messages"][-1]["timestamp"]
+                epoch if not chat.messages else chat.messages[-1].timestamp
             ),
             reverse=True,
         )
@@ -73,7 +74,7 @@ class LeftSidebar(pn.viewable.Viewer):
         self.chat_buttons = []
         for chat in self.chats:
             button = pn.widgets.Button(
-                name=chat["name"],
+                name=chat.name,
                 css_classes=["chat_button"],
             )
             button.on_click(lambda event, c=chat: self.on_click_chat_wrapper(event, c))

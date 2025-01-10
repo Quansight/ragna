@@ -7,7 +7,6 @@ from .central_view import CentralView
 from .left_sidebar import LeftSidebar
 from .modal_configuration import ModalConfiguration
 from .right_sidebar import RightSidebar
-from .util import get_improved_chats
 
 
 class MainPage(pn.viewable.Viewer, param.Parameterized):
@@ -42,7 +41,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         )
 
     async def refresh_data(self):
-        self.chats = await get_improved_chats(self._engine)
+        self.chats = self._engine.get_chats(user=pn.state.user)
         self.components = self._engine.get_components()
         self.corpus_metadata = await self._engine.get_corpus_metadata()
         self.corpus_names = await self._engine.get_corpuses()
@@ -53,15 +52,17 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
         if len(self.chats) > 0:
             chat_id_exist = (
-                len([c["id"] for c in self.chats if c["id"] == self.current_chat_id])
+                len(
+                    [str(c.id) for c in self.chats if str(c.id) == self.current_chat_id]
+                )
                 > 0
             )
 
             if self.current_chat_id is None or not chat_id_exist:
-                self.current_chat_id = self.chats[0]["id"]
+                self.current_chat_id = str(self.chats[0].id)
 
             for c in self.chats:
-                if c["id"] == self.current_chat_id:
+                if str(c.id) == self.current_chat_id:
                     self.central_view.set_current_chat(c)
                     break
 
