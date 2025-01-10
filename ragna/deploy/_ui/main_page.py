@@ -52,10 +52,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
 
         if len(self.chats) > 0:
             chat_id_exist = (
-                len(
-                    [str(c.id) for c in self.chats if str(c.id) == self.current_chat_id]
-                )
-                > 0
+                len([c.id for c in self.chats if c.id == self.current_chat_id]) > 0
             )
 
             if self.current_chat_id is None or not chat_id_exist:
