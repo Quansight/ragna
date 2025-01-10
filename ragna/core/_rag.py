@@ -28,7 +28,15 @@ from fastapi import status
 
 from ragna._utils import as_async_iterator, as_awaitable, default_user
 
-from ._components import Assistant, Component, Message, MessageRole, SourceStorage
+from ._components import (
+    Assistant,
+    Component,
+    DefaultQueryPreprocessor,
+    Message,
+    MessageRole,
+    QueryPreprocessor,
+    SourceStorage,
+)
 from ._document import Document, LocalDocument
 from ._metadata_filter import MetadataFilter
 from ._utils import RagnaException, merge_models
@@ -256,6 +264,7 @@ class Chat:
         self._unpacked_params = self._unpack_chat_params(params)
 
         self._messages: list[Message] = []
+        self.preprocessor: QueryPreprocessor = DefaultQueryPreprocessor()
 
     async def prepare(self) -> Message:
         """Prepare the chat.
@@ -300,8 +309,12 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
 
+        processed = self.preprocessor.process(prompt, self.metadata_filter)
         sources = await self._as_awaitable(
-            self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
+            self.source_storage.retrieve,
+            self.corpus_name,
+            processed.metadata_filter,
+            processed.retrieval_query,
         )
         if not sources:
             event = "Unable to retrieve any sources."

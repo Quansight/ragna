@@ -5,12 +5,14 @@ import enum
 import functools
 import inspect
 import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
     Iterator,
+    List,
     Optional,
     Type,
     Union,
@@ -302,3 +304,46 @@ class Assistant(Component, abc.ABC):
             Answer.
         """
         ...
+
+
+@dataclass
+class QueryProcessingStep:
+    original_query: str
+    processed_query: str
+    metadata_filter: Optional[MetadataFilter] = None
+    processor_name: str = ""
+    metadata: dict = field(default_factory=dict)
+
+
+@dataclass
+class ProcessedQuery:
+    retrieval_query: str
+    answer_query: str
+    metadata_filter: MetadataFilter
+    processing_history: List[QueryProcessingStep] = field(default_factory=list)
+
+
+class QueryPreprocessor(abc.ABC):
+    @abc.abstractmethod
+    def process(
+        self, query: str, metadata_filter: Optional[MetadataFilter] = None
+    ) -> ProcessedQuery:
+        pass
+
+    @classmethod
+    def display_name(cls) -> str:
+        return cls.__name__
+
+
+class DefaultQueryPreprocessor(QueryPreprocessor):
+    def process(
+        self, query: str, metadata_filter: Optional[MetadataFilter] = None
+    ) -> ProcessedQuery:
+        return ProcessedQuery(
+            retrieval_query=query,
+            answer_query=query,
+            metadata_filter=metadata_filter or MetadataFilter(),
+            processing_history=[
+                QueryProcessingStep(query, query, metadata_filter, self.display_name())
+            ],
+        )
