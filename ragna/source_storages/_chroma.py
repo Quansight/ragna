@@ -19,7 +19,20 @@ class Chroma(VectorDatabaseSourceStorage):
 
     !!! info "Required packages"
 
-        - `chromadb>=0.4.13`
+        - `chromadb>=0.6.0`
+
+    !!! warning
+
+        The `NE` and `NOT_IN` metadata filter operators behave differently in Chroma
+        than the other builtin source storages. With most other source storages,
+        given a key-value pair `(key, value)`, the operators `NE` and `NOT_IN` return
+        only the sources with a metadata key `key` and a value not equal to or
+        not in, respectively, `value`. To contrast, the `NE` and `NOT_IN` metadata filter
+        operators in `ChromaDB` return everything described in the preceding sentence,
+        together with all sources that do not have the metadata key `key`.
+
+        For more information, see the notes for `v0.5.12` in the
+        [`ChromaDB` migration guide](https://docs.trychroma.com/production/administration/migration).
     """
 
     # Note that this class has no extra requirements, since the chromadb package is
@@ -39,7 +52,7 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def list_corpuses(self) -> list[str]:
-        return [collection.name for collection in self._client.list_collections()]
+        return [str(c) for c in self._client.list_collections()]
 
     def _get_collection(
         self, corpus_name: str, *, create: bool = False
@@ -49,15 +62,14 @@ class Chroma(VectorDatabaseSourceStorage):
                 corpus_name, embedding_function=self._embedding_function
             )
 
-        collections = list(self._client.list_collections())
-        if not collections:
+        corpuses = self.list_corpuses()
+        if not corpuses:
             raise_no_corpuses_available(self)
 
         try:
-            return next(
-                collection
-                for collection in collections
-                if collection.name == corpus_name
+            return self._client.get_collection(
+                name=next(name for name in corpuses if name == corpus_name),
+                embedding_function=self._embedding_function,
             )
         except StopIteration:
             raise_non_existing_corpus(self, corpus_name)
