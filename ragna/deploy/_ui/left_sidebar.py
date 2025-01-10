@@ -11,10 +11,10 @@ class LeftSidebar(pn.viewable.Viewer):
     current_chat_id = param.String(default=None)
     refresh_counter = param.Integer(default=0)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, engine, **params):
         super().__init__(**params)
 
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.on_click_chat = None
         self.on_click_new_chat = None
 
@@ -63,9 +63,10 @@ class LeftSidebar(pn.viewable.Viewer):
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
         epoch = datetime(1970, 1, 1)
+
         self.chats.sort(
             key=lambda chat: (
-                epoch if not chat["messages"] else chat["messages"][-1]["timestamp"]
+                epoch if not chat.messages else chat.messages[-1].timestamp
             ),
             reverse=True,
         )
@@ -73,7 +74,7 @@ class LeftSidebar(pn.viewable.Viewer):
         self.chat_buttons = []
         for chat in self.chats:
             button = pn.widgets.Button(
-                name=chat["name"],
+                name=chat.name,
                 css_classes=["chat_button"],
             )
             button.on_click(lambda event, c=chat: self.on_click_chat_wrapper(event, c))
@@ -105,7 +106,7 @@ class LeftSidebar(pn.viewable.Viewer):
             + self.chat_buttons
             + [
                 pn.layout.VSpacer(),
-                pn.pane.HTML(f"user: {self.api_wrapper._user}"),
+                pn.pane.HTML(f"user: {pn.state.user}"),
                 pn.pane.HTML(f"version: {ragna_version}"),
                 # self.footer()
             ]

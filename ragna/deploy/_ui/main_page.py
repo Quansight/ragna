@@ -13,9 +13,9 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     current_chat_id = param.String(default=None)
     chats = param.List(default=None)
 
-    def __init__(self, api_wrapper, template):
+    def __init__(self, engine, template):
         super().__init__()
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.template = template
 
         self.components = None
@@ -23,12 +23,12 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.corpus_names = None
 
         self.modal = None
-        self.central_view = CentralView(api_wrapper=self.api_wrapper)
+        self.central_view = CentralView(engine=self._engine)
         self.central_view.on_click_chat_info = (
             lambda event, title, content: self.show_right_sidebar(title, content)
         )
 
-        self.left_sidebar = LeftSidebar(api_wrapper=self.api_wrapper)
+        self.left_sidebar = LeftSidebar(engine=self._engine)
         self.left_sidebar.on_click_chat = self.on_click_chat
         self.left_sidebar.on_click_new_chat = self.open_modal
 
@@ -41,26 +41,23 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         )
 
     async def refresh_data(self):
-        self.chats = await self.api_wrapper.get_chats()
-        self.components = self.api_wrapper.get_components()
-        self.corpus_metadata = await self.api_wrapper.get_corpus_metadata()
-        self.corpus_names = await self.api_wrapper.get_corpus_names()
+        self.chats = self._engine.get_chats(user=pn.state.user)
+        self.components = self._engine.get_components()
+        self.corpus_metadata = await self._engine.get_corpus_metadata()
+        self.corpus_names = await self._engine.get_corpuses()
 
     @param.depends("chats", watch=True)
     def after_update_chats(self):
         self.left_sidebar.chats = self.chats
 
         if len(self.chats) > 0:
-            chat_id_exist = (
-                len([c["id"] for c in self.chats if c["id"] == self.current_chat_id])
-                > 0
-            )
+            chat_id_exist = any(c.id == self.current_chat_id for c in self.chats)
 
             if self.current_chat_id is None or not chat_id_exist:
-                self.current_chat_id = self.chats[0]["id"]
+                self.current_chat_id = str(self.chats[0].id)
 
             for c in self.chats:
-                if c["id"] == self.current_chat_id:
+                if str(c.id) == self.current_chat_id:
                     self.central_view.set_current_chat(c)
                     break
 
@@ -73,7 +70,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
             await self.refresh_data()
 
         self.modal = ModalConfiguration(
-            api_wrapper=self.api_wrapper,
+            engine=self._engine,
             components=self.components,
             corpus_metadata=self.corpus_metadata,
             corpus_names=self.corpus_names,

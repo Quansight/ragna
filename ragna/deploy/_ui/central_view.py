@@ -8,6 +8,7 @@ import param
 from panel.reactive import ReactiveHTML
 
 from ragna.core._metadata_filter import MetadataFilter
+from ragna.deploy._schemas import Chat
 
 from . import styles as ui
 
@@ -161,18 +162,19 @@ class RagnaChatInterface(pn.chat.ChatInterface):
         # We only ever hit this function for user inputs, since we control the
         # generation of the system and assistant messages manually. Thus, we can
         # unconditionally create a user message here.
-        return RagnaChatMessage(message.object, role="user", user=self.user)
+        return RagnaChatMessage(
+            message.object, role="user", user=cast(str, pn.state.user)
+        )
 
 
 class CentralView(pn.viewable.Viewer):
-    current_chat = param.ClassSelector(class_=dict, default=None)
+    current_chat = param.ClassSelector(class_=Chat, default=None)
 
-    def __init__(self, api_wrapper, **params):
+    def __init__(self, engine, **params):
         super().__init__(**params)
 
         # FIXME: make this dynamic from the login
-        self.user = ""
-        self.api_wrapper = api_wrapper
+        self._engine = engine
         self.chat_info_button = pn.widgets.Button(
             # The name will be filled at runtime in self.header
             name="",
@@ -187,24 +189,24 @@ class CentralView(pn.viewable.Viewer):
             return
 
         # see _api/schemas.py for `input` type definitions
-        if self.current_chat["documents"] is not None:
+        if self.current_chat.documents is not None:
             title = "Uploaded Files"
 
             pills = "".join(
                 [
                     f"""<div class='chat_document_pill'>{d['name']}</div>"""
-                    for d in self.current_chat["documents"]
+                    for d in self.current_chat.documents
                 ]
             )
 
             details = f"<div class='details'>{pills}</div><br />\n\n"
-            grid_height = len(self.current_chat["documents"]) // 3
+            grid_height = len(self.current_chat.documents) // 3
 
-        elif self.current_chat["metadata_filter"] is not None:
+        elif self.current_chat.metadata_filter is not None:
             title = "Metadata Filter"
 
             metadata_filters_readable = (
-                str(MetadataFilter.from_primitive(self.current_chat["metadata_filter"]))
+                str(MetadataFilter.from_primitive(self.current_chat.metadata_filter))
                 .replace("\n", "<br>")
                 .replace(" ", "&nbsp;")
             )
@@ -225,14 +227,14 @@ class CentralView(pn.viewable.Viewer):
                 details,
                 "----",
                 "**Source Storage**",
-                f"""<span>{self.current_chat['source_storage']}</span>\n""",
+                f"""<span>{self.current_chat.source_storage}</span>\n""",
                 "----",
                 "**Assistant**",
-                f"""<span>{self.current_chat['assistant']}</span>\n""",
+                f"""<span>{self.current_chat.assistant}</span>\n""",
                 "**Advanced configuration**",
                 *[
                     f"- **{key.replace('_', ' ').title()}**: {value}"
-                    for key, value in self.current_chat["params"].items()
+                    for key, value in self.current_chat.params.items()
                 ],
             ]
         )
@@ -300,9 +302,9 @@ class CentralView(pn.viewable.Viewer):
         if role == "system":
             return "Ragna"
         elif role == "user":
-            return cast(str, self.user)
+            return cast(str, pn.state.user)
         elif role == "assistant":
-            return cast(str, self.current_chat["assistant"])
+            return cast(str, self.current_chat.assistant)
         else:
             raise RuntimeError
 
@@ -310,21 +312,25 @@ class CentralView(pn.viewable.Viewer):
         self, content: str, user: str, instance: pn.chat.ChatInterface
     ):
         try:
-            answer_stream = self.api_wrapper.answer(self.current_chat["id"], content)
+            answer_stream = self._engine.answer_stream(
+                user=pn.state.user,
+                chat_id=self.current_chat.id,
+                prompt=content,
+            )
             answer = await anext(answer_stream)
 
             message = RagnaChatMessage(
-                answer["content"],
+                answer.content,
                 role="assistant",
                 user=self.get_user_from_role("assistant"),
-                sources=answer["sources"],
+                sources=answer.sources,
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
                 assistant_toolbar_visible=False,
             )
             yield message
 
             async for chunk in answer_stream:
-                message.content_pane.object += chunk["content"]
+                message.content_pane.object += chunk.content
             message.clipboard_button.value = message.content_pane.object
             message.assistant_toolbar.visible = True
 
@@ -354,17 +360,17 @@ class CentralView(pn.viewable.Viewer):
         return RagnaChatInterface(
             *[
                 RagnaChatMessage(
-                    message["content"],
-                    role=message["role"],
-                    user=self.get_user_from_role(message["role"]),
-                    sources=message["sources"],
-                    timestamp=message["timestamp"],
+                    message.content,
+                    role=message.role,
+                    user=self.get_user_from_role(message.role),
+                    sources=message.sources,
+                    timestamp=message.timestamp,
                     on_click_source_info_callback=self.on_click_source_info_wrapper,
                 )
-                for message in self.current_chat["messages"]
+                for message in self.current_chat.messages
             ],
             callback=self.chat_callback,
-            user=self.user,
+            user=pn.state.user,
             get_user_from_role=self.get_user_from_role,
             show_rerun=False,
             show_undo=False,
@@ -393,7 +399,7 @@ class CentralView(pn.viewable.Viewer):
 
         current_chat_name = ""
         if self.current_chat is not None:
-            current_chat_name = self.current_chat["name"]
+            current_chat_name = self.current_chat.name
 
         chat_name_header = pn.pane.HTML(
             f"<p>{current_chat_name}</p>",
@@ -402,8 +408,8 @@ class CentralView(pn.viewable.Viewer):
         )
 
         chat_documents_pills = []
-        if self.current_chat is not None and self.current_chat["documents"] is not None:
-            doc_names = [d["name"] for d in self.current_chat["documents"]]
+        if self.current_chat is not None and self.current_chat.documents is not None:
+            doc_names = [d.name for d in self.current_chat.documents]
 
             # FIXME: Instead of setting a hard limit of 20 documents here, this should
             #  scale automatically with the width of page
@@ -417,7 +423,7 @@ class CentralView(pn.viewable.Viewer):
                 chat_documents_pills.append(pill)
 
         self.chat_info_button.name = (
-            f"{self.current_chat['assistant']} | {self.current_chat['source_storage']}"
+            f"{self.current_chat.assistant} | {self.current_chat.source_storage}"
         )
 
         return pn.Row(

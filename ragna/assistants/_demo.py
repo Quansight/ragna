@@ -30,11 +30,11 @@ class RagnaDemoAssistant(Assistant):
     def _markdown_answer(self) -> str:
         return textwrap.dedent(
             """
-            | String | Integer  | Float | Emoji              |
-            | :----- | :------: | ----: | ------------------ |
-            | foo    | 0        | 1.0   | :unicorn:          |
-            | `bar`  | 1        | -1.23 | :metal:            |
-            | "baz"  | -1       | 1e6   | :eye: :lips: :eye: |
+            | String | Integer  | Float | Emoji  |
+            | :----- | :------: | ----: | ------ |
+            | foo    | 0        | 1.0   | 🦄     |
+            | `bar`  | 1        | -1.23 | 🤘     |
+            | "baz"  | -1       | 1e6   | 👁👄👁 |
             """
         ).strip()
 

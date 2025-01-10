@@ -89,12 +89,10 @@ class ModalConfiguration(pn.viewable.Viewer):
 
     error = param.Boolean(default=False)
 
-    def __init__(
-        self, api_wrapper, components, corpus_names, corpus_metadata, **params
-    ):
+    def __init__(self, engine, components, corpus_names, corpus_metadata, **params):
         super().__init__(chat_name=get_default_chat_name(), **params)
 
-        self.api_wrapper = api_wrapper
+        self._engine = engine
 
         self.corpus_names = corpus_names
         self.corpus_metadata = corpus_metadata
@@ -105,7 +103,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         self.document_uploader = pn.widgets.FileInput(
             multiple=True,
             css_classes=["file-input"],
-            accept=",".join(self.api_wrapper.get_components().documents),
+            accept=",".join(self._engine.get_components().documents),
         )
 
         # Most widgets (including those that use from_param) should be placed after the super init call
@@ -158,15 +156,15 @@ class ModalConfiguration(pn.viewable.Viewer):
                 return
 
             self.start_chat_button.disabled = True
-            documents = self.api_wrapper._engine.register_documents(
-                user=self.api_wrapper._user,
+            documents = self._engine.register_documents(
+                user=pn.state.user,
                 document_registrations=[
                     schemas.DocumentRegistration(name=name)
                     for name in self.document_uploader.filename
                 ],
             )
 
-            if self.api_wrapper._engine.supports_store_documents:
+            if self._engine.supports_store_documents:
 
                 def make_content_stream(data: bytes) -> AsyncIterator[bytes]:
                     async def content_stream() -> AsyncIterator[bytes]:
@@ -174,8 +172,8 @@ class ModalConfiguration(pn.viewable.Viewer):
 
                     return content_stream()
 
-                await self.api_wrapper._engine.store_documents(
-                    user=self.api_wrapper._user,
+                await self._engine.store_documents(
+                    user=pn.state.user,
                     ids_and_streams=[
                         (document.id, make_content_stream(data))
                         for document, data in zip(
@@ -207,14 +205,19 @@ class ModalConfiguration(pn.viewable.Viewer):
             corpus_name = self.corpus_name_input.value
 
         try:
-            new_chat_id = await self.api_wrapper.start_and_prepare(
-                name=self.chat_name,
-                input=input,
-                corpus_name=corpus_name,
-                source_storage=self.config.source_storage_name,
-                assistant=self.config.assistant_name,
-                params=self.config.to_params_dict(),
+            chat = self._engine.create_chat(
+                user=pn.state.user,
+                chat_creation=schemas.ChatCreation(
+                    name=self.chat_name,
+                    input=input,
+                    corpus_name=corpus_name,
+                    source_storage=self.config.source_storage_name,
+                    assistant=self.config.assistant_name,
+                    params=self.config.to_params_dict(),
+                ),
             )
+            await self._engine.prepare_chat(user=pn.state.user, id=chat.id)
+            new_chat_id = str(chat.id)
 
             self.start_chat_button.disabled = False
 
@@ -249,7 +252,7 @@ class ModalConfiguration(pn.viewable.Viewer):
     def create_config(self, components):
         if self.config is None:
             # Retrieve the components from the API and build a config object
-            components = self.api_wrapper.get_components()
+            components = self._engine.get_components()
             # TODO : use the components to set up the default values for the various params
 
             config = ChatConfig()
