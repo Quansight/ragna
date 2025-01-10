@@ -7,6 +7,7 @@ import pytest
 from ragna.core import (
     LocalDocument,
     MetadataFilter,
+    MetadataOperator,
     PlainTextDocumentHandler,
     RagnaException,
 )
@@ -69,7 +70,9 @@ metadata_filters = pytest.mark.parametrize(
                     MetadataFilter.and_(
                         [
                             MetadataFilter.eq("key", "other_value"),
-                            MetadataFilter.ne("other_key", "other_value"),
+                            MetadataFilter.in_(
+                                "other_key", ["some_value", "other_value"]
+                            ),
                         ]
                     ),
                 ]
@@ -104,7 +107,13 @@ metadata_filters = pytest.mark.parametrize(
 @pytest.mark.parametrize(
     "source_storage_cls", set(SOURCE_STORAGES) - {RagnaDemoSourceStorage}
 )
-def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idcs):
+def test_smoke(
+    tmp_local_root,
+    source_storage_cls,
+    metadata_filter,
+    expected_idcs,
+    chroma_override=False,
+):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
     documents = []
@@ -135,11 +144,41 @@ def test_smoke(tmp_local_root, source_storage_cls, metadata_filter, expected_idc
         num_tokens=num_tokens,
     )
 
-    actual_idcs = sorted(map(int, (source.document_name for source in sources)))
-    assert actual_idcs == expected_idcs
+    if (
+        not (
+            source_storage_cls is Chroma
+            and isinstance(metadata_filter, MetadataFilter)
+            and metadata_filter.operator
+            in {
+                MetadataOperator.NE,
+                MetadataOperator.NOT_IN,
+            }
+        )
+        or chroma_override
+    ):
+        actual_idcs = sorted(map(int, (source.document_name for source in sources)))
+        assert actual_idcs == expected_idcs
 
     # Should be able to call .store() multiple times
     source_storage.store(corpus_name, documents)
+
+
+@pytest.mark.parametrize(
+    ("metadata_filter", "expected_idcs"),
+    [
+        pytest.param(MetadataFilter.ne("key", "value"), [2, 3, 4, 5, 6], id="ne"),
+        pytest.param(
+            MetadataFilter.not_in("key", ["foo", "bar"]), [0, 1, 2, 3, 4], id="not_in"
+        ),
+    ],
+)
+def test_chroma_ne_nin_non_existing_keys(
+    tmp_local_root, metadata_filter, expected_idcs
+):
+    # See https://github.com/Quansight/ragna/issues/523 for details
+    test_smoke(
+        tmp_local_root, Chroma, metadata_filter, expected_idcs, chroma_override=True
+    )
 
 
 @pytest.mark.parametrize("source_storage_cls", [Chroma, LanceDB])
