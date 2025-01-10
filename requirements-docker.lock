@@ -90,11 +90,19 @@ greenlet==3.1.1
 grpcio==1.68.1
     # via
     #   chromadb
+    #   grpcio-tools
     #   opentelemetry-exporter-otlp-proto-grpc
+    #   qdrant-client
+grpcio-tools==1.68.1
+    # via qdrant-client
 h11==0.14.0
     # via
     #   httpcore
     #   uvicorn
+h2==4.1.0
+    # via httpx
+hpack==4.0.0
+    # via h2
 httpcore==1.0.7
     # via httpx
 httptools==0.6.4
@@ -104,12 +112,15 @@ httpx==0.28.1
     #   Ragna (pyproject.toml)
     #   chromadb
     #   fastapi
+    #   qdrant-client
 httpx-sse==0.4.0
     # via Ragna (pyproject.toml)
 huggingface-hub==0.26.5
     # via tokenizers
 humanfriendly==10.0
     # via coloredlogs
+hyperframe==6.0.1
+    # via h2
 idna==3.10
     # via
     #   anyio
@@ -164,6 +175,7 @@ numpy==2.2.0
     #   onnxruntime
     #   pandas
     #   pylance
+    #   qdrant-client
 oauthlib==3.2.2
     # via
     #   kubernetes
@@ -240,6 +252,8 @@ pillow==11.0.0
     # via
     #   bokeh
     #   python-pptx
+portalocker==2.10.1
+    # via qdrant-client
 posthog==3.7.4
     # via chromadb
 prompt-toolkit==3.0.36
@@ -247,6 +261,7 @@ prompt-toolkit==3.0.36
 protobuf==5.29.1
     # via
     #   googleapis-common-protos
+    #   grpcio-tools
     #   onnxruntime
     #   opentelemetry-proto
 pyarrow==18.1.0
@@ -266,6 +281,7 @@ pydantic==2.10.3
     #   fastapi
     #   lancedb
     #   pydantic-settings
+    #   qdrant-client
 pydantic-core==2.27.1
     # via
     #   Ragna (pyproject.toml)
@@ -314,6 +330,8 @@ pyyaml==6.0.2
     #   huggingface-hub
     #   kubernetes
     #   uvicorn
+qdrant-client==1.12.2
+    # via Ragna (pyproject.toml)
 questionary==2.0.1
     # via Ragna (pyproject.toml)
 regex==2024.11.6
@@ -399,6 +417,7 @@ uc-micro-py==1.0.3
 urllib3==2.2.3
     # via
     #   kubernetes
+    #   qdrant-client
     #   requests
 uvicorn==0.32.1
     # via
@@ -430,3 +449,6 @@ xyzservices==2024.9.0
     # via bokeh
 zipp==3.21.0
     # via importlib-metadata
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
