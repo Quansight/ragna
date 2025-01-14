@@ -34,11 +34,13 @@ Explore and test different LLMs quickly in Python.
 Select and configure LLMs, upload documents, and chat with the LLM with a web
 application. Use it out-of-the-box or as a reference to build custom web applications.
 
-[Learn more →](generated/tutorials/gallery_rest_api.md)
+[Learn more →](generated/tutorials/gallery_web_ui.md)
 
 ### REST API to build web apps :fontawesome-solid-bolt:{ .icon }
 
 Create custom RAG-based web applications for your particular needs.
+
+[Learn more →](generated/tutorials/gallery_rest_api.md)
 
 ### Free and Open Source in ethos :fontawesome-solid-heart:{ .icon }
 
