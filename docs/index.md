@@ -20,29 +20,42 @@ your work.
 
 ## Key features
 
-<!-- TODO: Switch to Card grid when it's available in the OSS version.
-Ref: https://squidfunk.github.io/mkdocs-material/reference/grids/#using-card-grids -->
+<div class="grid cards" markdown>
 
-### Python API designed for experimentation :fontawesome-solid-flask:{ .icon }
+- :fontawesome-solid-flask:{ .icon } **Python API designed for experimentation**
 
-Explore and test different LLMs quickly in Python.
+  ***
 
-[Learn more →](generated/tutorials/gallery_python_api.md)
+  Explore and test different LLMs quickly in Python.
 
-### Web UI for chat interface :fontawesome-solid-window-maximize:{ .icon }
+  [Learn more :octicons-arrow-right-24:](generated/tutorials/gallery_python_api.md)
 
-Select and configure LLMs, upload documents, and chat with the LLM with a web
-application. Use it out-of-the-box or as a reference to build custom web applications.
+- :fontawesome-solid-window-maximize:{ .icon } **Web UI for chat interface**
 
-[Learn more →](generated/tutorials/gallery_rest_api.md)
+  ***
 
-### REST API to build web apps :fontawesome-solid-bolt:{ .icon }
+  Select and configure LLMs, upload documents, and chat with the LLM with a web
+  application.
 
-Create custom RAG-based web applications for your particular needs.
+  Use it out-of-the-box or as a reference to build custom web applications.
 
-### Free and Open Source in ethos :fontawesome-solid-heart:{ .icon }
+  [Learn more :octicons-arrow-right-24:](generated/tutorials/gallery_web_ui.md)
 
-Ragna is developed and distributed under the permissive BSD 3-Clause License for open
-source software.
+- :fontawesome-solid-bolt:{ .icon } **REST API to build web apps**
 
-[Join the community →](community/contribute.md)
+  ***
+
+  Create custom RAG-based web applications for your particular needs.
+
+  [Learn more :octicons-arrow-right-24:](generated/tutorials/gallery_rest_api.md)
+
+- :fontawesome-solid-heart:{ .icon } **Free and Open Source in ethos**
+
+  ***
+
+  Ragna is developed and distributed under the permissive BSD 3-Clause License for open
+  source software.
+
+  [Join the community :octicons-arrow-right-24:](community/contribute.md)
+
+</div>
