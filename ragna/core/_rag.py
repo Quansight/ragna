@@ -31,7 +31,6 @@ from ragna._utils import as_async_iterator, as_awaitable, default_user
 from ._components import (
     Assistant,
     Component,
-    DefaultQueryPreprocessor,
     Message,
     MessageRole,
     QueryPreprocessor,
@@ -248,6 +247,7 @@ class Chat:
         source_storage: SourceStorage,
         assistant: Assistant,
         corpus_name: str = "default",
+        preprocessor: QueryPreprocessor = Optional[QueryPreprocessor],
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -256,6 +256,7 @@ class Chat:
         self.source_storage = source_storage
         self.assistant = assistant
         self.corpus_name = corpus_name
+        self.preprocessor = preprocessor
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -264,7 +265,7 @@ class Chat:
         self._unpacked_params = self._unpack_chat_params(params)
 
         self._messages: list[Message] = []
-        self.preprocessor: QueryPreprocessor = DefaultQueryPreprocessor()
+        self.preprocessor: QueryPreprocessor = preprocessor
 
     async def prepare(self) -> Message:
         """Prepare the chat.
@@ -308,8 +309,11 @@ class Chat:
                 http_status_code=status.HTTP_400_BAD_REQUEST,
                 http_detail=RagnaException.EVENT,
             )
+        if self.preprocessor is not None:
+            processed = self.preprocessor.process(prompt, self.metadata_filter)
+            prompt = processed.answer_query
+            metadata_filter = processed.metadata_filter
 
-        processed = self.preprocessor.process(prompt, self.metadata_filter)
         sources = await self._as_awaitable(
             self.source_storage.retrieve,
             self.corpus_name,

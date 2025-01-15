@@ -5,7 +5,7 @@ import enum
 import functools
 import inspect
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import field
 from datetime import datetime, timezone
 from typing import (
     Any,
@@ -306,8 +306,7 @@ class Assistant(Component, abc.ABC):
         ...
 
 
-@dataclass
-class QueryProcessingStep:
+class QueryProcessingStep(pydantic.BaseModel):
     original_query: str
     processed_query: str
     metadata_filter: Optional[MetadataFilter] = None
@@ -315,35 +314,23 @@ class QueryProcessingStep:
     metadata: dict = field(default_factory=dict)
 
 
-@dataclass
-class ProcessedQuery:
-    retrieval_query: str
-    answer_query: str
+class ProcessedQuery(pydantic.BaseModel):
+    """original query is the query as it was passed to the preprocessor.
+    processed query is the query after each step of the processing pipeline.
+    metadata_filter is the metadata filter that was applied to the query."""
+
+    original_query: str
+    processed_query: str
     metadata_filter: MetadataFilter
     processing_history: List[QueryProcessingStep] = field(default_factory=list)
 
 
-class QueryPreprocessor(abc.ABC):
+class QueryPreprocessor(Component, abc.ABC):
+    """Abstract base class for query preprocessors."""
+
     @abc.abstractmethod
     def process(
         self, query: str, metadata_filter: Optional[MetadataFilter] = None
     ) -> ProcessedQuery:
-        pass
-
-    @classmethod
-    def display_name(cls) -> str:
-        return cls.__name__
-
-
-class DefaultQueryPreprocessor(QueryPreprocessor):
-    def process(
-        self, query: str, metadata_filter: Optional[MetadataFilter] = None
-    ) -> ProcessedQuery:
-        return ProcessedQuery(
-            retrieval_query=query,
-            answer_query=query,
-            metadata_filter=metadata_filter or MetadataFilter(),
-            processing_history=[
-                QueryProcessingStep(query, query, metadata_filter, self.display_name())
-            ],
-        )
+        """Preprocess a query."""
+        ...
