@@ -54,7 +54,7 @@ from ragna.source_storages import RagnaDemoSourceStorage
 #
 #     - [ragna.source_storages.Chroma][]
 #     - [ragna.source_storages.LanceDB][]
-#     - [ragna.source_storages.QdrantDB][]
+#     - [ragna.source_storages.Qdrant][]
 
 # %%
 # ## Step 3: Select an assistant
