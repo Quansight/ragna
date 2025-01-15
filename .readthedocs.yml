@@ -9,7 +9,7 @@ build:
     python: "mambaforge-22.9"
   jobs:
     pre_install:
-      - git update-index --assume-unchanged environment-dev.yml docs/conf.py
+      - git update-index --assume-unchanged environment-dev.yml mkdocs.yml
     post_checkout:
       # Check out the full depth for setuptools-scm
       - git fetch --unshallow || true
