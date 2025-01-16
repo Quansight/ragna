@@ -65,7 +65,7 @@ all = [
 [tool.setuptools_scm]
 write_to = "ragna/_version.py"
 version_scheme = "release-branch-semver"
-local_scheme = "node-and-timestamp"
+local_scheme = "node-and-date"
 
 [project.scripts]
 ragna = "ragna.__main__:app"
