@@ -1,6 +1,7 @@
 __all__ = [
     "Chroma",
     "LanceDB",
+    "Qdrant",
     "RagnaDemoSourceStorage",
 ]
 
