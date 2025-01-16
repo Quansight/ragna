@@ -25,8 +25,8 @@ build:
       - ./git-lfs checkout
     pre_install:
       - git status --untracked-files=no --porcelain
-      - git status --untracked-files=no --porcelain | python -c 'import sys;
-        [print(l.strip().split(" ", 1)[1]) for l in sys.stdin]'
+      - git status --untracked-files=no --porcelain | python -c "import sys;
+        [print(l.strip().split(maxsplit=1)[1]) for l in sys.stdin]"
       - git update-index --assume-unchanged $(git status --untracked-files=no
         --porcelain | sed -E 's/\s*\S+\s+//')
     post_install:
