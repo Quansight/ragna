@@ -25,6 +25,8 @@ build:
       - ./git-lfs checkout
     pre_install:
       - git update-index --assume-unchanged environment-dev.yml mkdocs.yml
+    post_install:
+      - git update-index --no-assume-unchanged environment-dev.yml mkdocs.yml
 
 mkdocs:
   configuration: mkdocs.yml
