@@ -23,7 +23,6 @@ build:
       - ./git-lfs install
       - ./git-lfs fetch
       - ./git-lfs checkout
-      - git clean -xdf
     pre_install:
       - git status --untracked-files=no --porcelain
       - sed --version
