@@ -24,6 +24,8 @@ build:
       - ./git-lfs fetch
       - ./git-lfs checkout
     pre_install:
+      - git status --untracked-files=no --porcelain
+      - sed --version
       - git status --untracked-files=no --porcelain | sed -E 's/\s*\S+\s+//'
       - git update-index --assume-unchanged $(git status --untracked-files=no
         --porcelain | sed -E 's/\s*\S+\s+//')
