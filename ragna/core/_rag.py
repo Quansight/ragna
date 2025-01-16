@@ -155,6 +155,7 @@ class Rag(Generic[C]):
         *,
         source_storage: Union[SourceStorage, type[SourceStorage], str],
         assistant: Union[Assistant, type[Assistant], str],
+        preprocessor: Optional[QueryPreprocessor] = None,
         corpus_name: str = "default",
         **params: Any,
     ) -> Chat:
@@ -179,6 +180,7 @@ class Rag(Generic[C]):
             input=input,
             source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
             assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
+            preprocessor=preprocessor,  # cast(preprocessor, self._load_component(preprocessor)),  # type: ignore[arg-type]
             corpus_name=corpus_name,
             **params,
         )
@@ -246,8 +248,8 @@ class Chat:
         *,
         source_storage: SourceStorage,
         assistant: Assistant,
+        preprocessor: QueryPreprocessor = None,
         corpus_name: str = "default",
-        preprocessor: QueryPreprocessor = Optional[QueryPreprocessor],
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -310,15 +312,15 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
         if self.preprocessor is not None:
-            processed = self.preprocessor.process(prompt, self.metadata_filter)
-            prompt = processed.answer_query
-            metadata_filter = processed.metadata_filter
+            processed = self.preprocessor().process(prompt, self.metadata_filter)
+            prompt = processed.processed_query
+            self.metadata_filter = processed.metadata_filter
 
         sources = await self._as_awaitable(
             self.source_storage.retrieve,
             self.corpus_name,
-            processed.metadata_filter,
-            processed.retrieval_query,
+            self.metadata_filter,
+            prompt,
         )
         if not sources:
             event = "Unable to retrieve any sources."

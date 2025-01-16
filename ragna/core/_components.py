@@ -311,7 +311,6 @@ class QueryProcessingStep(pydantic.BaseModel):
     processed_query: str
     metadata_filter: Optional[MetadataFilter] = None
     processor_name: str = ""
-    metadata: dict = field(default_factory=dict)
 
 
 class ProcessedQuery(pydantic.BaseModel):
