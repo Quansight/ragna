@@ -24,9 +24,10 @@ build:
       - ./git-lfs fetch
       - ./git-lfs checkout
     pre_install:
-      - git update-index --assume-unchanged environment-dev.yml mkdocs.yml
+      - git update-index --assume-unchanged $(git status --untracked-files=no
+        --porcelain | sed -E 's/\s*\S+\s+//')
     post_install:
-      - git update-index --no-assume-unchanged environment-dev.yml mkdocs.yml
+      - git update-index --really-refresh
 
 mkdocs:
   configuration: mkdocs.yml
