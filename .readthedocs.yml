@@ -23,10 +23,12 @@ build:
       - ./git-lfs install
       - ./git-lfs fetch
       - ./git-lfs checkout
+      - git clean -xdf
     pre_install:
       - git status --untracked-files=no --porcelain
       - sed --version
       - git status --untracked-files=no --porcelain | sed -E 's/\s*\S+\s+//'
+      - git status --untracked-files=no --porcelain | cut -d' ' -f3
       - git update-index --assume-unchanged $(git status --untracked-files=no
         --porcelain | sed -E 's/\s*\S+\s+//')
     post_install:
