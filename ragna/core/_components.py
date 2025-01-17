@@ -320,7 +320,7 @@ class ProcessedQuery(pydantic.BaseModel):
 
     original_query: str
     processed_query: str
-    metadata_filter: MetadataFilter
+    metadata_filter: Optional[MetadataFilter] = None
     processing_history: List[QueryProcessingStep] = field(default_factory=list)
 
 

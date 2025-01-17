@@ -180,7 +180,7 @@ class Rag(Generic[C]):
             input=input,
             source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
             assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
-            preprocessor=preprocessor,  # cast(preprocessor, self._load_component(preprocessor)),  # type: ignore[arg-type]
+            preprocessor=cast(preprocessor, self._load_component(preprocessor)),  # type: ignore[arg-type]
             corpus_name=corpus_name,
             **params,
         )
@@ -267,7 +267,6 @@ class Chat:
         self._unpacked_params = self._unpack_chat_params(params)
 
         self._messages: list[Message] = []
-        self.preprocessor: QueryPreprocessor = preprocessor
 
     async def prepare(self) -> Message:
         """Prepare the chat.
@@ -312,7 +311,7 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
         if self.preprocessor is not None:
-            processed = self.preprocessor().process(prompt, self.metadata_filter)
+            processed = self.preprocessor.process(prompt, self.metadata_filter)
             prompt = processed.processed_query
             self.metadata_filter = processed.metadata_filter
 

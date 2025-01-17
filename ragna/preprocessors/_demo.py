@@ -13,14 +13,12 @@ class RagnaDemoPreprocessor(QueryPreprocessor):
         self, query: str, metadata_filter: Optional[MetadataFilter] = None
     ) -> ProcessedQuery:
         """Retrieval query is the original query, answer query is the processed query."""
-        print(query)
-        print(metadata_filter)
         processed_query = """This is a demo preprocessor. It doesn't do anything to the query. original query: """
         processed_query += query
         return ProcessedQuery(
             original_query=query,
             processed_query=processed_query,
-            metadata_filter=metadata_filter or MetadataFilter(),
+            metadata_filter=metadata_filter or None,
             processing_history=[
                 QueryProcessingStep(
                     original_query=query,
