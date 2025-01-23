@@ -117,7 +117,7 @@ class Rag(Generic[C]):
 
             instance = None
         else:
-            raise RagnaException
+            raise RagnaException("Unknown component", component=component)
 
         if cls not in self._components:
             if instance is None:
