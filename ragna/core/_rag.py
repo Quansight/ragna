@@ -103,7 +103,6 @@ class Rag(Generic[C]):
     ) -> Optional[C]:
         cls: type[C]
         instance: Optional[C]
-
         if isinstance(component, Component):
             instance = cast(C, component)
             cls = type(instance)
@@ -175,12 +174,14 @@ class Rag(Generic[C]):
             corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
+        if preprocessor is not None:
+            preprocessor = (cast(preprocessor, self._load_component(preprocessor)),)  # type: ignore[arg-type]
         return Chat(
             self,
             input=input,
             source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
             assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
-            preprocessor=cast(preprocessor, self._load_component(preprocessor)),  # type: ignore[arg-type]
+            preprocessor=preprocessor,
             corpus_name=corpus_name,
             **params,
         )
