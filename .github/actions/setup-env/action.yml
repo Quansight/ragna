@@ -18,6 +18,7 @@ runs:
       with:
         miniforge-version: latest
         activate-environment: ragna-dev
+        conda-remove-defaults: true
 
     - name: Display conda info
       shell: bash -elo pipefail {0}
