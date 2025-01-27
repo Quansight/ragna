@@ -132,16 +132,20 @@ class Database:
         session.commit()
 
     def _get_orm_documents(
-        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID] | None = None
     ) -> list[orm.Document]:
         # FIXME also check if the user is allowed to access the documents
         # FIXME: maybe just take the user id to avoid getting it twice in add_chat?
         documents = (
-            session.execute(select(orm.Document).where(orm.Document.id.in_(ids)))
-            .scalars()
-            .all()
+            (
+                session.execute(select(orm.Document).where(orm.Document.id.in_(ids)))
+                .scalars()
+                .all()
+            )
+            if ids is not None
+            else session.execute(select(orm.Document)).scalars().all()
         )
-        if len(documents) != len(ids):
+        if (ids is not None) and (len(documents) != len(ids)):
             raise RagnaException(
                 str(set(ids) - {document.id for document in documents})
             )
@@ -149,7 +153,7 @@ class Database:
         return documents  # type: ignore[no-any-return]
 
     def get_documents(
-        self, session: Session, *, user: str, ids: Collection[uuid.UUID]
+        self, session: Session, *, user: str, ids: Collection[uuid.UUID] | None = None
     ) -> list[schemas.Document]:
         return [
             self._to_schema.document(document)
