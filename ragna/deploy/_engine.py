@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from typing import Any, AsyncIterator, Optional, cast
+from typing import Any, AsyncIterator, Collection, Optional, cast
 
 from fastapi import status as http_status_code
 
@@ -182,16 +182,19 @@ class Engine:
 
         streams = dict(ids_and_streams)
 
-        with self._database.get_session() as session:
-            documents = self._database.get_documents(
-                session, user=user, ids=streams.keys()
-            )
+        documents = self.get_documents(user, streams.keys())
 
         for document in documents:
             core_document = cast(
                 ragna.core.LocalDocument, self._to_core.document(document)
             )
             await core_document._write(streams[document.id])
+
+    def get_documents(self, user: str, ids: Collection[uuid.UUID] | None = None):
+        with self._database.get_session() as session:
+            documents = self._database.get_documents(session, user=user, ids=ids)
+
+        return documents
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
