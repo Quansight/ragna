@@ -1,3 +1,4 @@
+import io
 import uuid
 from typing import Annotated, Any, AsyncIterator
 
@@ -47,6 +48,20 @@ def make_router(engine: Engine) -> APIRouter:
     @router.get("/documents/{id}")
     async def get_document(user: UserDependency, id: uuid.UUID) -> schemas.Document:
         return engine.get_document(user.name, id)
+
+    @router.get("/documents/{id}/content")
+    async def get_document_content(
+        user: UserDependency, id: uuid.UUID
+    ) -> StreamingResponse:
+        schema_document = engine.get_document(user.name, id)
+        core_document = engine._to_core(schema_document)
+        headers = {"Content-Disposition": f"inline; filename={schema_document.name}"}
+
+        return StreamingResponse(
+            io.BytesIO(core_document.read()),
+            media_type=core_document.mime_type,
+            headers=headers,
+        )
 
     @router.get("/components")
     def get_components() -> schemas.Components:
