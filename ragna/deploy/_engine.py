@@ -190,7 +190,9 @@ class Engine:
             )
             await core_document._write(streams[document.id])
 
-    def get_documents(self, user: str, ids: Collection[uuid.UUID] | None = None):
+    def get_documents(
+        self, user: str, ids: Collection[uuid.UUID] | None = None
+    ) -> list[schemas.Document]:
         with self._database.get_session() as session:
             documents = self._database.get_documents(session, user=user, ids=ids)
 
