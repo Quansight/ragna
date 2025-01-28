@@ -44,6 +44,10 @@ def make_router(engine: Engine) -> APIRouter:
     async def get_documents(user: UserDependency) -> list[schemas.Document]:
         return engine.get_documents(user.name)
 
+    @router.get("/documents/{id}")
+    async def get_document(user: UserDependency, id: uuid.UUID) -> schemas.Document:
+        return next(iter(engine.get_documents(user.name, [id])))
+
     @router.get("/components")
     def get_components() -> schemas.Components:
         return engine.get_components()
