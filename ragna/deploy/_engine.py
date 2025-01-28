@@ -288,6 +288,7 @@ class SchemaToCoreConverter:
             id=document.id,
             name=document.name,
             metadata=document.metadata,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: schemas.Source) -> core.Source:
@@ -336,6 +337,7 @@ class CoreToSchemaConverter:
             id=document.id,
             name=document.name,
             metadata=document.metadata,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: core.Source) -> schemas.Source:

@@ -292,6 +292,7 @@ class SchemaToOrmConverter:
             user_id=user_id,
             name=document.name,
             metadata_=document.metadata,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: schemas.Source) -> orm.Source:
@@ -358,7 +359,10 @@ class OrmToSchemaConverter:
 
     def document(self, document: orm.Document) -> schemas.Document:
         return schemas.Document(
-            id=document.id, name=document.name, metadata=document.metadata_
+            id=document.id,
+            name=document.name,
+            metadata=document.metadata_,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: orm.Source) -> schemas.Source:
