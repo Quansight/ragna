@@ -198,6 +198,9 @@ class Engine:
 
         return documents
 
+    def get_document(self, user: str, id: uuid.UUID) -> schemas.Document:
+        return next(iter(self.get_documents(user, [id])))
+
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
     ) -> schemas.Chat:
