@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import json
 import os
+import sys
 from pathlib import Path
 
 import httpx
@@ -40,7 +41,7 @@ async def test_api_call_error_smoke(mocker, assistant):
 @pytest.fixture
 def streaming_server():
     port = get_available_port()
-    base_url = f"http://localhost:{port}"
+    base_url = f"http://127.0.0.1:{port}"
 
     def check_fn():
         try:
@@ -49,6 +50,8 @@ def streaming_server():
             return False
 
     with BackgroundSubprocess(
+        sys.executable,
+        "-m",
         "uvicorn",
         f"--app-dir={Path(__file__).parent}",
         f"--port={port}",
