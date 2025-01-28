@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import json
 import os
+import sys
 from pathlib import Path
 
 import httpx
@@ -49,6 +50,8 @@ def streaming_server():
             return False
 
     with BackgroundSubprocess(
+        sys.executable,
+        "-m",
         "uvicorn",
         f"--app-dir={Path(__file__).parent}",
         f"--port={port}",
