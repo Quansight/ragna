@@ -54,7 +54,7 @@ def make_router(engine: Engine) -> APIRouter:
         user: UserDependency, id: uuid.UUID
     ) -> StreamingResponse:
         schema_document = engine.get_document(user.name, id)
-        core_document = engine._to_core(schema_document)
+        core_document = engine._to_core.document(schema_document)
         headers = {"Content-Disposition": f"inline; filename={schema_document.name}"}
 
         return StreamingResponse(
