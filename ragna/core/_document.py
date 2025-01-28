@@ -83,8 +83,11 @@ class LocalDocument(Document):
         name: str,
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
+        mime_type: str | None = None,
     ):
-        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
+        super().__init__(
+            id=id, name=name, metadata=metadata, handler=handler, mime_type=mime_type
+        )
         if "path" not in self.metadata:
             metadata["path"] = str(ragna.local_root() / "documents" / str(self.id))
 
