@@ -137,13 +137,13 @@ class Database:
         # FIXME also check if the user is allowed to access the documents
         # FIXME: maybe just take the user id to avoid getting it twice in add_chat?
         documents = (
-            (
-                session.execute(select(orm.Document).where(orm.Document.id.in_(ids)))
-                .scalars()
-                .all()
+            session.execute(
+                select(orm.Document).where(orm.Document.id.in_(ids))
+                if ids is not None
+                else select(orm.Document)
             )
-            if ids is not None
-            else session.execute(select(orm.Document)).scalars().all()
+            .scalars()
+            .all()
         )
         if (ids is not None) and (len(documents) != len(ids)):
             raise RagnaException(
