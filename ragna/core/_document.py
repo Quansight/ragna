@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import io
+import mimetypes
 import uuid
 from functools import cached_property
 from pathlib import Path
@@ -13,14 +14,6 @@ from pydantic import BaseModel
 import ragna
 
 from ._utils import PackageRequirement, RagnaException, Requirement, RequirementsMixin
-
-_MIME_TYPES = {
-    ".pdf": "application/pdf",
-    ".txt": "text/plain",
-    ".md": "text/plain",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-}
 
 
 class Document(RequirementsMixin, abc.ABC):
@@ -39,7 +32,11 @@ class Document(RequirementsMixin, abc.ABC):
         self.name = name
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
-        self.mime_type = mime_type or self.parse_mime_type(name)
+        self.mime_type = (
+            mime_type
+            or next(iter(mimetypes.guess_type(Path(name))))
+            or "application/octet-stream"
+        )
 
     @staticmethod
     def supported_suffixes() -> set[str]:
@@ -68,16 +65,6 @@ class Document(RequirementsMixin, abc.ABC):
 
     def extract_pages(self) -> Iterator[Page]:
         yield from self.handler.extract_pages(self)
-
-    @staticmethod
-    def parse_mime_type(name: str) -> str:
-        """Parse file MIME-type from file name suffix.
-
-        Args:
-            name: Name of the document.
-        """
-
-        return _MIME_TYPES.get(Path(name).suffix, "application/octet-stream")
 
 
 class LocalDocument(Document):
