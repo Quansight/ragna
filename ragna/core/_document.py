@@ -33,9 +33,7 @@ class Document(RequirementsMixin, abc.ABC):
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
         self.mime_type = (
-            mime_type
-            or next(iter(mimetypes.guess_type(name)))
-            or "application/octet-stream"
+            mime_type or mimetypes.guess_type(name)[0] or "application/octet-stream"
         )
 
     @staticmethod
