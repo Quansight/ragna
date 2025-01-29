@@ -137,8 +137,8 @@ class Database:
         # FIXME also check if the user is allowed to access the documents
         # FIXME: maybe just take the user id to avoid getting it twice in add_chat?
         expr = select(orm.Document)
-        expr = expr if ids is None else expr.where(orm.Document.id.in_(ids))
-
+        if ids is not None:
+            expr = expr.where(orm.Document.id.in_(ids))
         documents = session.execute(expr).scalars().all()
 
         if (ids is not None) and (len(documents) != len(ids)):
