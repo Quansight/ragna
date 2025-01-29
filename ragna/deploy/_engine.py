@@ -182,7 +182,7 @@ class Engine:
 
         streams = dict(ids_and_streams)
 
-        documents = self.get_documents(user, streams.keys())
+        documents = self.get_documents(user=user, ids=streams.keys())
 
         for document in documents:
             core_document = cast(
@@ -191,13 +191,13 @@ class Engine:
             await core_document._write(streams[document.id])
 
     def get_documents(
-        self, user: str, ids: Collection[uuid.UUID] | None = None
+        self, *, user: str, ids: Collection[uuid.UUID] | None = None
     ) -> list[schemas.Document]:
         with self._database.get_session() as session:
             return self._database.get_documents(session, user=user, ids=ids)
 
-    def get_document(self, user: str, id: uuid.UUID) -> schemas.Document:
-        return next(iter(self.get_documents(user, [id])))
+    def get_document(self, *, user: str, id: uuid.UUID) -> schemas.Document:
+        return next(iter(self.get_documents(user=user, ids=[id])))
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation

@@ -43,17 +43,17 @@ def make_router(engine: Engine) -> APIRouter:
 
     @router.get("/documents")
     async def get_documents(user: UserDependency) -> list[schemas.Document]:
-        return engine.get_documents(user.name)
+        return engine.get_documents(user=user.name)
 
     @router.get("/documents/{id}")
     async def get_document(user: UserDependency, id: uuid.UUID) -> schemas.Document:
-        return engine.get_document(user.name, id)
+        return engine.get_document(user=user.name, id=id)
 
     @router.get("/documents/{id}/content")
     async def get_document_content(
         user: UserDependency, id: uuid.UUID
     ) -> StreamingResponse:
-        schema_document = engine.get_document(user.name, id)
+        schema_document = engine.get_document(user=user.name, id=id)
         core_document = engine._to_core.document(schema_document)
         headers = {"Content-Disposition": f"inline; filename={schema_document.name}"}
 
