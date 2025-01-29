@@ -34,7 +34,7 @@ class Document(RequirementsMixin, abc.ABC):
         self.handler = handler or self.get_handler(name)
         self.mime_type = (
             mime_type
-            or next(iter(mimetypes.guess_type(Path(name))))
+            or next(iter(mimetypes.guess_type(name)))
             or "application/octet-stream"
         )
 
