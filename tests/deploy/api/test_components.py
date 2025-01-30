@@ -51,8 +51,8 @@ def test_unknown_component(tmp_local_root):
     config = Config(local_root=tmp_local_root)
 
     document_root = config.local_root / "documents"
-    document_root.mkdir()
-    document_path = document_root / "test.txt"
+    document_root.mkdir(exist_ok=True)
+    document_path = document_root / "test_unknown_component.txt"
     with open(document_path, "w") as file:
         file.write("!\n")
 
