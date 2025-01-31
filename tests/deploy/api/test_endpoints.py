@@ -44,8 +44,7 @@ def test_get_documents(tmp_local_root):
                 ],
             )
 
-        response = client.get("/api/documents")
-        response.raise_for_status()
+        response = client.get("/api/documents").raise_for_status()
 
         # Sort the items in case they are retrieved in different orders
         def _sorting_key(d):
@@ -83,8 +82,7 @@ def test_get_document(tmp_local_root):
                 files=[("documents", (document["id"], file))],
             )
 
-        response = client.get(f"/api/documents/{document['id']}")
-        response.raise_for_status()
+        response = client.get(f"/api/documents/{document['id']}").raise_for_status()
 
         assert document == response.json()
 
