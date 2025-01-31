@@ -38,12 +38,10 @@ def test_get_documents(tmp_local_root):
             ]
             client.put(
                 "/api/documents",
-                files={
-                    "documents": [
-                        (document["id"], file)
-                        for document, file in zip(documents, files)
-                    ]
-                },
+                files=[
+                    ("documents", (document["id"], file))
+                    for document, file in zip(documents, files)
+                ],
             )
 
         response = client.get("/api/documents")
@@ -82,7 +80,7 @@ def test_get_document(tmp_local_root):
         with open(document_path, "rb") as file:
             client.put(
                 "/api/documents",
-                files={"documents": [(document["id"], file)]},
+                files=[("documents", (document["id"], file))],
             )
 
         response = client.get(f"/api/documents/{document['id']}")
