@@ -89,3 +89,38 @@ def test_get_document(tmp_local_root):
         response.raise_for_status()
 
         assert document == response.json()
+
+
+def test_get_document_content(tmp_local_root):
+    config = Config(local_root=tmp_local_root)
+
+    document_root = config.local_root / "documents"
+    document_root.mkdir(exist_ok=True)
+    document_path = document_root / "test_get_document_content.txt"
+    with open(document_path, "w") as file:
+        file.write("Needs more reverb\n")
+
+    with make_api_client(
+        config=Config(), ignore_unavailable_components=False
+    ) as client:
+        document = (
+            client.post(
+                "/api/documents",
+                json=[{"name": document_path.name}],
+            )
+            .raise_for_status()
+            .json()[0]
+        )
+
+        with open(document_path, "rb") as file:
+            client.put(
+                "/api/documents",
+                files=[("documents", (document["id"], file))],
+            )
+
+        with client.stream(
+            "GET", f"/api/documents/{document['id']}/content"
+        ) as response:
+            received_lines = list(response.iter_lines())
+
+        assert received_lines == ["Needs more reverb"]
