@@ -197,7 +197,7 @@ class Engine:
             return self._database.get_documents(session, user=user, ids=ids)
 
     def get_document(self, *, user: str, id: uuid.UUID) -> schemas.Document:
-        return next(iter(self.get_documents(user=user, ids=[id])))
+        return self.get_documents(user=user, ids=[id])[0]
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
