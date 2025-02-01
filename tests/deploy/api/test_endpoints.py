@@ -46,11 +46,11 @@ def test_get_documents(tmp_local_root):
         response = client.get("/api/documents").raise_for_status()
 
         # Sort the items in case they are retrieved in different orders
-        def _sorting_key(d):
+        def sorting_key(d):
             return d["id"]
 
-        assert sorted(documents, key=_sorting_key) == sorted(
-            response.json(), key=_sorting_key
+        assert sorted(documents, key=sorting_key) == sorted(
+            response.json(), key=sorting_key
         )
 
 
