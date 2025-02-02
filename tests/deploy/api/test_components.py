@@ -4,6 +4,7 @@ from fastapi import status
 from ragna import assistants
 from ragna.core import RagnaException
 from ragna.deploy import Config
+from tests.deploy.api.utils import upload_documents
 from tests.deploy.utils import make_api_app, make_api_client
 
 
@@ -59,14 +60,7 @@ def test_unknown_component(tmp_local_root):
     with make_api_client(
         config=Config(), ignore_unavailable_components=False
     ) as client:
-        document = (
-            client.post("/api/documents", json=[{"name": document_path.name}])
-            .raise_for_status()
-            .json()[0]
-        )
-
-        with open(document_path, "rb") as file:
-            client.put("/api/documents", files={"documents": (document["id"], file)})
+        document = upload_documents(client=client, document_paths=[document_path])[0]
 
         response = client.post(
             "/api/chats",
@@ -80,7 +74,7 @@ def test_unknown_component(tmp_local_root):
             },
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-        error = response.json()["error"]
-        assert "Unknown component" in error["message"]
+    error = response.json()["error"]
+    assert "Unknown component" in error["message"]
