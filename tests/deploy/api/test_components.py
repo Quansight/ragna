@@ -57,9 +57,7 @@ def test_unknown_component(tmp_local_root):
     with open(document_path, "w") as file:
         file.write("!\n")
 
-    with make_api_client(
-        config=Config(), ignore_unavailable_components=False
-    ) as client:
+    with make_api_client(config=config, ignore_unavailable_components=False) as client:
         document = upload_documents(client=client, document_paths=[document_path])[0]
 
         response = client.post(
