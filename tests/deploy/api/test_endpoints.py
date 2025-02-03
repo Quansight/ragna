@@ -64,7 +64,8 @@ def test_get_documents(tmp_local_root, mime_type):
         )
 
 
-def test_get_document(tmp_local_root):
+@mime_types
+def test_get_document(tmp_local_root, mime_type):
     config = Config(local_root=tmp_local_root)
 
     document_root = config.local_root / "documents"
@@ -74,10 +75,24 @@ def test_get_document(tmp_local_root):
         file.write(_document_content_text[0])
 
     with make_api_client(config=config, ignore_unavailable_components=False) as client:
-        document = upload_documents(client=client, document_paths=[document_path])[0]
+        document = upload_documents(
+            client=client,
+            document_paths=[document_path],
+            mime_types=[mime_type],
+        )[0]
         response = client.get(f"/api/documents/{document['id']}").raise_for_status()
 
     assert document == response.json()
+
+    assert (
+        document["mime_type"]
+        == response.json()["mime_type"]
+        == (
+            mime_type
+            if mime_type is not None
+            else mimetypes.guess_type(document_path.name)[0]
+        )
+    )
 
 
 def test_get_document_content(tmp_local_root):
