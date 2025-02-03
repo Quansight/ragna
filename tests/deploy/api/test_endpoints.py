@@ -1,3 +1,7 @@
+import mimetypes
+
+import pytest
+
 from ragna.deploy import Config
 from tests.deploy.api.utils import upload_documents
 from tests.deploy.utils import make_api_client
@@ -7,7 +11,15 @@ _document_content_text = [
 ]
 
 
-def test_get_documents(tmp_local_root):
+@pytest.mark.parametrize(
+    ("mime_type",),
+    [
+        (None,),  # Let the mimetypes library decide
+        ("text/markdown",),
+        ("application/pdf",),
+    ],
+)
+def test_get_documents(tmp_local_root, mime_type):
     config = Config(local_root=tmp_local_root)
 
     document_root = config.local_root / "documents"
@@ -20,7 +32,11 @@ def test_get_documents(tmp_local_root):
             file.write(content)
 
     with make_api_client(config=config, ignore_unavailable_components=False) as client:
-        documents = upload_documents(client=client, document_paths=document_paths)
+        documents = upload_documents(
+            client=client,
+            document_paths=document_paths,
+            mime_types=[mime_type for _ in document_paths],
+        )
         response = client.get("/api/documents").raise_for_status()
 
     # Sort the items in case they are retrieved in different orders
@@ -30,6 +46,19 @@ def test_get_documents(tmp_local_root):
     assert sorted(documents, key=sorting_key) == sorted(
         response.json(), key=sorting_key
     )
+
+    for document, antwort in zip(
+        sorted(documents, key=sorting_key), sorted(response.json(), key=sorting_key)
+    ):
+        assert (
+            document["mime_type"]
+            == antwort["mime_type"]
+            == (
+                mime_type
+                if mime_type is not None
+                else mimetypes.guess_type(document_path.name)[0]
+            )
+        )
 
 
 def test_get_document(tmp_local_root):
