@@ -5,12 +5,14 @@ import enum
 import functools
 import inspect
 import uuid
+from dataclasses import field
 from datetime import datetime, timezone
 from typing import (
     Any,
     AsyncIterable,
     AsyncIterator,
     Iterator,
+    List,
     Optional,
     Type,
     Union,
@@ -301,4 +303,33 @@ class Assistant(Component, abc.ABC):
         Returns:
             Answer.
         """
+        ...
+
+
+class QueryProcessingStep(pydantic.BaseModel):
+    original_query: str
+    processed_query: str
+    metadata_filter: Optional[MetadataFilter] = None
+    processor_name: str = ""
+
+
+class ProcessedQuery(pydantic.BaseModel):
+    """original query is the query as it was passed to the preprocessor.
+    processed query is the query after each step of the processing pipeline.
+    metadata_filter is the metadata filter that was applied to the query."""
+
+    original_query: str
+    processed_query: str
+    metadata_filter: Optional[MetadataFilter] = None
+    processing_history: List[QueryProcessingStep] = field(default_factory=list)
+
+
+class QueryPreprocessor(Component, abc.ABC):
+    """Abstract base class for query preprocessors."""
+
+    @abc.abstractmethod
+    def process(
+        self, query: str, metadata_filter: Optional[MetadataFilter] = None
+    ) -> ProcessedQuery:
+        """Preprocess a query."""
         ...
