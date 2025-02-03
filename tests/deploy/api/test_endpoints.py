@@ -11,7 +11,7 @@ _document_content_text = [
 ]
 
 
-@pytest.mark.parametrize(
+mime_types = pytest.mark.parametrize(
     ("mime_type",),
     [
         (None,),  # Let the mimetypes library decide
@@ -19,6 +19,9 @@ _document_content_text = [
         ("application/pdf",),
     ],
 )
+
+
+@mime_types
 def test_get_documents(tmp_local_root, mime_type):
     config = Config(local_root=tmp_local_root)
 
