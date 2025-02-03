@@ -95,7 +95,8 @@ def test_get_document(tmp_local_root, mime_type):
     )
 
 
-def test_get_document_content(tmp_local_root):
+@mime_types
+def test_get_document_content(tmp_local_root, mime_type):
     config = Config(local_root=tmp_local_root)
 
     document_root = config.local_root / "documents"
@@ -106,11 +107,26 @@ def test_get_document_content(tmp_local_root):
         file.write(document_content)
 
     with make_api_client(config=config, ignore_unavailable_components=False) as client:
-        document = upload_documents(client=client, document_paths=[document_path])[0]
+        document = upload_documents(
+            client=client,
+            document_paths=[document_path],
+            mime_types=[mime_type],
+        )[0]
 
         with client.stream(
             "GET", f"/api/documents/{document['id']}/content"
         ) as response:
+            response_mime_type = response.headers["content-type"].split(";")[0]
             received_lines = list(response.iter_lines())
 
     assert received_lines == [document_content.replace("\n", "")]
+
+    assert (
+        document["mime_type"]
+        == response_mime_type
+        == (
+            mime_type
+            if mime_type is not None
+            else mimetypes.guess_type(document_path.name)[0]
+        )
+    )
