@@ -1,6 +1,6 @@
 # Frequently asked questions
 
-## Why should I use Ragna and not X?
+## Why should I use Ragna and not ...?
 
 !!! tip "TL;DR"
 
