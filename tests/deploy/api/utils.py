@@ -1,11 +1,19 @@
 import contextlib
 
 
-def upload_documents(*, client, document_paths):
+def upload_documents(*, client, document_paths, mime_types=None):
+    if mime_types is None:
+        mime_types = [None for _ in document_paths]
     documents = (
         client.post(
             "/api/documents",
-            json=[{"name": document_path.name} for document_path in document_paths],
+            json=[
+                {
+                    "name": document_path.name,
+                    "mime_type": mime_type,
+                }
+                for document_path, mime_type in zip(document_paths, mime_types)
+            ],
         )
         .raise_for_status()
         .json()
