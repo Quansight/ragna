@@ -78,6 +78,7 @@ class Components(BaseModel):
 class DocumentRegistration(BaseModel):
     name: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+    mime_type: str | None = None
 
 
 class Document(BaseModel):
