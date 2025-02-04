@@ -12,7 +12,11 @@ def upload_documents(*, client, document_paths, mime_types=None):
                     "name": document_path.name,
                     "mime_type": mime_type,
                 }
-                for document_path, mime_type in zip(document_paths, mime_types)
+                for document_path, mime_type in zip(
+                    document_paths,
+                    mime_types,
+                    strict=True,
+                )
             ],
         )
         .raise_for_status()
