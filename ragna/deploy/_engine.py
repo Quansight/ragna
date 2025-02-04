@@ -156,7 +156,9 @@ class Engine:
         # We create core.Document's first, because they might update the metadata
         core_documents = [
             self._config.document(
-                name=registration.name, metadata=registration.metadata
+                name=registration.name,
+                metadata=registration.metadata,
+                mime_type=registration.mime_type,
             )
             for registration in document_registrations
         ]
