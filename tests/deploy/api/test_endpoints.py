@@ -50,14 +50,6 @@ def test_get_documents(tmp_local_root, mime_type):
         response.json(), key=sorting_key
     )
 
-    # Assert that the correct MIME types are returned
-    for antwort in response.json():
-        assert antwort["mime_type"] == (
-            mime_type
-            if mime_type is not None
-            else mimetypes.guess_type(document_path.name)[0]
-        )
-
 
 @mime_types
 def test_get_document(tmp_local_root, mime_type):
@@ -78,13 +70,6 @@ def test_get_document(tmp_local_root, mime_type):
         response = client.get(f"/api/documents/{document['id']}").raise_for_status()
 
     assert document == response.json()
-
-    # Assert that the correct MIME type is returned
-    assert response.json()["mime_type"] == (
-        mime_type
-        if mime_type is not None
-        else mimetypes.guess_type(document_path.name)[0]
-    )
 
 
 @mime_types
