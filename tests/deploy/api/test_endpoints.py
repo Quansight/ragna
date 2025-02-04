@@ -50,17 +50,12 @@ def test_get_documents(tmp_local_root, mime_type):
         response.json(), key=sorting_key
     )
 
-    for document, antwort in zip(
-        sorted(documents, key=sorting_key), sorted(response.json(), key=sorting_key)
-    ):
-        assert (
-            document["mime_type"]
-            == antwort["mime_type"]
-            == (
-                mime_type
-                if mime_type is not None
-                else mimetypes.guess_type(document_path.name)[0]
-            )
+    # Assert that the correct MIME types are returned
+    for antwort in response.json():
+        assert antwort["mime_type"] == (
+            mime_type
+            if mime_type is not None
+            else mimetypes.guess_type(document_path.name)[0]
         )
 
 
@@ -84,14 +79,11 @@ def test_get_document(tmp_local_root, mime_type):
 
     assert document == response.json()
 
-    assert (
-        document["mime_type"]
-        == response.json()["mime_type"]
-        == (
-            mime_type
-            if mime_type is not None
-            else mimetypes.guess_type(document_path.name)[0]
-        )
+    # Assert that the correct MIME type is returned
+    assert response.json()["mime_type"] == (
+        mime_type
+        if mime_type is not None
+        else mimetypes.guess_type(document_path.name)[0]
     )
 
 
