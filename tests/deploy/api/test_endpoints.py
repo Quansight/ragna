@@ -94,9 +94,9 @@ def test_get_document_content(tmp_local_root, mime_type):
             "GET", f"/api/documents/{document['id']}/content"
         ) as response:
             response_mime_type = response.headers["content-type"].split(";")[0]
-            received_bytes = response.read()
+            received_lines = list(response.iter_lines())
 
-    assert received_bytes == document_content.encode("utf-8")
+    assert received_lines == [document_content.replace("\n", "")]
 
     assert (
         document["mime_type"]
