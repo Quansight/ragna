@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import io
+import mimetypes
 import uuid
 from functools import cached_property
 from pathlib import Path
@@ -25,11 +26,15 @@ class Document(RequirementsMixin, abc.ABC):
         name: str,
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
+        mime_type: str | None = None,
     ):
         self.id = id or uuid.uuid4()
         self.name = name
         self.metadata = metadata
         self.handler = handler or self.get_handler(name)
+        self.mime_type = (
+            mime_type or mimetypes.guess_type(name)[0] or "application/octet-stream"
+        )
 
     @staticmethod
     def supported_suffixes() -> set[str]:
@@ -76,8 +81,11 @@ class LocalDocument(Document):
         name: str,
         metadata: dict[str, Any],
         handler: Optional[DocumentHandler] = None,
+        mime_type: str | None = None,
     ):
-        super().__init__(id=id, name=name, metadata=metadata, handler=handler)
+        super().__init__(
+            id=id, name=name, metadata=metadata, handler=handler, mime_type=mime_type
+        )
         if "path" not in self.metadata:
             metadata["path"] = str(ragna.local_root() / "documents" / str(self.id))
 

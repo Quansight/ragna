@@ -1,6 +1,6 @@
 import secrets
 import uuid
-from typing import Any, AsyncIterator, Optional, cast
+from typing import Any, AsyncIterator, Collection, Optional, cast
 
 from fastapi import status as http_status_code
 
@@ -156,7 +156,9 @@ class Engine:
         # We create core.Document's first, because they might update the metadata
         core_documents = [
             self._config.document(
-                name=registration.name, metadata=registration.metadata
+                name=registration.name,
+                metadata=registration.metadata,
+                mime_type=registration.mime_type,
             )
             for registration in document_registrations
         ]
@@ -182,16 +184,22 @@ class Engine:
 
         streams = dict(ids_and_streams)
 
-        with self._database.get_session() as session:
-            documents = self._database.get_documents(
-                session, user=user, ids=streams.keys()
-            )
+        documents = self.get_documents(user=user, ids=streams.keys())
 
         for document in documents:
             core_document = cast(
                 ragna.core.LocalDocument, self._to_core.document(document)
             )
             await core_document._write(streams[document.id])
+
+    def get_documents(
+        self, *, user: str, ids: Collection[uuid.UUID] | None = None
+    ) -> list[schemas.Document]:
+        with self._database.get_session() as session:
+            return self._database.get_documents(session, user=user, ids=ids)
+
+    def get_document(self, *, user: str, id: uuid.UUID) -> schemas.Document:
+        return self.get_documents(user=user, ids=[id])[0]
 
     def create_chat(
         self, *, user: str, chat_creation: schemas.ChatCreation
@@ -280,6 +288,7 @@ class SchemaToCoreConverter:
             id=document.id,
             name=document.name,
             metadata=document.metadata,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: schemas.Source) -> core.Source:
@@ -328,6 +337,7 @@ class CoreToSchemaConverter:
             id=document.id,
             name=document.name,
             metadata=document.metadata,
+            mime_type=document.mime_type,
         )
 
     def source(self, source: core.Source) -> schemas.Source:

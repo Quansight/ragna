@@ -103,6 +103,7 @@ class Document(Base):
     # Mind the trailing underscore here. Unfortunately, this is necessary, because
     # metadata without the underscore is reserved by SQLAlchemy
     metadata_ = Column(Json, nullable=False)
+    mime_type = Column(types.String, nullable=False)
     chats = relationship(
         "Chat",
         secondary=document_chat_association_table,

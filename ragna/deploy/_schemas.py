@@ -78,12 +78,14 @@ class Components(BaseModel):
 class DocumentRegistration(BaseModel):
     name: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+    mime_type: str | None = None
 
 
 class Document(BaseModel):
     id: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str
     metadata: dict[str, Any]
+    mime_type: str
 
 
 class Source(BaseModel):
