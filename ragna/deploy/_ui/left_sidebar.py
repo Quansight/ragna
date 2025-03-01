@@ -82,7 +82,7 @@ class LeftSidebar(pn.viewable.Viewer):
             self.chat_buttons.append(button)
 
             try:
-                if chat["id"] == self.current_chat_id:
+                if str(chat.id) == self.current_chat_id:
                     button.css_classes.append("selected")
             except Exception:
                 pass

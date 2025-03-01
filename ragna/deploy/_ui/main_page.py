@@ -94,7 +94,7 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
     # Left sidebar callbacks
     def on_click_chat(self, chat):
         self.central_view.set_loading(True)
-        self.current_chat_id = chat["id"]
+        self.current_chat_id = chat.id
         self.central_view.set_current_chat(chat)
         self.central_view.set_loading(False)
 
