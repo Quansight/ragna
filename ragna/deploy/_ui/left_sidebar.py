@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import panel as pn
 import param
@@ -62,7 +62,7 @@ class LeftSidebar(pn.viewable.Viewer):
 
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
-        epoch = datetime(1970, 1, 1)
+        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
         self.chats.sort(
             key=lambda chat: (
@@ -82,7 +82,7 @@ class LeftSidebar(pn.viewable.Viewer):
             self.chat_buttons.append(button)
 
             try:
-                if chat["id"] == self.current_chat_id:
+                if str(chat.id) == self.current_chat_id:
                     button.css_classes.append("selected")
             except Exception:
                 pass
