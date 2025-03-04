@@ -296,7 +296,7 @@ class SchemaToOrmConverter:
             id=source.id,
             document_id=source.document_id,
             location=source.location,
-            content=source.content,
+            content=source.content.replace("\x00", ""),
             num_tokens=source.num_tokens,
         )
 
