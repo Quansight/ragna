@@ -194,7 +194,7 @@ class CentralView(pn.viewable.Viewer):
 
             pills = "".join(
                 [
-                    f"""<div class='chat_document_pill'>{d['name']}</div>"""
+                    f"""<div class='chat_document_pill'>{d.name}</div>"""
                     for d in self.current_chat.documents
                 ]
             )
@@ -270,13 +270,13 @@ class CentralView(pn.viewable.Viewer):
 
         source_infos = []
         for rank, source in enumerate(sources, 1):
-            location = source["location"]
+            location = source.location
             if location:
                 location = f": page(s) {location}"
             source_infos.append(
                 (
-                    f"<b>{rank}. {source['document_name']}</b> {location}",
-                    pn.pane.Markdown(source["content"], css_classes=["source-content"]),
+                    f"<b>{rank}. {source.document_name}</b> {location}",
+                    pn.pane.Markdown(source.content, css_classes=["source-content"]),
                 )
             )
 
