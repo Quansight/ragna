@@ -76,3 +76,7 @@ class RagnaDemoAssistant(Assistant):
                 sources="\n".join(sources_display),
             )
         )
+
+    @property
+    def avatar(self) -> str:
+        return "imgs/ragna_logo.svg"
