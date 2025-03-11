@@ -118,3 +118,8 @@ class Gpt4(OpenaiAssistant):
     """
 
     _MODEL = "gpt-4"
+
+    @property
+    def avatar(self) -> str:
+        """Return the avatar for this assistant in a chat."""
+        return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"
