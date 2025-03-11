@@ -307,4 +307,4 @@ class Assistant(Component, abc.ABC):
     @property
     def avatar(cls) -> str:
         """Return a default avatar for an assistant in a chat."""
-        return cls._MODEL[0].upper()
+        return cls.display_name().split("/")[-1][0].upper()
