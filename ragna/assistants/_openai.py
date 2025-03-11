@@ -96,8 +96,8 @@ class Gpt35Turbo16k(OpenaiAssistant):
 
     _MODEL = "gpt-3.5-turbo-16k"
 
-    @property
     @classmethod
+    @property
     def avatar(cls) -> str:
         """Return the avatar for this assistant in a chat."""
         return (
@@ -120,8 +120,8 @@ class Gpt4(OpenaiAssistant):
 
     _MODEL = "gpt-4"
 
-    @property
     @classmethod
+    @property
     def avatar(cls) -> str:
         """Return the avatar for this assistant in a chat."""
         return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"

@@ -71,8 +71,8 @@ class AnthropicAssistant(HttpApiAssistant):
 
                 yield cast(str, data["delta"].pop("text"))
 
-    @property
     @classmethod
+    @property
     def avatar(cls) -> str:
         """Return the avatar for this assistant in a chat."""
         return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
