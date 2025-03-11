@@ -302,3 +302,8 @@ class Assistant(Component, abc.ABC):
             Answer.
         """
         ...
+
+    @property
+    def avatar(self) -> str:
+        """Return a default avatar for an assistant in a chat."""
+        return "imgs/ragna_logo.svg"
