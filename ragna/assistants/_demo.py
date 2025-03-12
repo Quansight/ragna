@@ -78,6 +78,5 @@ class RagnaDemoAssistant(Assistant):
         )
 
     @classmethod
-    @property
     def avatar(cls) -> str:
         return "imgs/ragna_logo.svg"
