@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from typing import Callable, Literal, Optional, cast
 
 import panel as pn
@@ -57,12 +56,15 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
+        engine=None,
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
             content,
             css_classes=["message-content", css_class],
         )
+
+        self._engine = engine
 
         # we make this available on the instance so that we can update the value later
         self.clipboard_button = CopyToClipboardButton(
@@ -97,6 +99,20 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             "message-content-no-border" if role == "user" else "message-content-border"
         )
 
+        match role:
+            case "system":
+                avatar = "imgs/ragna_logo.svg"
+            case "user":
+                avatar = "👤"
+            case "assistant":
+                avatar = next(
+                    assistant["avatar"]
+                    for assistant in self._engine.get_components().assistants
+                    if assistant["title"] == user
+                )
+            case _:
+                raise ValueError(f"Encountered unexpected role {role}.")
+
         super().__init__(
             object=object,
             role=role,
@@ -109,37 +125,9 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
-            avatar_lookup=functools.partial(self._ragna_avatar_lookup, role=role),
+            avatar=avatar,
         )
         self._stylesheets.append("css/chat_interface/chatmessage.css")
-
-    # This cannot be a bound method, because it creates a reference cycle when trying
-    # to access the repr of the message. See
-    # https://github.com/Quansight/ragna/issues/359 for details.
-    @staticmethod
-    def _ragna_avatar_lookup(user: str, *, role: str) -> str:
-        if role == "system":
-            return "imgs/ragna_logo.svg"
-        elif role == "user":
-            return "👤"
-
-        try:
-            organization, model = user.split("/")
-        except ValueError:
-            organization = ""
-            model = user
-
-        if organization == "Ragna":
-            return "imgs/ragna_logo.svg"
-        elif organization == "OpenAI":
-            if model.startswith("gpt-3"):
-                return "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png?20230318122128"
-            elif model.startswith("gpt-4"):
-                return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"
-        elif organization == "Anthropic":
-            return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
-
-        return model[0].upper()
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
@@ -326,6 +314,7 @@ class CentralView(pn.viewable.Viewer):
                 sources=answer.sources,
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
                 assistant_toolbar_visible=False,
+                engine=self._engine,
             )
             yield message
 
@@ -366,6 +355,7 @@ class CentralView(pn.viewable.Viewer):
                     sources=message.sources,
                     timestamp=message.timestamp,
                     on_click_source_info_callback=self.on_click_source_info_wrapper,
+                    engine=self._engine,
                 )
                 for message in self.current_chat.messages
             ],
