@@ -90,6 +90,8 @@ class Engine:
                 del json_schema["properties"][special_param]
             if "required" in json_schema and special_param in json_schema["required"]:
                 json_schema["required"].remove(special_param)
+        if isinstance(component, core.Assistant):
+            json_schema["avatar"] = component.avatar()
         return json_schema
 
     def get_components(self) -> schemas.Components:
