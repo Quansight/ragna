@@ -21,6 +21,9 @@ __all__ = [
     "Source",
     "SourceStorage",
     "PlainTextDocumentHandler",
+    "QueryProcessingStep",
+    "ProcessedQuery",
+    "QueryPreprocessor",
 ]
 
 from ._utils import (
@@ -51,6 +54,9 @@ from ._components import (
     Component,
     Message,
     MessageRole,
+    ProcessedQuery,
+    QueryPreprocessor,
+    QueryProcessingStep,
     Source,
     SourceStorage,
 )

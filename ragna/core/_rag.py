@@ -28,7 +28,14 @@ from fastapi import status
 
 from ragna._utils import as_async_iterator, as_awaitable, default_user
 
-from ._components import Assistant, Component, Message, MessageRole, SourceStorage
+from ._components import (
+    Assistant,
+    Component,
+    Message,
+    MessageRole,
+    QueryPreprocessor,
+    SourceStorage,
+)
 from ._document import Document, LocalDocument
 from ._metadata_filter import MetadataFilter
 from ._utils import RagnaException, merge_models
@@ -96,7 +103,6 @@ class Rag(Generic[C]):
     ) -> Optional[C]:
         cls: type[C]
         instance: Optional[C]
-
         if isinstance(component, Component):
             instance = cast(C, component)
             cls = type(instance)
@@ -148,6 +154,7 @@ class Rag(Generic[C]):
         *,
         source_storage: Union[SourceStorage, type[SourceStorage], str],
         assistant: Union[Assistant, type[Assistant], str],
+        preprocessor: Optional[QueryPreprocessor] = None,
         corpus_name: str = "default",
         **params: Any,
     ) -> Chat:
@@ -167,11 +174,14 @@ class Rag(Generic[C]):
             corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
         """
+        if preprocessor is not None:
+            preprocessor = (cast(preprocessor, self._load_component(preprocessor)),)  # type: ignore[arg-type]
         return Chat(
             self,
             input=input,
             source_storage=cast(SourceStorage, self._load_component(source_storage)),  # type: ignore[arg-type]
             assistant=cast(Assistant, self._load_component(assistant)),  # type: ignore[arg-type]
+            preprocessor=preprocessor,
             corpus_name=corpus_name,
             **params,
         )
@@ -239,6 +249,7 @@ class Chat:
         *,
         source_storage: SourceStorage,
         assistant: Assistant,
+        preprocessor: QueryPreprocessor = None,
         corpus_name: str = "default",
         **params: Any,
     ) -> None:
@@ -248,6 +259,7 @@ class Chat:
         self.source_storage = source_storage
         self.assistant = assistant
         self.corpus_name = corpus_name
+        self.preprocessor = preprocessor
 
         special_params = SpecialChatParams().model_dump()
         special_params.update(params)
@@ -299,9 +311,16 @@ class Chat:
                 http_status_code=status.HTTP_400_BAD_REQUEST,
                 http_detail=RagnaException.EVENT,
             )
+        if self.preprocessor is not None:
+            processed = self.preprocessor.process(prompt, self.metadata_filter)
+            prompt = processed.processed_query
+            self.metadata_filter = processed.metadata_filter
 
         sources = await self._as_awaitable(
-            self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
+            self.source_storage.retrieve,
+            self.corpus_name,
+            self.metadata_filter,
+            prompt,
         )
         if not sources:
             event = "Unable to retrieve any sources."
