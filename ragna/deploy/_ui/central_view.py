@@ -155,6 +155,27 @@ class RagnaChatInterface(pn.chat.ChatInterface):
         )
 
 
+class AvatarLookup:
+    def __init__(self, engine):
+        self._assistants = {
+            a["title"]: a["avatar"] for a in engine.get_components().assistants
+        }
+
+    def __call__(self, *, user, role):
+        match role:
+            case "system":
+                avatar = "imgs/ragna_logo.svg"
+            case "user":
+                avatar = "👤"
+            case "assistant":
+                avatar = self._assistants.get(user)
+                if avatar is None:
+                    raise ValueError(f"Unkonwn assistant '{user}'")
+            case _:
+                raise ValueError(f"Encountered unexpected role {role}.")
+        return avatar
+
+
 class CentralView(pn.viewable.Viewer):
     current_chat = param.ClassSelector(class_=Chat, default=None)
 
