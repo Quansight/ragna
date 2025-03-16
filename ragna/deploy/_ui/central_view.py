@@ -129,6 +129,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             role="system",
             user=self.get_user_from_role("system"),
             show_timestamp=False,
+            avatar_lookup=AvatarLookup(),
         )
 
     def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
@@ -140,15 +141,20 @@ class RagnaChatInterface(pn.chat.ChatInterface):
         # generation of the system and assistant messages manually. Thus, we can
         # unconditionally create a user message here.
         return RagnaChatMessage(
-            message.object, role="user", user=cast(str, pn.state.user)
+            message.object,
+            role="user",
+            user=cast(str, pn.state.user),
+            avatar_lookup=AvatarLookup(),
         )
 
 
 class AvatarLookup:
-    def __init__(self, engine):
-        self._assistants = {
-            a["title"]: a["avatar"] for a in engine.get_components().assistants
-        }
+    def __init__(self, engine=None):
+        self._assistants = (
+            {a["title"]: a["avatar"] for a in engine.get_components().assistants}
+            if engine is not None
+            else None
+        )
 
     # `user` must be a positional argument and not a keyword argument because
     # that is what the initializer for `panel.chat.message.ChatMessage` expects.
@@ -160,6 +166,11 @@ class AvatarLookup:
             case "user":
                 avatar = "👤"
             case "assistant":
+                if self._assistants is None:
+                    raise ValueError(
+                        "Cannot fetch assistants in a context where the "
+                        "Ragna engine is not present."
+                    )
                 avatar = self._assistants.get(user)
                 if avatar is None:
                     raise ValueError(f"Unkonwn assistant '{user}'")
