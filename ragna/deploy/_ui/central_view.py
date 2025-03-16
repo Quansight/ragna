@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from typing import Callable, Literal, Optional, cast
 
 import panel as pn
@@ -56,15 +57,13 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
-        engine=None,
+        avatar_lookup: AvatarLookup | None = None,
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
             content,
             css_classes=["message-content", css_class],
         )
-
-        self._engine = engine
 
         # we make this available on the instance so that we can update the value later
         self.clipboard_button = CopyToClipboardButton(
@@ -99,20 +98,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             "message-content-no-border" if role == "user" else "message-content-border"
         )
 
-        match role:
-            case "system":
-                avatar = "imgs/ragna_logo.svg"
-            case "user":
-                avatar = "👤"
-            case "assistant":
-                avatar = next(
-                    assistant["avatar"]
-                    for assistant in self._engine.get_components().assistants
-                    if assistant["title"] == user
-                )
-            case _:
-                raise ValueError(f"Encountered unexpected role {role}.")
-
         super().__init__(
             object=object,
             role=role,
@@ -125,7 +110,11 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
-            avatar=avatar,
+            avatar_lookup=(
+                functools.partial(avatar_lookup, role=role)
+                if avatar_lookup is not None
+                else None
+            ),
         )
         self._stylesheets.append("css/chat_interface/chatmessage.css")
 
@@ -161,7 +150,10 @@ class AvatarLookup:
             a["title"]: a["avatar"] for a in engine.get_components().assistants
         }
 
-    def __call__(self, *, user, role):
+    # `user` must be a positional argument and not a keyword argument because
+    # that is what the initializer for `panel.chat.message.ChatMessage` expects.
+    # If `user` is a keyword argument, exceptions will be raised.
+    def __call__(self, user, *, role):
         match role:
             case "system":
                 avatar = "imgs/ragna_logo.svg"
@@ -192,6 +184,8 @@ class CentralView(pn.viewable.Viewer):
             css_classes=["chat-info-button"],
         )
         self.on_click_chat_info = None
+
+        self.avatar_lookup = AvatarLookup(engine)
 
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is None:
@@ -335,7 +329,7 @@ class CentralView(pn.viewable.Viewer):
                 sources=answer.sources,
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
                 assistant_toolbar_visible=False,
-                engine=self._engine,
+                avatar_lookup=self.avatar_lookup,
             )
             yield message
 
@@ -360,6 +354,7 @@ class CentralView(pn.viewable.Viewer):
                 ),
                 role="system",
                 user=self.get_user_from_role("system"),
+                avatar_lookup=self.avatar_lookup,
             )
 
     @pn.depends("current_chat")
@@ -376,7 +371,7 @@ class CentralView(pn.viewable.Viewer):
                     sources=message.sources,
                     timestamp=message.timestamp,
                     on_click_source_info_callback=self.on_click_source_info_wrapper,
-                    engine=self._engine,
+                    avatar_lookup=self.avatar_lookup,
                 )
                 for message in self.current_chat.messages
             ],
