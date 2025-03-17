@@ -62,7 +62,7 @@ class LeftSidebar(pn.viewable.Viewer):
 
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
-        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        epoch = datetime.now(tz=timezone.utc)
 
         self.chats.sort(
             key=lambda chat: (
