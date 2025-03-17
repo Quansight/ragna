@@ -57,7 +57,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
-        avatar=None,
         avatar_lookup: AvatarLookup | None = None,
     ):
         css_class = f"message-content-{self.role}"
@@ -111,7 +110,6 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
-            avatar=avatar if avatar is not None else "",
             avatar_lookup=(
                 functools.partial(avatar_lookup, role=role)
                 if avatar_lookup is not None
