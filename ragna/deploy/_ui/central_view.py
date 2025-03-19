@@ -122,6 +122,16 @@ class RagnaChatMessage(pn.chat.ChatMessage):
 class RagnaChatInterface(pn.chat.ChatInterface):
     get_user_from_role = param.Callable(allow_None=True)
 
+    def __init__(self, *args, **kwargs):
+        self.avatar_lookup = kwargs.pop("avatar_lookup", None)
+
+        if self.avatar_lookup is None:
+            raise ValueError(
+                "`RagnaChatInterface` requires that an `AvatarLookup` object be passed."
+            )
+
+        super().__init__(*args, **kwargs)
+
     @param.depends("placeholder_text", watch=True, on_init=True)
     def _update_placeholder(self):
         self._placeholder = RagnaChatMessage(
@@ -129,7 +139,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             role="system",
             user=self.get_user_from_role("system"),
             show_timestamp=False,
-            avatar_lookup=AvatarLookup(),
+            avatar_lookup=self.avatar_lookup,
         )
 
     def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
@@ -144,7 +154,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             message.object,
             role="user",
             user=cast(str, pn.state.user),
-            avatar_lookup=AvatarLookup(),
+            avatar_lookup=self.avatar_lookup,
         )
 
 
@@ -407,6 +417,7 @@ class CentralView(pn.viewable.Viewer):
                 )
             ],
             show_activity_dot=False,
+            avatar_lookup=self.avatar_lookup,
         )
 
     @pn.depends("current_chat")
