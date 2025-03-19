@@ -159,12 +159,10 @@ class RagnaChatInterface(pn.chat.ChatInterface):
 
 
 class AvatarLookup:
-    def __init__(self, engine=None):
-        self._assistants = (
-            {a["title"]: a["avatar"] for a in engine.get_components().assistants}
-            if engine is not None
-            else None
-        )
+    def __init__(self, *, engine):
+        self._assistants = {
+            a["title"]: a["avatar"] for a in engine.get_components().assistants
+        }
 
     # `user` must be a positional argument and not a keyword argument because
     # that is what the initializer for `panel.chat.message.ChatMessage` expects.
@@ -176,11 +174,6 @@ class AvatarLookup:
             case "user":
                 avatar = "👤"
             case "assistant":
-                if self._assistants is None:
-                    raise ValueError(
-                        "Cannot fetch assistants in a context where the "
-                        "Ragna engine is not present."
-                    )
                 avatar = self._assistants.get(user)
                 if avatar is None:
                     raise ValueError(f"Unkonwn assistant '{user}'")
@@ -206,7 +199,7 @@ class CentralView(pn.viewable.Viewer):
         )
         self.on_click_chat_info = None
 
-        self.avatar_lookup = AvatarLookup(engine)
+        self.avatar_lookup = AvatarLookup(engine=engine)
 
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is None:
