@@ -178,6 +178,8 @@ class Rag(Generic[C]):
 
 
 class SpecialChatParams(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(extra="allow")
+
     user: str = pydantic.Field(default_factory=default_user)
     chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
     chat_name: str = pydantic.Field(
