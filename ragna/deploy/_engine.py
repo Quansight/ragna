@@ -1,6 +1,5 @@
 import secrets
 import uuid
-from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Collection, Optional, cast
 
 from fastapi import status as http_status_code
@@ -221,7 +220,6 @@ class Engine:
             metadata_filter=metadata_filter,
             documents=documents,
             prepared=prepared,
-            created_at=datetime.now(tz=timezone.utc),
             **kwargs,
         )
 

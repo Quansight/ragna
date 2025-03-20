@@ -126,4 +126,4 @@ class Chat(BaseModel):
     params: dict[str, Any]
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False
-    created_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc))
