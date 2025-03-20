@@ -126,3 +126,4 @@ class Chat(BaseModel):
     params: dict[str, Any]
     messages: list[Message] = Field(default_factory=list)
     prepared: bool = False
+    datetime_created: datetime
