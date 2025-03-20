@@ -199,6 +199,7 @@ class Database:
                 corpus_name=chat.corpus_name,
                 params=chat.params,
                 prepared=chat.prepared,
+                datetime_created=chat.datetime_created,
             )
         )
         session.commit()
