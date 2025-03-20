@@ -337,6 +337,7 @@ class SchemaToOrmConverter:
                 self.message(message, chat_id=chat.id) for message in chat.messages
             ],
             prepared=chat.prepared,
+            datetime_created=chat.datetime_created,
         )
 
 
@@ -402,4 +403,5 @@ class OrmToSchemaConverter:
             params=chat.params,
             messages=[self.message(message) for message in chat.messages],
             prepared=chat.prepared,
+            datetime_created=chat.datetime_created,
         )
