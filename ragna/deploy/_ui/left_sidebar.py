@@ -62,9 +62,7 @@ class LeftSidebar(pn.viewable.Viewer):
     def __panel__(self):
         self.chats.sort(
             key=lambda chat: (
-                chat.datetime_created
-                if not chat.messages
-                else chat.messages[-1].timestamp
+                chat.created_at if not chat.messages else chat.messages[-1].timestamp
             ),
             reverse=True,
         )

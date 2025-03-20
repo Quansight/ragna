@@ -222,7 +222,7 @@ class Chat:
         source_storage: Source storage to use.
         assistant: Assistant to use.
         corpus_name: Corpus of documents to use.
-        datetime_created: Override datetime of creation
+        created_at: Override datetime of creation
         **params: Additional parameters passed to the source storage and assistant.
     """
 
@@ -241,7 +241,7 @@ class Chat:
         source_storage: SourceStorage,
         assistant: Assistant,
         corpus_name: str = "default",
-        datetime_created: datetime.datetime | None = None,
+        created_at: datetime.datetime | None = None,
         **params: Any,
     ) -> None:
         self._rag = rag
@@ -259,8 +259,8 @@ class Chat:
 
         self._messages: list[Message] = []
 
-        self.datetime_created: datetime.datetime = (
-            datetime_created or datetime.datetime.now(tz=datetime.timezone.utc)
+        self.created_at: datetime.datetime = created_at or datetime.datetime.now(
+            tz=datetime.timezone.utc
         )
 
     async def prepare(self) -> Message:
