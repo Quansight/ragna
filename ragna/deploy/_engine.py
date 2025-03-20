@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Collection, Optional, cast
 
 from fastapi import status as http_status_code
@@ -220,6 +221,7 @@ class Engine:
             metadata_filter=metadata_filter,
             documents=documents,
             prepared=prepared,
+            datetime_created=datetime.now(tz=timezone.utc),
             **kwargs,
         )
 
@@ -323,6 +325,7 @@ class SchemaToCoreConverter:
             source_storage=chat.source_storage,
             assistant=chat.assistant,
             corpus_name=chat.corpus_name,
+            datetime_created=chat.datetime_created,
             **chat.params,
         )
         core_chat._messages = [self.message(message) for message in chat.messages]
@@ -384,4 +387,5 @@ class CoreToSchemaConverter:
             params=params,
             messages=[self.message(message) for message in chat._messages],
             prepared=chat._prepared,
+            datetime_created=chat.datetime_created,
         )
