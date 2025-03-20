@@ -257,6 +257,10 @@ class Chat:
 
         self._messages: list[Message] = []
 
+        self.datetime_created: datetime.datetime = datetime.datetime.now(
+            tz=datetime.timezone.utc
+        )
+
     async def prepare(self) -> Message:
         """Prepare the chat.
 
