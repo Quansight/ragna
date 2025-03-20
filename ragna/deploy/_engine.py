@@ -387,5 +387,5 @@ class CoreToSchemaConverter:
             params=params,
             messages=[self.message(message) for message in chat._messages],
             prepared=chat._prepared,
-            created_at=chat.created_at,
+            created_at=chat.params["created_at"],
         )
