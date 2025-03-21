@@ -227,7 +227,6 @@ class Chat:
         source_storage: Source storage to use.
         assistant: Assistant to use.
         corpus_name: Corpus of documents to use.
-        created_at: Override datetime of creation
         **params: Additional parameters passed to the source storage and assistant.
     """
 
