@@ -256,7 +256,7 @@ class Chat:
         self.corpus_name = corpus_name
 
         self.params = SpecialChatParams(**params).model_dump()
-        self._unpacked_params = self._unpack_chat_params(params)
+        self._unpacked_params = self._unpack_chat_params(self.params)
 
         self._messages: list[Message] = []
 
