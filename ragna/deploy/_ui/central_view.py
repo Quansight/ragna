@@ -57,6 +57,7 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
+        avatar_lookup: AvatarLookup,
     ):
         css_class = f"message-content-{self.role}"
         self.content_pane = pn.pane.Markdown(
@@ -109,41 +110,23 @@ class RagnaChatMessage(pn.chat.ChatMessage):
             show_user=False,
             show_copy_icon=False,
             css_classes=[f"message-{role}"],
-            avatar_lookup=functools.partial(self._ragna_avatar_lookup, role=role),
+            avatar_lookup=functools.partial(avatar_lookup, role=role),
         )
         self._stylesheets.append("css/chat_interface/chatmessage.css")
-
-    # This cannot be a bound method, because it creates a reference cycle when trying
-    # to access the repr of the message. See
-    # https://github.com/Quansight/ragna/issues/359 for details.
-    @staticmethod
-    def _ragna_avatar_lookup(user: str, *, role: str) -> str:
-        if role == "system":
-            return "imgs/ragna_logo.svg"
-        elif role == "user":
-            return "👤"
-
-        try:
-            organization, model = user.split("/")
-        except ValueError:
-            organization = ""
-            model = user
-
-        if organization == "Ragna":
-            return "imgs/ragna_logo.svg"
-        elif organization == "OpenAI":
-            if model.startswith("gpt-3"):
-                return "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png?20230318122128"
-            elif model.startswith("gpt-4"):
-                return "https://upload.wikimedia.org/wikipedia/commons/a/a4/GPT-4.png"
-        elif organization == "Anthropic":
-            return "https://upload.wikimedia.org/wikipedia/commons/1/14/Anthropic.png"
-
-        return model[0].upper()
 
 
 class RagnaChatInterface(pn.chat.ChatInterface):
     get_user_from_role = param.Callable(allow_None=True)
+
+    def __init__(self, *args, **kwargs):
+        self.avatar_lookup = kwargs.pop("avatar_lookup", None)
+
+        if self.avatar_lookup is None:
+            raise ValueError(
+                "`RagnaChatInterface` requires that an `AvatarLookup` object be passed."
+            )
+
+        super().__init__(*args, **kwargs)
 
     @param.depends("placeholder_text", watch=True, on_init=True)
     def _update_placeholder(self):
@@ -152,6 +135,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             role="system",
             user=self.get_user_from_role("system"),
             show_timestamp=False,
+            avatar_lookup=self.avatar_lookup,
         )
 
     def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
@@ -163,8 +147,35 @@ class RagnaChatInterface(pn.chat.ChatInterface):
         # generation of the system and assistant messages manually. Thus, we can
         # unconditionally create a user message here.
         return RagnaChatMessage(
-            message.object, role="user", user=cast(str, pn.state.user)
+            message.object,
+            role="user",
+            user=cast(str, pn.state.user),
+            avatar_lookup=self.avatar_lookup,
         )
+
+
+class AvatarLookup:
+    def __init__(self, *, engine):
+        self._assistants = {
+            a["title"]: a["avatar"] for a in engine.get_components().assistants
+        }
+
+    # `user` must be a positional argument and not a keyword argument because
+    # that is what the initializer for `panel.chat.message.ChatMessage` expects.
+    # If `user` is a keyword argument, exceptions will be raised.
+    def __call__(self, user, *, role):
+        match role:
+            case "system":
+                avatar = "imgs/ragna_logo.svg"
+            case "user":
+                avatar = "👤"
+            case "assistant":
+                avatar = self._assistants.get(user)
+                if avatar is None:
+                    raise ValueError(f"Unkonwn assistant '{user}'")
+            case _:
+                raise ValueError(f"Encountered unexpected role {role}.")
+        return avatar
 
 
 class CentralView(pn.viewable.Viewer):
@@ -183,6 +194,8 @@ class CentralView(pn.viewable.Viewer):
             css_classes=["chat-info-button"],
         )
         self.on_click_chat_info = None
+
+        self.avatar_lookup = AvatarLookup(engine=engine)
 
     def on_click_chat_info_wrapper(self, event):
         if self.on_click_chat_info is None:
@@ -326,6 +339,7 @@ class CentralView(pn.viewable.Viewer):
                 sources=answer.sources,
                 on_click_source_info_callback=self.on_click_source_info_wrapper,
                 assistant_toolbar_visible=False,
+                avatar_lookup=self.avatar_lookup,
             )
             yield message
 
@@ -350,6 +364,7 @@ class CentralView(pn.viewable.Viewer):
                 ),
                 role="system",
                 user=self.get_user_from_role("system"),
+                avatar_lookup=self.avatar_lookup,
             )
 
     @pn.depends("current_chat")
@@ -366,6 +381,7 @@ class CentralView(pn.viewable.Viewer):
                     sources=message.sources,
                     timestamp=message.timestamp,
                     on_click_source_info_callback=self.on_click_source_info_wrapper,
+                    avatar_lookup=self.avatar_lookup,
                 )
                 for message in self.current_chat.messages
             ],
@@ -390,6 +406,7 @@ class CentralView(pn.viewable.Viewer):
                 )
             ],
             show_activity_dot=False,
+            avatar_lookup=self.avatar_lookup,
         )
 
     @pn.depends("current_chat")
