@@ -149,6 +149,7 @@ class Chat(Base):
         "Message", cascade="all, delete", order_by="Message.timestamp"
     )
     prepared = Column(types.Boolean, nullable=False)
+    created_at = Column(UtcAwareDateTime, nullable=False)
 
 
 source_message_association_table = Table(

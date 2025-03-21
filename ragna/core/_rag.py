@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import collections.abc
 import contextlib
-import datetime
 import itertools
 import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -178,10 +178,15 @@ class Rag(Generic[C]):
 
 
 class SpecialChatParams(pydantic.BaseModel):
+    model_config = pydantic.ConfigDict(extra="allow")
+
     user: str = pydantic.Field(default_factory=default_user)
     chat_id: uuid.UUID = pydantic.Field(default_factory=uuid.uuid4)
+    created_at: datetime = pydantic.Field(
+        default_factory=lambda: datetime.now(tz=timezone.utc)
+    )
     chat_name: str = pydantic.Field(
-        default_factory=lambda: f"Chat {datetime.datetime.now():%x %X}"
+        default_factory=lambda fields: f"Chat {fields['created_at']:%x %X}"
     )
 
 
@@ -249,11 +254,8 @@ class Chat:
         self.assistant = assistant
         self.corpus_name = corpus_name
 
-        special_params = SpecialChatParams().model_dump()
-        special_params.update(params)
-        params = special_params
-        self.params = params
-        self._unpacked_params = self._unpack_chat_params(params)
+        self.params = SpecialChatParams(**params).model_dump()
+        self._unpacked_params = self._unpack_chat_params(self.params)
 
         self._messages: list[Message] = []
 

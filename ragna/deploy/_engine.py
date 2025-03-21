@@ -325,6 +325,7 @@ class SchemaToCoreConverter:
             source_storage=chat.source_storage,
             assistant=chat.assistant,
             corpus_name=chat.corpus_name,
+            created_at=chat.created_at,
             **chat.params,
         )
         core_chat._messages = [self.message(message) for message in chat.messages]
@@ -379,6 +380,7 @@ class CoreToSchemaConverter:
         return schemas.Chat(
             id=params.pop("chat_id"),
             name=params.pop("chat_name"),
+            created_at=params.pop("created_at"),
             metadata_filter=metadata_filter,
             documents=documents,
             source_storage=chat.source_storage.display_name(),

@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 import panel as pn
 import param
 
@@ -62,11 +60,9 @@ class LeftSidebar(pn.viewable.Viewer):
 
     @pn.depends("refresh_counter", "chats", "current_chat_id", on_init=True)
     def __panel__(self):
-        epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-
         self.chats.sort(
             key=lambda chat: (
-                epoch if not chat.messages else chat.messages[-1].timestamp
+                chat.created_at if not chat.messages else chat.messages[-1].timestamp
             ),
             reverse=True,
         )

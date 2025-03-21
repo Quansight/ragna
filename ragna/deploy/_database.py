@@ -199,6 +199,7 @@ class Database:
                 corpus_name=chat.corpus_name,
                 params=chat.params,
                 prepared=chat.prepared,
+                created_at=chat.created_at,
             )
         )
         session.commit()
@@ -337,6 +338,7 @@ class SchemaToOrmConverter:
                 self.message(message, chat_id=chat.id) for message in chat.messages
             ],
             prepared=chat.prepared,
+            created_at=chat.created_at,
         )
 
 
@@ -402,4 +404,5 @@ class OrmToSchemaConverter:
             params=chat.params,
             messages=[self.message(message) for message in chat.messages],
             prepared=chat.prepared,
+            created_at=chat.created_at,
         )
