@@ -7,7 +7,7 @@ import importlib
 import importlib.metadata
 import os
 from collections import defaultdict
-from typing import Any, Callable, Collection, Optional, Type, Union, cast
+from typing import Any, Collection, Optional, Type, Union, cast
 
 import packaging.requirements
 import pydantic
@@ -133,9 +133,9 @@ def merge_models(
             if field.is_required():
                 default = ...
             elif field.default is pydantic_core.PydanticUndefined:
-                default = cast(Callable[[], Any], field.default_factory)()
+                default = ("default_factory", field.default_factory)
             else:
-                default = field.default
+                default = ("default", field.default)
 
             raw_field_definitions[name].append((type_, default))
 
@@ -149,14 +149,15 @@ def merge_models(
         type_ = types.pop()
 
         defaults = set(defaults)
-        if len(defaults) == 1:
-            default = defaults.pop()
-        elif ... in defaults:
-            default = ...
+        kwargs: dict[str, Any]
+        if ... in defaults:
+            kwargs = {}
+        elif len(defaults) == 1:
+            kwargs = dict(defaults)
         else:
-            default = None
+            kwargs = {"default": None}
 
-        field_definitions[name] = (type_, default)
+        field_definitions[name] = (type_, pydantic.Field(**kwargs))
 
     return cast(
         Type[pydantic.BaseModel],
