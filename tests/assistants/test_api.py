@@ -77,7 +77,28 @@ class HttpStreamingAssistant(HttpApiAssistant):
         super().__init__()
         self._endpoint = f"{base_url}/{self._STREAMING_PROTOCOL.name.lower()}"
 
-    async def answer(self, messages):
+    # def generate(self, messages):
+    #     if self._STREAMING_PROTOCOL is HttpStreamingProtocol.JSON:
+    #         parse_kwargs = dict(item="item")
+    #     else:
+    #         parse_kwargs = dict()
+    #
+    #     return self._call_api(
+    #         "POST",
+    #         self._endpoint,
+    #         content=messages[-1].content,
+    #         parse_kwargs=parse_kwargs,
+    #     )
+    #
+    # async def answer(self, messages):
+    #     async with self.generate(messages) as stream:
+    #         async for data in stream:
+    #             if data.get("break"):
+    #                 break
+    #
+    #             yield data
+
+    async def generate(self, messages):
         if self._STREAMING_PROTOCOL is HttpStreamingProtocol.JSON:
             parse_kwargs = dict(item="item")
         else:
@@ -89,11 +110,15 @@ class HttpStreamingAssistant(HttpApiAssistant):
             content=messages[-1].content,
             parse_kwargs=parse_kwargs,
         ) as stream:
-            async for chunk in stream:
-                if chunk.get("break"):
-                    break
+            async for data in stream:
+                yield data
 
-                yield chunk
+    async def answer(self, messages):
+        async for data in self.generate(messages):
+            if data.get("break"):
+                break
+
+            yield data
 
 
 @skip_on_windows

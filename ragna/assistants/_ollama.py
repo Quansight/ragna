@@ -32,17 +32,18 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
-        async with self._call_openai_api(
-            prompt, sources, max_new_tokens=max_new_tokens
-        ) as stream:
-            async for data in stream:
-                # Modeled after
-                # https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
-                if "error" in data:
-                    raise RagnaException(data["error"])
-                if not data["done"]:
-                    yield cast(str, data["message"]["content"])
+        message = messages[-1]
+        async for data in self.generate(
+            [message],
+            system_prompt=self._make_system_content(message.sources),
+            max_new_tokens=max_new_tokens,
+        ):
+            # Modeled after
+            # https://github.com/ollama/ollama/blob/06a1508bfe456e82ba053ea554264e140c5057b5/examples/python-loganalysis/readme.md?plain=1#L57-L62
+            if "error" in data:
+                raise RagnaException(data["error"])
+            if not data["done"]:
+                yield cast(str, data["message"]["content"])
 
 
 class OllamaGemma2B(OllamaAssistant):
