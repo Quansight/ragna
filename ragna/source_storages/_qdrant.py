@@ -82,6 +82,27 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
+    def _scroll_points(self, *args, **kwargs):
+        """
+        A generator that wraps `self._client.scroll`. This generator yields
+        all points in the source storage, fetching them from the database in batches
+        of size `limit`.
+
+        All arguments are passed to self._client.scroll.
+        """
+        offset = kwargs.pop("offset", None)
+        limit = kwargs.pop("limit", 10**6)
+        while True:
+            points, offset = self._client.scroll(
+                *args, offset=offset, limit=limit, **kwargs
+            )
+
+            for point in points:
+                yield point
+
+            if offset is None:
+                break
+
     def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
@@ -93,12 +114,10 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         metadata = {}
         for corpus_name in corpus_names:
-            points, _offset = self._client.scroll(
-                collection_name=corpus_name, with_payload=True
-            )
-
             corpus_metadata = defaultdict(set)
-            for point in points:
+            for point in self._scroll_points(
+                collection_name=corpus_name, with_payload=True
+            ):
                 for key, value in cast(dict[str, Any], point.payload).items():
                     if any(
                         [
