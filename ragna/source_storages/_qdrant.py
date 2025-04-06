@@ -83,7 +83,9 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    def _scroll_points(self, *args, **kwargs) -> Generator[Record, None, None]:
+    def _scroll_points(
+        self, *args: str, **kwargs: bool
+    ) -> Generator[Record, None, None]:
         """
         A generator that wraps `self._client.scroll`. This generator yields
         all points in the source storage, fetching them from the database in batches
