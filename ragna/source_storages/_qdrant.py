@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, Generator, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -20,6 +20,7 @@ from ._vector_database import VectorDatabaseSourceStorage
 
 if TYPE_CHECKING:
     from qdrant_client import models
+    from qdrant_client.conversions.common_types import Record
 
 
 class Qdrant(VectorDatabaseSourceStorage):
@@ -82,7 +83,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    def _scroll_points(self, *args, **kwargs):
+    def _scroll_points(self, *args, **kwargs) -> Generator[Record, None, None]:
         """
         A generator that wraps `self._client.scroll`. This generator yields
         all points in the source storage, fetching them from the database in batches
@@ -93,7 +94,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         offset = kwargs.pop("offset", None)
         limit = kwargs.pop("limit", 10**6)
         while True:
-            points, offset = self._client.scroll(
+            points, offset = self._client.scroll(  # type: ignore[misc]
                 *args, offset=offset, limit=limit, **kwargs
             )
 
