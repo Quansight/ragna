@@ -19,7 +19,7 @@ class Chroma(VectorDatabaseSourceStorage):
 
     !!! info "Required packages"
 
-        - `chromadb>=0.6.0`
+        - `chromadb>=1.0.0`
 
     !!! warning
 
@@ -52,7 +52,7 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def list_corpuses(self) -> list[str]:
-        return [str(c) for c in self._client.list_collections()]
+        return [c.name for c in self._client.list_collections()]
 
     def _get_collection(
         self, corpus_name: str, *, create: bool = False
