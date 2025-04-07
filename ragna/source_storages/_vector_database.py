@@ -46,7 +46,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             # to manage and mostly not even used by the vector DB. Chroma provides a
             # wrapper around a compiled embedding function that has only minimal
             # requirements. We use this as base for all of our Vector DBs.
-            PackageRequirement("chromadb>=0.6.0"),
+            PackageRequirement("chromadb>=1.0.0"),
             PackageRequirement("tiktoken"),
         ]
 
@@ -57,7 +57,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
         self._embedding_function = cast(
             chromadb.api.types.EmbeddingFunction,
-            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),  # type: ignore[attr-defined]
+            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),
         )
         self._embedding_name = self._embedding_function.MODEL_NAME  # type: ignore[attr-defined]
         self._embedding_id = hashlib.md5(
