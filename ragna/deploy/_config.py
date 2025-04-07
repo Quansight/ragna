@@ -119,7 +119,7 @@ class Config(BaseSettings):
         return self
 
     def _resolve_default_sentinels(self, config: Config) -> None:
-        for name, info in self.model_fields.items():
+        for name, info in type(self).model_fields.items():
             value = getattr(self, name)
             if isinstance(value, AfterConfigValidateDefault):
                 setattr(self, name, value.make_default(config))
