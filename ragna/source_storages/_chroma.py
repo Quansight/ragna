@@ -89,7 +89,7 @@ class Chroma(VectorDatabaseSourceStorage):
             corpus_metadata = defaultdict(set)
             for row in cast(
                 dict[str, list[Any]],
-                collection.get(include=["metadatas"]),  # type: ignore[list-item]
+                collection.get(include=["metadatas"]),
             )["metadatas"]:
                 for key, value in row.items():
                     if (key.startswith("__") and key.endswith("__")) or value is None:

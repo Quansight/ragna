@@ -57,7 +57,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
 
         self._embedding_function = cast(
             chromadb.api.types.EmbeddingFunction,
-            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),  # type: ignore[attr-defined]
+            chromadb.utils.embedding_functions.ONNXMiniLM_L6_V2(),
         )
         self._embedding_name = self._embedding_function.MODEL_NAME  # type: ignore[attr-defined]
         self._embedding_id = hashlib.md5(
