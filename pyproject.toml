@@ -102,6 +102,8 @@ testpaths = [
 filterwarnings = [
     "error",
     "ignore::ResourceWarning",
+    # chromadb
+    "ignore:Python 3.14 will:DeprecationWarning",
     # https://github.com/chroma-core/chroma/issues/4190
     "ignore:Accessing the 'model_fields':pydantic.warnings.PydanticDeprecatedSince211",
     # https://github.com/lancedb/lancedb/issues/2315
