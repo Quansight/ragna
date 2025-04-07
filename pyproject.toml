@@ -50,7 +50,7 @@ Repository = "https://github.com/Quansight/ragna"
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
-    "chromadb>=0.6.0",
+    "chromadb>=1.0.0",
     "httpx_sse",
     "ijson",
     "lancedb>=0.2",
@@ -102,12 +102,12 @@ testpaths = [
 filterwarnings = [
     "error",
     "ignore::ResourceWarning",
-    # https://github.com/lancedb/lancedb/issues/1296
-    "ignore:Function 'semver.parse_version_info' is deprecated:DeprecationWarning",
-    # chromadb -> opentelemetry -> google
-    "ignore:Type google._upb._message:DeprecationWarning",
-    # chromadb
-    "ignore:Python 3.14 will:DeprecationWarning"
+    # https://github.com/chroma-core/chroma/issues/4190
+    "ignore:Accessing the 'model_fields':pydantic.warnings.PydanticDeprecatedSince211",
+    # https://github.com/chroma-core/chroma/issues/4193
+    "ignore:Python 3.14 will:DeprecationWarning",
+    # https://github.com/lancedb/lancedb/issues/2315
+    "ignore:Support for class-based `config`:pydantic.warnings.PydanticDeprecatedSince20",
 ]
 xfail_strict = true
 

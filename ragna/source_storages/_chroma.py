@@ -19,7 +19,7 @@ class Chroma(VectorDatabaseSourceStorage):
 
     !!! info "Required packages"
 
-        - `chromadb>=0.6.0`
+        - `chromadb>=1.0.0`
 
     !!! warning
 
@@ -52,7 +52,7 @@ class Chroma(VectorDatabaseSourceStorage):
         )
 
     def list_corpuses(self) -> list[str]:
-        return [str(c) for c in self._client.list_collections()]
+        return [c.name for c in self._client.list_collections()]
 
     def _get_collection(
         self, corpus_name: str, *, create: bool = False
@@ -89,7 +89,7 @@ class Chroma(VectorDatabaseSourceStorage):
             corpus_metadata = defaultdict(set)
             for row in cast(
                 dict[str, list[Any]],
-                collection.get(include=["metadatas"]),  # type: ignore[list-item]
+                collection.get(include=["metadatas"]),
             )["metadatas"]:
                 for key, value in row.items():
                     if (key.startswith("__") and key.endswith("__")) or value is None:
