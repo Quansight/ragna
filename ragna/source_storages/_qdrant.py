@@ -89,12 +89,12 @@ class Qdrant(VectorDatabaseSourceStorage):
         """
         A generator that wraps `self._client.scroll`. This generator yields
         all points in the source storage, fetching them from the database in batches
-        of size `limit`.
+        of size `limit` (default 10 ** 3).
 
         All arguments are passed to self._client.scroll.
         """
         offset = kwargs.pop("offset", None)
-        limit = kwargs.pop("limit", 10**6)
+        limit = kwargs.pop("limit", 10**3)
         while True:
             points, offset = self._client.scroll(  # type: ignore[misc]
                 *args, offset=offset, limit=limit, **kwargs
