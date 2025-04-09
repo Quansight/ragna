@@ -133,7 +133,7 @@ class SourceStorage(Component, abc.ABC):
     __ragna_protocol_methods__ = ["store", "retrieve"]
 
     @abc.abstractmethod
-    def store(self, corpus_name: str, documents: list[Document]) -> None:
+    async def store(self, corpus_name: str, documents: list[Document]) -> None:
         """Store content of documents.
 
         Args:
@@ -143,7 +143,7 @@ class SourceStorage(Component, abc.ABC):
         ...
 
     @abc.abstractmethod
-    def retrieve(
+    async def retrieve(
         self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
     ) -> list[Source]:
         """Retrieve sources for a given prompt.
@@ -158,7 +158,7 @@ class SourceStorage(Component, abc.ABC):
         """
         ...
 
-    def list_corpuses(self) -> list[str]:
+    async def list_corpuses(self) -> list[str]:
         """List available corpuses.
 
         Returns:
@@ -171,7 +171,7 @@ class SourceStorage(Component, abc.ABC):
             http_detail=RagnaException.MESSAGE,
         )
 
-    def list_metadata(
+    async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         """List available metadata for corpuses.
