@@ -52,7 +52,7 @@ class RagnaDemoSourceStorage(SourceStorage):
 
         return corpus
 
-    def list_metadata(
+    async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         if corpus_name is None:
@@ -79,7 +79,7 @@ class RagnaDemoSourceStorage(SourceStorage):
 
         return metadata
 
-    def store(self, corpus_name: str, documents: list[Document]) -> None:
+    async def store(self, corpus_name: str, documents: list[Document]) -> None:
         corpus = self._get_corpus(corpus_name, create=True)
         # FIXME: handle updating metadata (either introducing new or filling with None)
         #  and add a type check
@@ -156,7 +156,7 @@ class RagnaDemoSourceStorage(SourceStorage):
 
             return rows_with_idx
 
-    def retrieve(
+    async def retrieve(
         self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str
     ) -> list[Source]:
         return [
