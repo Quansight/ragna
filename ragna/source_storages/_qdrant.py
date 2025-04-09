@@ -60,18 +60,18 @@ class Qdrant(VectorDatabaseSourceStorage):
             kwargs = dict(path=str(ragna.local_root() / "qdrant"))
         self._client = AsyncQdrantClient(**kwargs)  # type: ignore[arg-type]
 
-    def list_corpuses(self) -> list[str]:
-        return [c.name for c in self._client.get_collections().collections]
+    async def list_corpuses(self) -> list[str]:
+        return [c.name for c in (await self._client.get_collections()).collections]
 
-    def _ensure_table(self, corpus_name: str, *, create: bool = False) -> None:
-        table_names = self.list_corpuses()
+    async def _ensure_table(self, corpus_name: str, *, create: bool = False) -> None:
+        table_names = await self.list_corpuses()
         no_corpuses = not table_names
         non_existing_corpus = corpus_name not in table_names
 
         if non_existing_corpus and create:
             from qdrant_client import models
 
-            self._client.create_collection(
+            await self._client.create_collection(
                 collection_name=corpus_name,
                 vectors_config=models.VectorParams(
                     size=self._embedding_dimensions, distance=models.Distance.COSINE
@@ -82,18 +82,18 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    def list_metadata(
+    async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         if corpus_name is None:
-            corpus_names = self.list_corpuses()
+            corpus_names = await self.list_corpuses()
         else:
-            self._ensure_table(corpus_name)
+            await self._ensure_table(corpus_name)
             corpus_names = [corpus_name]
 
         metadata = {}
         for corpus_name in corpus_names:
-            points, _offset = self._client.scroll(
+            points, _offset = await self._client.scroll(
                 collection_name=corpus_name, with_payload=True
             )
 
@@ -118,7 +118,7 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         return metadata
 
-    def store(
+    async def store(
         self,
         corpus_name: str,
         documents: list[Document],
@@ -128,7 +128,7 @@ class Qdrant(VectorDatabaseSourceStorage):
     ) -> None:
         from qdrant_client import models
 
-        self._ensure_table(corpus_name, create=True)
+        await self._ensure_table(corpus_name, create=True)
 
         points = []
         for document in documents:
@@ -157,7 +157,7 @@ class Qdrant(VectorDatabaseSourceStorage):
                     )
                 )
 
-        self._client.upsert(collection_name=corpus_name, points=points)
+        await self._client.upsert(collection_name=corpus_name, points=points)
 
     def _build_condition(
         self, operator: MetadataOperator, key: str, value: Any
@@ -211,7 +211,7 @@ class Qdrant(VectorDatabaseSourceStorage):
             metadata_filter.operator, metadata_filter.key, metadata_filter.value
         )
 
-    def retrieve(
+    async def retrieve(
         self,
         corpus_name: str,
         metadata_filter: Optional[MetadataFilter],
@@ -222,7 +222,7 @@ class Qdrant(VectorDatabaseSourceStorage):
     ) -> list[Source]:
         from qdrant_client import models
 
-        self._ensure_table(corpus_name)
+        await self._ensure_table(corpus_name)
 
         # We cannot retrieve source by a maximum number of tokens. Thus, we estimate how
         # many sources we have to query. We overestimate by a factor of two to avoid
@@ -239,12 +239,14 @@ class Qdrant(VectorDatabaseSourceStorage):
         if isinstance(search_filter, models.FieldCondition):
             search_filter = models.Filter(must=[search_filter])
 
-        points = self._client.query_points(
-            collection_name=corpus_name,
-            query=query_vector,
-            limit=limit,
-            query_filter=search_filter,
-            with_payload=True,
+        points = (
+            await self._client.query_points(
+                collection_name=corpus_name,
+                query=query_vector,
+                limit=limit,
+                query_filter=search_filter,
+                with_payload=True,
+            )
         ).points
 
         return self._take_sources_up_to_max_tokens(
