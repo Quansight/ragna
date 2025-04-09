@@ -107,7 +107,8 @@ metadata_filters = pytest.mark.parametrize(
 @pytest.mark.parametrize(
     "source_storage_cls", set(SOURCE_STORAGES) - {RagnaDemoSourceStorage}
 )
-def test_smoke(
+@pytest.mark.asyncio
+async def test_smoke(
     tmp_local_root,
     source_storage_cls,
     metadata_filter,
@@ -133,11 +134,11 @@ def test_smoke(
     source_storage = source_storage_cls()
     corpus_name = "default"
 
-    source_storage.store(corpus_name, documents)
+    await source_storage.store(corpus_name, documents)
 
     prompt = "What is the secret number?"
     num_tokens = 4096
-    sources = source_storage.retrieve(
+    sources = await source_storage.retrieve(
         corpus_name=corpus_name,
         metadata_filter=metadata_filter,
         prompt=prompt,
@@ -160,7 +161,7 @@ def test_smoke(
         assert actual_idcs == expected_idcs
 
     # Should be able to call .store() multiple times
-    source_storage.store(corpus_name, documents)
+    await source_storage.store(corpus_name, documents)
 
 
 @pytest.mark.parametrize(
@@ -237,20 +238,22 @@ def test_corpus_names(tmp_local_root, source_storage_cls):
 
 
 @pytest.mark.parametrize("cls", SOURCE_STORAGES)
-def test_no_corpuses_error(tmp_local_root, cls):
+@pytest.mark.asyncio
+async def test_no_corpuses_error(tmp_local_root, cls):
     source_storage = cls()
 
     raises_error = pytest.raises(RagnaException, match="No corpuses available")
 
     with raises_error:
-        source_storage.list_metadata(corpus_name="")
+        await source_storage.list_metadata(corpus_name="")
 
     with raises_error:
-        source_storage.retrieve(corpus_name="", metadata_filter=None, prompt="")
+        await source_storage.retrieve(corpus_name="", metadata_filter=None, prompt="")
 
 
 @pytest.mark.parametrize("cls", SOURCE_STORAGES)
-def test_non_existing_corpus_error(tmp_local_root, cls):
+@pytest.mark.asyncio
+async def test_non_existing_corpus_error(tmp_local_root, cls):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
 
@@ -260,22 +263,23 @@ def test_non_existing_corpus_error(tmp_local_root, cls):
     document = LocalDocument.from_path(document_path)
 
     source_storage = cls()
-    source_storage.store(corpus_name="default", documents=[document])
+    await source_storage.store(corpus_name="default", documents=[document])
 
     unknown_corpus_name = "unknown"
     raises_error = pytest.raises(RagnaException, match="Corpus does not exist")
 
     with raises_error:
-        source_storage.list_metadata(corpus_name=unknown_corpus_name)
+        await source_storage.list_metadata(corpus_name=unknown_corpus_name)
 
     with raises_error:
-        source_storage.retrieve(
+        await source_storage.retrieve(
             corpus_name=unknown_corpus_name, metadata_filter=None, prompt=""
         )
 
 
 @pytest.mark.parametrize("cls", SOURCE_STORAGES)
-def test_list_metadata(tmp_local_root, cls):
+@pytest.mark.asyncio
+async def test_list_metadata(tmp_local_root, cls):
     document_root = tmp_local_root / "documents"
     document_root.mkdir()
 
@@ -298,7 +302,7 @@ def test_list_metadata(tmp_local_root, cls):
     source_storage = cls()
     expected_metadata = {}
     for corpus_name, documents in corpuses.items():
-        source_storage.store(corpus_name, documents)
+        await source_storage.store(corpus_name, documents)
 
         corpus_metadata = defaultdict(set)
         for document in documents:
@@ -317,7 +321,7 @@ def test_list_metadata(tmp_local_root, cls):
         corpus_name: {
             key: (type_, set(values)) for key, (type_, values) in metadata.items()
         }
-        for corpus_name, metadata in source_storage.list_metadata().items()
+        for corpus_name, metadata in (await source_storage.list_metadata()).items()
     }
 
     assert actual_metadata == expected_metadata
