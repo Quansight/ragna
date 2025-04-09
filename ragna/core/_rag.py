@@ -276,9 +276,7 @@ class Chat:
         if self._prepared:
             return welcome
 
-        await self._as_awaitable(
-            self.source_storage.store, self.corpus_name, self.documents
-        )
+        await self.source_storage.store(self.corpus_name, self.documents)
         self._prepared = True
 
         self._messages.append(welcome)
@@ -302,8 +300,8 @@ class Chat:
                 http_detail=RagnaException.EVENT,
             )
 
-        sources = await self._as_awaitable(
-            self.source_storage.retrieve, self.corpus_name, self.metadata_filter, prompt
+        sources = await self.source_storage.retrieve(
+            self.corpus_name, self.metadata_filter, prompt
         )
         if not sources:
             event = "Unable to retrieve any sources."
