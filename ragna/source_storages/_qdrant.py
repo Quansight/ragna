@@ -52,13 +52,13 @@ class Qdrant(VectorDatabaseSourceStorage):
     def __init__(self) -> None:
         super().__init__()
 
-        from qdrant_client import QdrantClient
+        from qdrant_client import AsyncQdrantClient
 
         if (url := os.environ.get("QDRANT_URL")) is not None:
             kwargs = dict(url=url, api_key=os.environ.get("QDRANT_API_KEY"))
         else:
             kwargs = dict(path=str(ragna.local_root() / "qdrant"))
-        self._client = QdrantClient(**kwargs)  # type: ignore[arg-type]
+        self._client = AsyncQdrantClient(**kwargs)  # type: ignore[arg-type]
 
     def list_corpuses(self) -> list[str]:
         return [c.name for c in self._client.get_collections().collections]
