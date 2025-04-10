@@ -183,11 +183,12 @@ async def test_smoke(
         ),
     ],
 )
-def test_chroma_ne_nin_non_existing_keys(
+@pytest.mark.asyncio
+async def test_chroma_ne_nin_non_existing_keys(
     tmp_local_root, metadata_filter, expected_idcs
 ):
     # See https://github.com/Quansight/ragna/issues/523 for details
-    test_smoke(
+    await test_smoke(
         tmp_local_root, Chroma, metadata_filter, expected_idcs, chroma_override=True
     )
 
