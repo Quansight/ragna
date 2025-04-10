@@ -312,7 +312,8 @@ async def test_list_metadata(tmp_local_root, cls):
     document_root.mkdir()
 
     documents = []
-    for idx in range(5):
+    num_documents = 36
+    for idx in range(num_documents):
         path = (document_root / f"document{idx}").with_suffix(
             random.choice([".txt", ".md"])
         )
@@ -322,9 +323,10 @@ async def test_list_metadata(tmp_local_root, cls):
             )
         documents.append(LocalDocument.from_path(path))
 
+    corpus_size = 12
     corpuses = {
-        "corpus0": documents[: len(documents) // 2],
-        "corpus1": documents[len(documents) // 2 :],
+        f"corpus{batch}": documents[batch * corpus_size : (batch + 1) * corpus_size]
+        for batch in range(num_documents // corpus_size)
     }
 
     source_storage = cls()
