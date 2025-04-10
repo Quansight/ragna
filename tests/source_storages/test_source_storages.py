@@ -163,7 +163,7 @@ async def test_smoke(
         )
         or chroma_override
     ):
-        actual_idcs = sorted(map(int, (source.document_name for source in sources)))
+        actual_idcs = sorted(int(source.document_name) for source in sources)
         assert actual_idcs == expected_idcs
 
     # Should be able to call .store() multiple times
