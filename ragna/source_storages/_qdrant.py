@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import itertools
 import os
 import uuid
 from collections import defaultdict
@@ -82,6 +84,47 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
+    async def _fetch_metadata(self, *args: Any, **kwargs: Any):
+        limit = kwargs.pop("limit", None)
+        _ = kwargs.pop("with_payload", None)
+
+        ids = []
+        while True:
+            records, offset = await self._client.scroll(
+                *args,
+                with_payload=False,
+                # This limit is large because we are trying to make only
+                # one request. In order to know the offsets, we first need
+                # to know the IDs, and this is how we find them.
+                limit=10**6,
+                **kwargs,
+            )
+            ids.extend(record.id for record in records)
+            if offset is None:
+                break
+
+        # This limit is purely heuristic.
+        # There is no way to know a priori the size of the metadata, so
+        # we just limit ourselves to twenty requests to the database.
+        # This can change in the future.
+        limit = limit if limit is not None else max(len(ids) // 20, 10)
+
+        return itertools.chain.from_iterable(
+            records[0]
+            for records in await asyncio.gather(
+                *[
+                    self._client.scroll(
+                        *args,
+                        with_payload=True,
+                        limit=limit,
+                        offset=offset,
+                        **kwargs,
+                    )
+                    for offset in ids[::limit]
+                ]
+            )
+        )
+
     async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
@@ -93,7 +136,7 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         metadata = {}
         for corpus_name in corpus_names:
-            points, _offset = await self._client.scroll(
+            points = await self._fetch_metadata(
                 collection_name=corpus_name, with_payload=True
             )
 
