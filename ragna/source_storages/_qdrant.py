@@ -86,7 +86,7 @@ class Qdrant(VectorDatabaseSourceStorage):
 
     async def _fetch_metadata(self, *args: Any, **kwargs: Any):
         limit = kwargs.pop("limit", None)
-        _ = kwargs.pop("with_payload", None)
+        with_payload = kwargs.pop("with_payload", None)
 
         ids = []
         while True:
@@ -115,7 +115,7 @@ class Qdrant(VectorDatabaseSourceStorage):
                 *[
                     self._client.scroll(
                         *args,
-                        with_payload=True,
+                        with_payload=with_payload,
                         limit=limit,
                         offset=offset,
                         **kwargs,
