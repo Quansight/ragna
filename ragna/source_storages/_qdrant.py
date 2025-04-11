@@ -84,20 +84,18 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    async def _fetch_metadata(self, *args: Any, **kwargs: Any):
-        limit = kwargs.pop("limit", None)
-        with_payload = kwargs.pop("with_payload", None)
-
+    async def _fetch_metadata(self, *, corpus_name: str, limit: Optional[int] = None):
         ids = []
+        offset = None
         while True:
             records, offset = await self._client.scroll(
-                *args,
+                collection_name=corpus_name,
                 with_payload=False,
                 # This limit is large because we are trying to make only
                 # one request. In order to know the offsets, we first need
                 # to know the IDs, and this is how we find them.
                 limit=10**6,
-                **kwargs,
+                offset=offset,
             )
             ids.extend(record.id for record in records)
             if offset is None:
@@ -114,11 +112,10 @@ class Qdrant(VectorDatabaseSourceStorage):
             for records in await asyncio.gather(
                 *[
                     self._client.scroll(
-                        *args,
-                        with_payload=with_payload,
+                        collection_name=corpus_name,
+                        with_payload=True,
                         limit=limit,
                         offset=offset,
-                        **kwargs,
                     )
                     for offset in ids[::limit]
                 ]
@@ -136,9 +133,7 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         metadata = {}
         for corpus_name in corpus_names:
-            points = await self._fetch_metadata(
-                collection_name=corpus_name, with_payload=True
-            )
+            points = await self._fetch_metadata(corpus_name=corpus_name)
 
             corpus_metadata = defaultdict(set)
             for point in points:
