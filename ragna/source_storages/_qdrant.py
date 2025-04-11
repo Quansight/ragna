@@ -85,7 +85,7 @@ class Qdrant(VectorDatabaseSourceStorage):
             raise_non_existing_corpus(self, corpus_name)
 
     async def _fetch_raw_metadata_entries(
-        self, *, corpus_name: str, limit: Optional[int] = None
+        self, *, corpus_name: str
     ) -> AsyncGenerator[dict[str, Any], None]:
         ids: list[str] = []
         offset = None
@@ -107,7 +107,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         # There is no way to know a priori the size of the metadata, so
         # we just limit ourselves to twenty requests to the database.
         # This can change in the future.
-        limit: int = limit if limit is not None else max(len(ids) // 20, 10)
+        limit: int = max(len(ids) // 20, 10)
 
         for payload in itertools.chain.from_iterable(
             (cast(dict[str, Any], record.payload) for record in records)
