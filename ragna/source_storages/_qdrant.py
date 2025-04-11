@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, AsyncIterator, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -82,6 +83,66 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
+    async def _fetch_raw_metadata_entries(
+        self, *, corpus_name: str
+    ) -> AsyncIterator[dict[str, Any]]:
+        ids: list[str] = []
+        offset = None
+        while True:
+            records, offset = await self._client.scroll(
+                collection_name=corpus_name,
+                with_payload=False,
+                # This limit is large because we are trying to make only
+                # one request. In order to know the offsets, we first need
+                # to know the IDs, and this is how we find them.
+                limit=10**6,
+                offset=offset,
+            )
+            ids.extend(cast(str, record.id) for record in records)
+            if offset is None:
+                break
+
+        # This limit is purely heuristic.
+        # There is no way to know a priori the size of the metadata, so
+        # we just limit ourselves to twenty requests to the database.
+        # This can change in the future.
+        limit: int = max(len(ids) // 20, 10)
+
+        for result in asyncio.as_completed(
+            [
+                self._client.scroll(
+                    collection_name=corpus_name,
+                    with_payload=True,
+                    limit=limit,
+                    offset=offset,
+                )
+                for offset in ids[::limit]
+            ]
+        ):
+            records, _ = await result
+            for record in records:
+                yield cast(dict[str, Any], record.payload)
+
+    async def _fetch_metadata(self, corpus_name: str) -> dict[str, Any]:
+        corpus_metadata = defaultdict(set)
+        async for point in self._fetch_raw_metadata_entries(corpus_name=corpus_name):
+            for key, value in point.items():
+                if any(
+                    [
+                        (key.startswith("__") and key.endswith("__")),
+                        key == self.DOC_CONTENT_KEY,
+                        not value,
+                    ]
+                ):
+                    continue
+
+                corpus_metadata[key].add(value)
+
+        return {
+            key: ({type(value).__name__ for value in values}.pop(), sorted(values))
+            for key, values in corpus_metadata.items()
+        }
+
     async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
@@ -91,32 +152,14 @@ class Qdrant(VectorDatabaseSourceStorage):
             await self._ensure_table(corpus_name)
             corpus_names = [corpus_name]
 
-        metadata = {}
-        for corpus_name in corpus_names:
-            points, _offset = await self._client.scroll(
-                collection_name=corpus_name, with_payload=True
+        return dict(
+            zip(
+                corpus_names,
+                await asyncio.gather(
+                    *[self._fetch_metadata(corpus_name) for corpus_name in corpus_names]
+                ),
             )
-
-            corpus_metadata = defaultdict(set)
-            for point in points:
-                for key, value in cast(dict[str, Any], point.payload).items():
-                    if any(
-                        [
-                            (key.startswith("__") and key.endswith("__")),
-                            key == self.DOC_CONTENT_KEY,
-                            not value,
-                        ]
-                    ):
-                        continue
-
-                    corpus_metadata[key].add(value)
-
-            metadata[corpus_name] = {
-                key: ({type(value).__name__ for value in values}.pop(), sorted(values))
-                for key, values in corpus_metadata.items()
-            }
-
-        return metadata
+        )
 
     async def store(
         self,
