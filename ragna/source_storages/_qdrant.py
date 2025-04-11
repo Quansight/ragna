@@ -84,7 +84,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    async def _fetch_metadata(
+    async def _fetch_raw_metadata(
         self, *, corpus_name: str, limit: Optional[int] = None
     ) -> AsyncGenerator[dict[str, Any], None]:
         ids: list[str] = []
@@ -125,9 +125,9 @@ class Qdrant(VectorDatabaseSourceStorage):
         ):
             yield payload
 
-    async def _transform_metadata(self, corpus_name: str) -> dict[str, Any]:
+    async def _fetch_metadata(self, corpus_name: str) -> dict[str, Any]:
         corpus_metadata = defaultdict(set)
-        async for point in self._fetch_metadata(corpus_name=corpus_name):
+        async for point in self._fetch_raw_metadata(corpus_name=corpus_name):
             for key, value in point.items():
                 if any(
                     [
@@ -158,10 +158,7 @@ class Qdrant(VectorDatabaseSourceStorage):
             zip(
                 corpus_names,
                 await asyncio.gather(
-                    *[
-                        self._transform_metadata(corpus_name)
-                        for corpus_name in corpus_names
-                    ]
+                    *[self._fetch_metadata(corpus_name) for corpus_name in corpus_names]
                 ),
             )
         )
