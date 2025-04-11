@@ -125,6 +125,26 @@ class Qdrant(VectorDatabaseSourceStorage):
         ):
             yield payload
 
+    async def _transform_metadata(self, corpus_name: str) -> dict[str, Any]:
+        corpus_metadata = defaultdict(set)
+        async for point in self._fetch_metadata(corpus_name=corpus_name):
+            for key, value in point.items():
+                if any(
+                    [
+                        (key.startswith("__") and key.endswith("__")),
+                        key == self.DOC_CONTENT_KEY,
+                        not value,
+                    ]
+                ):
+                    continue
+
+                corpus_metadata[key].add(value)
+
+        return {
+            key: ({type(value).__name__ for value in values}.pop(), sorted(values))
+            for key, values in corpus_metadata.items()
+        }
+
     async def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
@@ -134,28 +154,17 @@ class Qdrant(VectorDatabaseSourceStorage):
             await self._ensure_table(corpus_name)
             corpus_names = [corpus_name]
 
-        metadata = {}
-        for corpus_name in corpus_names:
-            corpus_metadata = defaultdict(set)
-            async for point in self._fetch_metadata(corpus_name=corpus_name):
-                for key, value in point.items():
-                    if any(
-                        [
-                            (key.startswith("__") and key.endswith("__")),
-                            key == self.DOC_CONTENT_KEY,
-                            not value,
-                        ]
-                    ):
-                        continue
-
-                    corpus_metadata[key].add(value)
-
-            metadata[corpus_name] = {
-                key: ({type(value).__name__ for value in values}.pop(), sorted(values))
-                for key, values in corpus_metadata.items()
-            }
-
-        return metadata
+        return dict(
+            zip(
+                corpus_names,
+                await asyncio.gather(
+                    *[
+                        self._transform_metadata(corpus_name)
+                        for corpus_name in corpus_names
+                    ]
+                ),
+            )
+        )
 
     async def store(
         self,
