@@ -15,6 +15,10 @@ anyio==4.7.0
     #   watchfiles
 asgiref==3.8.1
     # via opentelemetry-instrumentation-asgi
+attrs==25.3.0
+    # via
+    #   jsonschema
+    #   referencing
 backoff==2.2.1
     # via posthog
 bcrypt==4.2.1
@@ -26,7 +30,7 @@ bokeh==3.6.2
     #   bokeh-fastapi
     #   panel
 bokeh-fastapi==0.1.3
-    # via panel
+    # via Ragna (pyproject.toml)
 build==1.2.2.post1
     # via chromadb
 cachetools==5.5.0
@@ -41,11 +45,10 @@ charset-normalizer==3.4.0
     # via requests
 chroma-hnswlib==0.7.6
     # via chromadb
-chromadb==0.6.2
+chromadb==1.0.4
     # via Ragna (pyproject.toml)
 click==8.1.7
     # via
-    #   rich-toolkit
     #   typer
     #   uvicorn
 coloredlogs==15.0.1
@@ -59,20 +62,13 @@ deprecated==1.2.15
     #   opentelemetry-semantic-conventions
 deprecation==2.1.0
     # via lancedb
-dnspython==2.7.0
-    # via email-validator
 durationpy==0.9
     # via kubernetes
-email-validator==2.2.0
-    # via fastapi
-fastapi==0.115.6
+fastapi==0.115.9
     # via
     #   Ragna (pyproject.toml)
     #   bokeh-fastapi
     #   chromadb
-    #   panel
-fastapi-cli==0.0.6
-    # via fastapi
 filelock==3.16.1
     # via huggingface-hub
 flatbuffers==24.3.25
@@ -109,7 +105,6 @@ httpx==0.28.1
     # via
     #   Ragna (pyproject.toml)
     #   chromadb
-    #   fastapi
     #   qdrant-client
 httpx-sse==0.4.0
     # via Ragna (pyproject.toml)
@@ -122,7 +117,6 @@ hyperframe==6.0.1
 idna==3.10
     # via
     #   anyio
-    #   email-validator
     #   httpx
     #   requests
 ijson==3.3.0
@@ -132,9 +126,11 @@ importlib-metadata==8.5.0
 importlib-resources==6.4.5
     # via chromadb
 jinja2==3.1.4
-    # via
-    #   bokeh
-    #   fastapi
+    # via bokeh
+jsonschema==4.23.0
+    # via chromadb
+jsonschema-specifications==2024.10.1
+    # via jsonschema
 kubernetes==31.0.0
     # via chromadb
 lancedb==0.17.0
@@ -312,9 +308,7 @@ python-dotenv==1.0.1
     #   pydantic-settings
     #   uvicorn
 python-multipart==0.0.19
-    # via
-    #   Ragna (pyproject.toml)
-    #   fastapi
+    # via Ragna (pyproject.toml)
 python-pptx==1.0.2
     # via Ragna (pyproject.toml)
 pytz==2024.2
@@ -332,6 +326,10 @@ qdrant-client==1.12.2
     # via Ragna (pyproject.toml)
 questionary==2.0.1
     # via Ragna (pyproject.toml)
+referencing==0.36.2
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 regex==2024.11.6
     # via tiktoken
 requests==2.32.3
@@ -348,10 +346,11 @@ rich==13.9.4
     # via
     #   Ragna (pyproject.toml)
     #   chromadb
-    #   rich-toolkit
     #   typer
-rich-toolkit==0.12.0
-    # via fastapi-cli
+rpds-py==0.24.0
+    # via
+    #   jsonschema
+    #   referencing
 rsa==4.9
     # via google-auth
 shellingham==1.5.4
@@ -392,7 +391,6 @@ typer==0.15.1
     # via
     #   Ragna (pyproject.toml)
     #   chromadb
-    #   fastapi-cli
 typing-extensions==4.12.2
     # via
     #   anyio
@@ -405,7 +403,7 @@ typing-extensions==4.12.2
     #   pydantic-core
     #   python-docx
     #   python-pptx
-    #   rich-toolkit
+    #   referencing
     #   sqlalchemy
     #   typer
 tzdata==2024.2
@@ -421,8 +419,6 @@ uvicorn==0.32.1
     # via
     #   Ragna (pyproject.toml)
     #   chromadb
-    #   fastapi
-    #   fastapi-cli
 uvloop==0.21.0
     # via uvicorn
 watchfiles==1.0.3
