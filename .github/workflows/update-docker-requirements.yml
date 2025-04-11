@@ -72,7 +72,9 @@ jobs:
           echo "merger=${MERGER}" | tee --append $GITHUB_OUTPUT
 
       - name: Open a PR to update the requirements
-        if: ${{ steps.update.outputs.needs-update && github.event_name != 'pull_request' }}
+        if:
+          ${{ steps.update.outputs.needs-update && github.event_name != 'pull_request'
+          }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update requirements-docker.lock
