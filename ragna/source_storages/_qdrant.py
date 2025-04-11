@@ -109,21 +109,20 @@ class Qdrant(VectorDatabaseSourceStorage):
         # This can change in the future.
         limit: int = max(len(ids) // 20, 10)
 
-        for payload in itertools.chain.from_iterable(
-            (cast(dict[str, Any], record.payload) for record in records)
-            for records, _ in await asyncio.gather(
-                *[
-                    self._client.scroll(
-                        collection_name=corpus_name,
-                        with_payload=True,
-                        limit=limit,
-                        offset=offset,
-                    )
-                    for offset in ids[::limit]
-                ]
-            )
+        for result in asyncio.as_completed(
+            [
+                self._client.scroll(
+                    collection_name=corpus_name,
+                    with_payload=True,
+                    limit=limit,
+                    offset=offset,
+                )
+                for offset in ids[::limit]
+            ]
         ):
-            yield payload
+            records, _ = await result
+            for record in records:
+                yield cast(dict[str, Any], record.payload)
 
     async def _fetch_metadata(self, corpus_name: str) -> dict[str, Any]:
         corpus_metadata = defaultdict(set)
