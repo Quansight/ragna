@@ -5,7 +5,7 @@ import itertools
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, cast
+from typing import TYPE_CHECKING, Any, AsyncIterator, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -86,7 +86,7 @@ class Qdrant(VectorDatabaseSourceStorage):
 
     async def _fetch_raw_metadata_entries(
         self, *, corpus_name: str
-    ) -> AsyncGenerator[dict[str, Any], None]:
+    ) -> AsyncIterator[dict[str, Any]]:
         ids: list[str] = []
         offset = None
         while True:
