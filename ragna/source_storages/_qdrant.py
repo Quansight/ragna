@@ -5,7 +5,7 @@ import itertools
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, AsyncGenerator, Optional, cast
 
 import ragna
 from ragna.core import (
@@ -84,8 +84,10 @@ class Qdrant(VectorDatabaseSourceStorage):
         elif non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
 
-    async def _fetch_metadata(self, *, corpus_name: str, limit: Optional[int] = None):
-        ids = []
+    async def _fetch_metadata(
+        self, *, corpus_name: str, limit: Optional[int] = None
+    ) -> AsyncGenerator[dict[str, Any], None]:
+        ids: list[str] = []
         offset = None
         while True:
             records, offset = await self._client.scroll(
@@ -97,7 +99,7 @@ class Qdrant(VectorDatabaseSourceStorage):
                 limit=10**6,
                 offset=offset,
             )
-            ids.extend(record.id for record in records)
+            ids.extend(cast(str, record.id) for record in records)
             if offset is None:
                 break
 
@@ -105,9 +107,9 @@ class Qdrant(VectorDatabaseSourceStorage):
         # There is no way to know a priori the size of the metadata, so
         # we just limit ourselves to twenty requests to the database.
         # This can change in the future.
-        limit = limit if limit is not None else max(len(ids) // 20, 10)
+        limit: int = limit if limit is not None else max(len(ids) // 20, 10)
 
-        return itertools.chain.from_iterable(
+        for payload in itertools.chain.from_iterable(
             (cast(dict[str, Any], record.payload) for record in records)
             for records, _ in await asyncio.gather(
                 *[
@@ -120,7 +122,8 @@ class Qdrant(VectorDatabaseSourceStorage):
                     for offset in ids[::limit]
                 ]
             )
-        )
+        ):
+            yield payload
 
     async def list_metadata(
         self, corpus_name: Optional[str] = None
@@ -134,7 +137,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         metadata = {}
         for corpus_name in corpus_names:
             corpus_metadata = defaultdict(set)
-            for point in await self._fetch_metadata(corpus_name=corpus_name):
+            async for point in self._fetch_metadata(corpus_name=corpus_name):
                 for key, value in point.items():
                     if any(
                         [
