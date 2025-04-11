@@ -108,8 +108,8 @@ class Qdrant(VectorDatabaseSourceStorage):
         limit = limit if limit is not None else max(len(ids) // 20, 10)
 
         return itertools.chain.from_iterable(
-            records[0]
-            for records in await asyncio.gather(
+            (cast(dict[str, Any], record.payload) for record in records)
+            for records, _ in await asyncio.gather(
                 *[
                     self._client.scroll(
                         collection_name=corpus_name,
@@ -133,11 +133,9 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         metadata = {}
         for corpus_name in corpus_names:
-            points = await self._fetch_metadata(corpus_name=corpus_name)
-
             corpus_metadata = defaultdict(set)
-            for point in points:
-                for key, value in cast(dict[str, Any], point.payload).items():
+            for point in await self._fetch_metadata(corpus_name=corpus_name):
+                for key, value in point.items():
                     if any(
                         [
                             (key.startswith("__") and key.endswith("__")),
