@@ -209,9 +209,13 @@ all-py310 = { features = ["all", "py310"], solve-group = "default" }
 all-py311 = { features = ["all", "py311"], solve-group = "default-py311" }
 all-py312 = { features = ["all", "py312"], solve-group = "default-py312" }
 dev = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
-dev-py310 = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
-dev-py311 = { features = ["all", "dev", "docs", "py311"], solve-group = "default-py311" }
-dev-py312 = { features = ["all", "dev", "docs", "py312"], solve-group = "default-py312" }
+dev-py310 = { features = ["dev", "docs", "py310"], solve-group = "default" }
+dev-py311 = { features = ["dev", "docs", "py311"], solve-group = "default-py311" }
+dev-py312 = { features = ["dev", "docs", "py312"], solve-group = "default-py312" }
+dev-all = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
+dev-all-py310 = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
+dev-all-py311 = { features = ["all", "dev", "docs", "py311"], solve-group = "default-py311" }
+dev-all-py312 = { features = ["all", "dev", "docs", "py312"], solve-group = "default-py312" }
 
 [tool.pixi.tasks]
 
