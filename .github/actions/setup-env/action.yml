@@ -20,13 +20,6 @@ runs:
   using: composite
 
   steps:
-    - name: Set cache date
-      id: cache-key
-      shell: bash
-      run: |
-        DATE=$(date +'%Y%m%d')
-        echo "date=${DATE}" | tee -a "${GITHUB_OUTPUT}"
-
     - name: Get Pixi environment name
       id: pixi-env
       shell: bash
@@ -41,5 +34,4 @@ runs:
         frozen: true
         activate-environment: ${{ steps.pixi-env.outputs.environment }}
         cache-key:
-          pixi-${{ steps.cache-key.outputs.date }}-${{
-          steps.pixi-env.outputs.environment }}-
+          pixi-${{ steps.pixi-env.outputs.environment }}-
