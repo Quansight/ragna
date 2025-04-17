@@ -200,9 +200,18 @@ platforms = ["linux-64", "win-64", "osx-64", "osx-arm64"]
 Ragna = { path = ".", editable = true }
 
 [tool.pixi.environments]
-default = { solve-group = "default" }
-all = { features = ["all"], solve-group = "default" }
-dev = { features = ["all", "dev", "docs"], solve-group = "default" }
+default = { features = ["py310"], solve-group = "default" }
+default-py310 = { features = ["py310"], solve-group = "default" }
+default-py311 = { features = ["py311"], solve-group = "default-py311" }
+default-py312 = { features = ["py312"], solve-group = "default-py312" }
+all = { features = ["all", "py310"], solve-group = "default" }
+all-py310 = { features = ["all", "py310"], solve-group = "default" }
+all-py311 = { features = ["all", "py311"], solve-group = "default-py311" }
+all-py312 = { features = ["all", "py312"], solve-group = "default-py312" }
+dev = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
+dev-py310 = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
+dev-py311 = { features = ["all", "dev", "docs", "py311"], solve-group = "default-py311" }
+dev-py312 = { features = ["all", "dev", "docs", "py312"], solve-group = "default-py312" }
 
 [tool.pixi.tasks]
 
@@ -211,6 +220,15 @@ python = ">=3.10,<3.13"
 
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
 
 [tool.pixi.feature.dev.tasks]
 fmt = { cmd="ruff format ragna" }
