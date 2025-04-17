@@ -19,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "aiofiles",
     "fastapi",
@@ -207,7 +207,7 @@ dev = { features = ["all", "dev", "docs"], solve-group = "default" }
 [tool.pixi.tasks]
 
 [tool.pixi.dependencies]
-python = "3.10.*"
+python = ">=3.10,<3.13"
 
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
