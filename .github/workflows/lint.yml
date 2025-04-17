@@ -20,7 +20,6 @@ jobs:
         uses: ./.github/actions/setup-env
         with:
           environment: "default"
-          optional-dependencies: "false"
 
       - name: Test optional dependencies
         run: |
@@ -40,7 +39,6 @@ jobs:
         uses: ./.github/actions/setup-env
         with:
           environment: "dev"
-          optional-dependencies: "false"
 
       - uses: actions/cache@v4
         with:
@@ -67,8 +65,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "dev"
-          optional-dependencies: "true"
+          environment: "dev-all"
 
       - name: Run type checks
         run: |
