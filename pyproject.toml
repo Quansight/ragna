@@ -208,7 +208,7 @@ default-all = { features = ["all", "py310"], solve-group = "default" }
 default-all-py310 = { features = ["all", "py310"], solve-group = "default" }
 default-all-py311 = { features = ["all", "py311"], solve-group = "default-py311" }
 default-all-py312 = { features = ["all", "py312"], solve-group = "default-py312" }
-dev = { features = ["all", "dev", "docs", "py310"], solve-group = "default" }
+dev = { features = ["dev", "docs", "py310"], solve-group = "default" }
 dev-py310 = { features = ["dev", "docs", "py310"], solve-group = "default" }
 dev-py311 = { features = ["dev", "docs", "py311"], solve-group = "default-py311" }
 dev-py312 = { features = ["dev", "docs", "py312"], solve-group = "default-py312" }
