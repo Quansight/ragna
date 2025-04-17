@@ -17,4 +17,4 @@ runs:
         environments: ${{ inputs.environment }}
         frozen: true
         activate-environment: ${{ inputs.environment }}
-        cache-key: pixi-${{ inputs.environment }}-
+        cache: false
