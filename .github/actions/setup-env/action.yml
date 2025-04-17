@@ -33,5 +33,4 @@ runs:
         environments: ${{ steps.pixi-env.outputs.environment }}
         frozen: true
         activate-environment: ${{ steps.pixi-env.outputs.environment }}
-        cache-key:
-          pixi-${{ steps.pixi-env.outputs.environment }}-
+        cache-key: pixi-${{ steps.pixi-env.outputs.environment }}-
