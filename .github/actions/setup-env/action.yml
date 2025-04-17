@@ -32,10 +32,11 @@ runs:
 
     - name: Set up Pixi
       uses: prefix-dev/setup-pixi@v0.8.3
-      environments: ${{ steps.pixi-env.outputs.environment }}
-      frozen: true
-      activate-environment: ${{ steps.pixi-env.outputs.environment }}
-      cache-key: pixi-${{ steps.cache-key.outputs.date }}-${{ steps.pixi-env.outputs.environment }}-
+      with:
+        environments: ${{ steps.pixi-env.outputs.environment }}
+        frozen: true
+        activate-environment: ${{ steps.pixi-env.outputs.environment }}
+        cache-key: pixi-${{ steps.cache-key.outputs.date }}-${{ steps.pixi-env.outputs.environment }}-
 
     - name: Display Pixi info
       shell: bash -elo pipefail {0}
