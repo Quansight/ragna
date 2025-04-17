@@ -77,7 +77,8 @@ jobs:
         uses: ./.github/actions/setup-env
         with:
           environment: "dev"
-          optional-dependencies: "false"
+          optional-dependencies: "true"
 
       - name: Run type checks
-        run: pixi run types
+        run: |
+          mypy
