@@ -204,3 +204,6 @@ default = { solve-group = "default" }
 all = { features = ["all"], solve-group = "default" }
 
 [tool.pixi.tasks]
+
+[tool.pixi.dependencies]
+python = "3.10.*"
