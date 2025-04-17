@@ -75,6 +75,9 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          environment: "dev"
+          optional-dependencies: "false"
 
       - name: Run type checks
         run: pixi run types
