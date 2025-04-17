@@ -212,6 +212,13 @@ python = "3.10.*"
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
 
+[tool.pixi.feature.dev.tasks]
+fmt = { cmd="ruff format ragna" }
+lint = { cmd="ruff check ragna --fix" }
+types = { cmd="mypy" }
+test = { cmd="pytest" }
+all = { depends-on = ["fmt", "lint", "types", "test"] }
+
 [dependency-groups]
 dev = [
     "pytest>=6,<9",
