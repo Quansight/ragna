@@ -4,11 +4,13 @@ description: "Setup development environment"
 inputs:
   python-version:
     default: "310"
-    description: "Python version to install."
-  # The current setup is to install the `dev` environment, which includes `all` dependencies
-  # optional-dependencies:
-  #   default: "true"
-  #   description: "Install ragna with [all], i.e. all optional dependencies"
+    description: "Python version to install. Can be `310`, `311`, or `312`."
+  environment:
+    default: "default"
+    description: "Install default dependencies or development dependencies. Can be `default` or `dev`."
+  optional-dependencies:
+    default: "true"
+    description: "Install ragna with `[all]`, i.e. all optional dependencies. Can be `true` or `false`."
 
 runs:
   using: composite
@@ -21,12 +23,19 @@ runs:
         DATE=$(date +'%Y%m%d')
         echo "date=${DATE}" | tee -a "${GITHUB_OUTPUT}"
 
+    - name: Get Pixi environment name
+      id: pixi-env
+      shell: bash
+      run: |
+        ENVIRONMENT=${{ inputs.environment }}${{ inputs.optional-dependencies == "true" && '-all' || '' }}-${{ inputs.python-version }}
+        echo "environment=${ENVIRONMENT} | tee -a "${GITHUB_OUTPUT}"
+
     - name: Set up Pixi
       uses: prefix-dev/setup-pixi@v0.8.3
-      environments: dev-${{ inputs.python-version }}
+      environments: ${{ steps.pixi-env.outputs.environment }}
       frozen: true
-      activate-environment: dev-${{ inputs.python-version }}
-      cache-key: pixi-${{ steps.cache-key.outputs.date }}-py${{ inputs.python-version }}-
+      activate-environment: ${{ steps.pixi-env.outputs.environment }}
+      cache-key: pixi-${{ steps.cache-key.outputs.date }}-${{ steps.pixi-env.outputs.environment }}-
 
     - name: Display Pixi info
       shell: bash -elo pipefail {0}
