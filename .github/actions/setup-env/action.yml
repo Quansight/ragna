@@ -27,7 +27,7 @@ runs:
       id: pixi-env
       shell: bash
       run: |
-        ENVIRONMENT=${{ inputs.environment }}${{ inputs.optional-dependencies && '-all' || '' }}-${{ inputs.python-version }}
+        ENVIRONMENT=${{ inputs.environment }}${{ inputs.optional-dependencies && '-all' || '' }}-py${{ inputs.python-version }}
         echo "environment=${ENVIRONMENT}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Set up Pixi
