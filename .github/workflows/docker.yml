@@ -39,7 +39,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          optional-dependencies: "false"
+          environment: "dev"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
