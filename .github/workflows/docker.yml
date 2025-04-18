@@ -39,7 +39,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "dev"
+          environment: "dev-py310"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
