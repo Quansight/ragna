@@ -25,7 +25,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "dev"
+          environment: "dev-py310"
 
       - name: Check if all public packages are importable
         run: python tests/test_importable.py
