@@ -61,7 +61,6 @@ jobs:
 
       - name: Run unit tests
         id: tests
-        shell: bash -elo pipefail {0}
         run: |
           pytest \
             --ignore tests/deploy/ui \
