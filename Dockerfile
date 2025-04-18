@@ -29,7 +29,7 @@ ENTRYPOINT ["/entrypoint.sh"]
 # Pre-download the default embedding model
 RUN pixi run -e $ENVIRONMENT python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()._download_model_if_not_exists()"
 
-FROM debian:bookworm-slim as production
+FROM debian:bookworm-slim AS production
 
 RUN useradd --create-home --shell "$(which bash)" ragna
 USER ragna
