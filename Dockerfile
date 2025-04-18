@@ -25,7 +25,7 @@ echo 'exec "$@"' >> /entrypoint.sh;
 EOF
 
 RUN pixi install --frozen -e $ENVIRONMENT
-ENTRYPOINT ["/entrypoint.sh"]
+
 # Pre-download the default embedding model
 RUN pixi run -e $ENVIRONMENT python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()._download_model_if_not_exists()"
 
