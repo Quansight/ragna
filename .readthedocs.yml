@@ -28,11 +28,12 @@ build:
         --porcelain | sed -E "s/\s*\S+\s+//")
     install:
       - curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=v0.45.0 bash
-      - /home/docs/.pixi/bin/pixi install -e dev-all-py312
+      - /home/docs/.pixi/bin/pixi install --frozen -e dev-all-py312
     post_install:
       - git update-index --really-refresh || true
     build:
       html:
-        - /home/docs/.pixi/bin/pixi run -e dev-all-py312 mkdocs build -d docs_output
+        - /home/docs/.pixi/bin/pixi run --frozen -e dev-all-py312 mkdocs build -d
+          docs_output
         - mkdir -p $READTHEDOCS_OUTPUT/html/
         - cp -r docs_output/* $READTHEDOCS_OUTPUT/html/
