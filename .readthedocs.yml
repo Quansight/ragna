@@ -33,6 +33,7 @@ build:
     post_install:
       - git update-index --really-refresh || true
     build:
-      - mkdocs build -d docs_output
-      - mkdir -p $READTHEDOCS_OUTPUT/html/
-      - cp -r docs_output/* $READTHEDOCS_OUTPUT/html/
+      html:
+        - mkdocs build -d docs_output
+        - mkdir -p $READTHEDOCS_OUTPUT/html/
+        - cp -r docs_output/* $READTHEDOCS_OUTPUT/html/
