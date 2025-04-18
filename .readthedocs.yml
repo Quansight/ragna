@@ -11,6 +11,8 @@ build:
     post_checkout:
       # Check out the full depth for setuptools-scm
       - git fetch --unshallow || true
+      - ls -l
+      - pwd
       # Check out git-lfs files
       # See https://docs.readthedocs.io/en/stable/build-customization.html#support-git-lfs-large-file-storage
       - wget
