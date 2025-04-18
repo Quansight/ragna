@@ -27,18 +27,145 @@ Quick reference:
 git clone https://github.com/<your-username>/ragna.git
 ```
 
-### Set up development environment
+### Set up development environment and run Ragna
 
-We recommend using conda, but you can use any package and environment manager you
-prefer. The `environment-dev.yml` file at the root of the project lists all the required
-development dependencies.
+We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna. The
+required development dependencies are listed in the `pyproject.toml` file at the root
+directory of the project.
 
-Create and activate a conda environment:
+Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`, and
+`dev-all-py312`, which use Python 3.10, 3.11, and 3.12, respectively. The environment
+`dev-all` is the same as `dev-all-py310`. The environment `dev-all-py311` is used as an
+example in the sections below, but you can use any of the three Python versions you
+like.
+
+To install and activate a development environment, run
 
 ```bash
-conda env create --file environment-dev.yml
-conda activate ragna-dev
+pixi shell -e dev-all-py311
 ```
+
+This will start a new shell and the executables like the `ragna` command will be
+available.
+
+Alternatively, to just run Ragna in a development environment without activating it in
+your current shell, you can run
+
+```bash
+pixi run -e dev-all-py311 ragna deploy
+```
+
+In either case, you can verify that a development version of Ragna is correctly
+installed with
+
+```bash
+pixi run -e dev-all-py311 ragna --version
+# Ideal output: ragna <version-number> devXXXX from ...
+```
+
+### Testing, formatting, linting, and type checking
+
+#### Testing
+
+If you have activated a Pixi shell using `pixi shell -e dev-all-py311`, for example, you
+can run Ragna tests with
+
+```bash
+pytest
+```
+
+If you want to run Ragna tests without activating a Pixi shell, you may run them with
+either
+
+```bash
+pixi run -e dev-all-py311 pytest
+```
+
+or
+
+```bash
+pixi run -e dev-all-py311 test
+```
+
+#### Formatting
+
+To run the [Ruff code formatter](https://docs.astral.sh/ruff/formatter/), you can run
+
+```bash
+ruff format ragna
+```
+
+if you have the Pixi shell activated, or, alternatively, if you don't want to activate
+the Pixi shell, you can run either
+
+```bash
+pixi run -e dev-all-py311 ruff format ragna
+```
+
+or
+
+```bash
+pixi run -e dev-all-py311 ruff fmt
+```
+
+#### Linting
+
+Similarly, the options for using the
+[Ruff code linter](https://docs.astral.sh/ruff/linter/) are
+
+```bash
+ruff check --fix ragna
+```
+
+if you have the Pixi shell activated.
+
+You can use
+
+```bash
+pixi run -e dev-all-py311 ruff check --fix ragna
+```
+
+or
+
+```bash
+pixi run -e dev-all-py311 lint
+```
+
+if you don't want to activate the Pixi shell.
+
+#### Type checking
+
+Checking type annotations with [Mypy](https://mypy-lang.org/) is again similar with
+
+```bash
+mypy
+```
+
+with the Pixi shell activated.
+
+Use
+
+```bash
+pixi run -e dev-all-py311 mypy
+```
+
+or
+
+```bash
+pixi run -e dev-all-py311 types
+```
+
+if you don't want to activate the Pixi shell.
+
+#### All of the above
+
+To run all the above checks using one single command, you can run
+
+```bash
+pixi run -e dev-all-py311 all
+```
+
+with or without the Pixi shell activated.
 
 ### Setup pre-commit hooks (optional)
 
@@ -50,21 +177,6 @@ pre-commit install
 ```
 
 These checks are also run in the CI on each pull request.
-
-## Contribute code
-
-You install Ragna in editable mode to test your contributions locally as you develop:
-
-```bash
-pip install --editable '.[all]'
-```
-
-Verify that a development version is installed with:
-
-```bash
-ragna --version
-# Ideal output: ragna <version-number> devXXXX from ...
-```
 
 ## Contribute documentation
 
@@ -86,7 +198,17 @@ following from the project root:
 mkdocs serve
 ```
 
-This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+if you have a Pixi shell for a development environment (e.g. `dev-all`) activated.
+
+Otherwise, you can run
+
+```bash
+pixi run -e dev-all mkdocs serve
+```
+
+These both serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+You must use a `dev-all*` environment to build the docs.
 
 ### View, add, or update images
 
