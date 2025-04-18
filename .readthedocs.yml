@@ -6,7 +6,7 @@ version: 2
 build:
   os: ubuntu-22.04
   tools:
-    python: "mambaforge-22.9"
+    python: 3.12
   jobs:
     post_checkout:
       # Check out the full depth for setuptools-scm
@@ -26,19 +26,12 @@ build:
     pre_install:
       - git update-index --assume-unchanged $(git status --untracked-files=no
         --porcelain | sed -E "s/\s*\S+\s+//")
+      - PIXI_VERSION=v0.45.0 curl -fsSL https://pixi.sh/install.sh
+    install:
+      - pixi global install -e dev-all-py312
     post_install:
       - git update-index --really-refresh || true
 
 mkdocs:
   configuration: mkdocs.yml
   fail_on_warning: true
-
-conda:
-  environment: environment-dev.yml
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - all
