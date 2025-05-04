@@ -18,3 +18,7 @@ runs:
         frozen: true
         activate-environment: ${{ inputs.environment }}
         cache: false
+
+    # - name: Install playwright
+    #   shell: bash -el {0}
+    #   run: playwright install
