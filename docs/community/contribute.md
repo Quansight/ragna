@@ -37,23 +37,13 @@ Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`,
 example in the sections below, but you can use any of the three Python versions you
 like.
 
-To install and activate a development environment, run
-
-```bash
-pixi shell -e dev-all
-```
-
-This will start a new shell and the executables like the `ragna` command will be
-available.
-
-Alternatively, to just run Ragna in a development environment without activating it in
-your current shell, you can run
+To both install a development environment and run Ragna in a single step, you can run
 
 ```bash
 pixi run -e dev-all ragna deploy
 ```
 
-In either case, you can verify that a development version of Ragna is correctly
+You can verify that a development version of Ragna is correctly
 installed with
 
 ```bash
@@ -61,16 +51,26 @@ pixi run -e dev-all ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
 ```
 
+Alternatively, you can install and activate a development environment with 
+
+```bash
+pixi shell -e dev-all
+```
+
+which will start a new shell and make executables like the `ragna` command available
+in your `PATH`.
+
+With the Pixi shell from above activated, you can verify that a development version of
+Ragna is installed correctly with
+
+```bash
+ragna --version
+# Ideal output: ragna <version-number> devXXXX from ...
+```
+
 ### Testing, formatting, linting, and type checking
 
 #### Testing
-
-If you have activated a Pixi shell using `pixi shell -e dev-all`, for example, you
-can run Ragna tests with
-
-```bash
-pytest
-```
 
 If you want to run Ragna tests without activating a Pixi shell, you may run them with
 either
@@ -85,16 +85,15 @@ or
 pixi run -e dev-all test
 ```
 
+If you have activated a Pixi shell, for example, you can run Ragna tests with
+
+```bash
+pytest
+```
+
 #### Formatting
 
 To run the [Ruff code formatter](https://docs.astral.sh/ruff/formatter/), you can run
-
-```bash
-ruff format ragna
-```
-
-if you have the Pixi shell activated, or, alternatively, if you don't want to activate
-the Pixi shell, you can run either
 
 ```bash
 pixi run -e dev-all ruff format ragna
@@ -106,18 +105,18 @@ or
 pixi run -e dev-all ruff fmt
 ```
 
+without the Pixi shell activated.
+
+If you have the Pixi shell activated, you can run
+
+```bash
+ruff format ragna
+```
+
 #### Linting
 
 Similarly, the options for using the
 [Ruff code linter](https://docs.astral.sh/ruff/linter/) are
-
-```bash
-ruff check --fix ragna
-```
-
-if you have the Pixi shell activated.
-
-You can use
 
 ```bash
 pixi run -e dev-all ruff check --fix ragna
@@ -131,17 +130,16 @@ pixi run -e dev-all lint
 
 if you don't want to activate the Pixi shell.
 
+If you have the Pixi shell activated, you can use
+
+```bash
+ruff check --fix ragna
+```
+
 #### Type checking
 
 Checking type annotations with [Mypy](https://mypy-lang.org/) is again similar with
 
-```bash
-mypy
-```
-
-with the Pixi shell activated.
-
-Use
 
 ```bash
 pixi run -e dev-all mypy
@@ -153,7 +151,15 @@ or
 pixi run -e dev-all types
 ```
 
-if you don't want to activate the Pixi shell.
+without the Pixi shell activated.
+
+Use
+
+```bash
+mypy
+```
+
+if you have the Pixi shell activated.
 
 #### All of the above
 
@@ -193,15 +199,13 @@ To start a development build of the website that auto-refreshes on new changes, 
 following from the project root:
 
 ```bash
-mkdocs serve
+pixi run -e dev-all mkdocs serve
 ```
 
-if you have a Pixi shell for a development environment (e.g. `dev-all`) activated.
-
-Otherwise, you can run
+If you have a Pixi shell activated, you can run
 
 ```bash
-pixi run -e dev-all mkdocs serve
+mkdocs serve
 ```
 
 These both serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
