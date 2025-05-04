@@ -36,7 +36,6 @@ build:
       - git update-index --really-refresh || true
     build:
       html:
-        - /home/docs/.pixi/bin/pixi run --frozen -e dev-all-py312 mkdocs build -d
-          docs_output
         - mkdir -p $READTHEDOCS_OUTPUT/html/
-        - cp -r docs_output/* $READTHEDOCS_OUTPUT/html/
+        - /home/docs/.pixi/bin/pixi run --frozen -e dev-all-py312 mkdocs build -d
+          $READTHEDOCS_OUTPUT/html/
