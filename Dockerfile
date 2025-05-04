@@ -26,9 +26,6 @@ EOF
 
 RUN pixi install --frozen -e $ENVIRONMENT
 
-# Pre-download the default embedding model
-RUN pixi run -e $ENVIRONMENT python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()._download_model_if_not_exists()"
-
 FROM debian:bookworm-slim AS runtime
 
 RUN useradd --create-home --shell "$(which bash)" ragna
@@ -44,6 +41,9 @@ COPY --from=build --chown=ragna:ragna /var/ragna/ragna /var/ragna/ragna
 ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb.config
 
 COPY ragna-docker.toml ragna.toml
+
+# Pre-download the default embedding model
+RUN /entrypoint.sh python -c "from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2; ONNXMiniLM_L6_V2()._download_model_if_not_exists()"
 
 ENTRYPOINT ["/entrypoint.sh", "ragna"]
 CMD ["deploy", "--ui", "--api", "--ignore-unavailable-components", "--no-open-browser"]
