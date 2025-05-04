@@ -38,5 +38,5 @@ build:
     build:
       html:
         - mkdir --parents $READTHEDOCS_OUTPUT/html/
-        - /home/docs/.pixi/bin/pixi run --frozen --environment dev-all-py312 mkdocs build --site-dir
-          $READTHEDOCS_OUTPUT/html/
+        - /home/docs/.pixi/bin/pixi run --frozen --environment dev-all-py312 mkdocs
+          build --site-dir $READTHEDOCS_OUTPUT/html/
