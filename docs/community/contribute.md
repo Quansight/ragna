@@ -29,9 +29,7 @@ git clone https://github.com/<your-username>/ragna.git
 
 ### Set up development environment and run Ragna
 
-We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna. The
-required development dependencies are listed in the `pyproject.toml` file at the root
-directory of the project.
+We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna.
 
 Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`, and
 `dev-all-py312`, which use Python 3.10, 3.11, and 3.12, respectively. The environment
