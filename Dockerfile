@@ -18,13 +18,13 @@ ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA
 ARG ENVIRONMENT="default-all-py312"
 
 RUN <<EOF
-pixi shell-hook --frozen -e $ENVIRONMENT -s bash > /shell-hook.sh;
+pixi shell-hook --frozen --environment $ENVIRONMENT --shell bash > /shell-hook.sh;
 echo "#!/bin/bash" > /entrypoint.sh;
 cat /shell-hook.sh >> /entrypoint.sh;
 echo 'exec "$@"' >> /entrypoint.sh;
 EOF
 
-RUN pixi install --frozen -e $ENVIRONMENT
+RUN pixi install --frozen --environment $ENVIRONMENT
 
 FROM debian:bookworm-slim AS runtime
 
