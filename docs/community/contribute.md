@@ -166,10 +166,12 @@ if you have the Pixi shell activated.
 To run all the above checks using one single command, you can run
 
 ```bash
-pixi run -e dev-all all
+pixi run -e dev-all ci
 ```
 
 with or without the Pixi shell activated.
+
+Together, these are the CI checks that take place on GitHub.
 
 ### Setup pre-commit hooks (optional)
 

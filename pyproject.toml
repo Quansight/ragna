@@ -130,7 +130,7 @@ fmt = { cmd="ruff format ragna" }
 lint = { cmd="ruff check ragna --fix" }
 types = { cmd="mypy" }
 test = { cmd="pytest" }
-all = { depends-on = ["fmt", "lint", "types", "test"] }
+ci = { depends-on = ["fmt", "lint", "types", "test"] }
 
 [dependency-groups]
 dev = [
