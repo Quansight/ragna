@@ -30,8 +30,7 @@ build:
       - curl --fail --silent --show-error --location https://pixi.sh/install.sh |
         PIXI_VERSION=v0.45.0 bash
       # We call the full path of the executable /home/docs/.pixi/bin/pixi because
-      # the installation process does not add the executable to the $PATH, and
-      # activating Pixi with eval "$(pixi shell-hook)" was not working out of the box.
+      # the installation process does not add the executable to the $PATH
       - /home/docs/.pixi/bin/pixi install --frozen --environment dev-all-py312
     post_install:
       - git update-index --really-refresh || true
