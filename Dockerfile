@@ -28,14 +28,14 @@ RUN pixi install --frozen -e $ENVIRONMENT
 
 FROM debian:bookworm-slim AS runtime
 
-RUN useradd --create-home --shell "$(which bash)" ragna
-USER ragna
+RUN useradd --create-home --shell "$(which bash)" bodil
+USER bodil
 
 WORKDIR /var/ragna
 
-COPY --from=build --chown=ragna:ragna /var/ragna/.pixi/envs/default-all-py312 /var/ragna/.pixi/envs/default-all-py312
-COPY --from=build --chown=ragna:ragna --chmod=0755 /entrypoint.sh /entrypoint.sh
-COPY --from=build --chown=ragna:ragna /var/ragna/ragna /var/ragna/ragna
+COPY --from=build --chown=bodil:bodil /var/ragna/.pixi/envs/default-all-py312 /var/ragna/.pixi/envs/default-all-py312
+COPY --from=build --chown=bodil:bodil --chmod=0755 /entrypoint.sh /entrypoint.sh
+COPY --from=build --chown=bodil:bodil /var/ragna/ragna /var/ragna/ragna
 
 # See https://github.com/Quansight/ragna/issues/329
 ENV LANCEDB_CONFIG_DIR=/var/ragna/lancedb.config
