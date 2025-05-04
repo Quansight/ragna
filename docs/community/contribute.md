@@ -43,22 +43,21 @@ To both install a development environment and run Ragna in a single step, you ca
 pixi run -e dev-all ragna deploy
 ```
 
-You can verify that a development version of Ragna is correctly
-installed with
+You can verify that a development version of Ragna is correctly installed with
 
 ```bash
 pixi run -e dev-all ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
 ```
 
-Alternatively, you can install and activate a development environment with 
+Alternatively, you can install and activate a development environment with
 
 ```bash
 pixi shell -e dev-all
 ```
 
-which will start a new shell and make executables like the `ragna` command available
-in your `PATH`.
+which will start a new shell and make executables like the `ragna` command available in
+your `PATH`.
 
 With the Pixi shell from above activated, you can verify that a development version of
 Ragna is installed correctly with
@@ -139,7 +138,6 @@ ruff check --fix ragna
 #### Type checking
 
 Checking type annotations with [Mypy](https://mypy-lang.org/) is again similar with
-
 
 ```bash
 pixi run -e dev-all mypy
