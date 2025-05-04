@@ -33,14 +33,14 @@ We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragn
 
 Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`, and
 `dev-all-py312`, which use Python 3.10, 3.11, and 3.12, respectively. The environment
-`dev-all` is the same as `dev-all-py310`. The environment `dev-all-py311` is used as an
+`dev-all` is the same as `dev-all-py310`. The environment `dev-all` is used as an
 example in the sections below, but you can use any of the three Python versions you
 like.
 
 To install and activate a development environment, run
 
 ```bash
-pixi shell -e dev-all-py311
+pixi shell -e dev-all
 ```
 
 This will start a new shell and the executables like the `ragna` command will be
@@ -50,14 +50,14 @@ Alternatively, to just run Ragna in a development environment without activating
 your current shell, you can run
 
 ```bash
-pixi run -e dev-all-py311 ragna deploy
+pixi run -e dev-all ragna deploy
 ```
 
 In either case, you can verify that a development version of Ragna is correctly
 installed with
 
 ```bash
-pixi run -e dev-all-py311 ragna --version
+pixi run -e dev-all ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
 ```
 
@@ -65,7 +65,7 @@ pixi run -e dev-all-py311 ragna --version
 
 #### Testing
 
-If you have activated a Pixi shell using `pixi shell -e dev-all-py311`, for example, you
+If you have activated a Pixi shell using `pixi shell -e dev-all`, for example, you
 can run Ragna tests with
 
 ```bash
@@ -76,13 +76,13 @@ If you want to run Ragna tests without activating a Pixi shell, you may run them
 either
 
 ```bash
-pixi run -e dev-all-py311 pytest
+pixi run -e dev-all pytest
 ```
 
 or
 
 ```bash
-pixi run -e dev-all-py311 test
+pixi run -e dev-all test
 ```
 
 #### Formatting
@@ -97,13 +97,13 @@ if you have the Pixi shell activated, or, alternatively, if you don't want to ac
 the Pixi shell, you can run either
 
 ```bash
-pixi run -e dev-all-py311 ruff format ragna
+pixi run -e dev-all ruff format ragna
 ```
 
 or
 
 ```bash
-pixi run -e dev-all-py311 ruff fmt
+pixi run -e dev-all ruff fmt
 ```
 
 #### Linting
@@ -120,13 +120,13 @@ if you have the Pixi shell activated.
 You can use
 
 ```bash
-pixi run -e dev-all-py311 ruff check --fix ragna
+pixi run -e dev-all ruff check --fix ragna
 ```
 
 or
 
 ```bash
-pixi run -e dev-all-py311 lint
+pixi run -e dev-all lint
 ```
 
 if you don't want to activate the Pixi shell.
@@ -144,13 +144,13 @@ with the Pixi shell activated.
 Use
 
 ```bash
-pixi run -e dev-all-py311 mypy
+pixi run -e dev-all mypy
 ```
 
 or
 
 ```bash
-pixi run -e dev-all-py311 types
+pixi run -e dev-all types
 ```
 
 if you don't want to activate the Pixi shell.
@@ -160,7 +160,7 @@ if you don't want to activate the Pixi shell.
 To run all the above checks using one single command, you can run
 
 ```bash
-pixi run -e dev-all-py311 all
+pixi run -e dev-all all
 ```
 
 with or without the Pixi shell activated.
