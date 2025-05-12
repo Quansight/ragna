@@ -66,10 +66,7 @@ jobs:
       - name: Run unit tests
         id: tests
         run: |
-          pytest \
-            --ignore tests/deploy/ui \
-            --junit-xml=test-results.xml \
-            --durations=25
+          pixi run test
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'
