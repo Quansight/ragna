@@ -5,7 +5,7 @@ inputs:
   environment:
     default: "default"
     description:
-      "Pixi environment to activate. Examples include `default`, `dev-all-py312`"
+      "Pixi environment to activate. Examples include 'default', 'dev-all-py312'"
 
 runs:
   using: composite
