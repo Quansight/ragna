@@ -51,7 +51,7 @@ jobs:
         run: pre-commit install-hooks
 
       - name: Run format checks
-        run: pre-commit run --all-files --show-diff-on-failure --color=always
+        run: pixi run pre-commit
 
   types:
     runs-on: ubuntu-latest
