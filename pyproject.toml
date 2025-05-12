@@ -129,7 +129,7 @@ python = "3.12.*"
 fmt = { cmd="ruff format ragna" }
 lint = { cmd="ruff check ragna --fix" }
 types = { cmd="mypy" }
-test = { cmd="pytest" }
+test = { cmd="pytest --ignore tests/deploy/ui --junit-xml=test-results.xml --durations=25" }
 ci = { depends-on = ["fmt", "lint", "types", "test"] }
 
 [dependency-groups]
