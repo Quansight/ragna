@@ -130,7 +130,8 @@ fmt = { cmd="ruff format ragna" }
 lint = { cmd="ruff check ragna --fix" }
 types = { cmd="mypy" }
 test = { cmd="pytest --ignore tests/deploy/ui --junit-xml=test-results.xml --durations=25" }
-ci = { depends-on = ["fmt", "lint", "types", "test"] }
+pre-commit = { cmd="pre-commit run --all-files --show-diff-on-failure --color=always" }
+ci = { depends-on = ["pre-commit", "types", "test"] }
 
 [dependency-groups]
 dev = [
