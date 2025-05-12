@@ -68,4 +68,4 @@ jobs:
           environment: "dev-all-py310"
 
       - name: Run type checks
-        run: mypy
+        run: pixi run types
