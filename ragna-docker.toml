@@ -1,5 +1,5 @@
 local_root = "/var/ragna"
-auth = "ragna.deploy.DummyBasicAuth"
+auth = "ragna.deploy.NoAuth"
 key_value_store = "ragna.deploy.InMemoryKeyValueStore"
 document = "ragna.core.LocalDocument"
 source_storages = [
