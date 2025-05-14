@@ -20,5 +20,5 @@ runs:
         cache: false
 
     # - name: Install playwright
-    #   shell: bash -el {0}
+    #   shell: bash
     #   run: playwright install
