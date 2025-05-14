@@ -128,11 +128,12 @@ python = "3.12.*"
 
 [tool.pixi.feature.dev.tasks]
 fmt = { cmd="ruff format ragna" }
+optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
 lint = { cmd="ruff check ragna --fix" }
 types = { cmd="mypy" }
 test = { cmd="pytest --ignore tests/deploy/ui --junit-xml=test-results.xml --durations=25" }
 pre-commit = { cmd="pre-commit run --all-files --show-diff-on-failure --color=always" }
-ci = { depends-on = ["pre-commit", "types", "test"] }
+ci = { depends-on = ["pre-commit", "types", "optional-dependencies", "test"] }
 
 [dependency-groups]
 dev = [
