@@ -124,13 +124,7 @@ following from the project root:
 pixi run -e dev-all mkdocs serve
 ```
 
-If you have a Pixi shell activated, you can run
-
-```bash
-mkdocs serve
-```
-
-These both serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 You must use a `dev-all*` environment to build the docs.
 
