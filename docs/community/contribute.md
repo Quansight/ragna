@@ -50,144 +50,58 @@ pixi run -e dev-all ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
 ```
 
-Alternatively, you can install and activate a development environment with
-
-```bash
-pixi shell -e dev-all
-```
-
-which will start a new shell and make executables like the `ragna` command available in
-your `PATH`.
-
-With the Pixi shell from above activated, you can verify that a development version of
-Ragna is installed correctly with
-
-```bash
-ragna --version
-# Ideal output: ragna <version-number> devXXXX from ...
-```
-
 ### Testing, formatting, linting, and type checking
+
+#### Setup pre-commit hooks
+
+To maintain code standards, we use pre-commit hooks that check contributions before they
+are committed. To install them, run:
+
+```bash
+pre-commit install --install-hooks
+```
+
+These checks are used to run the code formatter and linter. They are also run in the CI
+on each pull request.
 
 #### Testing
 
-If you want to run Ragna tests without activating a Pixi shell, you may run them with
-either
-
-```bash
-pixi run -e dev-all pytest
-```
-
-or
+You can run Ragna tests with
 
 ```bash
 pixi run -e dev-all test
 ```
 
-If you have activated a Pixi shell, for example, you can run Ragna tests with
+#### Formatting & Linting
+
+To run the [Ruff code formatter and checker](https://docs.astral.sh/ruff/formatter/), as
+well as other useful formatting and linting tools, you can use
 
 ```bash
-pytest
-```
-
-#### Formatting
-
-To run the [Ruff code formatter](https://docs.astral.sh/ruff/formatter/), you can run
-
-```bash
-pixi run -e dev-all ruff format ragna
-```
-
-or
-
-```bash
-pixi run -e dev-all ruff fmt
-```
-
-without the Pixi shell activated.
-
-If you have the Pixi shell activated, you can run
-
-```bash
-ruff format ragna
-```
-
-#### Linting
-
-Similarly, the options for using the
-[Ruff code linter](https://docs.astral.sh/ruff/linter/) are
-
-```bash
-pixi run -e dev-all ruff check --fix ragna
-```
-
-or
-
-```bash
-pixi run -e dev-all lint
-```
-
-if you don't want to activate the Pixi shell.
-
-If you have the Pixi shell activated, you can use
-
-```bash
-ruff check --fix ragna
+pixi run -e dev pre-commit
 ```
 
 #### Type checking
 
-Checking type annotations with [Mypy](https://mypy-lang.org/) is again similar with
-
-```bash
-pixi run -e dev-all mypy
-```
-
-or
+You can check type annotations with [Mypy](https://mypy-lang.org/) using
 
 ```bash
 pixi run -e dev-all types
 ```
 
-without the Pixi shell activated.
-
-Use
+or
 
 ```bash
-mypy
+pixi run -e dev-all mypy
 ```
-
-if you have the Pixi shell activated.
 
 #### All of the above
 
-To run all the above checks using one single command as they would be run on the CI, you
-can run
+To run all the above checks using a single command as they would be run on the CI, you
+can use
 
 ```bash
 pixi run -e dev-all ci
-```
-
-with or without the Pixi shell activated.
-
-Rather than just naively running the above checks together, this will run _exactly_ what
-is run on the CI. This includes running pre-commit (see below).
-
-### Setup pre-commit hooks (optional)
-
-To maintain code standards, you can install some pre-commit hooks that check your
-contributions when you commit them:
-
-```bash
-pre-commit install
-```
-
-These checks are also run in the CI on each pull request.
-
-To run pre-commit exactly as it is run on the CI manually, you can run
-
-```bash
-pixi run -e dev-all pre-commit
 ```
 
 ## Contribute documentation
