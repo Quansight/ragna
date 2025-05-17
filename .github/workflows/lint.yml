@@ -19,7 +19,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "default-py310"
+          environment: "dev-py310"
 
       - name: Test optional dependencies
         run: |
