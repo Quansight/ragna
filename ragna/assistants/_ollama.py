@@ -1,3 +1,4 @@
+import itertools
 import os
 from functools import cached_property
 from typing import AsyncIterator, cast
@@ -32,9 +33,17 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
+        prompts = [message.content for message in messages if message.role != "system"]
+        sources = list(
+            set(
+                itertools.chain.from_iterable(
+                    message.sources for message in messages if message.role != "system"
+                )
+            )
+        )
+
         async with self._call_openai_api(
-            prompt, sources, max_new_tokens=max_new_tokens
+            prompts, sources, max_new_tokens=max_new_tokens
         ) as stream:
             async for data in stream:
                 # Modeled after
