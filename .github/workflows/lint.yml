@@ -23,8 +23,7 @@ jobs:
 
       - name: Test optional dependencies
         run: |
-          python scripts/update_optional_dependencies.py
-          git diff --exit-code
+          pixi run optional-dependencies
 
   format:
     runs-on: ubuntu-latest
