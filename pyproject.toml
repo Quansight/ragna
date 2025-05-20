@@ -130,7 +130,10 @@ python = "3.12.*"
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
 types = { cmd="mypy" }
 test = { cmd="pytest --ignore tests/deploy/ui" }
-pre-commit = { cmd="pre-commit run {{ which_files }}", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" } ] }
+# Ideally, we should not need to manually define arguments `show_diff` and `colorize_output` and instead
+# just pass them as CLI arguments to the `pre-commit` Pixi task. This does not seem to be supported.
+# When it is supported, we should remove the argument definitions, as they will have become unnecessary.
+pre-commit = { cmd="pre-commit run {{ which_files }} {{ show_diff }} {{ colorize_output }}", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" }, { "arg" = "show_diff", "default" = "" }, { "arg" = "colorize_output", "default" = "" } ] }
 ci = { depends-on = [ { "task" = "pre-commit", "args" = ["--all-files"] }, "types", "optional-dependencies", "test"] }
 
 [dependency-groups]

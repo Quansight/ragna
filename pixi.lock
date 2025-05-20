@@ -12939,8 +12939,8 @@ packages:
   requires_python: '>=3.8'
 - pypi: .
   name: ragna
-  version: 0.4.0.dev139+g0c78b2f.d20250520
-  sha256: f92f8775652e3791e7c6d64c3f8e50cf4f3a61854f004a6f033b9ae44837fc4f
+  version: 0.4.0.dev141+g43b10a3.d20250520
+  sha256: 4c8c94834797652a26df83dd806eebaecd24f82061e496584c6641629d9f80ca
   requires_dist:
   - aiofiles
   - fastapi
