@@ -3,6 +3,7 @@ from typing import AsyncIterator, cast
 from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
+from ._utils import unpack_prompts_and_sources
 
 
 class AnthropicAssistant(HttpApiAssistant):
@@ -41,7 +42,7 @@ class AnthropicAssistant(HttpApiAssistant):
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
-        prompt, sources = (message := messages[-1]).content, message.sources
+        prompts, sources = unpack_prompts_and_sources(messages)
         async with self._call_api(
             "POST",
             "https://api.anthropic.com/v1/messages",
@@ -54,7 +55,13 @@ class AnthropicAssistant(HttpApiAssistant):
             json={
                 "model": self._MODEL,
                 "system": self._instructize_system_prompt(sources),
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [
+                    {
+                        "role": "assistant" if idx % 2 else "user",
+                        "content": prompt,
+                    }
+                    for idx, prompt in enumerate(prompts)
+                ],
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,
