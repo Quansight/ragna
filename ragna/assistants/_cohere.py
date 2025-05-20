@@ -3,6 +3,7 @@ from typing import AsyncIterator, cast
 from ragna.core import Message, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
+from ._utils import unpack_prompts_and_sources
 
 
 class CohereAssistant(HttpApiAssistant):
@@ -30,7 +31,7 @@ class CohereAssistant(HttpApiAssistant):
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        prompt, sources = (message := messages[-1]).content, message.sources
+        prompts, sources = unpack_prompts_and_sources(messages)
         async with self._call_api(
             "POST",
             "https://api.cohere.ai/v1/chat",
@@ -41,7 +42,14 @@ class CohereAssistant(HttpApiAssistant):
             },
             json={
                 "preamble_override": self._make_preamble(),
-                "message": prompt,
+                "chat_history": [
+                    {
+                        "role": "CHATBOT" if idx % 2 else "USER",
+                        "message": prompt,
+                    }
+                    for idx, prompt in enumerate(prompts[:-1])
+                ],
+                "message": prompts[-1],
                 "model": self._MODEL,
                 "stream": True,
                 "temperature": 0.0,
