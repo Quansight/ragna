@@ -3,6 +3,7 @@ from typing import AsyncIterator, cast
 from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant
+from ._utils import unpack_prompts_and_sources
 
 
 class Ai21LabsAssistant(HttpApiAssistant):
@@ -28,7 +29,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
-        prompt, sources = (message := messages[-1]).content, message.sources
+        prompts, sources = unpack_prompts_and_sources(messages)
         async with self._call_api(
             "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
@@ -43,9 +44,10 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "maxTokens": max_new_tokens,
                 "messages": [
                     {
+                        "role": "assistant" if idx % 2 else "user",
                         "text": prompt,
-                        "role": "user",
                     }
+                    for idx, prompt in enumerate(prompts)
                 ],
                 "system": self._make_system_content(sources),
             },
