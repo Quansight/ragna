@@ -130,7 +130,7 @@ python = "3.12.*"
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
 types = { cmd="mypy" }
 test = { cmd="pytest --ignore tests/deploy/ui" }
-pre-commit = { cmd="pre-commit run {{ which_files }} --show-diff-on-failure --color=always", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" } ] }
+pre-commit = { cmd="pre-commit run {{ which_files }} --show-diff-on-failure", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" } ] }
 ci = { depends-on = [ { "task" = "pre-commit", "args" = ["--all-files"] }, "types", "optional-dependencies", "test"] }
 
 [dependency-groups]
