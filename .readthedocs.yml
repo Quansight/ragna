@@ -4,9 +4,9 @@
 version: 2
 
 build:
-  os: ubuntu-22.04
+  os: ubuntu-24.04
   tools:
-    python: "mambaforge-22.9"
+    python: "3.12"
   jobs:
     post_checkout:
       # Check out the full depth for setuptools-scm
@@ -16,7 +16,7 @@ build:
       - wget
         https://github.com/git-lfs/git-lfs/releases/download/v3.4.0/git-lfs-linux-amd64-v3.4.0.tar.gz
       - tar xvfz git-lfs-linux-amd64-v3.4.0.tar.gz
-      - ln -s git-lfs-3.4.0/git-lfs git-lfs
+      - ln --symbolic git-lfs-3.4.0/git-lfs git-lfs
       - git config filter.lfs.process "`pwd`/git-lfs filter-process"
       - git config filter.lfs.smudge  "`pwd`/git-lfs smudge -- %f"
       - git config filter.lfs.clean "`pwd`/git-lfs clean -- %f"
@@ -25,20 +25,17 @@ build:
       - ./git-lfs checkout
     pre_install:
       - git update-index --assume-unchanged $(git status --untracked-files=no
-        --porcelain | sed -E "s/\s*\S+\s+//")
+        --porcelain | sed --regexp-extended "s/\s*\S+\s+//")
+    install:
+      - curl --fail --silent --show-error --location https://pixi.sh/install.sh |
+        PIXI_VERSION=v0.45.0 bash
+      # We call the full path of the executable /home/docs/.pixi/bin/pixi because
+      # the installation process does not add the executable to the $PATH
+      - /home/docs/.pixi/bin/pixi install --frozen --environment dev-all-py312
     post_install:
       - git update-index --really-refresh || true
-
-mkdocs:
-  configuration: mkdocs.yml
-  fail_on_warning: true
-
-conda:
-  environment: environment-dev.yml
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - all
+    build:
+      html:
+        - mkdir --parents $READTHEDOCS_OUTPUT/html/
+        - /home/docs/.pixi/bin/pixi run --frozen --environment dev-all-py312 mkdocs
+          build --site-dir $READTHEDOCS_OUTPUT/html/

@@ -15,9 +15,6 @@ on:
 jobs:
   importable:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -elo pipefail {0}
 
     steps:
       - name: Checkout repository
@@ -28,7 +25,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          optional-dependencies: "false"
+          environment: "dev-py310"
 
       - name: Check if all public packages are importable
         run: python tests/test_importable.py
@@ -40,12 +37,12 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-        python-version: ["3.10"]
+        environment: ["dev-all-py310"]
         include:
           - os: ubuntu-latest
-            python-version: "3.11"
+            environment: "dev-all-py311"
           - os: ubuntu-latest
-            python-version: "3.12"
+            environment: "dev-all-py312"
 
       fail-fast: false
 
@@ -64,15 +61,12 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          python-version: ${{ matrix.python-version }}
+          environment: ${{ matrix.environment }}
 
       - name: Run unit tests
         id: tests
         run: |
-          pytest \
-            --ignore tests/deploy/ui \
-            --junit-xml=test-results.xml \
-            --durations=25
+          pixi run test --junit-xml=test-results.xml --durations=25
 
       - name: Surface failing tests
         if: steps.tests.outcome != 'success'

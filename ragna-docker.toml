@@ -1,10 +1,11 @@
 local_root = "/var/ragna"
-authentication = "ragna.deploy.RagnaDemoAuthentication"
+auth = "ragna.deploy.NoAuth"
+key_value_store = "ragna.deploy.InMemoryKeyValueStore"
 document = "ragna.core.LocalDocument"
 source_storages = [
     "ragna.source_storages.Chroma",
     "ragna.source_storages.LanceDB",
-    "ragna.source_storages.QdrantDB",
+    "ragna.source_storages.Qdrant",
 ]
 assistants = [
     "ragna.assistants.ClaudeHaiku",
@@ -28,15 +29,9 @@ assistants = [
     "ragna.assistants.RagnaDemoAssistant",
 ]
 
-[api]
 hostname = "0.0.0.0"
 port = 31476
 root_path = ""
-url = "http://localhost:31476"
-origins = ["http://localhost:31477"]
+origins = ["http://localhost:31476"]
+session_lifetime = 86400
 database_url = "sqlite:////var/ragna/ragna.db"
-
-[ui]
-hostname = "0.0.0.0"
-port = 31477
-origins = ["http://localhost:31477"]

@@ -27,43 +27,81 @@ Quick reference:
 git clone https://github.com/<your-username>/ragna.git
 ```
 
-### Set up development environment
+### Set up development environment and run Ragna
 
-We recommend using conda, but you can use any package and environment manager you
-prefer. The `environment-dev.yml` file at the root of the project lists all the required
-development dependencies.
+We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna.
 
-Create and activate a conda environment:
+Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`, and
+`dev-all-py312`, which use Python 3.10, 3.11, and 3.12, respectively. The environment
+`dev-all` is the same as `dev-all-py310`. The environment `dev-all` is used as an
+example in the sections below, but you can use any of the three Python versions you
+like.
+
+To both install a development environment and run Ragna in a single step, you can run
 
 ```bash
-conda env create --file environment-dev.yml
-conda activate ragna-dev
+pixi run -e dev-all ragna deploy
 ```
 
-### Setup pre-commit hooks (optional)
-
-To maintain code standards, you can install some pre-commit hooks that check your
-contributions when you commit them:
+You can verify that a development version of Ragna is correctly installed with
 
 ```bash
-pre-commit install
-```
-
-These checks are also run in the CI on each pull request.
-
-## Contribute code
-
-You install Ragna in editable mode to test your contributions locally as you develop:
-
-```bash
-pip install --editable '.[all]'
-```
-
-Verify that a development version is installed with:
-
-```bash
-ragna --version
+pixi run -e dev-all ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
+```
+
+### Testing, formatting, linting, and type checking
+
+#### Setup pre-commit hooks
+
+To maintain code standards, we use pre-commit hooks that check contributions before they
+are committed. To install them, run:
+
+```bash
+pre-commit install --install-hooks
+```
+
+These checks are used to run the code formatter and linter. They are also run in the CI
+on each pull request.
+
+#### Testing
+
+You can run Ragna tests with
+
+```bash
+pixi run -e dev-all test
+```
+
+#### Formatting & Linting
+
+To run the [Ruff code formatter and checker](https://docs.astral.sh/ruff/formatter/), as
+well as other useful formatting and linting tools, you can use
+
+```bash
+pixi run -e dev pre-commit
+```
+
+#### Type checking
+
+You can check type annotations with [Mypy](https://mypy-lang.org/) using
+
+```bash
+pixi run -e dev-all types
+```
+
+or
+
+```bash
+pixi run -e dev-all mypy
+```
+
+#### All of the above
+
+To run all the above checks using a single command as they would be run on the CI, you
+can use
+
+```bash
+pixi run -e dev-all ci
 ```
 
 ## Contribute documentation
@@ -83,10 +121,12 @@ To start a development build of the website that auto-refreshes on new changes, 
 following from the project root:
 
 ```bash
-mkdocs serve
+pixi run -e dev-all mkdocs serve
 ```
 
 This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+You must use a `dev-all*` environment to build the docs.
 
 ### View, add, or update images
 

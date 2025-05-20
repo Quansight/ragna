@@ -9,9 +9,6 @@ on:
 jobs:
   optional-dependencies:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -elo pipefail {0}
 
     steps:
       - name: Checkout repository
@@ -22,18 +19,14 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          optional-dependencies: "false"
+          environment: "dev-py310"
 
       - name: Test optional dependencies
         run: |
-          python scripts/update_optional_dependencies.py
-          git diff --exit-code
+          pixi run optional-dependencies
 
   format:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -elo pipefail {0}
 
     steps:
       - name: Checkout repository
@@ -44,7 +37,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          optional-dependencies: "false"
+          environment: "dev-py310"
 
       - uses: actions/cache@v4
         with:
@@ -57,13 +50,10 @@ jobs:
         run: pre-commit install-hooks
 
       - name: Run format checks
-        run: pre-commit run --all-files --show-diff-on-failure --color=always
+        run: pixi run pre-commit --all-files --show-diff-on-failure --color=always
 
   types:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -elo pipefail {0}
 
     steps:
       - name: Checkout repository
@@ -73,6 +63,8 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
+        with:
+          environment: "dev-all-py310"
 
       - name: Run type checks
-        run: mypy
+        run: pixi run types
