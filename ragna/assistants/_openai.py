@@ -1,11 +1,11 @@
 import abc
-import itertools
 from functools import cached_property
 from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast
 
 from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
+from ._utils import unpack_prompts_and_sources
 
 
 class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
@@ -61,14 +61,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompts = [message.content for message in messages if message.role != "system"]
-        sources = list(
-            set(
-                itertools.chain.from_iterable(
-                    message.sources for message in messages if message.role != "system"
-                )
-            )
-        )
+        prompts, sources = unpack_prompts_and_sources(messages)
         async with self._call_openai_api(
             prompts, sources, max_new_tokens=max_new_tokens
         ) as stream:
