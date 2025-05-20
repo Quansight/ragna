@@ -31,7 +31,7 @@ HTTP_API_ASSISTANTS = [
 async def test_api_call_error_smoke(mocker, assistant):
     mocker.patch.dict(os.environ, {assistant._API_KEY_ENV_VAR: "SENTINEL"})
 
-    messages = [Message(content="?", sources=[])]
+    messages = [Message(content="?", sources=[], role="user")]
     chunks = assistant().answer(messages)
 
     with pytest.raises(RagnaException, match="API call failed"):
