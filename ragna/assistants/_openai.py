@@ -5,7 +5,6 @@ from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast
 from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
-from ._utils import unpack_prompts_and_sources
 
 
 class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
@@ -25,7 +24,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return instruction + "\n\n".join(source.content for source in sources)
 
     def _call_openai_api(
-        self, prompts: list[str], sources: list[Source], *, max_new_tokens: int
+        self, messages: list[Message], *, max_new_tokens: int
     ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
@@ -34,19 +33,22 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         }
         if self._api_key is not None:
             headers["Authorization"] = f"Bearer {self._api_key}"
-
+        *_, current_message = (
+            message for message in messages if message.role != "system"
+        )
         json_ = {
             "messages": [
                 {
                     "role": "system",
-                    "content": self._make_system_content(sources),
+                    "content": self._make_system_content(current_message.sources),
                 },
                 *(
                     {
-                        "role": "assistant" if idx % 2 else "user",
-                        "content": prompt,
+                        "role": message.role,
+                        "content": message.content,
                     }
-                    for idx, prompt in enumerate(prompts)
+                    for message in messages
+                    if message.role != "system"
                 ),
             ],
             "temperature": 0.0,
@@ -61,9 +63,8 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompts, sources = unpack_prompts_and_sources(messages)
         async with self._call_openai_api(
-            prompts, sources, max_new_tokens=max_new_tokens
+            messages, max_new_tokens=max_new_tokens
         ) as stream:
             async for data in stream:
                 choice = data["choices"][0]

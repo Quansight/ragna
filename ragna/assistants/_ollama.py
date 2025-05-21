@@ -6,7 +6,6 @@ from ragna.core import Message, RagnaException
 
 from ._http_api import HttpStreamingProtocol
 from ._openai import OpenaiLikeHttpApiAssistant
-from ._utils import unpack_prompts_and_sources
 
 
 class OllamaAssistant(OpenaiLikeHttpApiAssistant):
@@ -33,10 +32,8 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompts, sources = unpack_prompts_and_sources(messages)
-
         async with self._call_openai_api(
-            prompts, sources, max_new_tokens=max_new_tokens
+            messages, max_new_tokens=max_new_tokens
         ) as stream:
             async for data in stream:
                 # Modeled after
