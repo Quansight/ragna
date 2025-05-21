@@ -18,7 +18,7 @@ class GoogleAssistant(HttpApiAssistant):
         # https://ai.google.dev/docs/prompt_best_practices#add-contextual-information
         return "\n".join(
             [
-                "Answer the user prompts using only the pieces of context below.",
+                "Answer the last user prompt using only the pieces of context below.",
                 "If you don't know the answer, just say so. Don't try to make up additional context.",
                 *(f"\n{source.content}" for source in sources),
             ]
