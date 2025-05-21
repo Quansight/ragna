@@ -3,7 +3,6 @@ from typing import AsyncIterator
 from ragna.core import Message, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
-from ._utils import unpack_prompts_and_sources
 
 
 class GoogleAssistant(HttpApiAssistant):
@@ -28,7 +27,9 @@ class GoogleAssistant(HttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompts, sources = unpack_prompts_and_sources(messages)
+        *_, current_message = (
+            message for message in messages if message.role != "system"
+        )
         async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
@@ -40,7 +41,9 @@ class GoogleAssistant(HttpApiAssistant):
                     {
                         "parts": [
                             {
-                                "text": self._instructize_system_prompt(sources),
+                                "text": self._instructize_system_prompt(
+                                    current_message.sources
+                                ),
                             }
                         ]
                     }
@@ -48,14 +51,18 @@ class GoogleAssistant(HttpApiAssistant):
                 # https://ai.google.dev/gemini-api/docs/text-generation#multi-turn-conversations
                 "contents": [
                     {
-                        "role": "model" if idx % 2 else "user",
+                        "role": {
+                            "user": "user",
+                            "assistant": "model",
+                        }[message.role],
                         "parts": [
                             {
-                                "text": prompt,
+                                "text": message.content,
                             },
                         ],
                     }
-                    for idx, prompt in enumerate(prompts)
+                    for message in messages
+                    if message.role != "system"
                 ],
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
