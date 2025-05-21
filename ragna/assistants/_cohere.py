@@ -3,7 +3,6 @@ from typing import AsyncIterator, cast
 from ragna.core import Message, RagnaException, Source
 
 from ._http_api import HttpApiAssistant, HttpStreamingProtocol
-from ._utils import unpack_prompts_and_sources
 
 
 class CohereAssistant(HttpApiAssistant):
@@ -31,7 +30,9 @@ class CohereAssistant(HttpApiAssistant):
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        prompts, sources = unpack_prompts_and_sources(messages)
+        *previous_messages, current_message = (
+            message for message in messages if message.role != "system"
+        )
         async with self._call_api(
             "POST",
             "https://api.cohere.ai/v1/chat",
@@ -44,17 +45,20 @@ class CohereAssistant(HttpApiAssistant):
                 "preamble_override": self._make_preamble(),
                 "chat_history": [
                     {
-                        "role": "CHATBOT" if idx % 2 else "USER",
-                        "message": prompt,
+                        "role": {
+                            "user": "USER",
+                            "assistant": "CHATBOT",
+                        }[message.role],
+                        "message": message.content,
                     }
-                    for idx, prompt in enumerate(prompts[:-1])
+                    for message in previous_messages
                 ],
-                "message": prompts[-1],
+                "message": current_message.content,
                 "model": self._MODEL,
                 "stream": True,
                 "temperature": 0.0,
                 "max_tokens": max_new_tokens,
-                "documents": self._make_source_documents(sources),
+                "documents": self._make_source_documents(current_message.sources),
             },
         ) as stream:
             async for event in stream:
