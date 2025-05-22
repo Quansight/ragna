@@ -63,7 +63,7 @@ all = [
     "ijson",
     "lancedb>=0.2",
     "pyarrow",
-    "pymupdf<=1.24.10,>=1.23.6",
+    "pymupdf<1.26.0,>=1.25.0",
     "python-docx",
     "python-pptx",
     "qdrant-client>=1.12.1",
