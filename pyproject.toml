@@ -119,7 +119,6 @@ python = ">=3.10,<3.14"
 
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
-pip = "*"
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
@@ -208,6 +207,7 @@ filterwarnings = [
     # https://github.com/qdrant/qdrant-client/issues/983
     # Remove when Qdrant fixes this
     "ignore:invalid escape sequence:SyntaxWarning",
+    "ignore:invalid escape sequence:DeprecationWarning",
 ]
 xfail_strict = true
 
