@@ -196,6 +196,8 @@ filterwarnings = [
     "ignore:Python 3.14 will:DeprecationWarning",
     # https://github.com/lancedb/lancedb/issues/2315
     "ignore:Support for class-based `config`:pydantic.warnings.PydanticDeprecatedSince20",
+    # https://github.com/pymupdf/PyMuPDF/issues/4392
+    "ignore::DeprecationWarning",
 ]
 xfail_strict = true
 
