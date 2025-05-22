@@ -15,7 +15,7 @@ COPY pyproject.toml pixi.lock .
 #    since setuptools-scm cannot infer the version
 RUN echo '[tool.setuptools.package-data]\n"*" = ["*"]' >> pyproject.toml
 ARG SETUPTOOLS_SCM_PRETEND_VERSION_FOR_RAGNA
-ARG ENVIRONMENT="default-all-py312"
+ARG ENVIRONMENT="default-all-py313"
 
 RUN <<EOF
 pixi shell-hook --frozen --environment $ENVIRONMENT --shell bash > /shell-hook.sh;
@@ -33,7 +33,7 @@ USER bodil
 
 WORKDIR /var/ragna
 
-COPY --from=build --chown=bodil:bodil /var/ragna/.pixi/envs/default-all-py312 /var/ragna/.pixi/envs/default-all-py312
+COPY --from=build --chown=bodil:bodil /var/ragna/.pixi/envs/default-all-py313 /var/ragna/.pixi/envs/default-all-py313
 COPY --from=build --chown=bodil:bodil --chmod=0755 /entrypoint.sh /entrypoint.sh
 COPY --from=build --chown=bodil:bodil /var/ragna/ragna /var/ragna/ragna
 
