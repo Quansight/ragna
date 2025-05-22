@@ -43,6 +43,8 @@ jobs:
             environment: "dev-all-py311"
           - os: ubuntu-latest
             environment: "dev-all-py312"
+          - os: ubuntu-latest
+            environment: "dev-all-py313"
 
       fail-fast: false
 
