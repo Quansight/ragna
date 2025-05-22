@@ -19,7 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "aiofiles",
     "fastapi",
@@ -95,23 +95,27 @@ default = { features = ["py310"], solve-group = "default" }
 default-py310 = { features = ["py310"], solve-group = "default" }
 default-py311 = { features = ["py311"], solve-group = "default-py311" }
 default-py312 = { features = ["py312"], solve-group = "default-py312" }
+default-py313 = { features = ["py313"], solve-group = "default-py313" }
 default-all = { features = ["all", "py310"], solve-group = "default" }
 default-all-py310 = { features = ["all", "py310"], solve-group = "default" }
 default-all-py311 = { features = ["all", "py311"], solve-group = "default-py311" }
 default-all-py312 = { features = ["all", "py312"], solve-group = "default-py312" }
+default-all-py313 = { features = ["all", "py313"], solve-group = "default-py313" }
 dev = { features = ["dev", "py310"], solve-group = "default" }
 dev-py310 = { features = ["dev", "py310"], solve-group = "default" }
 dev-py311 = { features = ["dev", "py311"], solve-group = "default-py311" }
 dev-py312 = { features = ["dev", "py312"], solve-group = "default-py312" }
+dev-py313 = { features = ["dev", "py313"], solve-group = "default-py313" }
 dev-all = { features = ["all", "dev", "py310"], solve-group = "default" }
 dev-all-py310 = { features = ["all", "dev", "py310"], solve-group = "default" }
 dev-all-py311 = { features = ["all", "dev", "py311"], solve-group = "default-py311" }
 dev-all-py312 = { features = ["all", "dev", "py312"], solve-group = "default-py312" }
+dev-all-py313 = { features = ["all", "dev", "py313"], solve-group = "default-py313" }
 
 [tool.pixi.tasks]
 
 [tool.pixi.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.14"
 
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
@@ -125,6 +129,9 @@ python = "3.11.*"
 
 [tool.pixi.feature.py312.dependencies]
 python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
 
 [tool.pixi.feature.dev.tasks]
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
