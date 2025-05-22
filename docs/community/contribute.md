@@ -37,7 +37,13 @@ Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`,
 example in the sections below, but you can use any of the three Python versions you
 like.
 
-To both install a development environment and run Ragna in a single step, you can run
+To install a development environment, run
+
+```bash
+pixi install -e dev-all --frozen
+```
+
+You can then run Ragna with
 
 ```bash
 pixi run -e dev-all ragna deploy
