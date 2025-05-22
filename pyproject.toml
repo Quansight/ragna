@@ -207,7 +207,7 @@ filterwarnings = [
     "ignore:builtin type \\w+ has no __module__ attribute:DeprecationWarning",
     # https://github.com/qdrant/qdrant-client/issues/983
     # Remove when Qdrant fixes this
-    "ignore::SyntaxWarning",
+    "ignore:invalid escape sequence:SyntaxWarning",
 ]
 xfail_strict = true
 
