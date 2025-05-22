@@ -115,7 +115,6 @@ python = ">=3.10,<3.13"
 
 [tool.pixi.feature.dev.dependencies]
 git-lfs = "*"
-pip = "*"
 
 [tool.pixi.feature.py310.dependencies]
 python = "3.10.*"
