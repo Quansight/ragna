@@ -12852,8 +12852,8 @@ packages:
   requires_python: '>=3.8'
 - pypi: ./
   name: ragna
-  version: 0.4.0.dev33+g5739039.d20250522
-  sha256: ce10134bd164110d5669e95c2d061c3b6ce707a527d5082d7a537c15323649f9
+  version: 0.4.0.dev34+gf998f4f.d20250522
+  sha256: 05cecdaf398cb26ac74acb36f66211c1ffe746c31e690abd02d530d0a65f1a29
   requires_dist:
   - aiofiles
   - fastapi
@@ -12878,7 +12878,7 @@ packages:
   - ijson ; extra == 'all'
   - lancedb>=0.2 ; extra == 'all'
   - pyarrow ; extra == 'all'
-  - pymupdf>=1.25.0,<1.26.0 ; extra == 'all'
+  - pymupdf ; extra == 'all'
   - python-docx ; extra == 'all'
   - python-pptx ; extra == 'all'
   - qdrant-client>=1.12.1 ; extra == 'all'

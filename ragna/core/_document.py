@@ -231,7 +231,7 @@ class PdfDocumentHandler(DocumentHandler):
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
-        return [PackageRequirement("pymupdf<1.26.0,>=1.25.0")]
+        return [PackageRequirement("pymupdf")]
 
     @classmethod
     def supported_suffixes(cls) -> list[str]:
