@@ -63,7 +63,7 @@ all = [
     "ijson",
     "lancedb>=0.2",
     "pyarrow",
-    "pymupdf<=1.24.10,>=1.23.6",
+    "pymupdf",
     "python-docx",
     "python-pptx",
     "qdrant-client>=1.12.1",
@@ -196,6 +196,8 @@ filterwarnings = [
     "ignore:Python 3.14 will:DeprecationWarning",
     # https://github.com/lancedb/lancedb/issues/2315
     "ignore:Support for class-based `config`:pydantic.warnings.PydanticDeprecatedSince20",
+    # https://github.com/pymupdf/PyMuPDF/issues/4392
+    "ignore:builtin type \\w+ has no __module__ attribute:DeprecationWarning",
 ]
 xfail_strict = true
 
