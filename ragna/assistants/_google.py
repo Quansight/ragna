@@ -28,6 +28,9 @@ class GoogleAssistant(HttpApiAssistant):
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
         current_prompt = next(m for m in reversed(messages) if m.role == "user")
+        current_system_instruction = self._instructize_system_prompt(
+            current_prompt.sources
+        )
         async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
@@ -36,15 +39,7 @@ class GoogleAssistant(HttpApiAssistant):
             json={
                 # https://ai.google.dev/gemini-api/docs/text-generation#system-instructions
                 "system_instruction": [
-                    {
-                        "parts": [
-                            {
-                                "text": self._instructize_system_prompt(
-                                    current_prompt.sources
-                                ),
-                            }
-                        ]
-                    }
+                    {"parts": [{"text": current_system_instruction}]}
                 ],
                 # https://ai.google.dev/gemini-api/docs/text-generation#multi-turn-conversations
                 "contents": [
@@ -53,11 +48,7 @@ class GoogleAssistant(HttpApiAssistant):
                             "user": "user",
                             "assistant": "model",
                         }[message.role],
-                        "parts": [
-                            {
-                                "text": message.content,
-                            },
-                        ],
+                        "parts": [{"text": message.content}],
                     }
                     for message in messages
                     if message.role != "system"
