@@ -32,9 +32,8 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
         async with self._call_openai_api(
-            prompt, sources, max_new_tokens=max_new_tokens
+            messages, max_new_tokens=max_new_tokens
         ) as stream:
             async for data in stream:
                 # Modeled after

@@ -28,7 +28,7 @@ class Ai21LabsAssistant(HttpApiAssistant):
         # See https://docs.ai21.com/reference/j2-chat-api#chat-api-parameters
         # See https://docs.ai21.com/reference/j2-complete-api-ref#api-parameters
         # See https://docs.ai21.com/reference/j2-chat-api#understanding-the-response
-        prompt, sources = (message := messages[-1]).content, message.sources
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
         async with self._call_api(
             "POST",
             f"https://api.ai21.com/studio/v1/j2-{self._MODEL_TYPE}/chat",
@@ -43,11 +43,13 @@ class Ai21LabsAssistant(HttpApiAssistant):
                 "maxTokens": max_new_tokens,
                 "messages": [
                     {
-                        "text": prompt,
-                        "role": "user",
+                        "role": message.role,
+                        "text": message.content,
                     }
+                    for message in messages
+                    if message.role != "system"
                 ],
-                "system": self._make_system_content(sources),
+                "system": self._make_system_content(current_prompt.sources),
             },
         ) as stream:
             async for data in stream:

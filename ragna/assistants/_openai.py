@@ -24,7 +24,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         return instruction + "\n\n".join(source.content for source in sources)
 
     def _call_openai_api(
-        self, prompt: str, sources: list[Source], *, max_new_tokens: int
+        self, messages: list[Message], *, max_new_tokens: int
     ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
@@ -33,17 +33,21 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         }
         if self._api_key is not None:
             headers["Authorization"] = f"Bearer {self._api_key}"
-
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
         json_ = {
             "messages": [
                 {
                     "role": "system",
-                    "content": self._make_system_content(sources),
+                    "content": self._make_system_content(current_prompt.sources),
                 },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
+                *(
+                    {
+                        "role": message.role,
+                        "content": message.content,
+                    }
+                    for message in messages
+                    if message.role != "system"
+                ),
             ],
             "temperature": 0.0,
             "max_tokens": max_new_tokens,
@@ -57,9 +61,8 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
         async with self._call_openai_api(
-            prompt, sources, max_new_tokens=max_new_tokens
+            messages, max_new_tokens=max_new_tokens
         ) as stream:
             async for data in stream:
                 choice = data["choices"][0]
