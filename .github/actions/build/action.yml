@@ -6,4 +6,4 @@ runs:
 
   steps:
     - name: Build wheel
-      run: python -m build -o dist
+      run: pixi run build
