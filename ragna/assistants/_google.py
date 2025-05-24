@@ -27,9 +27,7 @@ class GoogleAssistant(HttpApiAssistant):
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        *_, current_message = (
-            message for message in messages if message.role != "system"
-        )
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
         async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
@@ -42,7 +40,7 @@ class GoogleAssistant(HttpApiAssistant):
                         "parts": [
                             {
                                 "text": self._instructize_system_prompt(
-                                    current_message.sources
+                                    current_prompt.sources
                                 ),
                             }
                         ]

@@ -33,14 +33,12 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         }
         if self._api_key is not None:
             headers["Authorization"] = f"Bearer {self._api_key}"
-        *_, current_message = (
-            message for message in messages if message.role != "system"
-        )
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
         json_ = {
             "messages": [
                 {
                     "role": "system",
-                    "content": self._make_system_content(current_message.sources),
+                    "content": self._make_system_content(current_prompt.sources),
                 },
                 *(
                     {

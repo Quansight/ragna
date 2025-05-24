@@ -30,8 +30,9 @@ class CohereAssistant(HttpApiAssistant):
         # See https://docs.cohere.com/docs/cochat-beta
         # See https://docs.cohere.com/reference/chat
         # See https://docs.cohere.com/docs/retrieval-augmented-generation-rag
-        *previous_messages, current_message = (
-            message for message in messages if message.role != "system"
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
+        previous_messages = (
+            message for message in messages if message.id != current_prompt.id
         )
         async with self._call_api(
             "POST",
@@ -53,12 +54,12 @@ class CohereAssistant(HttpApiAssistant):
                     }
                     for message in previous_messages
                 ],
-                "message": current_message.content,
+                "message": current_prompt.content,
                 "model": self._MODEL,
                 "stream": True,
                 "temperature": 0.0,
                 "max_tokens": max_new_tokens,
-                "documents": self._make_source_documents(current_message.sources),
+                "documents": self._make_source_documents(current_prompt.sources),
             },
         ) as stream:
             async for event in stream:
