@@ -133,6 +133,9 @@ python = "3.12.*"
 [tool.pixi.feature.py313.dependencies]
 python = "3.13.*"
 
+[tool.pixi.feature.build.tasks]
+build = "python -m build"
+
 [tool.pixi.feature.dev.tasks]
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
 types = { cmd="mypy" }
