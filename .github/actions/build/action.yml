@@ -1,0 +1,9 @@
+name: build-wheel
+description: "Build a wheel"
+
+runs:
+  using: composite
+
+  steps:
+    - name: Build wheel
+      run: python -m build -o dist
