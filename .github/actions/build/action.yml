@@ -1,6 +1,11 @@
 name: build-wheel
 description: "Build a wheel"
 
+outputs:
+  hashes:
+    description: "Hashes of the dist directory"
+    value: ${{ steps.hashes.outputs.hashes }}
+
 runs:
   using: composite
 
@@ -10,7 +15,7 @@ runs:
       run: SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) pixi run build
 
     - name: "Generate hashes"
-      id: hash
+      id: hashes
       shell: bash
       run: cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
 
