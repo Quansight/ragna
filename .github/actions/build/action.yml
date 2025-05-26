@@ -6,4 +6,19 @@ runs:
 
   steps:
     - name: Build wheel
-      run: pixi run build
+      run: |
+        SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) \
+        pixi run build
+
+    - name: "Generate hashes"
+        id: hash
+        run: |
+          cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+
+    - name: "Upload dists"
+        uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        with:
+          name: "dist"
+          path: "dist/"
+          if-no-files-found: error
+          retention-days: 5
