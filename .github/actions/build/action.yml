@@ -6,12 +6,14 @@ runs:
 
   steps:
     - name: Build wheel
+      shell: bash
       run: |
         SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) \
         pixi run build
 
     - name: "Generate hashes"
         id: hash
+        shell: bash
         run: |
           cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
 
