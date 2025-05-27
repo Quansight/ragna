@@ -50,6 +50,10 @@ jobs:
 
   publish-pypi:
     name: "Publish to PyPI"
+    if:
+      ( github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') ) || (
+      github.event_name == 'workflow_dispatch' && github.event.inputs.pypi-repository ==
+      'pypi' )
     needs: ["build", "provenance"]
     permissions:
       contents: write
@@ -65,11 +69,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup environment
-        uses: ./.github/actions/setup-env
-        with:
-          environment: "build"
-
       - name: "Download dists"
         uses: "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
         with:
@@ -77,16 +76,35 @@ jobs:
           path: "dist/"
 
       - name: "Publish dists to PyPI"
-        if:
-          ( github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') ) || (
-          github.event_name == 'workflow_dispatch' &&
-          github.event.inputs.pypi-repository == 'pypi' )
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
 
+  publish-testpypi:
+    name: "Publish to TestPyPI"
+    if:
+      github.event_name == 'workflow_dispatch' && github.event.inputs.pypi-repository ==
+      'testpypi'
+    needs: ["build", "provenance"]
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: "ubuntu-latest"
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/ragna
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Download dists"
+        uses: "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+        with:
+          name: "dist"
+          path: "dist/"
+
       - name: "Publish dists to TestPyPI"
-        if:
-          github.event_name == 'workflow_dispatch' &&
-          github.event.inputs.pypi-repository == 'testpypi'
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
         with:
           repository-url: https://test.pypi.org/legacy/
