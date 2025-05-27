@@ -77,6 +77,8 @@ jobs:
 
       - name: "Publish dists to PyPI"
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
+        with:
+          print-hash: true
 
   publish-testpypi:
     name: "Publish to TestPyPI"
@@ -108,3 +110,4 @@ jobs:
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
         with:
           repository-url: https://test.pypi.org/legacy/
+          print-hash: true
