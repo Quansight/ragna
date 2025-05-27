@@ -136,9 +136,6 @@ python = "3.13.*"
 [tool.pixi.feature.build.tasks]
 build = "python -m build"
 
-[tool.pixi.feature.build.dependencies]
-grayskull = ">=2.9.1,<3"
-
 [tool.pixi.feature.dev.tasks]
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
 types = { cmd="mypy" }
