@@ -47,6 +47,31 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
                 if not data["done"]:
                     yield cast(str, data["message"]["content"])
 
+    async def _pull_model(self) -> None:
+        headers = {
+            "Content-Type": "application/json",
+        }
+        if self._api_key is not None:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+
+        json_ = {"model": self._MODEL}
+
+        async with self._call_api(
+            "PULL", self._base_url + "/api/pull", headers=headers, json=json_
+        ) as stream:
+            async for data in stream:
+                if "error" in data:
+                    raise RagnaException(data["error"])
+
+        if "status" not in data:
+            raise RagnaException(
+                f"Could not retrieve status when pulling {self._MODEL}: {data}"
+            )
+        elif data["status"] != "success":
+            raise RagnaException(
+                f"Pulling {self._MODEL} did not return successfully: {data['status']}"
+            )
+
 
 class OllamaGemma2B(OllamaAssistant):
     """[Gemma:2B](https://ollama.com/library/gemma)"""
