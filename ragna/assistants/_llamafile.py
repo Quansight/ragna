@@ -26,6 +26,9 @@ class LlamafileAssistant(OpenaiLikeHttpApiAssistant):
         return "llamafile"
 
     @cached_property
-    def _url(self) -> str:
-        base_url = os.environ.get("RAGNA_LLAMAFILE_BASE_URL", "http://localhost:8080")
-        return f"{base_url}/v1/chat/completions"
+    def _base_url(self) -> str:
+        return os.environ.get("RAGNA_LLAMAFILE_BASE_URL", "http://localhost:8080")
+
+    @cached_property
+    def _chat_endpoint(self) -> str:
+        return "/v1/chat/completions"

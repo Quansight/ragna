@@ -12,7 +12,15 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
 
     @property
     @abc.abstractmethod
-    def _url(self) -> str: ...
+    def _base_url(self) -> str: ...
+
+    @property
+    @abc.abstractmethod
+    def _chat_endpoint(self) -> str: ...
+
+    @cached_property
+    def _chat_url(self) -> str:
+        return self._base_url + self._chat_endpoint
 
     def _make_system_content(self, sources: list[Source]) -> str:
         # See https://github.com/openai/openai-cookbook/blob/main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb
@@ -52,7 +60,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
         if self._MODEL is not None:
             json_["model"] = self._MODEL
 
-        return self._call_api("POST", self._url, headers=headers, json=json_)
+        return self._call_api("POST", self._chat_url, headers=headers, json=json_)
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
@@ -78,8 +86,12 @@ class OpenaiAssistant(OpenaiLikeHttpApiAssistant):
         return f"OpenAI/{cls._MODEL}"
 
     @cached_property
-    def _url(self) -> str:
+    def _base_url(self) -> str:
         return "https://api.openai.com/v1/chat/completions"
+
+    @cached_property
+    def _chat_endpoint(self) -> str:
+        return "/v1/chat/completions"
 
 
 class Gpt35Turbo16k(OpenaiAssistant):

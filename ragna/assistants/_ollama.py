@@ -25,9 +25,12 @@ class OllamaAssistant(OpenaiLikeHttpApiAssistant):
         return f"Ollama/{cls._MODEL}"
 
     @cached_property
-    def _url(self) -> str:
-        base_url = os.environ.get("RAGNA_OLLAMA_BASE_URL", "http://localhost:11434")
-        return f"{base_url}/api/chat"
+    def _base_url(self) -> str:
+        return os.environ.get("RAGNA_OLLAMA_BASE_URL", "http://localhost:11434")
+
+    @cached_property
+    def _chat_endpoint(self) -> str:
+        return "/api/chat"
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
