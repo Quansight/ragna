@@ -41,7 +41,7 @@ class AnthropicAssistant(HttpApiAssistant):
     ) -> AsyncIterator[str]:
         # See https://docs.anthropic.com/claude/reference/messages_post
         # See https://docs.anthropic.com/claude/reference/streaming
-        prompt, sources = (message := messages[-1]).content, message.sources
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
         async with self._call_api(
             "POST",
             "https://api.anthropic.com/v1/messages",
@@ -53,8 +53,15 @@ class AnthropicAssistant(HttpApiAssistant):
             },
             json={
                 "model": self._MODEL,
-                "system": self._instructize_system_prompt(sources),
-                "messages": [{"role": "user", "content": prompt}],
+                "system": self._instructize_system_prompt(current_prompt.sources),
+                "messages": [
+                    {
+                        "role": message.role,
+                        "content": message.content,
+                    }
+                    for message in messages
+                    if message.role != "system"
+                ],
                 "max_tokens": max_new_tokens,
                 "temperature": 0.0,
                 "stream": True,

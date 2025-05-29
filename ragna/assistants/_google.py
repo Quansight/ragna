@@ -14,29 +14,44 @@ class GoogleAssistant(HttpApiAssistant):
     def display_name(cls) -> str:
         return f"Google/{cls._MODEL}"
 
-    def _instructize_prompt(self, prompt: str, sources: list[Source]) -> str:
+    def _instructize_system_prompt(self, sources: list[Source]) -> str:
         # https://ai.google.dev/docs/prompt_best_practices#add-contextual-information
         return "\n".join(
             [
-                "Answer the prompt using only the pieces of context below.",
+                "Answer the last user prompt using only the pieces of context below.",
                 "If you don't know the answer, just say so. Don't try to make up additional context.",
-                f"Prompt: {prompt}",
-                *[f"\n{source.content}" for source in sources],
+                *(f"\n{source.content}" for source in sources),
             ]
         )
 
     async def answer(
         self, messages: list[Message], *, max_new_tokens: int = 256
     ) -> AsyncIterator[str]:
-        prompt, sources = (message := messages[-1]).content, message.sources
+        current_prompt = next(m for m in reversed(messages) if m.role == "user")
+        current_system_instruction = self._instructize_system_prompt(
+            current_prompt.sources
+        )
         async with self._call_api(
             "POST",
             f"https://generativelanguage.googleapis.com/v1beta/models/{self._MODEL}:streamGenerateContent",
             params={"key": self._api_key},
             headers={"Content-Type": "application/json"},
             json={
+                # https://ai.google.dev/gemini-api/docs/text-generation#system-instructions
+                "system_instruction": [
+                    {"parts": [{"text": current_system_instruction}]}
+                ],
+                # https://ai.google.dev/gemini-api/docs/text-generation#multi-turn-conversations
                 "contents": [
-                    {"parts": [{"text": self._instructize_prompt(prompt, sources)}]}
+                    {
+                        "role": {
+                            "user": "user",
+                            "assistant": "model",
+                        }[message.role],
+                        "parts": [{"text": message.content}],
+                    }
+                    for message in messages
+                    if message.role != "system"
                 ],
                 # https://ai.google.dev/docs/safety_setting_gemini
                 "safetySettings": [
