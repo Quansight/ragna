@@ -8,11 +8,13 @@ on:
       - "*"
 
 jobs:
-  build:
+  build-and-publish:
+    name: "Build Package and Publish to PyPI"
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+      id-token: write
     runs-on: ubuntu-latest
-
-    outputs:
-      hashes: ${{ steps.build.outputs.hashes }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,35 +24,10 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "build"
+          environment: "dev-py310"
 
       - name: Build dists
-        id: build
-        uses: ./.github/actions/build
-
-  publish-pypi:
-    name: "Publish to PyPI"
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: ["build"]
-    permissions:
-      contents: write
-      id-token: write
-    runs-on: "ubuntu-latest"
-    environment:
-      name: pypi
-      url: https://pypi.org/p/ragna
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: "Download dists"
-        uses: "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
-        with:
-          name: "dist"
-          path: "dist/"
+        run: pixi run build
 
       - name: "Publish dists to PyPI"
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
