@@ -8,7 +8,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Ragna"
 description = "RAG orchestration framework"
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 authors = [
     { name = "Ragna Development Team", email = "connect@quansight.com" },
 ]
