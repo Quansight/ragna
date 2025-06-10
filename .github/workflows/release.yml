@@ -10,7 +10,6 @@ on:
 jobs:
   build-and-publish:
     name: "Build Package and Publish to PyPI"
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
       id-token: write
@@ -30,4 +29,5 @@ jobs:
         run: pixi run build
 
       - name: "Publish dists to PyPI"
+        if: ${{ github.ref_type == 'tag' }}
         uses: "pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc"
