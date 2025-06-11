@@ -142,7 +142,7 @@ test = { cmd="pytest --ignore tests/deploy/ui" }
 # When it is supported, we should remove the argument definitions, as they will have become unnecessary.
 pre-commit = { cmd="pre-commit run {{ which_files }} {{ show_diff }} {{ colorize_output }}", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" }, { "arg" = "show_diff", "default" = "" }, { "arg" = "colorize_output", "default" = "" } ] }
 ci = { depends-on = [ { "task" = "pre-commit", "args" = ["--all-files"] }, "types", "optional-dependencies", "test"] }
-build = { cmd="SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct) python -m build" }
+build = { cmd="python -m build" }
 
 [dependency-groups]
 dev = [
