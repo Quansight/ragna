@@ -137,6 +137,7 @@ all-py310 = { features = ["dev", "py310", "all"], solve-group = "py310" }
 all-py311 = { features = ["dev", "py311", "all"], solve-group = "py311" }
 all-py312 = { features = ["dev", "py312", "all"], solve-group = "py312" }
 all-py313 = { features = ["dev", "py313", "all"], solve-group = "py313" }
+all-docker = {features = ["py313", "all"], solve-group="py313"}
 
 [tool.pixi.dependencies]
 python = ">=3.10,<3.14"

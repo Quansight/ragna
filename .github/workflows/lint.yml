@@ -59,7 +59,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: all
+          environment: all-py310
 
       - name: Run type checks
         run: pixi run types
