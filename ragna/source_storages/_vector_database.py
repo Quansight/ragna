@@ -46,7 +46,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             # to manage and mostly not even used by the vector DB. Chroma provides a
             # wrapper around a compiled embedding function that has only minimal
             # requirements. We use this as base for all of our Vector DBs.
-            PackageRequirement("chromadb>=1.0.0"),
+            PackageRequirement("chromadb>=1.0.13"),
             PackageRequirement("tiktoken"),
         ]
 
