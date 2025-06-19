@@ -3,9 +3,9 @@ description: "Setup development environment"
 
 inputs:
   environment:
-    default: "default"
+    default: "base-py310"
     description:
-      "Pixi environment to activate. Examples include 'default', 'dev-all-py312'"
+      "Pixi environment to activate. Examples include 'base-py310' or 'all-py313'."
 
 runs:
   using: composite

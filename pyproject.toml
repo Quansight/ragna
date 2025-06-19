@@ -84,6 +84,43 @@ include = [
     "ragna*",
 ]
 
+[dependency-groups]
+lint = [
+    "mypy==1.10.0",
+    "pre-commit>=4.2.0,<5",
+    "sqlalchemy-stubs>=0.4,<0.5",
+    "types-aiofiles>=24.1.0.20250326,<25",
+    "types-redis>=4.6.0.20241004,<5",
+]
+test = [
+    "httpx-sse>=0.4.0,<0.5",
+    "ijson>=3.3.0,<4",
+    "pytest>=6,<9",
+    "pytest-asyncio>=0.26.0,<0.27",
+    "pytest-mock>=3.14.0,<4",
+    "pytest-playwright>=0.7.0,<0.8",
+    "sse-starlette>=2.2.1,<3",
+]
+docs = [
+    "material-plausible-plugin>=0.3.0,<0.4",
+    "mdx-truly-sane-lists>=1.3,<2",
+    "mkdocs>=1.6.1,<2",
+    "mkdocstrings[python]>=0.29.1,<0.30",
+    "mkdocs-gallery>=0.10.3,<0.11",
+    "mkdocs-gen-files>=0.5.0,<0.6",
+    "mkdocs-material>=9.6.11,<10",
+]
+build = [
+    "build",
+    "setuptools-scm>=8.2.0,<9",
+]
+dev = [
+    {include-group = "lint"},
+    {include-group = "test"},
+    {include-group = "docs"},
+    {include-group = "build"},
+]
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64", "win-64", "osx-arm64"]
@@ -92,28 +129,14 @@ platforms = ["linux-64", "win-64", "osx-arm64"]
 Ragna = { path = ".", editable = true }
 
 [tool.pixi.environments]
-default = { features = ["py310"], solve-group = "default" }
-default-py310 = { features = ["py310"], solve-group = "default" }
-default-py311 = { features = ["py311"], solve-group = "default-py311" }
-default-py312 = { features = ["py312"], solve-group = "default-py312" }
-default-py313 = { features = ["py313"], solve-group = "default-py313" }
-default-all = { features = ["all", "py310"], solve-group = "default" }
-default-all-py310 = { features = ["all", "py310"], solve-group = "default" }
-default-all-py311 = { features = ["all", "py311"], solve-group = "default-py311" }
-default-all-py312 = { features = ["all", "py312"], solve-group = "default-py312" }
-default-all-py313 = { features = ["all", "py313"], solve-group = "default-py313" }
-dev = { features = ["dev", "py310"], solve-group = "default" }
-dev-py310 = { features = ["dev", "py310"], solve-group = "default" }
-dev-py311 = { features = ["dev", "py311"], solve-group = "default-py311" }
-dev-py312 = { features = ["dev", "py312"], solve-group = "default-py312" }
-dev-py313 = { features = ["dev", "py313"], solve-group = "default-py313" }
-dev-all = { features = ["all", "dev", "py310"], solve-group = "default" }
-dev-all-py310 = { features = ["all", "dev", "py310"], solve-group = "default" }
-dev-all-py311 = { features = ["all", "dev", "py311"], solve-group = "default-py311" }
-dev-all-py312 = { features = ["all", "dev", "py312"], solve-group = "default-py312" }
-dev-all-py313 = { features = ["all", "dev", "py313"], solve-group = "default-py313" }
-
-[tool.pixi.tasks]
+base-py310 = { features = ["dev", "py310"], solve-group = "py310" }
+base-py311 = { features = ["dev", "py311"], solve-group = "py311" }
+base-py312 = { features = ["dev", "py312"], solve-group = "py312" }
+base-py313 = { features = ["dev", "py313"], solve-group = "py313" }
+all-py310 = { features = ["dev", "py310", "all"], solve-group = "py310" }
+all-py311 = { features = ["dev", "py311", "all"], solve-group = "py311" }
+all-py312 = { features = ["dev", "py312", "all"], solve-group = "py312" }
+all-py313 = { features = ["dev", "py313", "all"], solve-group = "py313" }
 
 [tool.pixi.dependencies]
 python = ">=3.10,<3.14"
@@ -135,8 +158,6 @@ python = "3.13.*"
 
 [tool.pixi.feature.dev.tasks]
 optional-dependencies = { cmd="python scripts/update_optional_dependencies.py || git diff --exit-code pyproject.toml" }
-types = { cmd="mypy" }
-test = { cmd="pytest" }
 build = { cmd="python -m build" }
 
 [tool.pixi.feature.dev.tasks.pre-commit]
@@ -150,40 +171,16 @@ args = [
     { "arg" = "colorize_output", "default" = "" },
 ]
 
-[tool.pixi.feature.dev.tasks.ci]
+[tool.pixi.feature.all.tasks]
+types = { cmd="mypy" }
+test = { cmd="pytest" }
+
+[tool.pixi.feature.all.tasks.ci]
 depends-on = [
     { "task" = "pre-commit", "args" = ["--all-files"] },
     "optional-dependencies",
     "types",
     "test",
-    "build",
-]
-
-[dependency-groups]
-dev = [
-    "pytest>=6,<9",
-    "mypy==1.10.0",
-    "httpx-sse>=0.4.0,<0.5",
-    "ijson>=3.3.0,<4",
-    "sse-starlette>=2.2.1,<3",
-    "python-dotenv>=1.1.0,<2",
-    "pytest-mock>=3.14.0,<4",
-    "pytest-asyncio>=0.26.0,<0.27",
-    "pytest-playwright>=0.7.0,<0.8",
-    "types-redis>=4.6.0.20241004,<5",
-    "pre-commit>=4.2.0,<5",
-    "types-aiofiles>=24.1.0.20250326,<25",
-    "sqlalchemy-stubs>=0.4,<0.5",
-    "setuptools-scm>=8.2.0,<9",
-    "pip-tools>=7.4.1,<8",
-    # Documentation
-    "mkdocs-gallery>=0.10.3,<0.11",
-    "mkdocs>=1.6.1,<2",
-    "mkdocs-material>=9.6.11,<10",
-    "mkdocstrings[python]>=0.29.1,<0.30",
-    "mkdocs-gen-files>=0.5.0,<0.6",
-    "material-plausible-plugin>=0.3.0,<0.4",
-    "mdx-truly-sane-lists>=1.3,<2",
     "build",
 ]
 
