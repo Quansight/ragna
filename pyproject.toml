@@ -134,15 +134,30 @@ python = "3.12.*"
 python = "3.13.*"
 
 [tool.pixi.feature.dev.tasks]
-optional-dependencies = { cmd="python scripts/update_optional_dependencies.py && git diff --exit-code" }
+optional-dependencies = { cmd="python scripts/update_optional_dependencies.py || git diff --exit-code pyproject.toml" }
 types = { cmd="mypy" }
-test = { cmd="pytest --ignore tests/deploy/ui" }
+test = { cmd="pytest" }
+build = { cmd="python -m build" }
+
+[tool.pixi.feature.dev.tasks.pre-commit]
 # Ideally, we should not need to manually define arguments `show_diff` and `colorize_output` and instead
 # just pass them as CLI arguments to the `pre-commit` Pixi task. This does not seem to be supported.
 # When it is supported, we should remove the argument definitions, as they will have become unnecessary.
-pre-commit = { cmd="pre-commit run {{ which_files }} {{ show_diff }} {{ colorize_output }}", args=[ { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" }, { "arg" = "show_diff", "default" = "" }, { "arg" = "colorize_output", "default" = "" } ] }
-ci = { depends-on = [ { "task" = "pre-commit", "args" = ["--all-files"] }, "types", "optional-dependencies", "test"] }
-build = { cmd="python -m build" }
+cmd = "pre-commit run {{ which_files }} {{ show_diff }} {{ colorize_output }}"
+args = [
+    { "arg" = "which_files", "default" = "--files $(git diff --name-only HEAD | tr '\n' ' ')" },
+    { "arg" = "show_diff", "default" = "" },
+    { "arg" = "colorize_output", "default" = "" },
+]
+
+[tool.pixi.feature.dev.tasks.ci]
+depends-on = [
+    { "task" = "pre-commit", "args" = ["--all-files"] },
+    "optional-dependencies",
+    "types",
+    "test",
+    "build",
+]
 
 [dependency-groups]
 dev = [
@@ -252,6 +267,7 @@ module = [
     "bokeh_fastapi",
     "bokeh_fastapi.handler",
     "docx",
+    "email-validator",
     "fitz",
     "ijson",
     "lancedb",
