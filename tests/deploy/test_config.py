@@ -17,7 +17,6 @@ def test_env_var_prefix(mocker, tmp_path):
     assert config.local_root == env_var
 
 
-@pytest.mark.xfail()
 def test_explicit_gt_env_var(mocker, tmp_path):
     explicit = tmp_path / "explicit"
 
