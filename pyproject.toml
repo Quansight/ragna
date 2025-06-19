@@ -26,16 +26,8 @@ dependencies = [
     "fastapi",
     "httpx",
     "packaging",
-    # Removing `panel[fastapi]` in favor of the below pinned `panel` and `bokeh-fastapi` dependencies
-    # is a temporary fix for https://github.com/Quansight/ragna/issues/565
-    # The problem is that ChromaDB hard pins `fastapi`, which then creates conflicts with `panel[fastapi]`.
-    # See https://github.com/chroma-core/chroma/issues/4243
-    # TODO: Revert this change by replacing the `panel` and `bokeh-fastapi` dependencies with the
-    # commented out `panel[fastapi]` dependency when ChromaDB fixes this issue.
-    # "panel[fastapi]==1.5.4",
-    "panel==1.5.4",
-    "bokeh-fastapi>=0.1.3",
-    "pydantic>=2.10",
+    "panel[fastapi]==1.5.4",
+    "pydantic>=2",
     "pydantic-core",
     "pydantic-settings[toml]>=2.3",
     "PyJWT",
@@ -59,7 +51,7 @@ Repository = "https://github.com/Quansight/ragna"
 [project.optional-dependencies]
 # to update the array below, run scripts/update_optional_dependencies.py
 all = [
-    "chromadb>=1.0.0",
+    "chromadb>=1.0.13",
     "httpx_sse",
     "ijson",
     "lancedb>=0.2",
