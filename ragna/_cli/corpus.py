@@ -146,12 +146,7 @@ def ingest(
                     try:
                         document_instances.append(
                             document_factory(
-                                document,
-                                metadata=(
-                                    metadata[str(document)]
-                                    if str(document) in metadata
-                                    else None
-                                ),
+                                document, metadata=metadata.get(str(document))
                             )
                         )
                     except Exception:

@@ -8,11 +8,7 @@ PACKAGE_ROOT = PROJECT_ROOT / "ragna"
 
 def main():
     for path in PACKAGE_ROOT.rglob("*.py"):
-        if path.name == "__init__.py":
-            path = path.parent
-        else:
-            path = path.with_suffix("")
-
+        path = path.parent if path.name == "__init__.py" else path.with_suffix("")
         path = path.relative_to(PROJECT_ROOT)
 
         if any(part.startswith("_") for part in path.parts):

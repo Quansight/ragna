@@ -117,10 +117,11 @@ print(json.dumps(documents, indent=2))
 # - The field name is the ID of the document returned by step 1.
 # - The field value is the binary content of the document.
 
-client.put(
-    "/api/documents",
-    files=[("documents", (documents[0]["id"], open(document_path, "rb")))],
-)
+with open(document_path, "rb") as f:
+    client.put(
+        "/api/documents",
+        files=[("documents", (documents[0]["id"], f))],
+    )
 
 # %%
 # ## Step 4: Select a source storage and assistant

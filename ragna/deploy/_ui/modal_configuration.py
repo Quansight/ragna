@@ -449,15 +449,10 @@ class ModalConfiguration(pn.viewable.Viewer):
     )
     def corpus_or_upload_row(self):
         if self.corpus_or_upload == USE_CORPUS_LABEL:
-            if self.config.source_storage_name in self.corpus_names:
-                corpus_names = self.corpus_names[self.config.source_storage_name]
-            else:
-                corpus_names = []
-
-            if self.config.source_storage_name in self.corpus_metadata:
-                corpus_metadata = self.corpus_metadata[self.config.source_storage_name]
-            else:
-                corpus_metadata = {}
+            corpus_names = self.corpus_names.get(self.config.source_storage_name, [])
+            corpus_metadata = self.corpus_metadata.get(
+                self.config.source_storage_name, {}
+            )
 
             self.metadata_filter_rows = MetadataFiltersBuilder(
                 corpus_names=corpus_names, corpus_metadata=corpus_metadata

@@ -77,10 +77,7 @@ class Chroma(VectorDatabaseSourceStorage):
     def list_metadata(
         self, corpus_name: Optional[str] = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
-        if corpus_name is None:
-            corpus_names = self.list_corpuses()
-        else:
-            corpus_names = [corpus_name]
+        corpus_names = self.list_corpuses() if corpus_name is None else [corpus_name]
 
         metadata = {}
         for corpus_name in corpus_names:
