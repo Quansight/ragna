@@ -181,6 +181,9 @@ depends-on = [
 target-version = "py310"
 
 [tool.ruff.lint]
+
+pydocstyle = { convention = "google" }
+
 select = [
     "E",
     "F",

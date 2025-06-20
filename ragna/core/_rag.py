@@ -146,7 +146,6 @@ class Rag(Generic[C]):
         """Create a new [ragna.core.Chat][].
 
         Args:
-        ----
             input: Subject of the chat. Available options:
 
                 - `None`: Use the full corpus of documents specified by `corpus_name`.
@@ -208,7 +207,6 @@ class Chat:
     ```
 
     Args:
-    ----
         rag: The RAG workflow this chat is associated with.
         input: Subject of the chat. Available options:
 
@@ -259,7 +257,6 @@ class Chat:
         source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
 
         Returns
-        -------
             Welcome message.
 
         """
@@ -283,11 +280,9 @@ class Chat:
         """Answer a prompt.
 
         Returns
-        -------
             Answer.
 
         Raises
-        ------
             ragna.core.RagnaException: If chat is not
                 [`prepare`][ragna.core.Chat.prepare]d.
 

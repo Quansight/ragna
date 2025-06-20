@@ -40,11 +40,9 @@ def local_root(path: str | Path | None = None) -> Path:
     `~/.cache/ragna`.
 
     Args:
-    ----
         path: If passed, this is set as new local root directory.
 
     Returns:
-    -------
         Ragna's local root directory.
 
     """

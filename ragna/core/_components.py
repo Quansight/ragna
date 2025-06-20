@@ -103,7 +103,6 @@ class Source(pydantic.BaseModel):
     """Data class for sources stored inside a source storage.
 
     Attributes
-    ----------
         id: Unique ID of the source.
         document: Document this source belongs to.
         location: Location of the source inside the document.
@@ -131,7 +130,6 @@ class SourceStorage(Component, abc.ABC):
         """Store content of documents.
 
         Args:
-        ----
             corpus_name: Name of the corpus to store the documents in.
             documents: Documents to store.
 
@@ -145,13 +143,11 @@ class SourceStorage(Component, abc.ABC):
         """Retrieve sources for a given prompt.
 
         Args:
-        ----
             corpus_name: Name of the corpus to retrieve sources from.
             metadata_filter: Filter to select available sources.
             prompt: Prompt to retrieve sources for.
 
         Returns:
-        -------
             Matching sources for the given prompt ordered by relevance.
 
         """
@@ -161,7 +157,6 @@ class SourceStorage(Component, abc.ABC):
         """List available corpuses.
 
         Returns
-        -------
             List of available corpuses.
 
         """
@@ -178,11 +173,9 @@ class SourceStorage(Component, abc.ABC):
         """List available metadata for corpuses.
 
         Args:
-        ----
             corpus_name: Only return metadata for this corpus.
 
         Returns:
-        -------
             List of available metadata.
 
         """
@@ -198,7 +191,6 @@ class MessageRole(str, enum.Enum):
     """Message role
 
     Attributes
-    ----------
         SYSTEM: The message was produced by the system. This includes the welcome
             message when [preparing a new chat][ragna.core.Chat.prepare] as well as
             error messages.
@@ -216,7 +208,6 @@ class Message:
     """Data class for messages.
 
     Attributes
-    ----------
         role: The message producer.
         sources: The sources used to produce the message.
 
@@ -303,12 +294,10 @@ class Assistant(Component, abc.ABC):
         """Answer a prompt given the chat history.
 
         Args:
-        ----
             messages: List of messages in the chat history. The last item is the current
                 user prompt and has the relevant sources attached to it.
 
         Returns:
-        -------
             Answer.
 
         """

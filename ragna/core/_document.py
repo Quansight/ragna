@@ -47,7 +47,6 @@ class Document(RequirementsMixin, abc.ABC):
         """Get a document handler based on a suffix.
 
         Args:
-        ----
             name: Name of the document.
 
         """
@@ -101,7 +100,6 @@ class LocalDocument(Document):
         """Create a [ragna.core.LocalDocument][] from a path.
 
         Args:
-        ----
             path: Local path to the file.
             id: ID of the document. If omitted, one is generated.
             name: Name of the document. If omitted, defaults to the name of the `path`.
@@ -110,7 +108,6 @@ class LocalDocument(Document):
                 on the suffix of the `path`.
 
         Raises:
-        ------
             RagnaException: If `metadata` is passed and contains a `"path"` key.
 
         """
@@ -159,7 +156,6 @@ class Page(BaseModel):
     """Dataclass for pages of a document
 
     Attributes
-    ----------
         text: Text included in the page.
         number: Page number.
 
@@ -183,11 +179,9 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
         """Extract pages from a document.
 
         Args:
-        ----
             document: Document to extract pages from.
 
         Returns:
-        -------
             Extracted pages.
 
         """
