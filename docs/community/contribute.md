@@ -29,30 +29,26 @@ git clone https://github.com/<your-username>/ragna.git
 
 ### Set up development environment and run Ragna
 
-We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna.
-
-Ragna has three main development environments: `dev-all-py310`, `dev-all-py311`, and
-`dev-all-py312`, which use Python 3.10, 3.11, and 3.12, respectively. The environment
-`dev-all` is the same as `dev-all-py310`. The environment `dev-all` is used as an
-example in the sections below, but you can use any of the three Python versions you
-like.
+We use [Pixi](https://pixi.sh/dev/) to manage development environments with Ragna. The
+main development environment is `all-py310`, which should be used for most use cases and
+is used in the sections below.
 
 To install a development environment, run
 
 ```bash
-pixi install -e dev-all --frozen
+pixi install --environment all-py310 --frozen
 ```
 
 You can then run Ragna with
 
 ```bash
-pixi run -e dev-all ragna deploy
+pixi run --environment all-py310 ragna deploy
 ```
 
 You can verify that a development version of Ragna is correctly installed with
 
 ```bash
-pixi run -e dev-all ragna --version
+pixi run --environment all-py310 ragna --version
 # Ideal output: ragna <version-number> devXXXX from ...
 ```
 
@@ -75,7 +71,7 @@ on each pull request.
 You can run Ragna tests with
 
 ```bash
-pixi run -e dev-all test
+pixi run --environment all-py310 test
 ```
 
 #### Formatting & Linting
@@ -84,7 +80,7 @@ To run the [Ruff code formatter and checker](https://docs.astral.sh/ruff/formatt
 well as other useful formatting and linting tools, you can use
 
 ```bash
-pixi run -e dev pre-commit
+pixi run --environment all-py310 pre-commit
 ```
 
 #### Type checking
@@ -92,13 +88,13 @@ pixi run -e dev pre-commit
 You can check type annotations with [Mypy](https://mypy-lang.org/) using
 
 ```bash
-pixi run -e dev-all types
+pixi run --environment all-py310 types
 ```
 
 or
 
 ```bash
-pixi run -e dev-all mypy
+pixi run --environment all-py310 mypy
 ```
 
 #### All of the above
@@ -107,7 +103,7 @@ To run all the above checks using a single command as they would be run on the C
 can use
 
 ```bash
-pixi run -e dev-all ci
+pixi run ---environment all-py310 ci
 ```
 
 ## Contribute documentation
@@ -127,12 +123,10 @@ To start a development build of the website that auto-refreshes on new changes, 
 following from the project root:
 
 ```bash
-pixi run -e dev-all mkdocs serve
+pixi run --environment all-py310 mkdocs serve
 ```
 
 This serves the docs website at [http://127.0.0.1:8000](http://127.0.0.1:8000).
-
-You must use a `dev-all*` environment to build the docs.
 
 ### View, add, or update images
 

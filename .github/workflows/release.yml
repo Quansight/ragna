@@ -20,8 +20,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          environment: "dev-py310"
 
       - name: Build dists
         run: pixi run build
