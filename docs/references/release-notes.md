@@ -228,6 +228,8 @@
 
 ### New Contributors
 
+- [@Tengal-Teemo](https://github.com/Tengal-Teemo) made their first contribution in
+  [#374](https://github.com/Quansight/ragna/pull/374)
 - [@kklein](https://github.com/kklein) made their first contribution in
   [#396](https://github.com/Quansight/ragna/pull/396)
 - [@arjxn-py](https://github.com/arjxn-py) made their first contribution in
