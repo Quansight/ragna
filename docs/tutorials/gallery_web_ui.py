@@ -1,5 +1,4 @@
-"""
-# Web UI
+"""# Web UI
 
 Ragna comes with a web UI where you can try out all of the features!
 

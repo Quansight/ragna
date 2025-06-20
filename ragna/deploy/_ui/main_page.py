@@ -106,7 +106,9 @@ class MainPage(pn.viewable.Viewer, param.Parameterized):
         self.right_sidebar.show()
 
     @param.depends("current_chat_id", watch=True)
-    def update_subviews_current_chat_id(self, avoid_senders=[]):
+    def update_subviews_current_chat_id(self, avoid_senders=None):
+        if avoid_senders is None:
+            avoid_senders = []
         if self.left_sidebar is not None and self.left_sidebar not in avoid_senders:
             self.left_sidebar.current_chat_id = self.current_chat_id
 

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Literal, Optional, cast
+from collections.abc import Callable
+from typing import Literal, cast
 
 import panel as pn
 import param
@@ -52,8 +53,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         *,
         role: Literal["system", "user", "assistant"],
         user: str,
-        sources: Optional[list[dict]] = None,
-        on_click_source_info_callback: Optional[Callable] = None,
+        sources: list[dict] | None = None,
+        on_click_source_info_callback: Callable | None = None,
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
@@ -138,7 +139,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             avatar_lookup=self.avatar_lookup,
         )
 
-    def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
+    def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
         message = super()._build_message(*args, **kwargs)
         if message is None:
             return None
@@ -314,12 +315,12 @@ class CentralView(pn.viewable.Viewer):
     def get_user_from_role(self, role: Literal["system", "user", "assistant"]) -> str:
         if role == "system":
             return "Ragna"
-        elif role == "user":
+        if role == "user":
             return cast(str, pn.state.user)
-        elif role == "assistant":
+        if role == "assistant":
             return cast(str, self.current_chat.assistant)
-        else:
-            raise RuntimeError
+
+        raise RuntimeError
 
     async def chat_callback(
         self, content: str, user: str, instance: pn.chat.ChatInterface
@@ -370,7 +371,7 @@ class CentralView(pn.viewable.Viewer):
     @pn.depends("current_chat")
     def chat_interface(self):
         if self.current_chat is None:
-            return
+            return None
 
         return RagnaChatInterface(
             *[
@@ -412,7 +413,7 @@ class CentralView(pn.viewable.Viewer):
     @pn.depends("current_chat")
     def header(self):
         if self.current_chat is None:
-            return
+            return None
 
         current_chat_name = ""
         if self.current_chat is not None:

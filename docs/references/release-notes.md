@@ -6,46 +6,18 @@
 
 - fix add_chats.py script by [@pmeier](https://github.com/pmeier) in
   [#372](https://github.com/Quansight/ragna/pull/372)
-- updated get_component error message from 404 to 422 by
-  [@Tengal-Teemo](https://github.com/Tengal-Teemo) in
-  [#374](https://github.com/Quansight/ragna/pull/374)
 - Update Anthropic assistants by
   [@smokestacklightnin](https://github.com/smokestacklightnin) in
   [#380](https://github.com/Quansight/ragna/pull/380)
-- fix mypy after pydantic 2.7 by [@pmeier](https://github.com/pmeier) in
-  [#390](https://github.com/Quansight/ragna/pull/390)
-- use relative links for all images in UI by [@pmeier](https://github.com/pmeier) in
-  [#393](https://github.com/Quansight/ragna/pull/393)
-- upgrade ruff to 0.4.1 by [@pmeier](https://github.com/pmeier) in
-  [#394](https://github.com/Quansight/ragna/pull/394)
-- Remove Mosaic Assistant by
-  [@smokestacklightnin](https://github.com/smokestacklightnin) in
-  [#387](https://github.com/Quansight/ragna/pull/387)
-- use custom JSON type for database for more generic support by
-  [@pmeier](https://github.com/pmeier) in
-  [#389](https://github.com/Quansight/ragna/pull/389)
-- Add instructions to install from conda-forge. by [@kklein](https://github.com/kklein)
-  in [#396](https://github.com/Quansight/ragna/pull/396)
-- bump mypy to 1.10 by [@pmeier](https://github.com/pmeier) in
-  [#398](https://github.com/Quansight/ragna/pull/398)
-- #373 Include documentation_helpers in module by [@arjxn](https://github.com/arjxn)-py
-  in [#395](https://github.com/Quansight/ragna/pull/395)
 - Fix #399 : eager loading of Chats docs, msgs, srcs by
   [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
   [#401](https://github.com/Quansight/ragna/pull/401)
 - Add endpoint for batch uploading document metadata by [@nenb](https://github.com/nenb)
   in [#404](https://github.com/Quansight/ragna/pull/404)
-- mypy for sqlalchemy by [@pmeier](https://github.com/pmeier) in
-  [#402](https://github.com/Quansight/ragna/pull/402)
-- update ignored deprecation warnings by [@pmeier](https://github.com/pmeier) in
-  [#412](https://github.com/Quansight/ragna/pull/412)
 - CSS refactor by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
   [#312](https://github.com/Quansight/ragna/pull/312)
 - Fix CopyToCliboard functionality in UI by [@nenb](https://github.com/nenb) in
   [#411](https://github.com/Quansight/ragna/pull/411)
-- [DOC] Add tutorial for adding your own objects by
-  [@smokestacklightnin](https://github.com/smokestacklightnin) in
-  [#368](https://github.com/Quansight/ragna/pull/368)
 - Fix #415 : chat bubble by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
   [#419](https://github.com/Quansight/ragna/pull/419)
 - refactor assistant streaming and create OpenAI compliant base class by
@@ -61,11 +33,6 @@
 - Load message history to core chat from schema chat by
   [@blakerosenthal](https://github.com/blakerosenthal) in
   [#429](https://github.com/Quansight/ragna/pull/429)
-- add support for chromadb>=0.5.1 by [@pmeier](https://github.com/pmeier) in
-  [#435](https://github.com/Quansight/ragna/pull/435)
-- refactor protocol model extraction to only check extra parameters by
-  [@pmeier](https://github.com/pmeier) in
-  [#436](https://github.com/Quansight/ragna/pull/436)
 - remove redis as dependency by [@pmeier](https://github.com/pmeier) in
   [#442](https://github.com/Quansight/ragna/pull/442)
 - update assistants in docker config by [@pmeier](https://github.com/pmeier) in
@@ -195,10 +162,8 @@
 - add more ruff rules by [@pmeier](https://github.com/pmeier) in
   [#595](https://github.com/Quansight/ragna/pull/595)
 
-## New Contributors
+### New Contributors
 
-- [@kklein](https://github.com/kklein) made their first contribution in
-  [#396](https://github.com/Quansight/ragna/pull/396)
 - [@Anush008](https://github.com/Anush008) made their first contribution in
   [#524](https://github.com/Quansight/ragna/pull/524)
 

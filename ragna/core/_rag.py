@@ -5,20 +5,14 @@ import contextlib
 import itertools
 import uuid
 from collections import defaultdict
+from collections.abc import AsyncIterator, Awaitable, Callable, Collection, Iterator
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Collection,
     Generic,
-    Iterator,
-    Optional,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -55,7 +49,7 @@ class Rag(Generic[C]):
     def __init__(
         self,
         *,
-        config: Optional[Config] = None,
+        config: Config | None = None,
         ignore_unavailable_components: bool = False,
     ) -> None:
         self._components: dict[type[C], C] = {}
@@ -92,10 +86,10 @@ class Rag(Generic[C]):
                 )
 
     def _load_component(
-        self, component: Union[C, type[C], str], *, ignore_unavailable: bool = False
-    ) -> Optional[C]:
+        self, component: C | type[C] | str, *, ignore_unavailable: bool = False
+    ) -> C | None:
         cls: type[C]
-        instance: Optional[C]
+        instance: C | None
 
         if isinstance(component, Component):
             instance = cast(C, component)
@@ -137,17 +131,15 @@ class Rag(Generic[C]):
 
     def chat(
         self,
-        input: Union[
-            None,
-            MetadataFilter,
-            Document,
-            str,
-            Path,
-            Collection[Union[Document, str, Path]],
-        ] = None,
+        input: None
+        | MetadataFilter
+        | Document
+        | str
+        | Path
+        | Collection[Document | str | Path] = None,
         *,
-        source_storage: Union[SourceStorage, type[SourceStorage], str],
-        assistant: Union[Assistant, type[Assistant], str],
+        source_storage: SourceStorage | type[SourceStorage] | str,
+        assistant: Assistant | type[Assistant] | str,
         corpus_name: str = "default",
         **params: Any,
     ) -> Chat:
@@ -166,6 +158,7 @@ class Rag(Generic[C]):
             assistant: Assistant to use.
             corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
+
         """
         return Chat(
             self,
@@ -191,8 +184,7 @@ class SpecialChatParams(pydantic.BaseModel):
 
 
 class Chat:
-    """
-    !!! tip
+    """!!! tip
 
         This object is usually not instantiated manually, but rather through
         [ragna.core.Rag.chat][].
@@ -228,19 +220,18 @@ class Chat:
         assistant: Assistant to use.
         corpus_name: Corpus of documents to use.
         **params: Additional parameters passed to the source storage and assistant.
+
     """
 
     def __init__(
         self,
         rag: Rag,
-        input: Union[
-            None,
-            MetadataFilter,
-            Document,
-            str,
-            Path,
-            Collection[Union[Document, str, Path]],
-        ] = None,
+        input: None
+        | MetadataFilter
+        | Document
+        | str
+        | Path
+        | Collection[Document | str | Path] = None,
         *,
         source_storage: SourceStorage,
         assistant: Assistant,
@@ -265,8 +256,9 @@ class Chat:
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
         source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
 
-        Returns:
+        Returns
             Welcome message.
+
         """
         welcome = Message(
             content="How can I help you with the documents?",
@@ -287,12 +279,13 @@ class Chat:
     async def answer(self, prompt: str, *, stream: bool = False) -> Message:
         """Answer a prompt.
 
-        Returns:
+        Returns
             Answer.
 
-        Raises:
+        Raises
             ragna.core.RagnaException: If chat is not
                 [`prepare`][ragna.core.Chat.prepare]d.
+
         """
         if not self._prepared:
             raise RagnaException(
@@ -342,15 +335,13 @@ class Chat:
 
     def _parse_input(
         self,
-        input: Union[
-            MetadataFilter,
-            None,
-            Document,
-            str,
-            Path,
-            Collection[Union[Document, str, Path]],
-        ],
-    ) -> tuple[Optional[list[Document]], Optional[MetadataFilter], bool]:
+        input: MetadataFilter
+        | None
+        | Document
+        | str
+        | Path
+        | Collection[Document | str | Path],
+    ) -> tuple[list[Document] | None, MetadataFilter | None, bool]:
         if isinstance(input, MetadataFilter) or input is None:
             return None, input, True
 
@@ -489,16 +480,16 @@ class Chat:
                     ]
                 )
 
-            raise RagnaException("\n".join(parts))
+            raise RagnaException("\n".join(parts)) from None
 
     def _as_awaitable(
-        self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any
+        self, fn: Callable[..., T] | Callable[..., Awaitable[T]], *args: Any
     ) -> Awaitable[T]:
         return as_awaitable(fn, *args, **self._unpacked_params[fn])
 
     def _as_async_iterator(
         self,
-        fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+        fn: Callable[..., Iterator[T]] | Callable[..., AsyncIterator[T]],
         *args: Any,
     ) -> AsyncIterator[T]:
         return as_async_iterator(fn, *args, **self._unpacked_params[fn])

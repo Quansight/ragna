@@ -1,6 +1,7 @@
 import io
 import uuid
-from typing import Annotated, Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Annotated, Any
 
 import pydantic
 from fastapi import APIRouter, Body, UploadFile

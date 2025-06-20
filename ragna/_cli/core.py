@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import rich
 import typer
@@ -30,7 +30,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def _main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version", callback=version_callback, help="Show version and exit."
         ),
@@ -97,7 +97,7 @@ def deploy(
         ),
     ] = False,
     open_browser: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             help="Open a browser when Ragna is deployed.",
             show_default="value of ui / no-ui",

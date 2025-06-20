@@ -1,4 +1,5 @@
-from typing import AsyncIterator, cast
+from collections.abc import AsyncIterator
+from typing import cast
 
 from ragna.core import Message, PackageRequirement, RagnaException, Requirement, Source
 

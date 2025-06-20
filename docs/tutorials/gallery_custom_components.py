@@ -1,5 +1,4 @@
-"""
-# Custom Components
+"""# Custom Components
 
 While Ragna has builtin support for a few [source storages][ragna.source_storages]
 and [assistants][ragna.assistants], its real strength lies in allowing users
@@ -84,7 +83,7 @@ class TutorialSourceStorage(SourceStorage):
 #     [streaming example](../../generated/examples/gallery_streaming.md) for more
 #     information.
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from ragna.core import Assistant, Source
 
@@ -402,7 +401,7 @@ ragna_deploy.terminate()
 
 import asyncio
 import time
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 
 class AsyncAssistant(Assistant):

@@ -1,4 +1,3 @@
-from typing import Optional
 from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 from fastapi import status
@@ -6,7 +5,7 @@ from fastapi.responses import RedirectResponse
 
 from ragna.core import RagnaException
 
-_REDIRECT_ROOT_PATH: Optional[str] = None
+_REDIRECT_ROOT_PATH: str | None = None
 
 
 def set_redirect_root_path(root_path: str) -> None:

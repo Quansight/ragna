@@ -2,7 +2,8 @@ import contextlib
 import enum
 import json
 import os
-from typing import Any, AsyncContextManager, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 import httpx
 
@@ -34,7 +35,7 @@ class HttpApiCaller:
     def __init__(
         self,
         client: httpx.AsyncClient,
-        protocol: Optional[HttpStreamingProtocol] = None,
+        protocol: HttpStreamingProtocol | None = None,
     ) -> None:
         self._client = client
         self._protocol = protocol
@@ -44,9 +45,9 @@ class HttpApiCaller:
         method: str,
         url: str,
         *,
-        parse_kwargs: Optional[dict[str, Any]] = None,
+        parse_kwargs: dict[str, Any] | None = None,
         **kwargs: Any,
-    ) -> AsyncContextManager[AsyncIterator[Any]]:
+    ) -> contextlib.AbstractAsyncContextManager[AsyncIterator[Any]]:
         if self._protocol is None:
             call_method = self._no_stream
         else:
@@ -176,8 +177,8 @@ class HttpApiCaller:
 
 
 class HttpApiAssistant(Assistant):
-    _API_KEY_ENV_VAR: Optional[str]
-    _STREAMING_PROTOCOL: Optional[HttpStreamingProtocol]
+    _API_KEY_ENV_VAR: str | None
+    _STREAMING_PROTOCOL: HttpStreamingProtocol | None
 
     @classmethod
     def requirements(cls) -> list[Requirement]:
@@ -200,7 +201,7 @@ class HttpApiAssistant(Assistant):
             headers={"User-Agent": f"{ragna.__version__}/{self}"},
             timeout=60,
         )
-        self._api_key: Optional[str] = (
+        self._api_key: str | None = (
             os.environ[self._API_KEY_ENV_VAR]
             if self._API_KEY_ENV_VAR is not None
             else None

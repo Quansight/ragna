@@ -3,7 +3,7 @@ try:
 except ModuleNotFoundError:
     import warnings
 
-    warnings.warn("ragna was not properly installed!")
+    warnings.warn("ragna was not properly installed!", stacklevel=2)
     del warnings
 
     __version__ = "UNKNOWN"
