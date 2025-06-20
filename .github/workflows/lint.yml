@@ -18,12 +18,9 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          environment: "dev-py310"
 
       - name: Test optional dependencies
-        run: |
-          pixi run optional-dependencies
+        run: pixi run optional-dependencies
 
   format:
     runs-on: ubuntu-latest
@@ -36,8 +33,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          environment: "dev-py310"
 
       - uses: actions/cache@v4
         with:
@@ -64,7 +59,7 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-env
         with:
-          environment: "dev-all-py310"
+          environment: all-py310
 
       - name: Run type checks
         run: pixi run types

@@ -31,11 +31,11 @@ build:
         PIXI_VERSION=v0.45.0 bash
       # We call the full path of the executable /home/docs/.pixi/bin/pixi because
       # the installation process does not add the executable to the $PATH
-      - /home/docs/.pixi/bin/pixi install --frozen --environment dev-all-py312
+      - /home/docs/.pixi/bin/pixi install --frozen --environment all-py310
     post_install:
       - git update-index --really-refresh || true
     build:
       html:
         - mkdir --parents $READTHEDOCS_OUTPUT/html/
-        - /home/docs/.pixi/bin/pixi run --frozen --environment dev-all-py312 mkdocs
-          build --site-dir $READTHEDOCS_OUTPUT/html/
+        - /home/docs/.pixi/bin/pixi run --frozen --environment all-py310 mkdocs build
+          --site-dir $READTHEDOCS_OUTPUT/html/

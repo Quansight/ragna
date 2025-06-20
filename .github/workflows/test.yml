@@ -24,8 +24,6 @@ jobs:
 
       - name: Setup environment
         uses: ./.github/actions/setup-env
-        with:
-          environment: "dev-py310"
 
       - name: Check if all public packages are importable
         run: python tests/test_importable.py
@@ -37,14 +35,14 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
-        environment: ["dev-all-py310"]
+        environment: ["all-py310"]
         include:
           - os: ubuntu-latest
-            environment: "dev-all-py311"
+            environment: "all-py311"
           - os: ubuntu-latest
-            environment: "dev-all-py312"
+            environment: "all-py312"
           - os: ubuntu-latest
-            environment: "dev-all-py313"
+            environment: "all-py313"
 
       fail-fast: false
 
