@@ -132,14 +132,10 @@ def ingest(
                 document_instances = []
 
                 if source_storage.display_name() in ingestion_log:
-                    batch_doc_set = set(
-                        [
-                            str(doc)
-                            for doc in documents[
-                                batch_number : batch_number + BATCH_SIZE
-                            ]
-                        ]
-                    )
+                    batch_doc_set = {
+                        str(doc)
+                        for doc in documents[batch_number : batch_number + BATCH_SIZE]
+                    }
                     if batch_doc_set.issubset(
                         ingestion_log[source_storage.display_name()]
                     ):

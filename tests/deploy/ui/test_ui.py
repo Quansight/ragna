@@ -16,13 +16,13 @@ from tests.utils import get_available_port
 def deploy(config):
     process = multiprocessing.Process(
         target=_deploy,
-        kwargs=dict(
-            config=config,
-            api=False,
-            ui=True,
-            ignore_unavailable_components=False,
-            open_browser=False,
-        ),
+        kwargs={
+            "config": config,
+            "api": False,
+            "ui": True,
+            "ignore_unavailable_components": False,
+            "open_browser": False,
+        },
     )
     try:
         process.start()

@@ -265,7 +265,7 @@ class Engine:
         yield message
 
         # Avoid sending the sources multiple times
-        message_chunk = message.model_copy(update=dict(sources=None))
+        message_chunk = message.model_copy(update={"sources": None})
         async for content_chunk in content_stream:
             message_chunk.content = content_chunk
             yield message_chunk

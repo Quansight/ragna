@@ -187,12 +187,12 @@ def _select_components(
 
 
 def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
-    unmet_requirements = set(
+    unmet_requirements = {
         requirement
         for component in components
         for requirement in component.requirements()
         if not requirement.is_available()
-    )
+    }
     if not unmet_requirements:
         return
 

@@ -57,7 +57,7 @@ class GoogleAssistant(HttpApiAssistant):
                     "maxOutputTokens": max_new_tokens,
                 },
             },
-            parse_kwargs=dict(item="item.candidates.item.content.parts.item.text"),
+            parse_kwargs={"item": "item.candidates.item.content.parts.item.text"},
         ) as stream:
             async for chunk in stream:
                 yield chunk

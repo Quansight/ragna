@@ -25,9 +25,9 @@ class Database:
     def __init__(self, url: str) -> None:
         components = urlsplit(url)
         if components.scheme == "sqlite":
-            connect_args = dict(check_same_thread=False)
+            connect_args = {"check_same_thread": False}
         else:
-            connect_args = dict()
+            connect_args = {}
         engine = create_engine(url, connect_args=connect_args)
         orm.Base.metadata.create_all(bind=engine)
 
