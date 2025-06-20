@@ -29,7 +29,7 @@ dependencies = [
     "panel[fastapi]==1.5.4",
     "pydantic>=2",
     "pydantic-core",
-    "pydantic-settings>=2",
+    "pydantic-settings[toml]>=2.3",
     "PyJWT",
     "python-multipart",
     "questionary",
