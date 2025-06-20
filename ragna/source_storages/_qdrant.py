@@ -211,23 +211,23 @@ class Qdrant(VectorDatabaseSourceStorage):
         # See https://qdrant.tech/documentation/concepts/filtering/#range
         if operator == MetadataOperator.EQ:
             return models.FieldCondition(key=key, match=models.MatchValue(value=value))
-        elif operator == MetadataOperator.LT:
+        if operator == MetadataOperator.LT:
             return models.FieldCondition(key=key, range=models.Range(lt=value))
-        elif operator == MetadataOperator.LE:
+        if operator == MetadataOperator.LE:
             return models.FieldCondition(key=key, range=models.Range(lte=value))
-        elif operator == MetadataOperator.GT:
+        if operator == MetadataOperator.GT:
             return models.FieldCondition(key=key, range=models.Range(gt=value))
-        elif operator == MetadataOperator.GE:
+        if operator == MetadataOperator.GE:
             return models.FieldCondition(key=key, range=models.Range(gte=value))
-        elif operator == MetadataOperator.IN:
+        if operator == MetadataOperator.IN:
             return models.FieldCondition(key=key, match=models.MatchAny(any=value))
-        elif operator in {MetadataOperator.NE, MetadataOperator.NOT_IN}:
+        if operator in {MetadataOperator.NE, MetadataOperator.NOT_IN}:
             except_value = [value] if operator == MetadataOperator.NE else value
             return models.FieldCondition(
                 key=key, match=models.MatchExcept(**{"except": except_value})
             )
-        else:
-            raise ValueError(f"Unsupported operator: {operator}")
+
+        raise ValueError(f"Unsupported operator: {operator}")
 
     def _translate_metadata_filter(
         self, metadata_filter: MetadataFilter
@@ -236,14 +236,14 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         if metadata_filter.operator is MetadataOperator.RAW:
             return cast(models.Filter, metadata_filter.value)
-        elif metadata_filter.operator == MetadataOperator.AND:
+        if metadata_filter.operator == MetadataOperator.AND:
             return models.Filter(
                 must=[
                     self._translate_metadata_filter(child)
                     for child in metadata_filter.value
                 ]
             )
-        elif metadata_filter.operator == MetadataOperator.OR:
+        if metadata_filter.operator == MetadataOperator.OR:
             return models.Filter(
                 should=[
                     self._translate_metadata_filter(child)

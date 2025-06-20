@@ -162,9 +162,9 @@ class Chroma(VectorDatabaseSourceStorage):
     ) -> Optional[dict[str, Any]]:
         if metadata_filter is None:
             return None
-        elif metadata_filter.operator is MetadataOperator.RAW:
+        if metadata_filter.operator is MetadataOperator.RAW:
             return cast(dict[str, Any], metadata_filter.value)
-        elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+        if metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             child_filters = [
                 self._translate_metadata_filter(child)
                 for child in metadata_filter.value
@@ -172,16 +172,16 @@ class Chroma(VectorDatabaseSourceStorage):
             if len(child_filters) > 1:
                 operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
                 return {operator: child_filters}
-            else:
-                return child_filters[0]
-        else:
-            return {
-                metadata_filter.key: {
-                    self._METADATA_OPERATOR_MAP[
-                        metadata_filter.operator
-                    ]: metadata_filter.value
-                }
+
+            return child_filters[0]
+
+        return {
+            metadata_filter.key: {
+                self._METADATA_OPERATOR_MAP[
+                    metadata_filter.operator
+                ]: metadata_filter.value
             }
+        }
 
     def retrieve(
         self,

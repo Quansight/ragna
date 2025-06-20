@@ -64,19 +64,19 @@ class SessionMiddleware(BaseHTTPMiddleware):
             return await self._api_token_dispatch(
                 request, call_next, authorization=authorization
             )
-        elif (cookie := request.cookies.get(self._COOKIE_NAME)) is not None:
+        if (cookie := request.cookies.get(self._COOKIE_NAME)) is not None:
             return await self._cookie_dispatch(request, call_next, cookie=cookie)
-        elif request.url.path in {"/login", "/oauth-callback"}:
+        if request.url.path in {"/login", "/oauth-callback"}:
             return await self._login_dispatch(request, call_next)
-        elif self._api and request.url.path.startswith("/api"):
+        if self._api and request.url.path.startswith("/api"):
             return self._unauthorized("Missing authorization header")
-        elif self._ui and request.url.path.startswith("/ui"):
+        if self._ui and request.url.path.startswith("/ui"):
             return redirect("/login")
-        else:
-            # Either an unknown route or something on the default router. In any case,
-            # this doesn't need a session and so we let it pass.
-            request.state.session = None
-            return await call_next(request)
+
+        # Either an unknown route or something on the default router. In any case,
+        # this doesn't need a session, and so we let it pass.
+        request.state.session = None
+        return await call_next(request)
 
     async def _api_token_dispatch(
         self, request: Request, call_next: CallNext, authorization: str
@@ -337,7 +337,8 @@ class DummyBasicAuth(Auth):
 
         if not username:
             return self.login_page(request, fail_reason="Username cannot be empty")
-        elif (self._password is not None and password != self._password) or (
+
+        if (self._password is not None and password != self._password) or (
             self._password is None and password != username
         ):
             return self.login_page(

@@ -118,9 +118,9 @@ class RagnaDemoSourceStorage(SourceStorage):
     ) -> list[tuple[int, dict[str, Any]]]:
         if metadata_filter is None:
             return list(enumerate(corpus))
-        elif metadata_filter.operator is MetadataOperator.RAW:
+        if metadata_filter.operator is MetadataOperator.RAW:
             raise RagnaException
-        elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+        if metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             idcs_groups = []
             rows_map = {}
             for child in metadata_filter.value:
@@ -142,19 +142,19 @@ class RagnaDemoSourceStorage(SourceStorage):
                 idcs_groups,
             )
             return [(idx, rows_map[idx]) for idx in sorted(idcs)]
-        else:
-            rows_with_idx = []
-            for idx, row in enumerate(corpus):
-                value = row.get(metadata_filter.key)
-                if value is None:
-                    continue
 
-                if self._METADATA_OPERATOR_MAP[metadata_filter.operator](
-                    value, metadata_filter.value
-                ):
-                    rows_with_idx.append((idx, row))
+        rows_with_idx = []
+        for idx, row in enumerate(corpus):
+            value = row.get(metadata_filter.key)
+            if value is None:
+                continue
 
-            return rows_with_idx
+            if self._METADATA_OPERATOR_MAP[metadata_filter.operator](
+                value, metadata_filter.value
+            ):
+                rows_with_idx.append((idx, row))
+
+        return rows_with_idx
 
     def retrieve(
         self, corpus_name: str, metadata_filter: MetadataFilter, prompt: str

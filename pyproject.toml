@@ -188,6 +188,7 @@ select = [
     "B",
     "C4",
     "ISC",
+    "RET",
 ]
 
 ignore = [

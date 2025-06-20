@@ -39,7 +39,8 @@ class MetadataFilter:
     def __repr__(self) -> str:
         if self.operator is MetadataOperator.RAW:
             return f"{self.operator.name}({self.value!r})"
-        elif self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+
+        if self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             return "\n".join(
                 [
                     f"{self.operator.name}(",
@@ -50,8 +51,8 @@ class MetadataFilter:
                     ")",
                 ]
             )
-        else:
-            return f"{self.operator.name}({self.key!r}, {self.value!r})"
+
+        return f"{self.operator.name}({self.key!r}, {self.value!r})"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, MetadataFilter):
@@ -69,8 +70,8 @@ class MetadataFilter:
                     return False
 
             return True
-        else:
-            return (self.key == other.key) and (self.value == other.value)
+
+        return (self.key == other.key) and (self.value == other.value)
 
     def to_primitive(self) -> dict[str, Any]:
         if self.operator is MetadataOperator.RAW:
@@ -103,14 +104,14 @@ class MetadataFilter:
         def validate(value: Union[MetadataFilter, dict[str, Any]]) -> MetadataFilter:
             if isinstance(value, MetadataFilter):
                 return value
-            else:
-                return cls.from_primitive(value)
+
+            return cls.from_primitive(value)
 
         def serialize(value: Union[MetadataFilter, dict[str, Any]]) -> dict[str, Any]:
             if isinstance(value, MetadataFilter):
                 return value.to_primitive()
-            else:
-                return value
+
+            return value
 
         dict_schema = pydantic_core.core_schema.dict_schema(
             keys_schema=pydantic_core.core_schema.literal_schema(

@@ -123,12 +123,12 @@ class Engine:
                     http_detail=RagnaException.MESSAGE,
                 )
             return [component]
-        else:
-            return [
-                source_storage
-                for source_storage in self._rag._components.values()
-                if isinstance(source_storage, core.SourceStorage)
-            ]
+
+        return [
+            source_storage
+            for source_storage in self._rag._components.values()
+            if isinstance(source_storage, core.SourceStorage)
+        ]
 
     async def get_corpuses(
         self, source_storage: str | None = None

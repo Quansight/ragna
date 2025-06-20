@@ -83,12 +83,12 @@ class LanceDB(VectorDatabaseSourceStorage):
                     ]
                 ),
             )
-        elif no_corpuses:
+        if no_corpuses:
             raise_no_corpuses_available(self)
-        elif non_existing_corpus:
+        if non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
-        else:
-            return self._db.open_table(corpus_name)
+
+        return self._db.open_table(corpus_name)
 
     def list_metadata(
         self, corpus_name: Optional[str] = None
@@ -213,7 +213,7 @@ class LanceDB(VectorDatabaseSourceStorage):
     def _translate_metadata_filter(self, metadata_filter: MetadataFilter) -> str:
         if metadata_filter.operator is MetadataOperator.RAW:
             return cast(str, metadata_filter.value)
-        elif metadata_filter.operator in {
+        if metadata_filter.operator in {
             MetadataOperator.AND,
             MetadataOperator.OR,
         }:
@@ -222,20 +222,20 @@ class LanceDB(VectorDatabaseSourceStorage):
                 f"({self._translate_metadata_filter(child)})"
                 for child in metadata_filter.value
             )
-        elif metadata_filter.operator is MetadataOperator.NOT_IN:
+        if metadata_filter.operator is MetadataOperator.NOT_IN:
             in_ = self._translate_metadata_filter(
                 MetadataFilter.in_(metadata_filter.key, metadata_filter.value)
             )
             return f"NOT ({in_})"
-        else:
-            key = metadata_filter.key
-            operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
-            value = (
-                tuple(metadata_filter.value)
-                if metadata_filter.operator is MetadataOperator.IN
-                else metadata_filter.value
-            )
-            return f"{key} {operator} {value!r}"
+
+        key = metadata_filter.key
+        operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
+        value = (
+            tuple(metadata_filter.value)
+            if metadata_filter.operator is MetadataOperator.IN
+            else metadata_filter.value
+        )
+        return f"{key} {operator} {value!r}"
 
     def retrieve(
         self,

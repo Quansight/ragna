@@ -314,12 +314,12 @@ class CentralView(pn.viewable.Viewer):
     def get_user_from_role(self, role: Literal["system", "user", "assistant"]) -> str:
         if role == "system":
             return "Ragna"
-        elif role == "user":
+        if role == "user":
             return cast(str, pn.state.user)
-        elif role == "assistant":
+        if role == "assistant":
             return cast(str, self.current_chat.assistant)
-        else:
-            raise RuntimeError
+
+        raise RuntimeError
 
     async def chat_callback(
         self, content: str, user: str, instance: pn.chat.ChatInterface
@@ -370,7 +370,7 @@ class CentralView(pn.viewable.Viewer):
     @pn.depends("current_chat")
     def chat_interface(self):
         if self.current_chat is None:
-            return
+            return None
 
         return RagnaChatInterface(
             *[
@@ -412,7 +412,7 @@ class CentralView(pn.viewable.Viewer):
     @pn.depends("current_chat")
     def header(self):
         if self.current_chat is None:
-            return
+            return None
 
         current_chat_name = ""
         if self.current_chat is not None:

@@ -86,47 +86,39 @@ class FilterRow(pn.viewable.Viewer):
     def compute_valid_operator_options(self, type_str):
         if type_str == "bool":
             return ["EQ", "NE"]
-        elif type_str == "str":
+        if type_str == "str":
             return ["EQ", "NE", "IN", "NOT_IN"]
-        else:
-            return ALLOWED_OPERATORS
+
+        return ALLOWED_OPERATORS
 
     def construct_metadata_filter(self):
         if self.key_select.value == NO_FILTER_KEY:
             return None
 
         if self.operator_select.value in ["IN", "NOT_IN"]:
-            return MetadataFilter(
-                MetadataOperator[self.operator_select.value],
-                self.key_select.value,
-                self.multi_value_select.value,
-            )
+            value = self.multi_value_select.value
         else:
-            return MetadataFilter(
-                MetadataOperator[self.operator_select.value],
-                self.key_select.value,
-                self.value_select.value,
-            )
+            value = self.value_select.value
+        return MetadataFilter(
+            MetadataOperator[self.operator_select.value],
+            self.key_select.value,
+            value,
+        )
 
     @param.depends("operator")
     def display(self):
         if self.operator == "IN" or self.operator == "NOT_IN":
             _, self.param.multi_value.objects = self.key_value_pairs[self.key]
-            return pn.Row(
-                self.key_select,
-                self.operator_select,
-                self.multi_value_select,
-                self.delete_button,
-                css_classes=["metadata-filter-row"],
-            )
+            value_select = self.multi_value_select
         else:
-            return pn.Row(
-                self.key_select,
-                self.operator_select,
-                self.value_select,
-                self.delete_button,
-                css_classes=["metadata-filter-row"],
-            )
+            value_select = self.value_select
+        return pn.Row(
+            self.key_select,
+            self.operator_select,
+            value_select,
+            self.delete_button,
+            css_classes=["metadata-filter-row"],
+        )
 
     def __panel__(self):
         return self.display
