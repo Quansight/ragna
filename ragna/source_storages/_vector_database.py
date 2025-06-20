@@ -79,7 +79,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
             n=chunk_size,
             step=chunk_size - chunk_overlap,
         ):
-            tokens, page_numbers = zip(*window)
+            tokens, page_numbers = zip(*window, strict=False)
             yield Chunk(
                 text=self._tokenizer.decode(tokens),
                 page_numbers=list(filter(lambda n: n is not None, page_numbers))

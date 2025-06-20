@@ -64,7 +64,7 @@ class MetadataFilter:
             if len(self.value) != len(other.value):
                 return False
 
-            for self_child, other_child in zip(self.value, other.value):
+            for self_child, other_child in zip(self.value, other.value, strict=False):
                 if self_child != other_child:
                     return False
 

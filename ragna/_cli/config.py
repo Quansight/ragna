@@ -27,19 +27,19 @@ from ragna.deploy import Config
 def parse_config(value: str) -> Config:
     try:
         config = Config.from_file(value)
-    except RagnaException:
+    except RagnaException as exc:
         rich.print(f"The configuration file {value} does not exist.")
         if value == "./ragna.toml":
             rich.print(
                 "If you don't have a configuration file yet, "
                 "run [bold]ragna init[/bold] to generate one."
             )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from exc
     except pydantic.ValidationError as validation:
         # FIXME: pretty formatting!
         for error in validation.errors():
             rich.print(error)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from validation
     # This stores the original value so we can pass it on to subprocesses that we might
     # start.
     config.__ragna_cli_config_path__ = value  # type: ignore[attr-defined]

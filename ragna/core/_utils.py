@@ -141,7 +141,7 @@ def merge_models(
 
     field_definitions = {}
     for name, definitions in raw_field_definitions.items():
-        types, defaults = zip(*definitions)
+        types, defaults = zip(*definitions, strict=False)
 
         types = set(types)
         if len(types) > 1:

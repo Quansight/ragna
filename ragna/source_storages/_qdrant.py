@@ -158,6 +158,7 @@ class Qdrant(VectorDatabaseSourceStorage):
                 await asyncio.gather(
                     *[self._fetch_metadata(corpus_name) for corpus_name in corpus_names]
                 ),
+                strict=False,
             )
         )
 

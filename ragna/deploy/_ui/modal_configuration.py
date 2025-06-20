@@ -177,7 +177,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                     ids_and_streams=[
                         (document.id, make_content_stream(data))
                         for document, data in zip(
-                            documents, self.document_uploader.value
+                            documents, self.document_uploader.value, strict=False
                         )
                     ],
                 )

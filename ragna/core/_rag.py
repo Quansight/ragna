@@ -489,7 +489,7 @@ class Chat:
                     ]
                 )
 
-            raise RagnaException("\n".join(parts))
+            raise RagnaException("\n".join(parts)) from None
 
     def _as_awaitable(
         self, fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any

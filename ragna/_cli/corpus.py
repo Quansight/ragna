@@ -69,12 +69,12 @@ def ingest(
     ] = False,
 ) -> None:
     try:
-        document_factory = getattr(config.document, "from_path")
-    except AttributeError:
+        document_factory = config.document.from_path
+    except AttributeError as exc:
         raise typer.BadParameter(
             f"{config.document.__name__} does not support creating documents from a"
             f"path. Please implement a `from_path` method."
-        )
+        ) from exc
 
     database = Database(config.database_url)
     core_to_schema_document = CoreToSchemaConverter().document
@@ -83,10 +83,10 @@ def ingest(
         try:
             with open(metadata_fields) as file:
                 metadata = json.load(file)
-        except Exception:
+        except Exception as exc:
             raise typer.BadParameter(
                 f"Could not read the metadata fields file: {metadata_fields}"
-            )
+            ) from exc
     else:
         metadata = {}
 
