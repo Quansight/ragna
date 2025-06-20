@@ -1,5 +1,4 @@
-"""
-# Streaming messages
+"""# Streaming messages
 
 Ragna supports streaming responses from the assistant. This example showcases how this
 is performed using the Python and REST API.

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
 from ragna.core import Document, MetadataFilter, MetadataOperator, Source
@@ -75,12 +75,9 @@ class Chroma(VectorDatabaseSourceStorage):
             raise_non_existing_corpus(self, corpus_name)
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
-        if corpus_name is None:
-            corpus_names = self.list_corpuses()
-        else:
-            corpus_names = [corpus_name]
+        corpus_names = self.list_corpuses() if corpus_name is None else [corpus_name]
 
         metadata = {}
         for corpus_name in corpus_names:
@@ -158,13 +155,13 @@ class Chroma(VectorDatabaseSourceStorage):
     }
 
     def _translate_metadata_filter(
-        self, metadata_filter: Optional[MetadataFilter]
-    ) -> Optional[dict[str, Any]]:
+        self, metadata_filter: MetadataFilter | None
+    ) -> dict[str, Any] | None:
         if metadata_filter is None:
             return None
-        elif metadata_filter.operator is MetadataOperator.RAW:
+        if metadata_filter.operator is MetadataOperator.RAW:
             return cast(dict[str, Any], metadata_filter.value)
-        elif metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+        if metadata_filter.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             child_filters = [
                 self._translate_metadata_filter(child)
                 for child in metadata_filter.value
@@ -172,21 +169,21 @@ class Chroma(VectorDatabaseSourceStorage):
             if len(child_filters) > 1:
                 operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
                 return {operator: child_filters}
-            else:
-                return child_filters[0]
-        else:
-            return {
-                metadata_filter.key: {
-                    self._METADATA_OPERATOR_MAP[
-                        metadata_filter.operator
-                    ]: metadata_filter.value
-                }
+
+            return child_filters[0]
+
+        return {
+            metadata_filter.key: {
+                self._METADATA_OPERATOR_MAP[
+                    metadata_filter.operator
+                ]: metadata_filter.value
             }
+        }
 
     def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: Optional[MetadataFilter],
+        metadata_filter: MetadataFilter | None,
         prompt: str,
         *,
         chunk_size: int = 500,

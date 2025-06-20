@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Annotated, ClassVar, Type, Union, cast
+from typing import Annotated, ClassVar, cast
 
 import tomlkit
 import tomlkit.container
@@ -33,7 +33,7 @@ class Config(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: Type[BaseSettings],
+        settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
@@ -104,7 +104,7 @@ class Config(BaseSettings):
             self._set_multiline_array(child)
 
     @classmethod
-    def from_file(cls, path: Union[str, Path]) -> Config:
+    def from_file(cls, path: str | Path) -> Config:
         path = Path(path).expanduser().resolve()
         if not path.is_file():
             raise RagnaException(f"{path} does not exist.")
@@ -113,7 +113,7 @@ class Config(BaseSettings):
             type[Config], type(cls.__name__, (cls,), {"__config_path__": path})
         )()
 
-    def to_file(self, path: Union[str, Path], *, force: bool = False) -> None:
+    def to_file(self, path: str | Path, *, force: bool = False) -> None:
         path = Path(path).expanduser().resolve()
         if path.exists() and not force:
             raise RagnaException(f"{path} already exists.")

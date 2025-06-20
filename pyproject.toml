@@ -177,22 +177,51 @@ depends-on = [
     "build",
 ]
 
+[tool.ruff]
+target-version = "py310"
+
 [tool.ruff.lint]
+
+pydocstyle = { convention = "google" }
+
 select = [
     "E",
     "F",
-    # import sorting
-    "I001"
+    "I001",
+    "B",
+    "C4",
+    "ISC",
+    "RET",
+    "SIM",
+    "PTH",
+    "D2",
+    "UP",
+    "ASYNC",
 ]
-# Ignore line too long, because due to black, the error can only occur for strings
-ignore = ["E501"]
+
+ignore = [
+    # Conflicts with ruff formatter
+    "ISC001",
+    # Ignore line too long, because due to black, the error can only occur for strings
+    "E501",
+    # cache has its purpose
+    "B019",
+    # built-in open() is well understood
+    "PTH123",
+    # mutually-exclusive with D211
+    "D203",
+    # mutually-exclusive with D212
+    "D213",
+]
 
 [tool.ruff.lint.per-file-ignores]
 # ignore unused imports and imports not at the top of the file in __init__.py files
 "__init__.py" = ["F401", "E402"]
-# The examples often have imports below the top of the file to follow the narrative
-"docs/examples/**/*.py" = ["E402", "F704", "I001"]
-"docs/tutorials/**/*.py" = ["E402", "F704", "I001"]
+# The examples and tutorials need to have a good the narrative rather than follow our code-style rules
+"docs/examples/**/*.py" = ["E402", "F704", "I001", "D"]
+"docs/tutorials/**/*.py" = ["E402", "F704", "I001", "D"]
+# blocking code in async tests is not an issue
+"tests/**/*.py" = ["ASYNC101"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
 from ragna.core import (
@@ -83,20 +83,17 @@ class LanceDB(VectorDatabaseSourceStorage):
                     ]
                 ),
             )
-        elif no_corpuses:
+        if no_corpuses:
             raise_no_corpuses_available(self)
-        elif non_existing_corpus:
+        if non_existing_corpus:
             raise_non_existing_corpus(self, corpus_name)
-        else:
-            return self._db.open_table(corpus_name)
+
+        return self._db.open_table(corpus_name)
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
-        if corpus_name is None:
-            corpus_names = self.list_corpuses()
-        else:
-            corpus_names = [corpus_name]
+        corpus_names = self.list_corpuses() if corpus_name is None else [corpus_name]
 
         metadata = {}
         for corpus_name in corpus_names:
@@ -213,7 +210,7 @@ class LanceDB(VectorDatabaseSourceStorage):
     def _translate_metadata_filter(self, metadata_filter: MetadataFilter) -> str:
         if metadata_filter.operator is MetadataOperator.RAW:
             return cast(str, metadata_filter.value)
-        elif metadata_filter.operator in {
+        if metadata_filter.operator in {
             MetadataOperator.AND,
             MetadataOperator.OR,
         }:
@@ -222,25 +219,25 @@ class LanceDB(VectorDatabaseSourceStorage):
                 f"({self._translate_metadata_filter(child)})"
                 for child in metadata_filter.value
             )
-        elif metadata_filter.operator is MetadataOperator.NOT_IN:
+        if metadata_filter.operator is MetadataOperator.NOT_IN:
             in_ = self._translate_metadata_filter(
                 MetadataFilter.in_(metadata_filter.key, metadata_filter.value)
             )
             return f"NOT ({in_})"
-        else:
-            key = metadata_filter.key
-            operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
-            value = (
-                tuple(metadata_filter.value)
-                if metadata_filter.operator is MetadataOperator.IN
-                else metadata_filter.value
-            )
-            return f"{key} {operator} {value!r}"
+
+        key = metadata_filter.key
+        operator = self._METADATA_OPERATOR_MAP[metadata_filter.operator]
+        value = (
+            tuple(metadata_filter.value)
+            if metadata_filter.operator is MetadataOperator.IN
+            else metadata_filter.value
+        )
+        return f"{key} {operator} {value!r}"
 
     def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: Optional[MetadataFilter],
+        metadata_filter: MetadataFilter | None,
         prompt: str,
         *,
         chunk_size: int = 500,

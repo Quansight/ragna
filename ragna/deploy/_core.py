@@ -3,8 +3,9 @@ import threading
 import time
 import uuid
 import webbrowser
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
-from typing import AsyncContextManager, AsyncIterator, Callable, Optional, cast
+from typing import cast
 
 import httpx
 import panel.io.fastapi
@@ -35,7 +36,7 @@ def make_app(
 ) -> FastAPI:
     set_redirect_root_path(config.root_path)
 
-    lifespan: Optional[Callable[[FastAPI], AsyncContextManager]]
+    lifespan: Callable[[FastAPI], contextlib.AbstractAsyncContextManager] | None
     if open_browser:
 
         @contextlib.asynccontextmanager

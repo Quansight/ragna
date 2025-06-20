@@ -38,8 +38,8 @@ class ApiKey(BaseModel):
     def _set_utc_timezone(cls, v: datetime) -> datetime:
         if v.tzinfo is None:
             return v.replace(tzinfo=timezone.utc)
-        else:
-            return v.astimezone(timezone.utc)
+
+        return v.astimezone(timezone.utc)
 
     @computed_field  # type: ignore[misc]
     @property
@@ -55,15 +55,15 @@ class ApiKey(BaseModel):
         i = min(len(v) // 6, 3)
         if i > 0:
             return f"{v[:i]}***{v[-i:]}"
-        else:
-            return "***"
+
+        return "***"
 
 
 def _set_utc_timezone(v: datetime) -> datetime:
     if v.tzinfo is None:
         return v.replace(tzinfo=timezone.utc)
-    else:
-        return v.astimezone(timezone.utc)
+
+    return v.astimezone(timezone.utc)
 
 
 UtcDateTime = Annotated[datetime, AfterValidator(_set_utc_timezone)]

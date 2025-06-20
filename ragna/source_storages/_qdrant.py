@@ -4,7 +4,8 @@ import asyncio
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, AsyncIterator, Optional, cast
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
 from ragna.core import (
@@ -56,9 +57,9 @@ class Qdrant(VectorDatabaseSourceStorage):
         from qdrant_client import AsyncQdrantClient
 
         if (url := os.environ.get("QDRANT_URL")) is not None:
-            kwargs = dict(url=url, api_key=os.environ.get("QDRANT_API_KEY"))
+            kwargs = {"url": url, "api_key": os.environ.get("QDRANT_API_KEY")}
         else:
-            kwargs = dict(path=str(ragna.local_root() / "qdrant"))
+            kwargs = {"path": str(ragna.local_root() / "qdrant")}
         self._client = AsyncQdrantClient(**kwargs)  # type: ignore[arg-type]
 
     async def list_corpuses(self) -> list[str]:
@@ -144,7 +145,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         }
 
     async def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         if corpus_name is None:
             corpus_names = await self.list_corpuses()
@@ -158,6 +159,7 @@ class Qdrant(VectorDatabaseSourceStorage):
                 await asyncio.gather(
                     *[self._fetch_metadata(corpus_name) for corpus_name in corpus_names]
                 ),
+                strict=False,
             )
         )
 
@@ -210,23 +212,23 @@ class Qdrant(VectorDatabaseSourceStorage):
         # See https://qdrant.tech/documentation/concepts/filtering/#range
         if operator == MetadataOperator.EQ:
             return models.FieldCondition(key=key, match=models.MatchValue(value=value))
-        elif operator == MetadataOperator.LT:
+        if operator == MetadataOperator.LT:
             return models.FieldCondition(key=key, range=models.Range(lt=value))
-        elif operator == MetadataOperator.LE:
+        if operator == MetadataOperator.LE:
             return models.FieldCondition(key=key, range=models.Range(lte=value))
-        elif operator == MetadataOperator.GT:
+        if operator == MetadataOperator.GT:
             return models.FieldCondition(key=key, range=models.Range(gt=value))
-        elif operator == MetadataOperator.GE:
+        if operator == MetadataOperator.GE:
             return models.FieldCondition(key=key, range=models.Range(gte=value))
-        elif operator == MetadataOperator.IN:
+        if operator == MetadataOperator.IN:
             return models.FieldCondition(key=key, match=models.MatchAny(any=value))
-        elif operator in {MetadataOperator.NE, MetadataOperator.NOT_IN}:
+        if operator in {MetadataOperator.NE, MetadataOperator.NOT_IN}:
             except_value = [value] if operator == MetadataOperator.NE else value
             return models.FieldCondition(
                 key=key, match=models.MatchExcept(**{"except": except_value})
             )
-        else:
-            raise ValueError(f"Unsupported operator: {operator}")
+
+        raise ValueError(f"Unsupported operator: {operator}")
 
     def _translate_metadata_filter(
         self, metadata_filter: MetadataFilter
@@ -235,14 +237,14 @@ class Qdrant(VectorDatabaseSourceStorage):
 
         if metadata_filter.operator is MetadataOperator.RAW:
             return cast(models.Filter, metadata_filter.value)
-        elif metadata_filter.operator == MetadataOperator.AND:
+        if metadata_filter.operator == MetadataOperator.AND:
             return models.Filter(
                 must=[
                     self._translate_metadata_filter(child)
                     for child in metadata_filter.value
                 ]
             )
-        elif metadata_filter.operator == MetadataOperator.OR:
+        if metadata_filter.operator == MetadataOperator.OR:
             return models.Filter(
                 should=[
                     self._translate_metadata_filter(child)
@@ -257,7 +259,7 @@ class Qdrant(VectorDatabaseSourceStorage):
     async def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: Optional[MetadataFilter],
+        metadata_filter: MetadataFilter | None,
         prompt: str,
         *,
         chunk_size: int = 500,

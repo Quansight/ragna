@@ -30,7 +30,9 @@ def test_get_documents(tmp_local_root, mime_type):
     document_paths = [
         document_root / f"test{idx}.txt" for idx in range(len(_document_content_text))
     ]
-    for content, document_path in zip(_document_content_text, document_paths):
+    for content, document_path in zip(
+        _document_content_text, document_paths, strict=False
+    ):
         with open(document_path, "w") as file:
             file.write(content)
 

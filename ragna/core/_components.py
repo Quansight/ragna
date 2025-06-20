@@ -5,15 +5,10 @@ import enum
 import functools
 import inspect
 import uuid
+from collections.abc import AsyncIterable, AsyncIterator, Iterator
 from datetime import datetime, timezone
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
-    Iterator,
-    Optional,
-    Type,
-    Union,
     get_type_hints,
 )
 
@@ -37,10 +32,7 @@ class Component(RequirementsMixin):
 
     @classmethod
     def display_name(cls) -> str:
-        """
-        Returns:
-            Component name.
-        """
+        """Returns Component name."""
         return cls.__name__
 
     def __repr__(self) -> str:
@@ -54,7 +46,7 @@ class Component(RequirementsMixin):
     @functools.cache
     def _protocol_models(
         cls,
-    ) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
+    ) -> dict[tuple[type[Component], str], type[pydantic.BaseModel]]:
         # This method dynamically builds a pydantic.BaseModel for the extra parameters
         # of each method that is listed in the __ragna_protocol_methods__ class
         # variable. These models are used by ragna.core.Chat._unpack_chat_params to
@@ -103,19 +95,20 @@ class Component(RequirementsMixin):
 
     @classmethod
     @functools.cache
-    def _protocol_model(cls) -> Type[pydantic.BaseModel]:
+    def _protocol_model(cls) -> type[pydantic.BaseModel]:
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
 class Source(pydantic.BaseModel):
     """Data class for sources stored inside a source storage.
 
-    Attributes:
+    Attributes
         id: Unique ID of the source.
         document: Document this source belongs to.
         location: Location of the source inside the document.
         content: Content of the source.
         num_tokens: Number of tokens of the content.
+
     """
 
     id: str
@@ -139,6 +132,7 @@ class SourceStorage(Component, abc.ABC):
         Args:
             corpus_name: Name of the corpus to store the documents in.
             documents: Documents to store.
+
         """
         ...
 
@@ -155,14 +149,16 @@ class SourceStorage(Component, abc.ABC):
 
         Returns:
             Matching sources for the given prompt ordered by relevance.
+
         """
         ...
 
     def list_corpuses(self) -> list[str]:
         """List available corpuses.
 
-        Returns:
+        Returns
             List of available corpuses.
+
         """
         raise RagnaException(
             "list_corpuses is not implemented",
@@ -172,7 +168,7 @@ class SourceStorage(Component, abc.ABC):
         )
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         """List available metadata for corpuses.
 
@@ -181,6 +177,7 @@ class SourceStorage(Component, abc.ABC):
 
         Returns:
             List of available metadata.
+
         """
         raise RagnaException(
             "list_metadata is not implemented",
@@ -193,12 +190,13 @@ class SourceStorage(Component, abc.ABC):
 class MessageRole(str, enum.Enum):
     """Message role
 
-    Attributes:
+    Attributes
         SYSTEM: The message was produced by the system. This includes the welcome
             message when [preparing a new chat][ragna.core.Chat.prepare] as well as
             error messages.
         USER: The message was produced by the user.
         ASSISTANT: The message was produced by an assistant.
+
     """
 
     SYSTEM = "system"
@@ -209,7 +207,7 @@ class MessageRole(str, enum.Enum):
 class Message:
     """Data class for messages.
 
-    Attributes:
+    Attributes
         role: The message producer.
         sources: The sources used to produce the message.
 
@@ -217,16 +215,17 @@ class Message:
 
         - [ragna.core.Chat.prepare][]
         - [ragna.core.Chat.answer][]
+
     """
 
     def __init__(
         self,
-        content: Union[str, AsyncIterable[str]],
+        content: str | AsyncIterable[str],
         *,
         role: MessageRole = MessageRole.SYSTEM,
-        sources: Optional[list[Source]] = None,
-        id: Optional[uuid.UUID] = None,
-        timestamp: Optional[datetime] = None,
+        sources: list[Source] | None = None,
+        id: uuid.UUID | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         if isinstance(content, str):
             self._content: str = content
@@ -300,6 +299,7 @@ class Assistant(Component, abc.ABC):
 
         Returns:
             Answer.
+
         """
         ...
 

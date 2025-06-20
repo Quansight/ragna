@@ -1,8 +1,7 @@
-"""
-UI Helpers
-"""
+"""UI Helpers"""
 
-from typing import Any, Dict, Iterable, Union
+from collections.abc import Iterable
+from typing import Any
 
 import panel as pn
 
@@ -72,7 +71,7 @@ def apply_design_modifiers():
 
 def add_modifier(
     modifier_class: pn.viewable.Viewable,
-    modifications: Dict[str, Any],
+    modifications: dict[str, Any],
     property: str = "stylesheets",
 ):
     properties = pn.theme.fast.Fast.modifiers.setdefault(modifier_class, {})
@@ -89,7 +88,7 @@ def divider():
     return pn.layout.Divider(css_classes=["default_divider"])
 
 
-def css(selector: Union[str, Iterable[str]], declarations: dict[str, str]) -> str:
+def css(selector: str | Iterable[str], declarations: dict[str, str]) -> str:
     return "\n".join(
         [
             f"{selector if isinstance(selector, str) else ', '.join(selector)} {{",

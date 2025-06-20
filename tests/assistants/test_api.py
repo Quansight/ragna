@@ -69,7 +69,7 @@ class HttpStreamingAssistant(HttpApiAssistant):
         cls = type(
             f"{streaming_protocol.name.title()}{HttpStreamingAssistant.__name__}",
             (HttpStreamingAssistant,),
-            dict(_STREAMING_PROTOCOL=streaming_protocol),
+            {"_STREAMING_PROTOCOL": streaming_protocol},
         )
         return cls(base_url)
 
@@ -79,9 +79,9 @@ class HttpStreamingAssistant(HttpApiAssistant):
 
     async def answer(self, messages):
         if self._STREAMING_PROTOCOL is HttpStreamingProtocol.JSON:
-            parse_kwargs = dict(item="item")
+            parse_kwargs = {"item": "item"}
         else:
-            parse_kwargs = dict()
+            parse_kwargs = {}
 
         async with self._call_api(
             "POST",

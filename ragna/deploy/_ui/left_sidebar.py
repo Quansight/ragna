@@ -108,9 +108,7 @@ class LeftSidebar(pn.viewable.Viewer):
             ]
         )
 
-        result = pn.Column(
+        return pn.Column(
             *objects,
             css_classes=["left_sidebar_main_column"],
         )
-
-        return result

@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import rich
 import typer
@@ -45,7 +45,7 @@ def experimental_warning() -> None:
 def ingest(
     documents: list[Path],
     metadata_fields: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             help="JSON file that contains mappings from document name "
             "to metadata fields associated with a document.",
@@ -57,7 +57,7 @@ def ingest(
     ] = "default",
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     user: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(help="User to link the documents to in the ragna database."),
     ] = None,
     report_failures: Annotated[
@@ -69,12 +69,12 @@ def ingest(
     ] = False,
 ) -> None:
     try:
-        document_factory = getattr(config.document, "from_path")
-    except AttributeError:
+        document_factory = config.document.from_path  # type: ignore[attr-defined]
+    except AttributeError as exc:
         raise typer.BadParameter(
             f"{config.document.__name__} does not support creating documents from a"
             f"path. Please implement a `from_path` method."
-        )
+        ) from exc
 
     database = Database(config.database_url)
     core_to_schema_document = CoreToSchemaConverter().document
@@ -83,10 +83,10 @@ def ingest(
         try:
             with open(metadata_fields) as file:
                 metadata = json.load(file)
-        except Exception:
+        except Exception as exc:
             raise typer.BadParameter(
                 f"Could not read the metadata fields file: {metadata_fields}"
-            )
+            ) from exc
     else:
         metadata = {}
 
@@ -132,14 +132,10 @@ def ingest(
                 document_instances = []
 
                 if source_storage.display_name() in ingestion_log:
-                    batch_doc_set = set(
-                        [
-                            str(doc)
-                            for doc in documents[
-                                batch_number : batch_number + BATCH_SIZE
-                            ]
-                        ]
-                    )
+                    batch_doc_set = {
+                        str(doc)
+                        for doc in documents[batch_number : batch_number + BATCH_SIZE]
+                    }
                     if batch_doc_set.issubset(
                         ingestion_log[source_storage.display_name()]
                     ):
@@ -150,12 +146,7 @@ def ingest(
                     try:
                         document_instances.append(
                             document_factory(
-                                document,
-                                metadata=(
-                                    metadata[str(document)]
-                                    if str(document) in metadata
-                                    else None
-                                ),
+                                document, metadata=metadata.get(str(document))
                             )
                         )
                     except Exception:

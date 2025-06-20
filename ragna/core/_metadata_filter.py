@@ -2,16 +2,15 @@ from __future__ import annotations
 
 import enum
 import textwrap
-from typing import Any, Literal, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Any, Literal, cast
 
 import pydantic
 import pydantic_core
 
 
 class MetadataOperator(enum.Enum):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     RAW = enum.auto()
     AND = enum.auto()
@@ -27,9 +26,7 @@ class MetadataOperator(enum.Enum):
 
 
 class MetadataFilter:
-    """
-    ADDME
-    """
+    """ADDME"""
 
     def __init__(self, operator: MetadataOperator, key: str, value: Any) -> None:
         self.operator = operator
@@ -39,7 +36,8 @@ class MetadataFilter:
     def __repr__(self) -> str:
         if self.operator is MetadataOperator.RAW:
             return f"{self.operator.name}({self.value!r})"
-        elif self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
+
+        if self.operator in {MetadataOperator.AND, MetadataOperator.OR}:
             return "\n".join(
                 [
                     f"{self.operator.name}(",
@@ -50,8 +48,8 @@ class MetadataFilter:
                     ")",
                 ]
             )
-        else:
-            return f"{self.operator.name}({self.key!r}, {self.value!r})"
+
+        return f"{self.operator.name}({self.key!r}, {self.value!r})"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, MetadataFilter):
@@ -64,13 +62,13 @@ class MetadataFilter:
             if len(self.value) != len(other.value):
                 return False
 
-            for self_child, other_child in zip(self.value, other.value):
+            for self_child, other_child in zip(self.value, other.value, strict=False):
                 if self_child != other_child:
                     return False
 
             return True
-        else:
-            return (self.key == other.key) and (self.value == other.value)
+
+        return (self.key == other.key) and (self.value == other.value)
 
     def to_primitive(self) -> dict[str, Any]:
         if self.operator is MetadataOperator.RAW:
@@ -100,17 +98,17 @@ class MetadataFilter:
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: pydantic.GetCoreSchemaHandler
     ) -> pydantic_core.CoreSchema:
-        def validate(value: Union[MetadataFilter, dict[str, Any]]) -> MetadataFilter:
+        def validate(value: MetadataFilter | dict[str, Any]) -> MetadataFilter:
             if isinstance(value, MetadataFilter):
                 return value
-            else:
-                return cls.from_primitive(value)
 
-        def serialize(value: Union[MetadataFilter, dict[str, Any]]) -> dict[str, Any]:
+            return cls.from_primitive(value)
+
+        def serialize(value: MetadataFilter | dict[str, Any]) -> dict[str, Any]:
             if isinstance(value, MetadataFilter):
                 return value.to_primitive()
-            else:
-                return value
+
+            return value
 
         dict_schema = pydantic_core.core_schema.dict_schema(
             keys_schema=pydantic_core.core_schema.literal_schema(

@@ -7,7 +7,8 @@ import json
 import os
 import re
 import uuid
-from typing import TYPE_CHECKING, Annotated, Awaitable, Callable, Optional, Union, cast
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Annotated, cast
 
 import httpx
 import panel as pn
@@ -64,19 +65,19 @@ class SessionMiddleware(BaseHTTPMiddleware):
             return await self._api_token_dispatch(
                 request, call_next, authorization=authorization
             )
-        elif (cookie := request.cookies.get(self._COOKIE_NAME)) is not None:
+        if (cookie := request.cookies.get(self._COOKIE_NAME)) is not None:
             return await self._cookie_dispatch(request, call_next, cookie=cookie)
-        elif request.url.path in {"/login", "/oauth-callback"}:
+        if request.url.path in {"/login", "/oauth-callback"}:
             return await self._login_dispatch(request, call_next)
-        elif self._api and request.url.path.startswith("/api"):
+        if self._api and request.url.path.startswith("/api"):
             return self._unauthorized("Missing authorization header")
-        elif self._ui and request.url.path.startswith("/ui"):
+        if self._ui and request.url.path.startswith("/ui"):
             return redirect("/login")
-        else:
-            # Either an unknown route or something on the default router. In any case,
-            # this doesn't need a session and so we let it pass.
-            request.state.session = None
-            return await call_next(request)
+
+        # Either an unknown route or something on the default router. In any case,
+        # this doesn't need a session, and so we let it pass.
+        request.state.session = None
+        return await call_next(request)
 
     async def _api_token_dispatch(
         self, request: Request, call_next: CallNext, authorization: str
@@ -124,7 +125,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
             # just for panel, we just inject them into the scope here, which will be
             # parsed by panel down the line. After this initial request, the values are
             # tied to the active session and don't have to be set again.
-            extra_cookies: dict[str, Union[str, bytes]] = {
+            extra_cookies: dict[str, str | bytes] = {
                 "user": session.user.name,
                 "id_token": base64.b64encode(json.dumps(session.user.data).encode()),
             }
@@ -202,7 +203,7 @@ class SessionMiddleware(BaseHTTPMiddleware):
 
 
 async def _get_session(request: Request) -> Session:
-    session = cast(Optional[Session], request.state.session)
+    session = cast(Session | None, request.state.session)
     if session is None:
         raise RagnaException(
             "Not authenticated",
@@ -223,9 +224,7 @@ UserDependency = Annotated[schemas.User, Depends(_get_user)]
 
 
 class Auth(abc.ABC):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     @classmethod
     def _add_to_app(
@@ -270,7 +269,7 @@ class Auth(abc.ABC):
     def login_page(self, request: Request) -> Response: ...
 
     @abc.abstractmethod
-    def login(self, request: Request) -> Union[schemas.User, Response]: ...
+    def login(self, request: Request) -> schemas.User | Response: ...
 
 
 class _AutomaticLoginAuthBase(Auth):
@@ -285,9 +284,7 @@ class _AutomaticLoginAuthBase(Auth):
 
 
 class NoAuth(_AutomaticLoginAuthBase):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     def login(self, request: Request) -> schemas.User:
         return schemas.User(
@@ -311,8 +308,8 @@ class DummyBasicAuth(Auth):
         self,
         request: Request,
         *,
-        username: Optional[str] = None,
-        fail_reason: Optional[str] = None,
+        username: str | None = None,
+        fail_reason: str | None = None,
     ) -> HTMLResponse:
         return HTMLResponse(
             templates.render(
@@ -320,7 +317,7 @@ class DummyBasicAuth(Auth):
             )
         )
 
-    async def login(self, request: Request) -> Union[schemas.User, Response]:
+    async def login(self, request: Request) -> schemas.User | Response:
         async with request.form() as form:
             username = cast(str, form.get("username"))
             password = cast(str, form.get("password"))
@@ -337,7 +334,8 @@ class DummyBasicAuth(Auth):
 
         if not username:
             return self.login_page(request, fail_reason="Username cannot be empty")
-        elif (self._password is not None and password != self._password) or (
+
+        if (self._password is not None and password != self._password) or (
             self._password is None and password != username
         ):
             return self.login_page(
@@ -362,7 +360,7 @@ class GithubOAuth(Auth):
             )
         )
 
-    async def login(self, request: Request) -> Union[schemas.User, Response]:
+    async def login(self, request: Request) -> schemas.User | Response:
         async with httpx.AsyncClient(headers={"Accept": "application/json"}) as client:
             response = await client.post(
                 "https://github.com/login/oauth/access_token",

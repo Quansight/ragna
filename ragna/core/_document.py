@@ -4,9 +4,10 @@ import abc
 import io
 import mimetypes
 import uuid
+from collections.abc import AsyncIterator, Iterator
 from functools import cached_property
 from pathlib import Path
-from typing import Any, AsyncIterator, Iterator, Optional, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 import aiofiles
 from pydantic import BaseModel
@@ -22,10 +23,10 @@ class Document(RequirementsMixin, abc.ABC):
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: uuid.UUID | None = None,
         name: str,
         metadata: dict[str, Any],
-        handler: Optional[DocumentHandler] = None,
+        handler: DocumentHandler | None = None,
         mime_type: str | None = None,
     ):
         self.id = id or uuid.uuid4()
@@ -38,11 +39,7 @@ class Document(RequirementsMixin, abc.ABC):
 
     @staticmethod
     def supported_suffixes() -> set[str]:
-        """
-        Returns:
-            Suffixes, i.e. `".txt"`, that can be handled by the builtin
-                [ragna.core.DocumentHandler][]s.
-        """
+        """Returns Suffixes, i.e. `".txt"`, that can be handled by the builtin [ragna.core.DocumentHandler][]s."""
         return set(DOCUMENT_HANDLERS.keys())
 
     @staticmethod
@@ -51,6 +48,7 @@ class Document(RequirementsMixin, abc.ABC):
 
         Args:
             name: Name of the document.
+
         """
         handler = DOCUMENT_HANDLERS.get(Path(name).suffix)
         if handler is None:
@@ -77,10 +75,10 @@ class LocalDocument(Document):
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: uuid.UUID | None = None,
         name: str,
         metadata: dict[str, Any],
-        handler: Optional[DocumentHandler] = None,
+        handler: DocumentHandler | None = None,
         mime_type: str | None = None,
     ):
         super().__init__(
@@ -92,12 +90,12 @@ class LocalDocument(Document):
     @classmethod
     def from_path(
         cls,
-        path: Union[str, Path],
+        path: str | Path,
         *,
-        id: Optional[uuid.UUID] = None,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        handler: Optional[DocumentHandler] = None,
+        id: uuid.UUID | None = None,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        handler: DocumentHandler | None = None,
     ) -> LocalDocument:
         """Create a [ragna.core.LocalDocument][] from a path.
 
@@ -111,6 +109,7 @@ class LocalDocument(Document):
 
         Raises:
             RagnaException: If `metadata` is passed and contains a `"path"` key.
+
         """
         if metadata is None:
             metadata = {}
@@ -156,13 +155,14 @@ class LocalDocument(Document):
 class Page(BaseModel):
     """Dataclass for pages of a document
 
-    Attributes:
+    Attributes
         text: Text included in the page.
         number: Page number.
+
     """
 
     text: str
-    number: Optional[int] = None
+    number: int | None = None
 
 
 class DocumentHandler(RequirementsMixin, abc.ABC):
@@ -171,10 +171,7 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
     @classmethod
     @abc.abstractmethod
     def supported_suffixes(cls) -> list[str]:
-        """
-        Returns:
-            Suffixes supported by this document handler.
-        """
+        """Returns Suffixes supported by this document handler."""
         pass
 
     @abc.abstractmethod
@@ -186,6 +183,7 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
 
         Returns:
             Extracted pages.
+
         """
         ...
 
@@ -194,7 +192,7 @@ T = TypeVar("T", bound=DocumentHandler)
 
 
 class DocumentHandlerRegistry(dict[str, DocumentHandler]):
-    def load_if_available(self, cls: Type[T]) -> Type[T]:
+    def load_if_available(self, cls: type[T]) -> type[T]:
         if cls.is_available():
             instance = cls()
             for suffix in cls.supported_suffixes():
@@ -209,6 +207,7 @@ DOCUMENT_HANDLERS = DocumentHandlerRegistry()
 @DOCUMENT_HANDLERS.load_if_available
 class PlainTextDocumentHandler(DocumentHandler):
     """Document handler for plain-text documents.
+
     Currently supports `.txt` and `.md` extensions.
     """
 

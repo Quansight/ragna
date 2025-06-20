@@ -1,5 +1,5 @@
+from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
-from typing import AsyncIterator
 
 import panel as pn
 import param
@@ -15,11 +15,10 @@ USE_UPLOAD_LABEL = "Upload new documents"
 
 
 def get_default_chat_name(timezone_offset=None):
-    if timezone_offset is None:
-        return f"Chat {datetime.now():%m/%d/%Y %I:%M %p}"
-    else:
-        tz = timezone(offset=timedelta(minutes=timezone_offset))
-        return f"Chat {datetime.now().astimezone(tz=tz):%m/%d/%Y %I:%M %p}"
+    now = datetime.now()
+    if timezone_offset is not None:
+        now = now.astimezone(timezone(offset=timedelta(minutes=timezone_offset)))
+    return f"Chat {now:%m/%d/%Y %I:%M %p}"
 
 
 class ChatConfig(param.Parameterized):
@@ -177,7 +176,7 @@ class ModalConfiguration(pn.viewable.Viewer):
                     ids_and_streams=[
                         (document.id, make_content_stream(data))
                         for document, data in zip(
-                            documents, self.document_uploader.value
+                            documents, self.document_uploader.value, strict=False
                         )
                     ],
                 )
@@ -423,10 +422,7 @@ class ModalConfiguration(pn.viewable.Viewer):
         "config.source_storage_name",
     )
     def corpus_or_upload_config(self):
-        if self.corpus_or_upload == USE_CORPUS_LABEL:
-            return self.advanced_config(is_corpus=True)
-        else:
-            return self.advanced_config(is_corpus=False)
+        return self.advanced_config(is_corpus=self.corpus_or_upload == USE_CORPUS_LABEL)
 
     @pn.depends("advanced_config_collapsed", watch=True)
     def shrink_upload_container_height(self):
@@ -453,37 +449,27 @@ class ModalConfiguration(pn.viewable.Viewer):
     )
     def corpus_or_upload_row(self):
         if self.corpus_or_upload == USE_CORPUS_LABEL:
-            if self.config.source_storage_name in self.corpus_names:
-                corpus_names = self.corpus_names[self.config.source_storage_name]
-            else:
-                corpus_names = []
-
-            if self.config.source_storage_name in self.corpus_metadata:
-                corpus_metadata = self.corpus_metadata[self.config.source_storage_name]
-            else:
-                corpus_metadata = {}
+            corpus_names = self.corpus_names.get(self.config.source_storage_name, [])
+            corpus_metadata = self.corpus_metadata.get(
+                self.config.source_storage_name, {}
+            )
 
             self.metadata_filter_rows = MetadataFiltersBuilder(
                 corpus_names=corpus_names, corpus_metadata=corpus_metadata
             )
 
-            if len(corpus_names) > 0:
-                data = pn.Column(
-                    self.metadata_filter_rows_title, self.metadata_filter_rows
-                )
-            else:
-                data = pn.Column(self.metadata_filter_rows)
-
             self.error = False
-            return data
-
-        else:
             return pn.Column(
-                pn.pane.HTML("<b>Corpus Name</b>"),
-                self.corpus_name_input,
-                self.upload_files_label,
-                self.upload_row,
+                *[self.metadata_filter_rows_title] if len(corpus_names) > 1 else [],
+                self.metadata_filter_rows,
             )
+
+        return pn.Column(
+            pn.pane.HTML("<b>Corpus Name</b>"),
+            self.corpus_name_input,
+            self.upload_files_label,
+            self.upload_row,
+        )
 
     def __panel__(self):
         return pn.Column(
