@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import functools
-from typing import Callable, Literal, Optional, cast
+from collections.abc import Callable
+from typing import Literal, cast
 
 import panel as pn
 import param
@@ -52,8 +53,8 @@ class RagnaChatMessage(pn.chat.ChatMessage):
         *,
         role: Literal["system", "user", "assistant"],
         user: str,
-        sources: Optional[list[dict]] = None,
-        on_click_source_info_callback: Optional[Callable] = None,
+        sources: list[dict] | None = None,
+        on_click_source_info_callback: Callable | None = None,
         timestamp=None,
         show_timestamp=True,
         assistant_toolbar_visible=True,  # hide the toolbar during streaming
@@ -138,7 +139,7 @@ class RagnaChatInterface(pn.chat.ChatInterface):
             avatar_lookup=self.avatar_lookup,
         )
 
-    def _build_message(self, *args, **kwargs) -> Optional[RagnaChatMessage]:
+    def _build_message(self, *args, **kwargs) -> RagnaChatMessage | None:
         message = super()._build_message(*args, **kwargs)
         if message is None:
             return None

@@ -1,6 +1,8 @@
 import abc
+import contextlib
+from collections.abc import AsyncIterator
 from functools import cached_property
-from typing import Any, AsyncContextManager, AsyncIterator, Optional, cast
+from typing import Any, cast
 
 from ragna.core import Message, Source
 
@@ -8,7 +10,7 @@ from ._http_api import HttpApiAssistant, HttpStreamingProtocol
 
 
 class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
-    _MODEL: Optional[str]
+    _MODEL: str | None
 
     @property
     @abc.abstractmethod
@@ -25,7 +27,7 @@ class OpenaiLikeHttpApiAssistant(HttpApiAssistant):
 
     def _call_openai_api(
         self, prompt: str, sources: list[Source], *, max_new_tokens: int
-    ) -> AsyncContextManager[AsyncIterator[dict[str, Any]]]:
+    ) -> contextlib.AbstractAsyncContextManager[AsyncIterator[dict[str, Any]]]:
         # See https://platform.openai.com/docs/api-reference/chat/create
         # and https://platform.openai.com/docs/api-reference/chat/streaming
         headers = {

@@ -1,5 +1,5 @@
 import textwrap
-from typing import Iterator
+from collections.abc import Iterator
 
 from ragna.core import Assistant, Message, MessageRole
 

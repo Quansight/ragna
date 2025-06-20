@@ -5,15 +5,10 @@ import enum
 import functools
 import inspect
 import uuid
+from collections.abc import AsyncIterable, AsyncIterator, Iterator
 from datetime import datetime, timezone
 from typing import (
     Any,
-    AsyncIterable,
-    AsyncIterator,
-    Iterator,
-    Optional,
-    Type,
-    Union,
     get_type_hints,
 )
 
@@ -51,7 +46,7 @@ class Component(RequirementsMixin):
     @functools.cache
     def _protocol_models(
         cls,
-    ) -> dict[tuple[Type[Component], str], Type[pydantic.BaseModel]]:
+    ) -> dict[tuple[type[Component], str], type[pydantic.BaseModel]]:
         # This method dynamically builds a pydantic.BaseModel for the extra parameters
         # of each method that is listed in the __ragna_protocol_methods__ class
         # variable. These models are used by ragna.core.Chat._unpack_chat_params to
@@ -100,7 +95,7 @@ class Component(RequirementsMixin):
 
     @classmethod
     @functools.cache
-    def _protocol_model(cls) -> Type[pydantic.BaseModel]:
+    def _protocol_model(cls) -> type[pydantic.BaseModel]:
         return merge_models(cls.display_name(), *cls._protocol_models().values())
 
 
@@ -178,7 +173,7 @@ class SourceStorage(Component, abc.ABC):
         )
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         """List available metadata for corpuses.
 
@@ -234,12 +229,12 @@ class Message:
 
     def __init__(
         self,
-        content: Union[str, AsyncIterable[str]],
+        content: str | AsyncIterable[str],
         *,
         role: MessageRole = MessageRole.SYSTEM,
-        sources: Optional[list[Source]] = None,
-        id: Optional[uuid.UUID] = None,
-        timestamp: Optional[datetime] = None,
+        sources: list[Source] | None = None,
+        id: uuid.UUID | None = None,
+        timestamp: datetime | None = None,
     ) -> None:
         if isinstance(content, str):
             self._content: str = content

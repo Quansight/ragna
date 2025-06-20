@@ -4,9 +4,10 @@ import abc
 import io
 import mimetypes
 import uuid
+from collections.abc import AsyncIterator, Iterator
 from functools import cached_property
 from pathlib import Path
-from typing import Any, AsyncIterator, Iterator, Optional, Type, TypeVar, Union
+from typing import Any, TypeVar
 
 import aiofiles
 from pydantic import BaseModel
@@ -22,10 +23,10 @@ class Document(RequirementsMixin, abc.ABC):
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: uuid.UUID | None = None,
         name: str,
         metadata: dict[str, Any],
-        handler: Optional[DocumentHandler] = None,
+        handler: DocumentHandler | None = None,
         mime_type: str | None = None,
     ):
         self.id = id or uuid.uuid4()
@@ -75,10 +76,10 @@ class LocalDocument(Document):
     def __init__(
         self,
         *,
-        id: Optional[uuid.UUID] = None,
+        id: uuid.UUID | None = None,
         name: str,
         metadata: dict[str, Any],
-        handler: Optional[DocumentHandler] = None,
+        handler: DocumentHandler | None = None,
         mime_type: str | None = None,
     ):
         super().__init__(
@@ -90,12 +91,12 @@ class LocalDocument(Document):
     @classmethod
     def from_path(
         cls,
-        path: Union[str, Path],
+        path: str | Path,
         *,
-        id: Optional[uuid.UUID] = None,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        handler: Optional[DocumentHandler] = None,
+        id: uuid.UUID | None = None,
+        name: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        handler: DocumentHandler | None = None,
     ) -> LocalDocument:
         """Create a [ragna.core.LocalDocument][] from a path.
 
@@ -165,7 +166,7 @@ class Page(BaseModel):
     """
 
     text: str
-    number: Optional[int] = None
+    number: int | None = None
 
 
 class DocumentHandler(RequirementsMixin, abc.ABC):
@@ -197,7 +198,7 @@ T = TypeVar("T", bound=DocumentHandler)
 
 
 class DocumentHandlerRegistry(dict[str, DocumentHandler]):
-    def load_if_available(self, cls: Type[T]) -> Type[T]:
+    def load_if_available(self, cls: type[T]) -> type[T]:
         if cls.is_available():
             instance = cls()
             for suffix in cls.supported_suffixes():

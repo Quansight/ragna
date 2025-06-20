@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Optional, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
 from ragna.core import Document, MetadataFilter, MetadataOperator, Source
@@ -75,7 +75,7 @@ class Chroma(VectorDatabaseSourceStorage):
             raise_non_existing_corpus(self, corpus_name)
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         corpus_names = self.list_corpuses() if corpus_name is None else [corpus_name]
 
@@ -155,8 +155,8 @@ class Chroma(VectorDatabaseSourceStorage):
     }
 
     def _translate_metadata_filter(
-        self, metadata_filter: Optional[MetadataFilter]
-    ) -> Optional[dict[str, Any]]:
+        self, metadata_filter: MetadataFilter | None
+    ) -> dict[str, Any] | None:
         if metadata_filter is None:
             return None
         if metadata_filter.operator is MetadataOperator.RAW:
@@ -183,7 +183,7 @@ class Chroma(VectorDatabaseSourceStorage):
     def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: Optional[MetadataFilter],
+        metadata_filter: MetadataFilter | None,
         prompt: str,
         *,
         chunk_size: int = 500,

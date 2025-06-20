@@ -1,6 +1,7 @@
 import os
+from collections.abc import AsyncIterator
 from functools import cached_property
-from typing import AsyncIterator, cast
+from typing import cast
 
 from ragna.core import Message, RagnaException
 

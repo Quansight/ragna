@@ -1,6 +1,7 @@
 import secrets
 import uuid
-from typing import Any, AsyncIterator, Collection, Optional, cast
+from collections.abc import AsyncIterator, Collection
+from typing import Any, cast
 
 from fastapi import status as http_status_code
 
@@ -40,7 +41,7 @@ class Engine:
 
     def get_user_by_api_key(
         self, api_key_value: str
-    ) -> tuple[Optional[schemas.User], bool]:
+    ) -> tuple[schemas.User | None, bool]:
         with self._database.get_session() as session:
             data = self._database.get_user_by_api_key(
                 session, api_key_value=api_key_value
@@ -354,7 +355,7 @@ class CoreToSchemaConverter:
         )
 
     def message(
-        self, message: core.Message, *, content_override: Optional[str] = None
+        self, message: core.Message, *, content_override: str | None = None
     ) -> schemas.Message:
         return schemas.Message(
             id=message.id,

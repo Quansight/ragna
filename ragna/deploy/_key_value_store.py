@@ -3,7 +3,8 @@ from __future__ import annotations
 import abc
 import os
 import time
-from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar, cast
 
 import pydantic
 
@@ -31,37 +32,35 @@ class KeyValueStore(abc.ABC, RequirementsMixin, Generic[M]):
     def serialize(self, model: M) -> str:
         return SerializableModel.from_model(model).model_dump_json()
 
-    def deserialize(self, data: Union[str, bytes]) -> M:
+    def deserialize(self, data: str | bytes) -> M:
         return SerializableModel.model_validate_json(data).to_model()
 
     @abc.abstractmethod
-    def set(
-        self, key: str, model: M, *, expires_after: Optional[int] = None
-    ) -> None: ...
+    def set(self, key: str, model: M, *, expires_after: int | None = None) -> None: ...
 
     @abc.abstractmethod
-    def get(self, key: str) -> Optional[M]: ...
+    def get(self, key: str) -> M | None: ...
 
     @abc.abstractmethod
     def delete(self, key: str) -> None: ...
 
     @abc.abstractmethod
-    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None: ...
+    def refresh(self, key: str, *, expires_after: int | None = None) -> None: ...
 
 
 class InMemoryKeyValueStore(KeyValueStore[M]):
     def __init__(self) -> None:
-        self._store: dict[str, tuple[M, Optional[float]]] = {}
+        self._store: dict[str, tuple[M, float | None]] = {}
         self._timer: Callable[[], float] = time.monotonic
 
-    def set(self, key: str, model: M, *, expires_after: Optional[int] = None) -> None:
+    def set(self, key: str, model: M, *, expires_after: int | None = None) -> None:
         if expires_after is not None:
             expires_at = self._timer() + expires_after
         else:
             expires_at = None
         self._store[key] = (model, expires_at)
 
-    def get(self, key: str) -> Optional[M]:
+    def get(self, key: str) -> M | None:
         value = self._store.get(key)
         if value is None:
             return None
@@ -79,7 +78,7 @@ class InMemoryKeyValueStore(KeyValueStore[M]):
 
         del self._store[key]
 
-    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None:
+    def refresh(self, key: str, *, expires_after: int | None = None) -> None:
         value = self._store.get(key)
         if value is None:
             return
@@ -101,10 +100,10 @@ class RedisKeyValueStore(KeyValueStore[M]):
             port=int(os.environ.get("RAGNA_REDIS_PORT", 6379)),
         )
 
-    def set(self, key: str, model: M, *, expires_after: Optional[int] = None) -> None:
+    def set(self, key: str, model: M, *, expires_after: int | None = None) -> None:
         self._r.set(key, self.serialize(model), ex=expires_after)
 
-    def get(self, key: str) -> Optional[M]:
+    def get(self, key: str) -> M | None:
         value = cast(bytes, self._r.get(key))
         if value is None:
             return None
@@ -113,7 +112,7 @@ class RedisKeyValueStore(KeyValueStore[M]):
     def delete(self, key: str) -> None:
         self._r.delete(key)
 
-    def refresh(self, key: str, *, expires_after: Optional[int] = None) -> None:
+    def refresh(self, key: str, *, expires_after: int | None = None) -> None:
         if expires_after is None:
             self._r.persist(key)
         else:

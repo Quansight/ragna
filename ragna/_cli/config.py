@@ -1,8 +1,9 @@
 import itertools
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 from types import ModuleType
-from typing import Annotated, Iterable, Type, TypeVar, cast
+from typing import Annotated, TypeVar, cast
 
 import pydantic
 import questionary
@@ -157,8 +158,8 @@ T = TypeVar("T", bound=Component)
 def _select_components(
     title: str,
     module: ModuleType,
-    base_cls: Type[T],
-) -> list[Type[T]]:
+    base_cls: type[T],
+) -> list[type[T]]:
     components = sorted(
         (
             obj
@@ -170,7 +171,7 @@ def _select_components(
         key=lambda component: component.display_name(),
     )
     return cast(
-        list[Type[T]],
+        list[type[T]],
         questionary.checkbox(
             f"Which {title} do you want to use?",
             choices=[
@@ -186,7 +187,7 @@ def _select_components(
     )
 
 
-def _handle_unmet_requirements(components: Iterable[Type[Component]]) -> None:
+def _handle_unmet_requirements(components: Iterable[type[Component]]) -> None:
     unmet_requirements = {
         requirement
         for component in components
@@ -331,7 +332,7 @@ def check_config(config: Config) -> bool:
         ("source storages", config.source_storages),
         ("assistants", config.assistants),
     ]:
-        components = cast(list[Type[Component]], components)
+        components = cast(list[type[Component]], components)
 
         table = Table(
             "",
@@ -361,7 +362,7 @@ def check_config(config: Config) -> bool:
 
 def _split_requirements(
     requirements: Iterable[Requirement],
-) -> dict[Type[Requirement], list[Requirement]]:
+) -> dict[type[Requirement], list[Requirement]]:
     split_reqs = defaultdict(list)
     for req in requirements:
         split_reqs[type(req)].append(req)

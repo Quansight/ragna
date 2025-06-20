@@ -10,16 +10,11 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator
 from pathlib import Path
 from typing import (
     Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Iterator,
-    Optional,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -32,13 +27,13 @@ _LOCAL_ROOT = (
 )
 
 
-def make_directory(path: Union[str, Path]) -> Path:
+def make_directory(path: str | Path) -> Path:
     path = Path(path).expanduser().resolve()
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
-def local_root(path: Optional[Union[str, Path]] = None) -> Path:
+def local_root(path: str | Path | None = None) -> Path:
     """Get or set the local root directory Ragna uses for storing files.
 
     Defaults to the value of the `RAGNA_LOCAL_ROOT` environment variable or otherwise to
@@ -137,7 +132,7 @@ def is_debugging() -> bool:
 
 
 def as_awaitable(
-    fn: Union[Callable[..., T], Callable[..., Awaitable[T]]], *args: Any, **kwargs: Any
+    fn: Callable[..., T] | Callable[..., Awaitable[T]], *args: Any, **kwargs: Any
 ) -> Awaitable[T]:
     if inspect.iscoroutinefunction(fn):
         fn = cast(Callable[..., Awaitable[T]], fn)
@@ -150,7 +145,7 @@ def as_awaitable(
 
 
 def as_async_iterator(
-    fn: Union[Callable[..., Iterator[T]], Callable[..., AsyncIterator[T]]],
+    fn: Callable[..., Iterator[T]] | Callable[..., AsyncIterator[T]],
     *args: Any,
     **kwargs: Any,
 ) -> AsyncIterator[T]:
@@ -178,7 +173,7 @@ class BackgroundSubprocess:
         *cmd: str,
         stdout: Any = sys.stdout,
         stderr: Any = sys.stdout,
-        startup_fn: Optional[Callable[[], bool]] = None,
+        startup_fn: Callable[[], bool] | None = None,
         startup_timeout: float = 10,
         terminate_timeout: float = 10,
         text: bool = True,

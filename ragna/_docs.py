@@ -7,7 +7,7 @@ import sys
 import tempfile
 import textwrap
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 import httpx
 
@@ -114,7 +114,7 @@ class RagnaDeploy:
         *,
         authenticate: bool = False,
         upload_sample_document: bool = False,
-    ) -> tuple[httpx.Client, Optional[dict[str, Any]]]:
+    ) -> tuple[httpx.Client, dict[str, Any] | None]:
         if upload_sample_document and not authenticate:
             raise RagnaException(
                 "Cannot upload a document without authenticating first. "

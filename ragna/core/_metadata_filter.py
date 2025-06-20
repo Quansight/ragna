@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import enum
 import textwrap
-from typing import Any, Literal, Sequence, Union, cast
+from collections.abc import Sequence
+from typing import Any, Literal, cast
 
 import pydantic
 import pydantic_core
@@ -97,13 +98,13 @@ class MetadataFilter:
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: pydantic.GetCoreSchemaHandler
     ) -> pydantic_core.CoreSchema:
-        def validate(value: Union[MetadataFilter, dict[str, Any]]) -> MetadataFilter:
+        def validate(value: MetadataFilter | dict[str, Any]) -> MetadataFilter:
             if isinstance(value, MetadataFilter):
                 return value
 
             return cls.from_primitive(value)
 
-        def serialize(value: Union[MetadataFilter, dict[str, Any]]) -> dict[str, Any]:
+        def serialize(value: MetadataFilter | dict[str, Any]) -> dict[str, Any]:
             if isinstance(value, MetadataFilter):
                 return value.to_primitive()
 

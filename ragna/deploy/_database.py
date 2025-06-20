@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any, Collection, Optional, cast
+from collections.abc import Collection
+from typing import Any, cast
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
@@ -14,9 +15,7 @@ from . import _schemas as schemas
 
 
 class UnknownUser(Exception):
-    def __init__(
-        self, name: Optional[str] = None, api_key: Optional[str] = None
-    ) -> None:
+    def __init__(self, name: str | None = None, api_key: str | None = None) -> None:
         self.name = name
         self.api_key = api_key
 
@@ -38,7 +37,7 @@ class Database:
 
     def _get_orm_user_by_name(self, session: Session, *, name: str) -> orm.User:
         user = cast(
-            Optional[orm.User],
+            orm.User | None,
             session.execute(
                 select(orm.User).where(orm.User.name == name)
             ).scalar_one_or_none(),
@@ -103,7 +102,7 @@ class Database:
 
     def get_user_by_api_key(
         self, session: Session, api_key_value: str
-    ) -> Optional[tuple[schemas.User, schemas.ApiKey]]:
+    ) -> tuple[schemas.User, schemas.ApiKey] | None:
         orm_api_key = session.execute(
             select(orm.ApiKey)  # type: ignore[attr-defined]
             .options(joinedload(orm.ApiKey.user))
@@ -232,7 +231,7 @@ class Database:
     def _get_orm_chat(
         self, session: Session, *, user: str, id: uuid.UUID, eager: bool = False
     ) -> orm.Chat:
-        chat: Optional[orm.Chat] = (
+        chat: orm.Chat | None = (
             session.execute(
                 self._select_chat(eager=eager).where(
                     (orm.Chat.id == id)
@@ -251,7 +250,7 @@ class Database:
 
     def get_chat(self, session: Session, *, user: str, id: uuid.UUID) -> schemas.Chat:
         return self._to_schema.chat(
-            (self._get_orm_chat(session, user=user, id=id, eager=True))
+            self._get_orm_chat(session, user=user, id=id, eager=True)
         )
 
     def update_chat(self, session: Session, user: str, chat: schemas.Chat) -> None:

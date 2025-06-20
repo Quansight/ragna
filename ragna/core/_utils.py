@@ -7,7 +7,8 @@ import importlib
 import importlib.metadata
 import os
 from collections import defaultdict
-from typing import Any, Collection, Optional, Type, Union, cast
+from collections.abc import Collection
+from typing import Any, cast
 
 import packaging.requirements
 import pydantic
@@ -34,7 +35,7 @@ class RagnaException(Exception):
         # FIXME: remove default value for event
         event: str = "",
         http_status_code: int = 500,
-        http_detail: Union[str, RagnaExceptionHttpDetail] = "",
+        http_detail: str | RagnaExceptionHttpDetail = "",
         **extra: Any,
     ) -> None:
         self.event = event
@@ -121,9 +122,9 @@ class EnvVarRequirement(Requirement):
 
 def merge_models(
     model_name: str,
-    *models: Type[pydantic.BaseModel],
-    config: Optional[pydantic.ConfigDict] = None,
-) -> Type[pydantic.BaseModel]:
+    *models: type[pydantic.BaseModel],
+    config: pydantic.ConfigDict | None = None,
+) -> type[pydantic.BaseModel]:
     raw_field_definitions = defaultdict(list)
     for model_cls in models:
         for name, field in model_cls.__pydantic_fields__.items():
@@ -160,7 +161,7 @@ def merge_models(
         field_definitions[name] = (type_, pydantic.Field(**kwargs))
 
     return cast(
-        Type[pydantic.BaseModel],
+        type[pydantic.BaseModel],
         pydantic.create_model(  # type: ignore[call-overload]
             model_name, **field_definitions, __config__=config
         ),

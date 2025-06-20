@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import Column, ForeignKey, Table, types
 from sqlalchemy.engine import Dialect
@@ -20,13 +20,13 @@ class Json(types.TypeDecorator):
 
     cache_ok = True
 
-    def process_bind_param(self, value: Any, dialect: Dialect) -> Optional[str]:
+    def process_bind_param(self, value: Any, dialect: Dialect) -> str | None:
         if value is None:
             return value
 
         return json.dumps(value)
 
-    def process_result_value(self, value: Optional[str], dialect: Dialect) -> Any:
+    def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
         if value is None:
             return value
 
@@ -45,16 +45,16 @@ class UtcAwareDateTime(types.TypeDecorator):
     cache_ok = True
 
     def process_bind_param(  # type: ignore[override]
-        self, value: Optional[datetime], dialect: Dialect
-    ) -> Optional[datetime]:
+        self, value: datetime | None, dialect: Dialect
+    ) -> datetime | None:
         if value is not None:
             assert value.tzinfo == timezone.utc
 
         return value
 
     def process_result_value(
-        self, value: Optional[datetime], dialect: Dialect
-    ) -> Optional[datetime]:
+        self, value: datetime | None, dialect: Dialect
+    ) -> datetime | None:
         if value is None:
             return None
 

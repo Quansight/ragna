@@ -2,7 +2,8 @@ import dataclasses
 import hashlib
 import itertools
 from collections import deque
-from typing import Deque, Iterable, Iterator, Optional, TypeVar, cast
+from collections.abc import Iterable, Iterator
+from typing import TypeVar, cast
 
 from ragna.core import PackageRequirement, Page, Requirement, Source, SourceStorage
 
@@ -14,7 +15,7 @@ T = TypeVar("T")
 def _windowed_ragged(
     iterable: Iterable[T], *, n: int, step: int
 ) -> Iterator[tuple[T, ...]]:
-    window: Deque[T] = deque(maxlen=n)
+    window: deque[T] = deque(maxlen=n)
     i = n
     for _ in map(window.append, iterable):
         i -= 1
@@ -31,7 +32,7 @@ def _windowed_ragged(
 @dataclasses.dataclass
 class Chunk:
     text: str
-    page_numbers: Optional[list[int]]
+    page_numbers: list[int] | None
     num_tokens: int
 
 
@@ -87,7 +88,7 @@ class VectorDatabaseSourceStorage(SourceStorage):
                 num_tokens=len(tokens),
             )
 
-    def _page_numbers_to_str(self, page_numbers: Optional[Iterable[int]]) -> str:
+    def _page_numbers_to_str(self, page_numbers: Iterable[int] | None) -> str:
         if not page_numbers:
             return ""
 

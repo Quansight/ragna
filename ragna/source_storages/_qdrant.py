@@ -4,7 +4,8 @@ import asyncio
 import os
 import uuid
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, AsyncIterator, Optional, cast
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any, cast
 
 import ragna
 from ragna.core import (
@@ -144,7 +145,7 @@ class Qdrant(VectorDatabaseSourceStorage):
         }
 
     async def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         if corpus_name is None:
             corpus_names = await self.list_corpuses()
@@ -258,7 +259,7 @@ class Qdrant(VectorDatabaseSourceStorage):
     async def retrieve(
         self,
         corpus_name: str,
-        metadata_filter: Optional[MetadataFilter],
+        metadata_filter: MetadataFilter | None,
         prompt: str,
         *,
         chunk_size: int = 500,

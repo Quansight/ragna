@@ -192,6 +192,7 @@ select = [
     "SIM",
     "PTH",
     "D2",
+    "UP",
 ]
 
 ignore = [

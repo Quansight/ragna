@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import rich
 import typer
@@ -45,7 +45,7 @@ def experimental_warning() -> None:
 def ingest(
     documents: list[Path],
     metadata_fields: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             help="JSON file that contains mappings from document name "
             "to metadata fields associated with a document.",
@@ -57,7 +57,7 @@ def ingest(
     ] = "default",
     config: ConfigOption = "./ragna.toml",  # type: ignore[assignment]
     user: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(help="User to link the documents to in the ragna database."),
     ] = None,
     report_failures: Annotated[

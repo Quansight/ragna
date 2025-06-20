@@ -2,7 +2,8 @@ import functools
 import textwrap
 import uuid
 from collections import defaultdict
-from typing import Any, Callable, Optional, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 from ragna.core import (
     Document,
@@ -53,7 +54,7 @@ class RagnaDemoSourceStorage(SourceStorage):
         return corpus
 
     def list_metadata(
-        self, corpus_name: Optional[str] = None
+        self, corpus_name: str | None = None
     ) -> dict[str, dict[str, tuple[str, list[Any]]]]:
         corpus_names = self.list_corpuses() if corpus_name is None else [corpus_name]
 
@@ -111,7 +112,7 @@ class RagnaDemoSourceStorage(SourceStorage):
     }
 
     def _apply_filter(
-        self, corpus: list[dict[str, Any]], metadata_filter: Optional[MetadataFilter]
+        self, corpus: list[dict[str, Any]], metadata_filter: MetadataFilter | None
     ) -> list[tuple[int, dict[str, Any]]]:
         if metadata_filter is None:
             return list(enumerate(corpus))
