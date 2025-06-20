@@ -117,9 +117,11 @@ print(json.dumps(documents, indent=2))
 # - The field value is the binary content of the document.
 
 with open(document_path, "rb") as f:
-    client.put(
-        "/api/documents",
-        files=[("documents", (documents[0]["id"], f))],
+    print(
+        client.put(
+            "/api/documents",
+            files=[("documents", (documents[0]["id"], f))],
+        )
     )
 
 # %%
