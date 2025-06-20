@@ -9,7 +9,7 @@
 - Update Anthropic assistants by
   [@smokestacklightnin](https://github.com/smokestacklightnin) in
   [#380](https://github.com/Quansight/ragna/pull/380)
-- Fix #399 : eager loading of Chats docs, msgs, srcs by
+- Fix \#399 : eager loading of Chats docs, msgs, srcs by
   [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
   [#401](https://github.com/Quansight/ragna/pull/401)
 - Add endpoint for batch uploading document metadata by [@nenb](https://github.com/nenb)
@@ -18,7 +18,7 @@
   [#312](https://github.com/Quansight/ragna/pull/312)
 - Fix CopyToCliboard functionality in UI by [@nenb](https://github.com/nenb) in
   [#411](https://github.com/Quansight/ragna/pull/411)
-- Fix #415 : chat bubble by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
+- Fix \#415 : chat bubble by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
   [#419](https://github.com/Quansight/ragna/pull/419)
 - refactor assistant streaming and create OpenAI compliant base class by
   [@pmeier](https://github.com/pmeier) in
@@ -41,12 +41,12 @@
   [#438](https://github.com/Quansight/ragna/pull/438)
 - update to panel==1.4.4 by [@blakerosenthal](https://github.com/blakerosenthal) in
   [#452](https://github.com/Quansight/ragna/pull/452)
-- #391 Chat Ordering based upon the order of interaction by
+- \#391 Chat Ordering based upon the order of interaction by
   [@arjxn](https://github.com/arjxn)-py in
   [#445](https://github.com/Quansight/ragna/pull/445)
 - fix streaming handling for builtin assistants by [@pmeier](https://github.com/pmeier)
   in [#462](https://github.com/Quansight/ragna/pull/462)
-- #458 Automate Docker Requirements Workflow for PR Creation and Review Requests by
+- \#458 Automate Docker Requirements Workflow for PR Creation and Review Requests by
   [@arjxn](https://github.com/arjxn)-py in
   [#459](https://github.com/Quansight/ragna/pull/459)
 - fix docker requirements update workflow by [@pmeier](https://github.com/pmeier) in
