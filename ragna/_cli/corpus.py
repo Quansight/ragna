@@ -69,7 +69,7 @@ def ingest(
     ] = False,
 ) -> None:
     try:
-        document_factory = config.document.from_path
+        document_factory = config.document.from_path  # type: ignore[attr-defined]
     except AttributeError as exc:
         raise typer.BadParameter(
             f"{config.document.__name__} does not support creating documents from a"
