@@ -193,6 +193,8 @@ select = [
 ]
 
 ignore = [
+    # Conflicts with ruff formatter
+    "ISC001",
     # Ignore line too long, because due to black, the error can only occur for strings
     "E501",
     # cache has its purpose
