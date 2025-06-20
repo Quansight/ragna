@@ -1,5 +1,172 @@
 # Release notes
 
+## Version 0.3.0
+
+### What's Changed
+
+- fix add_chats.py script by [@pmeier](https://github.com/pmeier) in
+  [#372](https://github.com/Quansight/ragna/pull/372)
+- Update Anthropic assistants by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#380](https://github.com/Quansight/ragna/pull/380)
+- Fix \#399 : eager loading of Chats docs, msgs, srcs by
+  [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
+  [#401](https://github.com/Quansight/ragna/pull/401)
+- Add endpoint for batch uploading document metadata by [@nenb](https://github.com/nenb)
+  in [#404](https://github.com/Quansight/ragna/pull/404)
+- CSS refactor by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
+  [#312](https://github.com/Quansight/ragna/pull/312)
+- Fix CopyToCliboard functionality in UI by [@nenb](https://github.com/nenb) in
+  [#411](https://github.com/Quansight/ragna/pull/411)
+- Fix \#415 : chat bubble by [@pierrotsmnrd](https://github.com/pierrotsmnrd) in
+  [#419](https://github.com/Quansight/ragna/pull/419)
+- refactor assistant streaming and create OpenAI compliant base class by
+  [@pmeier](https://github.com/pmeier) in
+  [#425](https://github.com/Quansight/ragna/pull/425)
+- [ENH] Add support for Ollama assistants by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#376](https://github.com/Quansight/ragna/pull/376)
+- remove welcome modal by [@pmeier](https://github.com/pmeier) in
+  [#427](https://github.com/Quansight/ragna/pull/427)
+- UI tests with Playwright by [@blakerosenthal](https://github.com/blakerosenthal) in
+  [#413](https://github.com/Quansight/ragna/pull/413)
+- Load message history to core chat from schema chat by
+  [@blakerosenthal](https://github.com/blakerosenthal) in
+  [#429](https://github.com/Quansight/ragna/pull/429)
+- remove redis as dependency by [@pmeier](https://github.com/pmeier) in
+  [#442](https://github.com/Quansight/ragna/pull/442)
+- update assistants in docker config by [@pmeier](https://github.com/pmeier) in
+  [#444](https://github.com/Quansight/ragna/pull/444)
+- support chat history by [@blakerosenthal](https://github.com/blakerosenthal) in
+  [#438](https://github.com/Quansight/ragna/pull/438)
+- update to panel==1.4.4 by [@blakerosenthal](https://github.com/blakerosenthal) in
+  [#452](https://github.com/Quansight/ragna/pull/452)
+- \#391 Chat Ordering based upon the order of interaction by
+  [@arjxn](https://github.com/arjxn)-py in
+  [#445](https://github.com/Quansight/ragna/pull/445)
+- fix streaming handling for builtin assistants by [@pmeier](https://github.com/pmeier)
+  in [#462](https://github.com/Quansight/ragna/pull/462)
+- \#458 Automate Docker Requirements Workflow for PR Creation and Review Requests by
+  [@arjxn](https://github.com/arjxn)-py in
+  [#459](https://github.com/Quansight/ragna/pull/459)
+- fix docker requirements update workflow by [@pmeier](https://github.com/pmeier) in
+  [#474](https://github.com/Quansight/ragna/pull/474)
+- add file size and extension to default metadata of LocalDocument by
+  [@pmeier](https://github.com/pmeier) in
+  [#483](https://github.com/Quansight/ragna/pull/483)
+- gracefully stop API when started by ragna ui by [@pmeier](https://github.com/pmeier)
+  in [#496](https://github.com/Quansight/ragna/pull/496)
+- handle zombie processes in docs by [@pmeier](https://github.com/pmeier) in
+  [#497](https://github.com/Quansight/ragna/pull/497)
+- drop Python 3.9 and add support for 3.12 by [@pmeier](https://github.com/pmeier) in
+  [#502](https://github.com/Quansight/ragna/pull/502)
+- update mkdocs-gallery by [@pmeier](https://github.com/pmeier) in
+  [#507](https://github.com/Quansight/ragna/pull/507)
+- deploy refactor by [@pmeier](https://github.com/pmeier) in
+  [#509](https://github.com/Quansight/ragna/pull/509)
+- try fix Windows CI by [@pmeier](https://github.com/pmeier) in
+  [#515](https://github.com/Quansight/ragna/pull/515)
+- fix open browser functionality by [@pmeier](https://github.com/pmeier) in
+  [#517](https://github.com/Quansight/ragna/pull/517)
+- add jhub-apps authentication by [@pmeier](https://github.com/pmeier) in
+  [#518](https://github.com/Quansight/ragna/pull/518)
+- add corpus feature by [@pmeier](https://github.com/pmeier) in
+  [#519](https://github.com/Quansight/ragna/pull/519)
+- reenable source storage tests by [@pmeier](https://github.com/pmeier) in
+  [#526](https://github.com/Quansight/ragna/pull/526)
+- feat: Qdrant RAG Storage by [@Anush008](https://github.com/Anush008) in
+  [#524](https://github.com/Quansight/ragna/pull/524)
+- Upgrade ChromaDB to >=0.6.0 and fix broken tests by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#530](https://github.com/Quansight/ragna/pull/530)
+- Fix Qdrant source storage by [@pmeier](https://github.com/pmeier) in
+  [#534](https://github.com/Quansight/ragna/pull/534)
+- Remove API wrapper by [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#525](https://github.com/Quansight/ragna/pull/525)
+- Use cards instead sections for Key Features portion of front page by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#538](https://github.com/Quansight/ragna/pull/538)
+- Fix MkDocs build by [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#539](https://github.com/Quansight/ragna/pull/539)
+- Fix non-editable install by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#540](https://github.com/Quansight/ragna/pull/540)
+- [FIX] Remove `defaults` channel from Conda environments in CI by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#545](https://github.com/Quansight/ragna/pull/545)
+- Protect against local DNS misconfiguration by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#546](https://github.com/Quansight/ragna/pull/546)
+- [FIX] Change `X` to ellipsis `...` by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#550](https://github.com/Quansight/ragna/pull/550)
+- [ENH] Add `GET` endpoints for documents by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#547](https://github.com/Quansight/ragna/pull/547)
+- Filter out null bytes from source content by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#553](https://github.com/Quansight/ragna/pull/553)
+- Include time zone and change to use of pydantic objects instead of dictionaries by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#554](https://github.com/Quansight/ragna/pull/554)
+- Add lines to git-related files for Pixi by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#559](https://github.com/Quansight/ragna/pull/559)
+- Allow `Assistant`s to specify their logos by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#558](https://github.com/Quansight/ragna/pull/558)
+- fix default factories in merge_models by [@pmeier](https://github.com/pmeier) in
+  [#561](https://github.com/Quansight/ragna/pull/561)
+- Add `created_at` to `Chat`s and select new chat based on corpus automatically by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#560](https://github.com/Quansight/ragna/pull/560)
+- fix deprecation warnings coming from pydantic 2.11 by
+  [@pmeier](https://github.com/pmeier) in
+  [#563](https://github.com/Quansight/ragna/pull/563)
+- update chroma to 1.- by [@pmeier](https://github.com/pmeier) in
+  [#564](https://github.com/Quansight/ragna/pull/564)
+- Use `async` for Qdrant by [@smokestacklightnin](https://github.com/smokestacklightnin)
+  in [#573](https://github.com/Quansight/ragna/pull/573)
+- Parallelize fetching metadata for Qdrant by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#574](https://github.com/Quansight/ragna/pull/574)
+- Temporary fix for docker requirements by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#576](https://github.com/Quansight/ragna/pull/576)
+- Run `update-docker-requirements.yml` on pull request for feedback by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#580](https://github.com/Quansight/ragna/pull/580)
+- Migrate to Pixi by [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#581](https://github.com/Quansight/ragna/pull/581)
+- Fix PyMuPDF segfault by [@smokestacklightnin](https://github.com/smokestacklightnin)
+  in [#586](https://github.com/Quansight/ragna/pull/586)
+- Add support for Python 3.13 by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#587](https://github.com/Quansight/ragna/pull/587)
+- Followup to Pixi migration by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#585](https://github.com/Quansight/ragna/pull/585)
+- Fix project license config to use SPDX epxression by
+  [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#590](https://github.com/Quansight/ragna/pull/590)
+- Release workflow by [@smokestacklightnin](https://github.com/smokestacklightnin) in
+  [#588](https://github.com/Quansight/ragna/pull/588)
+- update chroma dependency by [@pmeier](https://github.com/pmeier) in
+  [#591](https://github.com/Quansight/ragna/pull/591)
+- cleanup pixi config by [@pmeier](https://github.com/pmeier) in
+  [#592](https://github.com/Quansight/ragna/pull/592)
+- cleanup config by [@pmeier](https://github.com/pmeier) in
+  [#593](https://github.com/Quansight/ragna/pull/593)
+- fix mkdocstrings config by [@pmeier](https://github.com/pmeier) in
+  [#596](https://github.com/Quansight/ragna/pull/596)
+- add more ruff rules by [@pmeier](https://github.com/pmeier) in
+  [#595](https://github.com/Quansight/ragna/pull/595)
+
+### New Contributors
+
+- [@Anush008](https://github.com/Anush008) made their first contribution in
+  [#524](https://github.com/Quansight/ragna/pull/524)
+
 ## Version 0.2.1
 
 ### Feature changes and enhancements
@@ -61,6 +228,8 @@
 
 ### New Contributors
 
+- [@Tengal-Teemo](https://github.com/Tengal-Teemo) made their first contribution in
+  [#374](https://github.com/Quansight/ragna/pull/374)
 - [@kklein](https://github.com/kklein) made their first contribution in
   [#396](https://github.com/Quansight/ragna/pull/396)
 - [@arjxn-py](https://github.com/arjxn-py) made their first contribution in
