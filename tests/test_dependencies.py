@@ -1,8 +1,6 @@
-"""
-The tests in this module are only here as a reminder to clean up our code if an issue is
-fixed upstream. If you see a test failing here, i.e. an unexpected success, feel free to
-remove the offending test after you have cleaned up our code.
-"""
+# The tests in this module are only here as a reminder to clean up our code if an issue is
+# fixed upstream. If you see a test failing here, i.e. an unexpected success, feel free to
+# remove the offending test after you have cleaned up our code.
 
 from importlib.metadata import packages_distributions
 

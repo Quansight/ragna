@@ -1,6 +1,4 @@
-"""
-UI Helpers
-"""
+"""UI Helpers"""
 
 from typing import Any, Dict, Iterable, Union
 

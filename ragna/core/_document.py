@@ -38,11 +38,7 @@ class Document(RequirementsMixin, abc.ABC):
 
     @staticmethod
     def supported_suffixes() -> set[str]:
-        """
-        Returns:
-            Suffixes, i.e. `".txt"`, that can be handled by the builtin
-                [ragna.core.DocumentHandler][]s.
-        """
+        """Returns Suffixes, i.e. `".txt"`, that can be handled by the builtin [ragna.core.DocumentHandler][]s."""
         return set(DOCUMENT_HANDLERS.keys())
 
     @staticmethod
@@ -50,7 +46,9 @@ class Document(RequirementsMixin, abc.ABC):
         """Get a document handler based on a suffix.
 
         Args:
+        ----
             name: Name of the document.
+
         """
         handler = DOCUMENT_HANDLERS.get(Path(name).suffix)
         if handler is None:
@@ -102,6 +100,7 @@ class LocalDocument(Document):
         """Create a [ragna.core.LocalDocument][] from a path.
 
         Args:
+        ----
             path: Local path to the file.
             id: ID of the document. If omitted, one is generated.
             name: Name of the document. If omitted, defaults to the name of the `path`.
@@ -110,7 +109,9 @@ class LocalDocument(Document):
                 on the suffix of the `path`.
 
         Raises:
+        ------
             RagnaException: If `metadata` is passed and contains a `"path"` key.
+
         """
         if metadata is None:
             metadata = {}
@@ -156,9 +157,11 @@ class LocalDocument(Document):
 class Page(BaseModel):
     """Dataclass for pages of a document
 
-    Attributes:
+    Attributes
+    ----------
         text: Text included in the page.
         number: Page number.
+
     """
 
     text: str
@@ -171,10 +174,7 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
     @classmethod
     @abc.abstractmethod
     def supported_suffixes(cls) -> list[str]:
-        """
-        Returns:
-            Suffixes supported by this document handler.
-        """
+        """Returns Suffixes supported by this document handler."""
         pass
 
     @abc.abstractmethod
@@ -182,10 +182,13 @@ class DocumentHandler(RequirementsMixin, abc.ABC):
         """Extract pages from a document.
 
         Args:
+        ----
             document: Document to extract pages from.
 
         Returns:
+        -------
             Extracted pages.
+
         """
         ...
 
@@ -209,6 +212,7 @@ DOCUMENT_HANDLERS = DocumentHandlerRegistry()
 @DOCUMENT_HANDLERS.load_if_available
 class PlainTextDocumentHandler(DocumentHandler):
     """Document handler for plain-text documents.
+
     Currently supports `.txt` and `.md` extensions.
     """
 

@@ -223,9 +223,7 @@ UserDependency = Annotated[schemas.User, Depends(_get_user)]
 
 
 class Auth(abc.ABC):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     @classmethod
     def _add_to_app(
@@ -285,9 +283,7 @@ class _AutomaticLoginAuthBase(Auth):
 
 
 class NoAuth(_AutomaticLoginAuthBase):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     def login(self, request: Request) -> schemas.User:
         return schemas.User(

@@ -60,8 +60,7 @@ class CohereAssistant(HttpApiAssistant):
 
 
 class Command(CohereAssistant):
-    """
-    [Cohere Command](https://docs.cohere.com/docs/models#command)
+    """[Cohere Command](https://docs.cohere.com/docs/models#command)
 
     !!! info "Required environment variables"
 
@@ -72,8 +71,7 @@ class Command(CohereAssistant):
 
 
 class CommandLight(CohereAssistant):
-    """
-    [Cohere Command-Light](https://docs.cohere.com/docs/models#command)
+    """[Cohere Command-Light](https://docs.cohere.com/docs/models#command)
 
     !!! info "Required environment variables"
 

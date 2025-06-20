@@ -45,10 +45,13 @@ def local_root(path: Optional[Union[str, Path]] = None) -> Path:
     `~/.cache/ragna`.
 
     Args:
+    ----
         path: If passed, this is set as new local root directory.
 
     Returns:
+    -------
         Ragna's local root directory.
+
     """
     global _LOCAL_ROOT
     if path is not None:

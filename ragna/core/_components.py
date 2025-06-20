@@ -37,10 +37,7 @@ class Component(RequirementsMixin):
 
     @classmethod
     def display_name(cls) -> str:
-        """
-        Returns:
-            Component name.
-        """
+        """Returns Component name."""
         return cls.__name__
 
     def __repr__(self) -> str:
@@ -110,12 +107,14 @@ class Component(RequirementsMixin):
 class Source(pydantic.BaseModel):
     """Data class for sources stored inside a source storage.
 
-    Attributes:
+    Attributes
+    ----------
         id: Unique ID of the source.
         document: Document this source belongs to.
         location: Location of the source inside the document.
         content: Content of the source.
         num_tokens: Number of tokens of the content.
+
     """
 
     id: str
@@ -137,8 +136,10 @@ class SourceStorage(Component, abc.ABC):
         """Store content of documents.
 
         Args:
+        ----
             corpus_name: Name of the corpus to store the documents in.
             documents: Documents to store.
+
         """
         ...
 
@@ -149,20 +150,25 @@ class SourceStorage(Component, abc.ABC):
         """Retrieve sources for a given prompt.
 
         Args:
+        ----
             corpus_name: Name of the corpus to retrieve sources from.
             metadata_filter: Filter to select available sources.
             prompt: Prompt to retrieve sources for.
 
         Returns:
+        -------
             Matching sources for the given prompt ordered by relevance.
+
         """
         ...
 
     def list_corpuses(self) -> list[str]:
         """List available corpuses.
 
-        Returns:
+        Returns
+        -------
             List of available corpuses.
+
         """
         raise RagnaException(
             "list_corpuses is not implemented",
@@ -177,10 +183,13 @@ class SourceStorage(Component, abc.ABC):
         """List available metadata for corpuses.
 
         Args:
+        ----
             corpus_name: Only return metadata for this corpus.
 
         Returns:
+        -------
             List of available metadata.
+
         """
         raise RagnaException(
             "list_metadata is not implemented",
@@ -193,12 +202,14 @@ class SourceStorage(Component, abc.ABC):
 class MessageRole(str, enum.Enum):
     """Message role
 
-    Attributes:
+    Attributes
+    ----------
         SYSTEM: The message was produced by the system. This includes the welcome
             message when [preparing a new chat][ragna.core.Chat.prepare] as well as
             error messages.
         USER: The message was produced by the user.
         ASSISTANT: The message was produced by an assistant.
+
     """
 
     SYSTEM = "system"
@@ -209,7 +220,8 @@ class MessageRole(str, enum.Enum):
 class Message:
     """Data class for messages.
 
-    Attributes:
+    Attributes
+    ----------
         role: The message producer.
         sources: The sources used to produce the message.
 
@@ -217,6 +229,7 @@ class Message:
 
         - [ragna.core.Chat.prepare][]
         - [ragna.core.Chat.answer][]
+
     """
 
     def __init__(
@@ -295,11 +308,14 @@ class Assistant(Component, abc.ABC):
         """Answer a prompt given the chat history.
 
         Args:
+        ----
             messages: List of messages in the chat history. The last item is the current
                 user prompt and has the relevant sources attached to it.
 
         Returns:
+        -------
             Answer.
+
         """
         ...
 

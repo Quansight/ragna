@@ -26,9 +26,7 @@ class SerializableModel(pydantic.BaseModel, Generic[M]):
 
 
 class KeyValueStore(abc.ABC, RequirementsMixin, Generic[M]):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     def serialize(self, model: M) -> str:
         return SerializableModel.from_model(model).model_dump_json()

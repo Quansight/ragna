@@ -1,5 +1,4 @@
-"""
-# REST API
+"""# REST API
 
 Ragna was designed to help you quickly build custom RAG powered web
 applications. For this you can leverage the built-in

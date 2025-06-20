@@ -9,9 +9,7 @@ import pydantic_core
 
 
 class MetadataOperator(enum.Enum):
-    """
-    ADDME
-    """
+    """ADDME"""
 
     RAW = enum.auto()
     AND = enum.auto()
@@ -27,9 +25,7 @@ class MetadataOperator(enum.Enum):
 
 
 class MetadataFilter:
-    """
-    ADDME
-    """
+    """ADDME"""
 
     def __init__(self, operator: MetadataOperator, key: str, value: Any) -> None:
         self.operator = operator

@@ -154,6 +154,7 @@ class Rag(Generic[C]):
         """Create a new [ragna.core.Chat][].
 
         Args:
+        ----
             input: Subject of the chat. Available options:
 
                 - `None`: Use the full corpus of documents specified by `corpus_name`.
@@ -166,6 +167,7 @@ class Rag(Generic[C]):
             assistant: Assistant to use.
             corpus_name: Corpus of documents to use.
             **params: Additional parameters passed to the source storage and assistant.
+
         """
         return Chat(
             self,
@@ -191,8 +193,7 @@ class SpecialChatParams(pydantic.BaseModel):
 
 
 class Chat:
-    """
-    !!! tip
+    """!!! tip
 
         This object is usually not instantiated manually, but rather through
         [ragna.core.Rag.chat][].
@@ -215,6 +216,7 @@ class Chat:
     ```
 
     Args:
+    ----
         rag: The RAG workflow this chat is associated with.
         input: Subject of the chat. Available options:
 
@@ -228,6 +230,7 @@ class Chat:
         assistant: Assistant to use.
         corpus_name: Corpus of documents to use.
         **params: Additional parameters passed to the source storage and assistant.
+
     """
 
     def __init__(
@@ -265,8 +268,10 @@ class Chat:
         This [`store`][ragna.core.SourceStorage.store]s the documents in the selected
         source storage. Afterwards prompts can be [`answer`][ragna.core.Chat.answer]ed.
 
-        Returns:
+        Returns
+        -------
             Welcome message.
+
         """
         welcome = Message(
             content="How can I help you with the documents?",
@@ -287,12 +292,15 @@ class Chat:
     async def answer(self, prompt: str, *, stream: bool = False) -> Message:
         """Answer a prompt.
 
-        Returns:
+        Returns
+        -------
             Answer.
 
-        Raises:
+        Raises
+        ------
             ragna.core.RagnaException: If chat is not
                 [`prepare`][ragna.core.Chat.prepare]d.
+
         """
         if not self._prepared:
             raise RagnaException(

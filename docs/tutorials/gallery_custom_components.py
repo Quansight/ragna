@@ -1,5 +1,4 @@
-"""
-# Custom Components
+"""# Custom Components
 
 While Ragna has builtin support for a few [source storages][ragna.source_storages]
 and [assistants][ragna.assistants], its real strength lies in allowing users

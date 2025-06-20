@@ -1,5 +1,4 @@
-"""
-# Python API
+"""# Python API
 
 The [Python API](../../references/python-api.md) is the best place to get started with
 Ragna and understand its key components. It's also the best way to continue
