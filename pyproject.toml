@@ -193,6 +193,7 @@ select = [
     "PTH",
     "D2",
     "UP",
+    "ASYNC",
 ]
 
 ignore = [
@@ -216,6 +217,8 @@ ignore = [
 # The examples and tutorials need to have a good the narrative rather than follow our code-style rules
 "docs/examples/**/*.py" = ["E402", "F704", "I001", "D"]
 "docs/tutorials/**/*.py" = ["E402", "F704", "I001", "D"]
+# blocking code in async tests is not an issue
+"tests/**/*.py" = ["ASYNC101"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
