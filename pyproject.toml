@@ -190,6 +190,7 @@ select = [
     "ISC",
     "RET",
     "SIM",
+    "PTH",
 ]
 
 ignore = [
@@ -199,6 +200,8 @@ ignore = [
     "E501",
     # cache has its purpose
     "B019",
+    # built-in open() is well understood
+    "PTH123",
 ]
 
 [tool.ruff.lint.per-file-ignores]
