@@ -187,6 +187,7 @@ select = [
     "I001",
     "B",
     "C4",
+    "ISC",
 ]
 
 ignore = [
